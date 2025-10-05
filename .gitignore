@@ -1,0 +1,31 @@
+# ---- IntelliJ / JetBrains ----
+.idea/
+*.iml
+out/
+
+# ---- Maven / Spring Boot ----
+server/target/
+server/.mvn/
+server/mvnw
+server/mvnw.cmd
+server/logs/
+server/.env
+
+# ---- Node / React ----
+client/node_modules/
+client/dist/
+client/.env
+client/.vite/
+client/.DS_Store
+
+# ---- System / OS ----
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# ---- Misc ----
+/*.log
+*.class
+*.jar
+requirements.md
