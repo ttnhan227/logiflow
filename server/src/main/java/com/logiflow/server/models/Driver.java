@@ -6,12 +6,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-enum HealthStatus {
-    FIT,
-    SICK,
-    RESTING
-}
-
 @Data
 @Entity
 @Table(name = "drivers")
@@ -53,6 +47,12 @@ public class Driver {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public static enum HealthStatus {
+        FIT,
+        SICK,
+        RESTING
+    }
 
     @OneToMany(mappedBy = "driver", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TripAssignment> tripAssignments;
