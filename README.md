@@ -36,9 +36,12 @@ LogiFlow is an intelligent logistics management system designed to automate and 
 - **Spring Boot 3.5.6** - Backend framework
 - **Spring Data JPA** - Database access and ORM
 - **Spring Security** - Authentication and authorization
-- **PostgreSQL** - Primary database (logiflow)
-- **Spring Validation** - Request validation
 - **Spring Web** - REST API development
+- **Spring Validation** - Request validation
+- **Spring Mail** - Email notification services
+- **Lombok** - Reduces boilerplate code with annotations
+- **PostgreSQL** - Primary database (logiflow)
+- **Spring Boot DevTools** - Development tools and auto-restart
 
 ### Frontend (React)
 - **React 19.1.1** - Frontend library
@@ -55,8 +58,20 @@ The system uses a relational database with the following key tables:
 - **Vehicles**: Fleet management and tracking
 - **Routes**: Route planning and optimization
 - **Trips**: Trip management and scheduling
+- **Trip Assignments**: Links drivers to trips with role assignments (primary/backup)
 - **Orders**: Order tracking and management
 - **Work Logs**: Driver working hours and rest periods
+
+### 🔗 Key Relationships
+
+- **Users** → **Drivers** (One-to-One, optional)
+- **Drivers** → **Trip Assignments** (One-to-Many)
+- **Vehicles** → **Trips** (One-to-Many)
+- **Routes** → **Trips** (One-to-Many)
+- **Trips** → **Trip Assignments** (One-to-Many)
+- **Trips** → **Orders** (One-to-Many)
+- **Drivers** → **Work Logs** (One-to-Many)
+- **Trips** → **Work Logs** (One-to-Many, optional)
 
 ## 🚀 Getting Started
 
