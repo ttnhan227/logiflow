@@ -1,4 +1,4 @@
-package com.logiflow.server.repositories;
+package com.logiflow.server.repositories.driver_worklog;
 
 import com.logiflow.server.models.DriverWorkLog;
 import org.springframework.data.jpa.repository.JpaRepository;

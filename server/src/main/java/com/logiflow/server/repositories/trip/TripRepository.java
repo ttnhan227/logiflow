@@ -1,4 +1,4 @@
-package com.logiflow.server.repositories;
+package com.logiflow.server.repositories.trip;
 
 import com.logiflow.server.models.Trip;
 import org.springframework.data.jpa.repository.JpaRepository;

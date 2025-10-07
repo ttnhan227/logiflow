@@ -1,4 +1,4 @@
-package com.logiflow.server.repositories;
+package com.logiflow.server.repositories.route;
 
 import com.logiflow.server.models.Route;
 import org.springframework.data.jpa.repository.JpaRepository;

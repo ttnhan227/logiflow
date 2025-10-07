@@ -1,4 +1,4 @@
-package com.logiflow.server.repositories;
+package com.logiflow.server.repositories.order;
 
 import com.logiflow.server.models.Order;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,7 +1,15 @@
 package com.logiflow.server.seeders;
 
 import com.logiflow.server.models.*;
-import com.logiflow.server.repositories.*;
+import com.logiflow.server.repositories.driver.DriverRepository;
+import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
+import com.logiflow.server.repositories.order.OrderRepository;
+import com.logiflow.server.repositories.role.RoleRepository;
+import com.logiflow.server.repositories.route.RouteRepository;
+import com.logiflow.server.repositories.trip.TripRepository;
+import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
+import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -66,13 +74,14 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedRoles() {
         List<Role> roles = Arrays.asList(
-            createRole("Admin", "System administrator with full access"),
-            createRole("Dispatcher", "Manages trip assignments and routing"),
-            createRole("Driver", "Vehicle driver"),
-            createRole("Manager", "Fleet and operations manager")
+            createRole("ADMIN", "System administrator with full access"),
+            createRole("DISPATCHER", "Manages trip assignments and routing"),
+            createRole("DRIVER", "Vehicle driver"),
+            createRole("MANAGER", "Fleet and operations manager"),
+            createRole("USER", "Standard user")
         );
         roleRepository.saveAll(roles);
-        System.out.println("Seeded 4 roles");
+        System.out.println("Seeded 5 roles");
     }
 
     private Role createRole(String name, String description) {
@@ -85,22 +94,22 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedUsersWithRoles() {
         List<Role> roles = roleRepository.findAll();
-        if (roles.size() < 4) {
+        if (roles.size() < 5) {
             System.out.println("Roles not seeded yet. Skipping user creation.");
             return;
         }
 
         List<User> users = Arrays.asList(
-            createUserWithRole("admin", "admin@logiflow.com", "admin123", roles.get(0)), // Admin
-            createUserWithRole("john.dispatcher", "john.d@logiflow.com", "pass123", roles.get(1)), // Dispatcher
-            createUserWithRole("sarah.manager", "sarah.m@logiflow.com", "pass456", roles.get(3)), // Manager
-            createUserWithRole("mike.driver", "mike.d@logiflow.com", "driver123", roles.get(2)), // Driver
-            createUserWithRole("amy.dispatcher2", "amy.d@logiflow.com", "disp123", roles.get(1)), // Dispatcher
-            createUserWithRole("carl.driver2", "carl.d@logiflow.com", "drive789", roles.get(2)), // Driver
-            createUserWithRole("lisa.manager2", "lisa.m@logiflow.com", "mgr123", roles.get(3)), // Manager
-            createUserWithRole("david.driver3", "david.d@logiflow.com", "drv456", roles.get(2)), // Driver
-            createUserWithRole("emma.driver4", "emma.d@logiflow.com", "driv789", roles.get(2)), // Driver
-            createUserWithRole("bob.driver5", "bob.d@logiflow.com", "drv000", roles.get(2)) // Driver
+            createUserWithRole("admin", "admin@logiflow.com", "123", roles.get(0)), // ADMIN
+            createUserWithRole("john.dispatcher", "john.d@logiflow.com", "123", roles.get(1)), // DISPATCHER
+            createUserWithRole("sarah.manager", "sarah.m@logiflow.com", "123", roles.get(3)), // MANAGER
+            createUserWithRole("mike.driver", "mike.d@logiflow.com", "123", roles.get(2)), // DRIVER
+            createUserWithRole("amy.dispatcher2", "amy.d@logiflow.com", "123", roles.get(1)), // DISPATCHER
+            createUserWithRole("carl.driver2", "carl.d@logiflow.com", "123", roles.get(2)), // DRIVER
+            createUserWithRole("lisa.manager2", "lisa.m@logiflow.com", "123", roles.get(3)), // MANAGER
+            createUserWithRole("david.driver3", "david.d@logiflow.com", "123", roles.get(2)), // DRIVER
+            createUserWithRole("emma.driver4", "emma.d@logiflow.com", "123", roles.get(2)), // DRIVER
+            createUserWithRole("bob.driver5", "bob.d@logiflow.com", "123", roles.get(2)) // DRIVER
         );
         userRepository.saveAll(users);
         System.out.println("Seeded 10 users with roles");

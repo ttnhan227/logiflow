@@ -1,4 +1,4 @@
-package com.logiflow.server.repositories;
+package com.logiflow.server.repositories.driver;
 
 import com.logiflow.server.models.Driver;
 import org.springframework.data.jpa.repository.JpaRepository;
