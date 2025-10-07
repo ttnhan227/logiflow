@@ -273,24 +273,27 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedOrders() {
+        List<Trip> trips = tripRepository.findAll().stream().limit(10).toList();
+
         List<Order> orders = Arrays.asList(
-            createOrder("Nguyen Thi Mai", "123 Tran Hung Dao, Hoan Kiem, Hanoi", "647 Bach Dang, Hai Chau, Da Nang"),
-            createOrder("Tran Van Binh", "45 Nguyen Hue, District 1, HCM City", "Villa 12, Phu My Hung, District 7, HCM City"),
-            createOrder("Le Thi Cuc", "Hospital District, Thai Nguyen", "156 Le Duan, Dong Da, Hanoi"),
-            createOrder("Pham Van Duc", "Can Tho Port Authority", "Soc Trang River Port"),
-            createOrder("Hoang Minh Tam", "89A Cat Bi Road, Hai Phong", "Military Academy Campus, Hanoi"),
-            createOrder("Diep Van Loc", "Airport PLAZA, Nha Trang", "Sapaco Tourist, Bao Loc"),
-            createOrder("VO Thanh Nhung", "Industrial Zone, Binh Duong", "Ocean Park, Gia Lam, Hanoi"),
-            createOrder("Bui Duc Phong", "Halong Marina Resort", "Louisiane Brewhouse, Hanoi"),
-            createOrder("Do Thi Huong", "BigC Supermarket, Ha Long", "Metropole Hotel, Hanoi"),
-            createOrder("Ly Ngoc son", "Sapa Weather Station", "Truc Bach Lake Garden, Hanoi")
+            createOrder(trips.get(0), "Nguyen Thi Mai", "123 Tran Hung Dao, Hoan Kiem, Hanoi", "647 Bach Dang, Hai Chau, Da Nang"),
+            createOrder(trips.get(1), "Tran Van Binh", "45 Nguyen Hue, District 1, HCM City", "Villa 12, Phu My Hung, District 7, HCM City"),
+            createOrder(trips.get(2), "Le Thi Cuc", "Hospital District, Thai Nguyen", "156 Le Duan, Dong Da, Hanoi"),
+            createOrder(trips.get(3), "Pham Van Duc", "Can Tho Port Authority", "Soc Trang River Port"),
+            createOrder(trips.get(4), "Hoang Minh Tam", "89A Cat Bi Road, Hai Phong", "Military Academy Campus, Hanoi"),
+            createOrder(trips.get(5), "Diep Van Loc", "Airport PLAZA, Nha Trang", "Sapaco Tourist, Bao Loc"),
+            createOrder(trips.get(6), "VO Thanh Nhung", "Industrial Zone, Binh Duong", "Ocean Park, Gia Lam, Hanoi"),
+            createOrder(trips.get(7), "Bui Duc Phong", "Halong Marina Resort", "Louisiane Brewhouse, Hanoi"),
+            createOrder(trips.get(8), "Do Thi Huong", "BigC Supermarket, Ha Long", "Metropole Hotel, Hanoi"),
+            createOrder(trips.get(9), "Ly Ngoc son", "Sapa Weather Station", "Truc Bach Lake Garden, Hanoi")
         );
         orderRepository.saveAll(orders);
         System.out.println("Seeded 10 orders");
     }
 
-    private Order createOrder(String customerName, String pickupAddress, String deliveryAddress) {
+    private Order createOrder(Trip trip, String customerName, String pickupAddress, String deliveryAddress) {
         Order order = new Order();
+        order.setTrip(trip);
         order.setCustomerName(customerName);
         order.setPickupAddress(pickupAddress);
         order.setDeliveryAddress(deliveryAddress);
