@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+
 @Data
 @Entity
 @Table(name = "orders")
@@ -21,15 +24,38 @@ public class Order {
     @Column(name = "customer_name", length = 100, nullable = false)
     private String customerName;
 
+    @Column(name = "customer_phone", length = 20, nullable = true)
+    private String customerPhone;
+
     @Column(name = "pickup_address", length = 255, nullable = false)
     private String pickupAddress;
 
     @Column(name = "delivery_address", length = 255, nullable = false)
     private String deliveryAddress;
 
-    @Column(name = "order_status", length = 20, nullable = false)
-    private String orderStatus = "pending";
+    @Column(name = "package_details", length = 500, nullable = true)
+    private String packageDetails;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
+    @Column(name = "priority_level", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private PriorityLevel priorityLevel = PriorityLevel.NORMAL;
+
+    @Column(name = "order_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus = OrderStatus.PENDING;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public static enum PriorityLevel {
+        NORMAL, URGENT
+    }
+
+    public static enum OrderStatus {
+        PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED
+    }
 }

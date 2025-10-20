@@ -274,30 +274,35 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedOrders() {
         List<Trip> trips = tripRepository.findAll().stream().limit(10).toList();
+        User dispatcher = userRepository.findByUsername("john.dispatcher").orElseThrow(() -> new RuntimeException("Dispatcher not found"));
 
         List<Order> orders = Arrays.asList(
-            createOrder(trips.get(0), "Nguyen Thi Mai", "123 Tran Hung Dao, Hoan Kiem, Hanoi", "647 Bach Dang, Hai Chau, Da Nang"),
-            createOrder(trips.get(1), "Tran Van Binh", "45 Nguyen Hue, District 1, HCM City", "Villa 12, Phu My Hung, District 7, HCM City"),
-            createOrder(trips.get(2), "Le Thi Cuc", "Hospital District, Thai Nguyen", "156 Le Duan, Dong Da, Hanoi"),
-            createOrder(trips.get(3), "Pham Van Duc", "Can Tho Port Authority", "Soc Trang River Port"),
-            createOrder(trips.get(4), "Hoang Minh Tam", "89A Cat Bi Road, Hai Phong", "Military Academy Campus, Hanoi"),
-            createOrder(trips.get(5), "Diep Van Loc", "Airport PLAZA, Nha Trang", "Sapaco Tourist, Bao Loc"),
-            createOrder(trips.get(6), "VO Thanh Nhung", "Industrial Zone, Binh Duong", "Ocean Park, Gia Lam, Hanoi"),
-            createOrder(trips.get(7), "Bui Duc Phong", "Halong Marina Resort", "Louisiane Brewhouse, Hanoi"),
-            createOrder(trips.get(8), "Do Thi Huong", "BigC Supermarket, Ha Long", "Metropole Hotel, Hanoi"),
-            createOrder(trips.get(9), "Ly Ngoc son", "Sapa Weather Station", "Truc Bach Lake Garden, Hanoi")
+            createOrder(trips.get(0), "Nguyen Thi Mai", "+84-901-111-111", "1.5kg laptop with charger and mouse, handle with care", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "123 Tran Hung Dao, Hoan Kiem, Hanoi", "647 Bach Dang, Hai Chau, Da Nang"),
+            createOrder(trips.get(1), "Tran Van Binh", "+84-902-222-222", "10kg cement bags and steel pipes, fragile construction materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "45 Nguyen Hue, District 1, HCM City", "Villa 12, Phu My Hung, District 7, HCM City"),
+            createOrder(trips.get(2), "Le Thi Cuc", "+84-903-333-333", "5kg surgical instruments, temperature controlled, urgent delivery", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Hospital District, Thai Nguyen", "156 Le Duan, Dong Da, Hanoi"),
+            createOrder(trips.get(3), "Pham Van Duc", "+84-904-444-444", "2kg important documents in waterproof envelope, confidential", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Can Tho Port Authority", "Soc Trang River Port"),
+            createOrder(trips.get(4), "Hoang Minh Tam", "+84-905-555-555", "20kg fresh fruits and vegetables, refrigerate immediately upon receipt", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "89A Cat Bi Road, Hai Phong", "Military Academy Campus, Hanoi"),
+            createOrder(trips.get(5), "Diep Van Loc", "+84-906-666-666", "15kg 55-inch LCD TV in original packaging, glass screen - handle carefully", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Airport PLAZA, Nha Trang", "Sapaco Tourist, Bao Loc"),
+            createOrder(trips.get(6), "VO Thanh Nhung", "+84-907-777-777", "3kg designer shirts and dresses, dry clean only items", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Industrial Zone, Binh Duong", "Ocean Park, Gia Lam, Hanoi"),
+            createOrder(trips.get(7), "Bui Duc Phong", "+84-908-888-888", "50kg solid wood dining table and chairs, assemble before noon", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Halong Marina Resort", "Louisiane Brewhouse, Hanoi"),
+            createOrder(trips.get(8), "Do Thi Huong", "+84-909-999-999", "2kg custom wedding cake with edible decorations, keep cool", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "BigC Supermarket, Ha Long", "Metropole Hotel, Hanoi"),
+            createOrder(trips.get(9), "Ly Ngoc son", "+84-910-000-000", "5kg framed oil paintings, valuable artwork - handle with extreme care", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Sapa Weather Station", "Truc Bach Lake Garden, Hanoi")
         );
         orderRepository.saveAll(orders);
         System.out.println("Seeded 10 orders");
     }
 
-    private Order createOrder(Trip trip, String customerName, String pickupAddress, String deliveryAddress) {
+    private Order createOrder(Trip trip, String customerName, String customerPhone, String packageDetails, User createdBy, Order.PriorityLevel priorityLevel, Order.OrderStatus orderStatus, String pickupAddress, String deliveryAddress) {
         Order order = new Order();
         order.setTrip(trip);
         order.setCustomerName(customerName);
+        order.setCustomerPhone(customerPhone);
+        order.setPackageDetails(packageDetails);
+        order.setCreatedBy(createdBy);
+        order.setPriorityLevel(priorityLevel);
+        order.setOrderStatus(orderStatus);
         order.setPickupAddress(pickupAddress);
         order.setDeliveryAddress(deliveryAddress);
-        order.setOrderStatus("pending");
         order.setCreatedAt(LocalDateTime.now());
         return order;
     }
