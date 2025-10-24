@@ -22,6 +22,9 @@ public class DashboardOverviewDto {
     // User Statistics
     private final UserStatsDto userStats;
     
+    // Fleet Overview
+    private final FleetOverviewDto fleetOverview;
+    
     // Recent Activities
     private final List<RecentActivityDto> recentActivities;
 
@@ -32,7 +35,8 @@ public class DashboardOverviewDto {
             String systemVersion,
             UserStatsDto userStats,
             List<RecentActivityDto> recentActivities,
-            SystemHealthDto systemHealth) {
+            SystemHealthDto systemHealth,
+            FleetOverviewDto fleetOverview) {
         
         return DashboardOverviewDto.builder()
             .systemUptime(systemUptime)
@@ -41,6 +45,7 @@ public class DashboardOverviewDto {
             .userStats(userStats)
             .recentActivities(recentActivities)
             .systemHealth(systemHealth)
+            .fleetOverview(fleetOverview)
             .build();
     }
 }

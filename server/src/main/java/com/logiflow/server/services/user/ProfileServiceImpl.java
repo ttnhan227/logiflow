@@ -83,12 +83,12 @@ public class ProfileServiceImpl implements ProfileService {
             Long totalTrips = tripAssignmentRepository.countByDriverId(driver.getDriverId());
             Long completedTrips = tripAssignmentRepository.countCompletedByDriverId(driver.getDriverId());
             BigDecimal totalHoursWorked = driverWorkLogRepository.sumHoursWorkedByDriverId(driver.getDriverId());
-            Long totalOrders = orderRepository.countByDriverTrips(driver.getDriverId());
+            int totalOrders = orderRepository.countByDriverTrips(driver.getDriverId());
 
             profileDto.setTotalTrips(totalTrips != null ? totalTrips.intValue() : 0);
             profileDto.setCompletedTrips(completedTrips != null ? completedTrips.intValue() : 0);
+            profileDto.setTotalOrders(totalOrders);
             profileDto.setTotalHoursWorked(totalHoursWorked != null ? totalHoursWorked : BigDecimal.ZERO);
-            profileDto.setTotalOrders(totalOrders != null ? totalOrders.intValue() : 0);
         } else {
             profileDto.setIsDriver(false);
             profileDto.setTotalTrips(0);

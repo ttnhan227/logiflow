@@ -9,7 +9,6 @@ public class UserStatsDto {
     // Overall stats
     private long totalUsers;
     private long newSignups;
-    private long pendingApprovals;
     
     // Role-based stats
     private int activeDispatchers;
