@@ -1,6 +1,6 @@
 package com.logiflow.server.controllers.admin;
 
-import com.logiflow.server.dtos.admin.DashboardOverviewDto;
+import com.logiflow.server.dtos.admin.dashboard.DashboardOverviewDto;
 import com.logiflow.server.services.admin.DashboardService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

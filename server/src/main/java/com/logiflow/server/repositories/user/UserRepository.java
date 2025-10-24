@@ -3,9 +3,12 @@ package com.logiflow.server.repositories.user;
 import com.logiflow.server.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,5 +25,13 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     int countByRole_RoleIdAndIsActive(Integer roleId, boolean isActive);
     
     int countByIsActive(boolean isActive);
-
+    
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :date")
+    long countByCreatedAtAfter(@Param("date") LocalDateTime date);
+    
+    @Query("SELECT COUNT(u) FROM User u")
+    long count();
+    
+    @Query("SELECT u FROM User u WHERE u.lastLogin IS NOT NULL ORDER BY u.lastLogin DESC")
+    List<User> findRecentActiveUsers(Pageable pageable);
 }
