@@ -51,6 +51,9 @@ public class DatabaseSeeder implements CommandLineRunner {
     private DriverWorkLogRepository driverWorkLogRepository;
 
     @Autowired
+    private com.logiflow.server.repositories.system.SystemSettingRepository systemSettingRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override
@@ -59,6 +62,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         if (roleRepository.count() == 0) {
             seedRoles();
             seedUsersWithRoles();
+            seedSystemSettings();
             seedDrivers();
             seedVehicles();
             seedRoutes();
@@ -357,6 +361,29 @@ public class DatabaseSeeder implements CommandLineRunner {
         );
         driverWorkLogRepository.saveAll(logs);
         System.out.println("Seeded 10 driver work logs");
+    }
+
+    private void seedSystemSettings() {
+        List<SystemSetting> settings = Arrays.asList(
+            createSystemSetting("integration", "gps_tracking_provider", "google", false, "GPS tracking service provider (google, here, mapbox, etc.)"),
+            createSystemSetting("integration", "map_visualization_enabled", "true", false, "Enable Google Maps visualization for routes and tracking"),
+            createSystemSetting("integration", "notification_sms_enabled", "false", false, "Enable SMS notifications through third-party provider"),
+            createSystemSetting("integration", "email_service_provider", "none", false, "Email service provider (smtp, sendgrid, mailgun, etc.)"),
+            createSystemSetting("integration", "third_party_logistics_enabled", "false", false, "Enable third-party logistics API integrations")
+        );
+        systemSettingRepository.saveAll(settings);
+        System.out.println("Seeded 5 system settings");
+    }
+
+    private SystemSetting createSystemSetting(String category, String key, String value, boolean isEncrypted, String description) {
+        SystemSetting setting = new SystemSetting();
+        setting.setCategory(category);
+        setting.setKey(key);
+        setting.setValue(value);
+        setting.setIsEncrypted(isEncrypted);
+        setting.setDescription(description);
+        setting.setCreatedAt(LocalDateTime.now());
+        return setting;
     }
 
     private DriverWorkLog createWorkLog(Driver driver, Trip trip, LocalDateTime start, LocalDateTime end, BigDecimal hoursWorked, BigDecimal restRequired) {
