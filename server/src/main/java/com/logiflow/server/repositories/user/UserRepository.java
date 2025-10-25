@@ -34,4 +34,19 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     
     @Query("SELECT u FROM User u WHERE u.lastLogin IS NOT NULL ORDER BY u.lastLogin DESC")
     List<User> findRecentActiveUsers(Pageable pageable);
+
+    // Admin user management methods
+    @Query("SELECT u FROM User u JOIN FETCH u.role WHERE u.role.roleName = :roleName")
+    List<User> findByRoleNameWithRole(@Param("roleName") String roleName);
+
+    @Query("SELECT u FROM User u JOIN FETCH u.role WHERE u.isActive = true")
+    List<User> findActiveUsersWithRole();
+
+    @Query("SELECT u FROM User u JOIN FETCH u.role WHERE " +
+           "LOWER(u.username) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<User> searchUsersByUsernameOrEmail(@Param("searchTerm") String searchTerm);
+
+    @Query("SELECT DISTINCT u FROM User u JOIN FETCH u.role ORDER BY u.username")
+    List<User> findAllUsersWithRole();
 }
