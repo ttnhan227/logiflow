@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
@@ -29,7 +28,6 @@ public class RecentActivityDto {
     private String username;
     private String role;
     private LocalDateTime timestamp;
-    private String timeAgo;
     
     // Activity details
     private ActivityType activityType;
@@ -74,7 +72,6 @@ public class RecentActivityDto {
             .action(action)
             .details(details)
             .timestamp(LocalDateTime.now())
-            .timeAgo("Just now")
             .success(success)
             .ipAddress(ipAddress)
             .userAgent(userAgent)
@@ -98,7 +95,6 @@ public class RecentActivityDto {
             .action(event)
             .details(ipAddress != null ? String.format("%s (IP: %s)", details, ipAddress) : details)
             .timestamp(LocalDateTime.now())
-            .timeAgo("Just now")
             .success(true)
             .ipAddress(ipAddress)
             .build();
@@ -122,7 +118,6 @@ public class RecentActivityDto {
             .action("Profile Updated")
             .details(String.format("Updated %s", fieldUpdated))
             .timestamp(LocalDateTime.now())
-            .timeAgo("Just now")
             .success(true)
             .build();
     }
@@ -141,7 +136,6 @@ public class RecentActivityDto {
             .action("Security Alert")
             .details(message)
             .timestamp(LocalDateTime.now())
-            .timeAgo("Just now")
             .success(false)
             .ipAddress(ipAddress)
             .build();
@@ -152,18 +146,4 @@ public class RecentActivityDto {
     }
 
     // Keep the existing timeAgo helper
-    public static String getTimeAgo(LocalDateTime timestamp) {
-        if (timestamp == null) return "Never";
-        
-        Duration duration = Duration.between(timestamp, LocalDateTime.now());
-        long minutes = duration.toMinutes();
-        if (minutes < 1) return "Just now";
-        if (minutes < 60) return minutes + (minutes == 1 ? " minute ago" : " minutes ago");
-        
-        long hours = duration.toHours();
-        if (hours < 24) return hours + (hours == 1 ? " hour ago" : " hours ago");
-        
-        long days = duration.toDays();
-        return days + (days == 1 ? " day ago" : " days ago");
-    }
 }
