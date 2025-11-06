@@ -18,6 +18,23 @@ client/.env
 client/.vite/
 client/.DS_Store
 
+# ---- Flutter / Dart ----
+client_mobile/.dart_tool/
+client_mobile/.packages
+client_mobile/.pub-cache/
+client_mobile/.pub/
+client_mobile/build/
+client_mobile/ios/Flutter/.last_build_id
+client_mobile/ios/Flutter/App.framework/
+client_mobile/ios/Flutter/Flutter.framework/
+client_mobile/ios/Flutter/Flutter.podspec
+client_mobile/ios/Flutter/flutter_assets/
+client_mobile/ios/Runner/GeneratedPluginRegistrant.*
+client_mobile/android/.gradle
+client_mobile/android/app/debug
+client_mobile/android/app/profile
+client_mobile/android/app/release
+
 # ---- System / OS ----
 .DS_Store
 Thumbs.db
