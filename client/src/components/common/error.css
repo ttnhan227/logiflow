@@ -1,0 +1,78 @@
+/* Shared styles for error pages */
+.error-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-page h1 {
+  font-size: 6.5rem;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1;
+}
+
+.error-page h2 {
+  font-size: 1.5rem;
+  margin: 0.6rem 0 0.5rem;
+  color: var(--text-color);
+}
+
+.error-page p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 2rem;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.error-page .home-link {
+  display: inline-block;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent));
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.error-page .home-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(11,116,209,0.08);
+  text-decoration: none;
+}
+
+.error-page .home-link:active {
+  background-color: #096dd9;
+}
+
+/* Status code specific colors */
+.error-page.status-404 h1 {
+  color: #722ed1; /* Purple for 404 */
+}
+
+.error-page.status-403 h1 {
+  color: #ff4d4f; /* Red for 403 */
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .error-page h1 {
+    font-size: 6rem;
+  }
+  
+  .error-page h2 {
+    font-size: 1.75rem;
+  }
+  
+  .error-page p {
+    font-size: 1rem;
+  }
+}
