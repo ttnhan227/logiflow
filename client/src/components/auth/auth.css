@@ -18,6 +18,13 @@
   border-left: 4px solid var(--accent);
 }
 
+.login-logo {
+  width: 150px;
+  height: 150px;
+  display: block;
+  margin: 0 auto 1rem;
+}
+
 .login-title {
   font-size: 1.5rem;
   margin-bottom: 1.25rem;
