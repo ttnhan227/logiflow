@@ -366,9 +366,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private void seedSystemSettings() {
         List<SystemSetting> settings = Arrays.asList(
             // Map Settings
-            createSystemSetting("maps", "google_maps_api_key", "", true, "Google Maps API Key for map visualization and geocoding"),
-            createSystemSetting("maps", "google_maps_enabled", "true", false, "Enable Google Maps integration"),
-            createSystemSetting("maps", "map_provider", "google", false, "Primary map provider (google, openstreet, mapbox)"),
+            createSystemSetting("maps", "map_provider", "openstreet", false, "Primary map provider (openstreet, mapbox)"),
             createSystemSetting("maps", "map_display_marker_clusters", "true", false, "Enable marker clustering for multiple vehicles/locations"),
             createSystemSetting("maps", "map_default_zoom_level", "10", false, "Default zoom level for map views"),
             createSystemSetting("maps", "map_route_color", "#4285F4", false, "Default color for route visualization on maps"),
