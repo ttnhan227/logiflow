@@ -1,0 +1,143 @@
+/* Admin Dashboard Styles */
+
+/* Stat Card */
+.stat-card {
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: var(--card-bg);
+  text-align: center;
+  box-shadow: var(--soft-shadow);
+  border: 1px solid rgba(11,116,209,0.04);
+}
+
+.stat-card.highlight {
+  background: linear-gradient(90deg, rgba(14,165,164,0.06), rgba(11,116,209,0.03));
+}
+
+.stat-title {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.stat-card.highlight .stat-value {
+  color: #1890ff;
+}
+
+/* Section */
+.dashboard-section {
+  margin-bottom: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.section-title {
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(15,23,42,0.04);
+  color: var(--text-color);
+}
+
+.section-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Activity Item */
+.activity-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.activity-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.status {
+  font-weight: 500;
+}
+
+.status.success {
+  color: #52c41a;
+}
+
+.status.error {
+  color: #f5222d;
+}
+
+/* Dashboard Layout */
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: transparent;
+}
+
+.dashboard-header {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.two-column-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Loading and Error States */
+.loading-state {
+  padding: 2rem;
+  text-align: center;
+}
+
+.error-state {
+  padding: 2rem;
+  color: #f5222d;
+  text-align: center;
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 4px;
+  margin: 1rem;
+}
+
+/* Empty State */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+}
