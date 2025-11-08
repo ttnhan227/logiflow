@@ -29,6 +29,11 @@ const LoginPage = () => {
   return (
     <div className="login-container">
       <div className="login-card">
+        <img
+          src="/logiflow-smarter_logistics-seamless_flow.png"
+          alt="Logiflow Logo"
+          className="login-logo"
+        />
         <h1 className="login-title">Welcome Back</h1>
         
         {error && (
