@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/auth/auth_service.dart';
 import '../models/user.dart';
 import 'auth/login_screen.dart';
+import 'driver/driver_trips_screen.dart';
+import 'driver/driver_schedule_screen.dart';
+import 'driver/driver_compliance_screen.dart';
 
 class MainLayout extends StatefulWidget {
   final Widget child;
@@ -143,10 +146,42 @@ class _MainLayoutState extends State<MainLayout> {
             leading: const Icon(Icons.home),
             title: const Text('Home'),
             onTap: () {
-              Navigator.pop(context); // Close drawer
-              // Navigate to home if not already there
+              Navigator.pop(context);
+              // Optionally, navigate to home if not already there
             },
           ),
+          if (_currentUser != null && _currentUser!.role.toUpperCase() == 'DRIVER') ...[
+            ListTile(
+              leading: const Icon(Icons.local_shipping),
+              title: const Text('My Trips'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverTripsScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('My Schedule'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverScheduleScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.verified_user),
+              title: const Text('Compliance'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverComplianceScreen()),
+                );
+              },
+            ),
+          ],
           if (_currentUser != null && _currentUser!.role.toUpperCase() == 'ADMIN') ...[
             ListTile(
               leading: const Icon(Icons.admin_panel_settings),
