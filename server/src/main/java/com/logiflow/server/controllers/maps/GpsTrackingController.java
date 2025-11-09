@@ -1,3 +1,17 @@
+/**
+ * WebSocket controller for real-time GPS tracking.
+ *
+ * Usage:
+ *   - Client connects to ws://localhost:8080/ws/tracking?token=JWT (STOMP)
+ *   - Sends LocationMessage to /app/tracking
+ *   - Receives broadcast updates from /topic/locations
+ *
+ * LocationMessage fields: driverId (ignored, set by backend), tripId, latitude, longitude
+ *
+ * In-memory storage provides latest and historical locations per driver/trip.
+ *
+ * See also: /api/maps/gps/latest and /api/maps/gps/history for REST access.
+ */
 package com.logiflow.server.controllers.maps;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;

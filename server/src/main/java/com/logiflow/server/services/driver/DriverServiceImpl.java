@@ -7,8 +7,8 @@ import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import com.logiflow.server.services.maps.MapsService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,24 +19,28 @@ import java.util.Optional;
 
 @Service
 @Transactional
-public class DriverMeService {
+public class DriverServiceImpl implements DriverService {
 
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
     private final TripRepository tripRepository;
     private final DriverWorkLogRepository driverWorkLogRepository;
+    private final MapsService mapsService;
 
-    public DriverMeService(UserRepository userRepository,
-                           DriverRepository driverRepository,
-                           TripRepository tripRepository,
-                           DriverWorkLogRepository driverWorkLogRepository) {
+    public DriverServiceImpl(UserRepository userRepository,
+                         DriverRepository driverRepository,
+                         TripRepository tripRepository,
+                         DriverWorkLogRepository driverWorkLogRepository,
+                         MapsService mapsService) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.tripRepository = tripRepository;
         this.driverWorkLogRepository = driverWorkLogRepository;
+        this.mapsService = mapsService;
     }
 
     /** Lấy driver từ Authentication.getName() — có thể là số (userId) hoặc username */
+    @Override
     public Driver getCurrentDriver(String authName) {
         Optional<User> userOpt;
         try {
@@ -50,17 +54,47 @@ public class DriverMeService {
                 .orElseThrow(() -> new RuntimeException("Driver not found for current user"));
     }
 
+    @Override
     public List<TripSummaryDto> getMyTrips(Integer driverId, String status) {
         List<Trip> trips = tripRepository.findTripsByDriverAndStatus(driverId, status);
         return trips.stream().map(this::toSummary).toList();
     }
 
+    @Override
     public TripDetailDto getMyTripDetail(Integer driverId, Integer tripId) {
         Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
-        return toDetail(trip);
+        TripDetailDto dto = toDetail(trip);
+
+        // Add route info using MapsService if possible
+        if (trip.getRoute() != null) {
+            try {
+                // Use coordinates if available, else skip
+                var route = trip.getRoute();
+                if (route.getOriginLat() != null && route.getOriginLng() != null &&
+                    route.getDestinationLat() != null && route.getDestinationLng() != null) {
+                    var directions = mapsService.getDirections(
+                        route.getOriginLat().toString(),
+                        route.getOriginLng().toString(),
+                        route.getDestinationLat().toString(),
+                        route.getDestinationLng().toString(),
+                        false // don't include geometry by default
+                    );
+                    if (directions != null) {
+                        // Optionally, you can extend TripDetailDto to include these fields
+                        // For now, add as transient fields or log for debugging
+                        // Example: log.info("Trip {}: {} km, {} min", tripId, directions.getTotalDistance(), directions.getTotalDuration());
+                        // If you want to expose this, add fields to TripDetailDto and set here
+                    }
+                }
+            } catch (Exception e) {
+                // Log or handle error, but don't fail the request
+            }
+        }
+        return dto;
     }
 
+    @Override
     public void updateMyLocation(Integer driverId, BigDecimal lat, BigDecimal lng) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
@@ -69,6 +103,7 @@ public class DriverMeService {
         // JPA sẽ flush khi transaction commit
     }
 
+    @Override
     public List<ScheduleItemDto> getMySchedule(Integer driverId, LocalDate start, LocalDate end) {
         LocalDateTime from = start.atStartOfDay();
         LocalDateTime to = end.plusDays(1).atStartOfDay(); // inclusive end-day
@@ -82,6 +117,7 @@ public class DriverMeService {
         )).sorted(Comparator.comparing(ScheduleItemDto::getScheduledDeparture)).toList();
     }
 
+    @Override
     public ComplianceDto getMyCompliance(Integer driverId) {
         // đơn giản: tổng cộng giờ đã làm + yêu cầu nghỉ tối thiểu 8h nếu lái > 8h
         BigDecimal hours = driverWorkLogRepository.sumHoursWorkedByDriverId(driverId);
