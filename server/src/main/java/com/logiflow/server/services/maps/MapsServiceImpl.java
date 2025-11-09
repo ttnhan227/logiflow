@@ -3,6 +3,8 @@ package com.logiflow.server.services.maps;
 import com.logiflow.server.dtos.maps.GeocodeResultDto;
 import com.logiflow.server.dtos.maps.DirectionsResultDto;
 import com.logiflow.server.dtos.maps.DistanceResultDto;
+import com.logiflow.server.dtos.maps.OptimizeRequestDto;
+import com.logiflow.server.dtos.maps.OptimizedRouteDto;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -12,6 +14,7 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of MapsService using OpenStreetMap services.
@@ -26,6 +29,7 @@ public class MapsServiceImpl implements MapsService {
     private long lastRequestTime = 0;
     private static final long MIN_REQUEST_INTERVAL_MS = 1000; // 1 second
     private static final String OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving";
+    private static final String OSRM_TRIP_URL = "http://router.project-osrm.org/trip/v1/driving";
 
     public MapsServiceImpl() {
         this.restTemplate = new RestTemplate();
@@ -74,28 +78,56 @@ public class MapsServiceImpl implements MapsService {
         enforceRateLimit();
 
         try {
-            String encodedAddress = java.net.URLEncoder.encode(address, "UTF-8");
-            String url = String.format(
-                "https://nominatim.openstreetmap.org/search?format=json&q=%s&limit=1",
-                encodedAddress
-            );
+            // Try several variants to improve match rates:
+            // 1. full address
+            // 2. remove country (last token)
+            // 3. use first two tokens
+            // 4. use first token only
+            String[] parts = address.split(",");
+            List<String> attempts = new ArrayList<>();
+            attempts.add(address);
+            if (parts.length > 1) {
+                // remove last token (often country)
+                String withoutCountry = String.join(",", java.util.Arrays.copyOf(parts, parts.length - 1)).trim();
+                attempts.add(withoutCountry);
+            }
+            if (parts.length > 2) {
+                attempts.add(String.join(",", java.util.Arrays.copyOf(parts, 2)).trim());
+            }
+            if (parts.length > 0) {
+                attempts.add(parts[0].trim());
+            }
 
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> results = restTemplate.getForObject(url, List.class);
+            for (String q : attempts) {
+                if (q == null || q.isEmpty()) continue;
+                enforceRateLimit();
+                String encodedAddress = java.net.URLEncoder.encode(q, "UTF-8");
+                // include addressdetails and accept-language to increase chances
+                String url = String.format(
+                    "https://nominatim.openstreetmap.org/search?format=json&q=%s&limit=1&addressdetails=1&accept-language=en",
+                    encodedAddress
+                );
 
-            if (results != null && !results.isEmpty()) {
-                Map<String, Object> firstResult = (Map<String, Object>) results.get(0);
-                
-                // Extract coordinates
-                String latStr = firstResult.get("lat").toString();
-                String lonStr = firstResult.get("lon").toString();
-                Double latitude = Double.parseDouble(latStr);
-                Double longitude = Double.parseDouble(lonStr);
-                
-                // Extract formatted address (display_name)
-                String formattedAddress = firstResult.get("display_name").toString();
+                try {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> results = restTemplate.getForObject(url, List.class);
 
-                return new GeocodeResultDto(formattedAddress, latitude, longitude);
+                    if (results != null && !results.isEmpty()) {
+                        Map<String, Object> firstResult = (Map<String, Object>) results.get(0);
+                        // Extract coordinates
+                        String latStr = firstResult.get("lat").toString();
+                        String lonStr = firstResult.get("lon").toString();
+                        Double latitude = Double.parseDouble(latStr);
+                        Double longitude = Double.parseDouble(lonStr);
+                        // Extract formatted address (display_name)
+                        String formattedAddress = firstResult.get("display_name").toString();
+
+                        return new GeocodeResultDto(formattedAddress, latitude, longitude);
+                    }
+                } catch (Exception inner) {
+                    // Log the failed URL and continue to next attempt
+                    System.err.println("Geocoding attempt failed for url: " + url + " -> " + inner.getMessage());
+                }
             }
         } catch (Exception e) {
             System.err.println("Geocoding error: " + e.getMessage());
@@ -258,6 +290,99 @@ public class MapsServiceImpl implements MapsService {
             directions.getTotalDuration(),
             directions.getDurationSeconds()
         );
+    }
+
+    /**
+     * Optimizes a route for multiple waypoints using OSRM Trip service.
+     * The Trip service solves the Traveling Salesperson Problem (TSP) to find the optimal route
+     * that visits all points exactly once and returns to the starting point.
+     *
+     * @param request DTO containing the list of points to visit
+     * @return OptimizedRouteDto containing the optimized route information
+     */
+    @Override
+    public OptimizedRouteDto optimizeRoute(OptimizeRequestDto request) {
+        if (request == null || request.getLocations() == null || request.getLocations().isEmpty()) {
+            throw new IllegalArgumentException("Request must contain at least one location");
+        }
+
+        List<String> coordinatesList = request.getLocations().stream()
+            .map(loc -> normalizeToCoordinate(loc, request.isUseAddresses()))
+            .collect(Collectors.toList());
+
+        String coordinates = String.join(";", coordinatesList);
+        boolean includeGeometry = request.isIncludeGeometry();
+        String overview = includeGeometry ? "full" : "simplified";
+        String url = String.format("%s/%s?overview=%s&geometries=geojson&roundtrip=true", OSRM_TRIP_URL, coordinates, overview);
+
+        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+        if (response != null && "Ok".equals(response.get("code"))) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> trips = (List<Map<String, Object>>) response.get("trips");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> waypoints = (List<Map<String, Object>>) response.get("waypoints");
+            if (trips != null && !trips.isEmpty()) {
+                Map<String, Object> trip = trips.get(0);
+                Integer distanceMeters = ((Number) trip.get("distance")).intValue();
+                String totalDistance = formatDistance(distanceMeters);
+                Integer durationSeconds = ((Number) trip.get("duration")).intValue();
+                String totalDuration = formatDuration(durationSeconds);
+                List<List<Double>> routeCoordinates = null;
+                if (includeGeometry) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> geometry = (Map<String, Object>) trip.get("geometry");
+                    if (geometry != null) {
+                        @SuppressWarnings("unchecked")
+                        List<List<Double>> coords = (List<List<Double>>) geometry.get("coordinates");
+                        routeCoordinates = coords;
+                    }
+                }
+                return new OptimizedRouteDto(
+                    totalDistance,
+                    distanceMeters,
+                    totalDuration,
+                    durationSeconds,
+                    waypoints,
+                    routeCoordinates
+                );
+            }
+        }
+        throw new IllegalArgumentException("Failed to optimize route. Please check your input points.");
+    }
+
+    /**
+     * Normalize a location string to OSRM coordinate format (lon,lat).
+     * If useAddresses is true, geocode the address. If the string looks like coordinates, parse directly.
+     */
+    private String normalizeToCoordinate(String loc, boolean useAddresses) {
+        if (loc == null || loc.trim().isEmpty()) {
+            throw new IllegalArgumentException("Location cannot be null or empty");
+        }
+        String trimmed = loc.trim();
+        // Try to parse as coordinates first
+        String[] parts = trimmed.split(",");
+        if (parts.length == 2) {
+            try {
+                double a = Double.parseDouble(parts[0].trim());
+                double b = Double.parseDouble(parts[1].trim());
+                // Heuristic: latitude in [-90,90], longitude in [-180,180]
+                if (Math.abs(a) <= 90 && Math.abs(b) <= 180) {
+                    // a is lat, b is lon
+                    return String.format("%s,%s", b, a);
+                } else if (Math.abs(b) <= 90 && Math.abs(a) <= 180) {
+                    // a is lon, b is lat
+                    return String.format("%s,%s", a, b);
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+        if (useAddresses) {
+            GeocodeResultDto result = geocodeAddress(trimmed);
+            if (result == null || result.getLongitude() == null || result.getLatitude() == null) {
+                throw new IllegalArgumentException("Failed to geocode address: " + trimmed);
+            }
+            return String.format("%s,%s", result.getLongitude(), result.getLatitude());
+        }
+        throw new IllegalArgumentException("Invalid location format: " + loc);
     }
 }
 
