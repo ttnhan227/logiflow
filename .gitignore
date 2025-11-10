@@ -46,3 +46,4 @@ Thumbs.db
 *.class
 *.jar
 requirements.md
+server/.zed/settings.json

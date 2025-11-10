@@ -40,6 +40,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         (authorize) -> authorize
                                 .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/dispatch/**").hasRole("DISPATCHER")
                                 .requestMatchers("/api/driver/**").hasRole("DRIVER")

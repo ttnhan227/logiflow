@@ -41,6 +41,19 @@ dependencies:
   # Shared preferences for local storage
   shared_preferences: ^2.2.3
 
+  # For GPS location
+  geolocator: ^10.1.0
+
+  # For map visualization
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # For signature capture
+  signature: ^5.5.0
+
+  # For image picker (camera/gallery)
+  image_picker: ^1.0.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
