@@ -1,11 +1,15 @@
 package com.logiflow.server.services.driver;
 
+import com.logiflow.server.dtos.delivery.DeliveryConfirmationDto;
 import com.logiflow.server.dtos.driver.DriverDtos.*;
 import com.logiflow.server.models.*;
+import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
+import com.logiflow.server.websocket.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import com.logiflow.server.services.maps.MapsService;
@@ -26,17 +30,97 @@ public class DriverServiceImpl implements DriverService {
     private final TripRepository tripRepository;
     private final DriverWorkLogRepository driverWorkLogRepository;
     private final MapsService mapsService;
+    private final TripAssignmentRepository tripAssignmentRepository;
+    private final NotificationService notificationService;
+    private final DeliveryConfirmationRepository deliveryConfirmationRepository;
 
     public DriverServiceImpl(UserRepository userRepository,
                          DriverRepository driverRepository,
                          TripRepository tripRepository,
                          DriverWorkLogRepository driverWorkLogRepository,
-                         MapsService mapsService) {
+                         MapsService mapsService,
+                         TripAssignmentRepository tripAssignmentRepository,
+                         NotificationService notificationService,
+                         DeliveryConfirmationRepository deliveryConfirmationRepository) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.tripRepository = tripRepository;
         this.driverWorkLogRepository = driverWorkLogRepository;
         this.mapsService = mapsService;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+        this.notificationService = notificationService;
+        this.deliveryConfirmationRepository = deliveryConfirmationRepository;
+    }
+    @Override
+    public void acceptTripAssignment(Integer driverId, Integer tripId) {
+        int updated = tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "accepted");
+        if (updated == 0) {
+            throw new RuntimeException("Trip assignment not found or not assigned to you");
+        }
+        // Send notification to driver
+        notificationService.sendDriverNotification(driverId, "TRIP_ACCEPTED", "You have accepted trip #" + tripId);
+    }
+
+    @Override
+    public void declineTripAssignment(Integer driverId, Integer tripId) {
+        int updated = tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "declined");
+        if (updated == 0) {
+            throw new RuntimeException("Trip assignment not found or not assigned to you");
+        }
+        // Send notification to driver
+        notificationService.sendDriverNotification(driverId, "TRIP_DECLINED", "You have declined trip #" + tripId);
+    }
+
+    @Override
+    public void cancelTripAssignment(Integer driverId, Integer tripId) {
+        // Reset assignment back to "assigned" so it can be picked up by another driver
+        int updated = tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "assigned");
+        if (updated == 0) {
+            throw new RuntimeException("Trip assignment not found or not assigned to you");
+        }
+        // Send notification to driver
+        notificationService.sendDriverNotification(driverId, "TRIP_CANCELLED", "Trip #" + tripId + " has been cancelled");
+    }
+
+    @Override
+    public void updateTripStatus(Integer driverId, Integer tripId, String status) {
+        Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
+        
+        // Validate status transitions
+        String currentStatus = trip.getStatus();
+        boolean validTransition = false;
+        
+        switch (status) {
+            case "in_progress":
+                validTransition = currentStatus.equals("scheduled");
+                if (validTransition) {
+                    trip.setActualDeparture(LocalDateTime.now());
+                }
+                break;
+            case "arrived":
+                validTransition = currentStatus.equals("in_progress");
+                break;
+            case "completed":
+                validTransition = currentStatus.equals("arrived") || currentStatus.equals("in_progress");
+                if (validTransition) {
+                    trip.setActualArrival(LocalDateTime.now());
+                }
+                break;
+            default:
+                throw new RuntimeException("Invalid status: " + status);
+        }
+        
+        if (!validTransition) {
+            throw new RuntimeException("Invalid status transition from " + currentStatus + " to " + status);
+        }
+        
+        trip.setStatus(status);
+        tripRepository.save(trip);
+        
+        // Send notification to driver about status change
+        String notificationMessage = "Trip #" + tripId + " status updated to " + status;
+        notificationService.sendTripNotification(driverId, tripId, "TRIP_STATUS_UPDATE", notificationMessage, status);
     }
 
     /** Lấy driver từ Authentication.getName() — có thể là số (userId) hoặc username */
@@ -138,9 +222,14 @@ public class DriverServiceImpl implements DriverService {
     private TripSummaryDto toSummary(Trip t) {
         String plate = (t.getVehicle() != null) ? t.getVehicle().getLicensePlate() : null;
         String routeName = (t.getRoute() != null) ? t.getRoute().getRouteName() : null;
+        String assignmentStatus = null;
+        if (t.getTripAssignments() != null && !t.getTripAssignments().isEmpty()) {
+            assignmentStatus = t.getTripAssignments().get(0).getStatus();
+        }
         return new TripSummaryDto(
                 t.getTripId(),
                 t.getStatus(),
+                assignmentStatus,
                 t.getTripType(),
                 t.getScheduledDeparture(),
                 t.getScheduledArrival(),
@@ -153,6 +242,11 @@ public class DriverServiceImpl implements DriverService {
         TripDetailDto dto = new TripDetailDto();
         dto.setTripId(t.getTripId());
         dto.setStatus(t.getStatus());
+        String assignmentStatus = null;
+        if (t.getTripAssignments() != null && !t.getTripAssignments().isEmpty()) {
+            assignmentStatus = t.getTripAssignments().get(0).getStatus();
+        }
+        dto.setAssignmentStatus(assignmentStatus);
         dto.setTripType(t.getTripType());
         dto.setScheduledDeparture(t.getScheduledDeparture());
         dto.setScheduledArrival(t.getScheduledArrival());
@@ -163,6 +257,10 @@ public class DriverServiceImpl implements DriverService {
             dto.setRouteName(t.getRoute().getRouteName());
             dto.setOriginAddress(t.getRoute().getOriginAddress());
             dto.setDestinationAddress(t.getRoute().getDestinationAddress());
+            dto.setOriginLat(t.getRoute().getOriginLat());
+            dto.setOriginLng(t.getRoute().getOriginLng());
+            dto.setDestinationLat(t.getRoute().getDestinationLat());
+            dto.setDestinationLng(t.getRoute().getDestinationLng());
         }
         if (t.getVehicle() != null) {
             dto.setVehicleType(t.getVehicle().getVehicleType());
@@ -170,17 +268,60 @@ public class DriverServiceImpl implements DriverService {
             dto.setVehicleCapacity(t.getVehicle().getCapacity());
         }
         if (t.getOrders() != null) {
-            dto.setOrders(t.getOrders().stream().map(o ->
-                    new OrderBrief(
-                            o.getOrderId(),
-                            o.getCustomerName(),
-                            o.getPickupAddress(),
-                            o.getDeliveryAddress(),
-                            o.getOrderStatus() != null ? o.getOrderStatus().name() : null,
-                            o.getPriorityLevel() != null ? o.getPriorityLevel().name() : null
-                    )
-            ).toList());
+            dto.setOrders(t.getOrders().stream().map(o -> {
+                OrderBrief brief = new OrderBrief();
+                brief.setOrderId(o.getOrderId());
+                brief.setCustomerName(o.getCustomerName());
+                brief.setCustomerPhone(o.getCustomerPhone());
+                brief.setPickupAddress(o.getPickupAddress());
+                brief.setDeliveryAddress(o.getDeliveryAddress());
+                brief.setPackageDetails(o.getPackageDetails());
+                brief.setStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);
+                brief.setOrderStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);
+                brief.setPriority(o.getPriorityLevel() != null ? o.getPriorityLevel().name() : null);
+                brief.setPriorityLevel(o.getPriorityLevel() != null ? o.getPriorityLevel().name() : null);
+                return brief;
+            }).toList());
         }
         return dto;
+    }
+
+    @Override
+    public void confirmDelivery(Integer driverId, Integer tripId, DeliveryConfirmationDto confirmationDto) {
+        // Verify the trip belongs to this driver
+        Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
+
+        // Verify the trip is in a state that can be confirmed (arrived or in_progress)
+        if (!trip.getStatus().equals("arrived") && !trip.getStatus().equals("in_progress")) {
+            throw new RuntimeException("Trip must be in 'arrived' or 'in_progress' state to confirm delivery");
+        }
+
+        // Create delivery confirmation record
+        DeliveryConfirmation confirmation = new DeliveryConfirmation();
+        confirmation.setTrip(trip);
+        confirmation.setConfirmationType(confirmationDto.getConfirmationType());
+        confirmation.setSignatureData(confirmationDto.getSignatureData());
+        confirmation.setPhotoData(confirmationDto.getPhotoData());
+        confirmation.setOtpCode(confirmationDto.getOtpCode());
+        confirmation.setRecipientName(confirmationDto.getRecipientName());
+        confirmation.setNotes(confirmationDto.getNotes());
+        confirmation.setConfirmedBy(driverId);
+
+        deliveryConfirmationRepository.save(confirmation);
+
+        // Update trip status to completed
+        trip.setStatus("completed");
+        trip.setActualArrival(LocalDateTime.now());
+        tripRepository.save(trip);
+
+        // Send notification
+        notificationService.sendTripNotification(
+                driverId,
+                tripId,
+                "DELIVERY_CONFIRMED",
+                "Delivery for trip #" + tripId + " has been confirmed",
+                "completed"
+        );
     }
 }

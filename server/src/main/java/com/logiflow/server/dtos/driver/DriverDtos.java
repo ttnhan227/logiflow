@@ -14,6 +14,7 @@ public class DriverDtos {
     public static class TripSummaryDto {
         private Integer tripId;
         private String status;
+        private String assignmentStatus;  // status of the TripAssignment (assigned, accepted, declined, etc.)
         private String tripType;
         private LocalDateTime scheduledDeparture;
         private LocalDateTime scheduledArrival;
@@ -25,6 +26,7 @@ public class DriverDtos {
     public static class TripDetailDto {
         private Integer tripId;
         private String status;
+        private String assignmentStatus;  // status of the TripAssignment (assigned, accepted, declined, etc.)
         private String tripType;
         private LocalDateTime scheduledDeparture;
         private LocalDateTime scheduledArrival;
@@ -34,6 +36,10 @@ public class DriverDtos {
         private String routeName;
         private String originAddress;
         private String destinationAddress;
+        private BigDecimal originLat;
+        private BigDecimal originLng;
+        private BigDecimal destinationLat;
+        private BigDecimal destinationLng;
 
         private String vehicleType;
         private String vehiclePlate;
@@ -46,10 +52,14 @@ public class DriverDtos {
     public static class OrderBrief {
         private Integer orderId;
         private String customerName;
+        private String customerPhone;
         private String pickupAddress;
         private String deliveryAddress;
+        private String packageDetails;
         private String status;
+        private String orderStatus;
         private String priority;
+        private String priorityLevel;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor

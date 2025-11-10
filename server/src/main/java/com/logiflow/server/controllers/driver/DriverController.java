@@ -88,4 +88,65 @@ public class DriverController {
         var result = driverService.getMyCompliance(driver.getDriverId());
         return ResponseEntity.ok(result);
     }
+
+    // 6) POST /api/driver/me/trips/{tripId}/accept
+    @PostMapping("/trips/{tripId}/accept")
+    public ResponseEntity<Void> acceptTripAssignment(
+            @PathVariable Integer tripId,
+            Authentication authentication
+    ) {
+        var driver = driverService.getCurrentDriver(authentication.getName());
+        driverService.acceptTripAssignment(driver.getDriverId(), tripId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 7) POST /api/driver/me/trips/{tripId}/decline
+    @PostMapping("/trips/{tripId}/decline")
+    public ResponseEntity<Void> declineTripAssignment(
+            @PathVariable Integer tripId,
+            Authentication authentication
+    ) {
+        var driver = driverService.getCurrentDriver(authentication.getName());
+        driverService.declineTripAssignment(driver.getDriverId(), tripId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 7b) POST /api/driver/me/trips/{tripId}/cancel
+    @PostMapping("/trips/{tripId}/cancel")
+    public ResponseEntity<Void> cancelTripAssignment(
+            @PathVariable Integer tripId,
+            Authentication authentication
+    ) {
+        var driver = driverService.getCurrentDriver(authentication.getName());
+        driverService.cancelTripAssignment(driver.getDriverId(), tripId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 8) POST /api/driver/me/trips/{tripId}/status
+    @PostMapping("/trips/{tripId}/status")
+    public ResponseEntity<Void> updateTripStatus(
+            @PathVariable Integer tripId,
+            @RequestBody java.util.Map<String, String> body,
+            Authentication authentication
+    ) {
+        String status = body.get("status");
+        if (status == null || status.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        var driver = driverService.getCurrentDriver(authentication.getName());
+        driverService.updateTripStatus(driver.getDriverId(), tripId, status);
+        return ResponseEntity.ok().build();
+    }
+
+    // 9) POST /api/driver/me/trips/{tripId}/confirm-delivery
+    @PostMapping("/trips/{tripId}/confirm-delivery")
+    public ResponseEntity<Void> confirmDelivery(
+            @PathVariable Integer tripId,
+            @RequestBody com.logiflow.server.dtos.delivery.DeliveryConfirmationDto confirmationDto,
+            Authentication authentication
+    ) {
+        var driver = driverService.getCurrentDriver(authentication.getName());
+        driverService.confirmDelivery(driver.getDriverId(), tripId, confirmationDto);
+        return ResponseEntity.ok().build();
+    }
 }
