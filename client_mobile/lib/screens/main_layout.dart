@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/auth/auth_service.dart';
+import '../services/notification/notification_service.dart';
 import '../models/user.dart';
 import 'auth/login_screen.dart';
 import 'driver/driver_trips_screen.dart';
 import 'driver/driver_schedule_screen.dart';
 import 'driver/driver_compliance_screen.dart';
+import 'home/home_screen.dart';
 
 class MainLayout extends StatefulWidget {
   final Widget child;
@@ -23,6 +25,7 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   User? _currentUser;
   bool _isLoading = true;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -37,7 +40,65 @@ class _MainLayoutState extends State<MainLayout> {
         _currentUser = user;
         _isLoading = false;
       });
+      
+      // Connect to notification service if user is a driver
+      if (user != null && user.role.toUpperCase() == 'DRIVER') {
+        await _connectNotifications(user.username);
+      }
     }
+  }
+
+  Future<void> _connectNotifications(String driverId) async {
+    _notificationService.onNotificationReceived = (notification) {
+      // Show notification as SnackBar
+      if (mounted) {
+        final type = notification['type'] ?? 'INFO';
+        final message = notification['message'] ?? 'New notification';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: _getNotificationColor(type),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () {
+                // Navigate to trips screen
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverTripsScreen()),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    };
+    
+    await _notificationService.connect(driverId);
+  }
+
+  Color _getNotificationColor(String type) {
+    switch (type) {
+      case 'TRIP_ASSIGNED':
+        return Colors.blue;
+      case 'TRIP_CANCELLED':
+      case 'TRIP_CANCELLED_BY_DISPATCHER':
+        return Colors.red;
+      case 'TRIP_REROUTED':
+      case 'TRIP_UPDATED':
+        return Colors.orange;
+      case 'TRIP_STATUS_UPDATE':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  void dispose() {
+    _notificationService.disconnect();
+    super.dispose();
   }
 
   Future<void> _logout() async {
@@ -147,7 +208,9 @@ class _MainLayoutState extends State<MainLayout> {
             title: const Text('Home'),
             onTap: () {
               Navigator.pop(context);
-              // Optionally, navigate to home if not already there
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
             },
           ),
           if (_currentUser != null && _currentUser!.role.toUpperCase() == 'DRIVER') ...[

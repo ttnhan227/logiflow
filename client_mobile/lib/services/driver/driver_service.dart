@@ -38,6 +38,37 @@ class DriverService {
       throw Exception('Failed to load compliance: ${response.body}');
     }
   }
+
+  Future<void> acceptTrip(int tripId) async {
+    final response = await apiClient.post('/driver/me/trips/$tripId/accept');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to accept trip: \\${response.body}');
+    }
+  }
+
+  Future<void> declineTrip(int tripId) async {
+    final response = await apiClient.post('/driver/me/trips/$tripId/decline');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to decline trip: ${response.body}');
+    }
+  }
+
+  Future<void> cancelTrip(int tripId) async {
+    final response = await apiClient.post('/driver/me/trips/$tripId/cancel');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to cancel trip: ${response.body}');
+    }
+  }
+
+  Future<void> updateTripStatus(int tripId, String status) async {
+    final response = await apiClient.post(
+      '/driver/me/trips/$tripId/status',
+      body: {'status': status},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update trip status: ${response.body}');
+    }
+  }
 }
 
 final driverService = DriverService();
