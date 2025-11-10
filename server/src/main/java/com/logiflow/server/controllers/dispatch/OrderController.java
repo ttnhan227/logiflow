@@ -130,11 +130,9 @@ public class OrderController {
             OrderDto updatedOrder = orderService.updateOrder(orderId, request);
             return ResponseEntity.ok(updatedOrder);
         } catch (RuntimeException e) {
-            // Handle "Order not found" or "Cannot update order" errors
             if (e.getMessage() != null && e.getMessage().contains("not found")) {
                 return ResponseEntity.notFound().build();
             }
-            // Handle "Order can only be updated when status is PENDING" error
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
