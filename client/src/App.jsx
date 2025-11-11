@@ -4,10 +4,12 @@ import { authService } from './services';
 import './App.css';
 import './components/layout.css';
 import MainLayout from './components/MainLayout';
+import AdminLayout from './components/admin/AdminLayout';
 import LoginPage from "./components/auth/LoginPage";
 import HomePage from "./components/home/HomePage";
 import AboutPage from "./components/home/AboutPage";
 import AdminDashboardPage from "./components/admin/AdminDashboardPage";
+import UserManagementPage from "./components/admin/AdminUserManagementPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 
@@ -51,31 +53,30 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes with MainLayout */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        </Route>
+
+        {/* Admin routes with AdminLayout (sidebar) */}
+        <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminDashboardPage />
             </ProtectedRoute>
           } />
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          <Route path="/admin/users" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <UserManagementPage />
+            </ProtectedRoute>
+          } />
         </Route>
         <Route path="/login" element={
           authService.getCurrentUser() ? 
           <AuthRedirect /> : 
           <LoginPage />
-        } />
-        
-        {/* Home route - No protection */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/home" element={<HomePage />} />
-
-        {/* Admin dashboard */}
-        <Route path="/admin/dashboard" element={
-          <ProtectedRoute requiredRole="ADMIN">
-            <AdminDashboardPage />
-          </ProtectedRoute>
         } />
 
         {/* 404 - Not Found */}

@@ -68,7 +68,7 @@ const MainLayout = () => {
             <Link to="/" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
             <Link to="/about" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
             {user && user.role === 'ADMIN' && (
-              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin</Link>
+              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
             )}
             {user ? (
               <>
