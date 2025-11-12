@@ -31,6 +31,9 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Override
     @Transactional
     public UserDto createUser(UserCreationDto userCreationDto) {
@@ -54,6 +57,13 @@ public class UserManagementServiceImpl implements UserManagementService {
         user.setIsActive(true);
 
         User savedUser = userRepository.save(user);
+
+        auditLogService.log(
+            "CREATE_USER",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Created user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ")"
+        );
         return convertToDto(savedUser);
     }
 
@@ -87,6 +97,13 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
 
         User savedUser = userRepository.save(user);
+
+        auditLogService.log(
+            "UPDATE_USER",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Updated user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ")"
+        );
         return convertToDto(savedUser);
     }
 
@@ -98,6 +115,13 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         user.setIsActive(!user.getIsActive());
         User savedUser = userRepository.save(user);
+
+        auditLogService.log(
+            "TOGGLE_USER_STATUS",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Toggled status for user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ") to " + savedUser.getIsActive()
+        );
         return convertToDto(savedUser);
     }
 
@@ -110,6 +134,13 @@ public class UserManagementServiceImpl implements UserManagementService {
         // Soft delete - deactivate instead of hard delete
         user.setIsActive(false);
         userRepository.save(user);
+
+        auditLogService.log(
+            "DELETE_USER",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Deactivated user: " + user.getUsername() + " (ID: " + user.getUserId() + ")"
+        );
     }
 
     @Override
