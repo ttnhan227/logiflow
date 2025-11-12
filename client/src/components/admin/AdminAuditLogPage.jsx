@@ -8,13 +8,32 @@ const AdminAuditLogPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [roles, setRoles] = useState([]);
+  const [actions, setActions] = useState([]);
 
-  const fetchLogs = async () => {
+  // Fetch available roles and actions on mount
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [rolesData, actionsData] = await Promise.all([
+          auditLogService.getAvailableRoles(),
+          auditLogService.getAvailableActions(),
+        ]);
+        setRoles(rolesData || []);
+        setActions(actionsData || []);
+      } catch (err) {
+        console.error('Failed to load filter options:', err);
+      }
+    };
+    fetchOptions();
+  }, []);
+
+  const fetchLogs = async (searchFilters) => {
     setLoading(true);
     setError('');
     try {
       const params = {};
-      Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
+      Object.entries(searchFilters).forEach(([k, v]) => { if (v) params[k] = v; });
       const data = await auditLogService.searchLogs(params);
       setLogs(data);
     } catch {
@@ -24,20 +43,23 @@ const AdminAuditLogPage = () => {
     }
   };
 
-  useEffect(() => { fetchLogs(); }, []);
+  // Fetch logs on component mount (no filters)
+  useEffect(() => { 
+    fetchLogs(filters); 
+  }, []);
 
   const handleInputChange = e => {
     const { name, value } = e.target;
-    setFilters(f => ({ ...f, [name]: value }));
-  };
-
-  const handleSearch = e => {
-    e.preventDefault();
-    fetchLogs();
+    const updatedFilters = { ...filters, [name]: value };
+    setFilters(updatedFilters);
+    // Dynamically fetch logs as user types or changes filters
+    fetchLogs(updatedFilters);
   };
 
   const handleClearFilters = () => {
-    setFilters({ username: '', role: '', action: '', from: '', to: '' });
+    const clearedFilters = { username: '', role: '', action: '', from: '', to: '' };
+    setFilters(clearedFilters);
+    fetchLogs(clearedFilters);
   };
 
   return (
@@ -61,7 +83,6 @@ const AdminAuditLogPage = () => {
         </button>
         <form
           className={`admin-filters-content ${filtersCollapsed ? 'collapsed' : ''}`}
-          onSubmit={handleSearch}
         >
           <div className="filters-grid">
             <input
@@ -70,18 +91,26 @@ const AdminAuditLogPage = () => {
               onChange={handleInputChange}
               placeholder="🧑 Username"
             />
-            <input
+            <select
               name="role"
               value={filters.role}
               onChange={handleInputChange}
-              placeholder="👔 Role"
-            />
-            <input
+            >
+              <option value="">👔 All Roles</option>
+              {roles.map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+            <select
               name="action"
               value={filters.action}
               onChange={handleInputChange}
-              placeholder="⚡ Action"
-            />
+            >
+              <option value="">⚡ All Actions</option>
+              {actions.map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
             <input
               name="from"
               type="datetime-local"
@@ -98,15 +127,12 @@ const AdminAuditLogPage = () => {
             />
           </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-            <button type="submit" className="btn btn-small">
-              🔍 Search
-            </button>
             <button
               type="button"
               className="btn btn-secondary btn-small"
               onClick={handleClearFilters}
             >
-              ✕ Clear
+              ✕ Clear All Filters
             </button>
           </div>
         </form>

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,6 +43,18 @@ public class AuditLogServiceImpl implements AuditLogService {
         return stream
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAvailableRoles() {
+        return Arrays.asList("ADMIN", "DISPATCHER", "DRIVER", "MANAGER", "USER");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAvailableActions() {
+        return Arrays.asList("CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS", "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING");
     }
 
     private AuditLogDto toDto(AuditLog log) {

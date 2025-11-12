@@ -7,4 +7,6 @@ import java.util.List;
 public interface AuditLogService {
     void log(String action, String username, String role, String details);
     List<AuditLogDto> searchLogs(String username, String role, String action, LocalDateTime from, LocalDateTime to);
+    List<String> getAvailableRoles();
+    List<String> getAvailableActions();
 }

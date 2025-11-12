@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { userService } from '../../services';
+import { userService, uploadService, authService } from '../../services';
 import './admin.css';
 
 const AdminUserEditPage = () => {
@@ -19,6 +19,10 @@ const AdminUserEditPage = () => {
     role: '',
     active: true,
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const roles = ['ADMIN', 'MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
 
@@ -46,6 +50,19 @@ const AdminUserEditPage = () => {
           role: data.role,
           active: data.active,
         });
+        // set preview if profilePictureUrl is present
+        if (data.profilePictureUrl) {
+          // Normalize: if the backend already returned a full URL use it as-is,
+          // otherwise prefix with the backend base URL.
+          const buildFullUrl = (p) => {
+            if (!p) return '';
+            if (p.startsWith('http://') || p.startsWith('https://')) return p;
+            const base = authService.getBaseUrl();
+            // ensure single slash
+            return `${base}${p.startsWith('/') ? '' : '/'}${p}`;
+          };
+          setPreviewUrl(buildFullUrl(data.profilePictureUrl));
+        }
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Failed to load user details');
       } finally {
@@ -64,6 +81,60 @@ const AdminUserEditPage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    // local preview
+    const localUrl = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setPreviewUrl(localUrl);
+
+    // start upload
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+      const data = await uploadService.uploadProfilePicture(file, (progressEvent) => {
+        if (progressEvent.lengthComputable) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
+      });
+
+      // server returns { path: '/uploads/...' }
+      if (data && data.path) {
+        setForm((prev) => ({ ...prev, profilePictureUrl: data.path }));
+        // full preview using backend base URL (normalize)
+        const buildFullUrl = (p) => {
+          if (!p) return '';
+          if (p.startsWith('http://') || p.startsWith('https://')) return p;
+          const base = authService.getBaseUrl();
+          return `${base}${p.startsWith('/') ? '' : '/'}${p}`;
+        };
+        setPreviewUrl(buildFullUrl(data.path));
+      }
+    } catch (err) {
+      setError(typeof err === 'string' ? err : 'Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // keep preview in sync when user edits the profilePictureUrl text input
+  const handleProfileUrlChange = (value) => {
+    setForm((prev) => ({ ...prev, profilePictureUrl: value }));
+    if (!value) {
+      setPreviewUrl('');
+      return;
+    }
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      setPreviewUrl(value);
+    } else {
+      const base = authService.getBaseUrl();
+      setPreviewUrl(`${base}${value.startsWith('/') ? '' : '/'}${value}`);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -188,14 +259,29 @@ const AdminUserEditPage = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Profile Picture URL</label>
-                  <input
-                    type="text"
-                    name="profilePictureUrl"
-                    value={form.profilePictureUrl}
-                    onChange={handleInputChange}
-                    placeholder="Enter profile picture URL"
-                  />
+                  <label>Profile Picture</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: 64, height: 64 }}>
+                      {previewUrl ? (
+                        <img src={previewUrl} alt="preview" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 6 }} />
+                      ) : (
+                        <div style={{ width: 64, height: 64, background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}>
+                          No Image
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <input type="file" accept="image/*" onChange={handleFileChange} />
+                      <input
+                        type="text"
+                        name="profilePictureUrl"
+                        value={form.profilePictureUrl}
+                        onChange={(e) => handleProfileUrlChange(e.target.value)}
+                        placeholder="Or enter profile picture URL"
+                      />
+                      {uploading && <div style={{ fontSize: 12 }}>Uploading... {uploadProgress}%</div>}
+                    </div>
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Role</label>

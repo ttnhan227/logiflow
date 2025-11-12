@@ -34,6 +34,9 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private com.logiflow.server.services.file.FileStorageService fileStorageService;
+
     @Override
     @Transactional
     public UserDto createUser(UserCreationDto userCreationDto) {
@@ -95,6 +98,12 @@ public class UserManagementServiceImpl implements UserManagementService {
         if (userUpdateDto.getPhone() != null) {
             user.setPhone(userUpdateDto.getPhone());
         }
+        String oldProfilePicture = user.getProfilePictureUrl();
+        int oldRefs = 0;
+        if (oldProfilePicture != null) {
+            oldRefs = userRepository.countByProfilePictureUrl(oldProfilePicture);
+        }
+
         if (userUpdateDto.getProfilePictureUrl() != null) {
             user.setProfilePictureUrl(userUpdateDto.getProfilePictureUrl());
         }
@@ -110,6 +119,19 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
 
         User savedUser = userRepository.save(user);
+
+        // If profile picture changed and old was only referenced by this user, delete file
+        try {
+            if (oldProfilePicture != null && !oldProfilePicture.equals(savedUser.getProfilePictureUrl()) && oldRefs <= 1) {
+                try {
+                    fileStorageService.deleteProfilePicture(oldProfilePicture);
+                } catch (Exception ex) {
+                    // ignore deletion errors
+                }
+            }
+        } catch (Exception ex) {
+            // swallow
+        }
 
         auditLogService.log(
             "UPDATE_USER",

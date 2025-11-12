@@ -31,4 +31,20 @@ public interface SystemSettingRepository extends JpaRepository<SystemSetting, In
            "LOWER(s.key) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(s.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<SystemSetting> searchSettings(@Param("searchTerm") String searchTerm);
+
+    // Advanced search with multiple filters
+    @Query("SELECT s FROM SystemSetting s WHERE " +
+           "(:category IS NULL OR s.category = :category) AND " +
+           "(:key IS NULL OR LOWER(CAST(s.key AS string)) LIKE LOWER(CONCAT('%', CAST(:key AS string), '%'))) AND " +
+           "(:description IS NULL OR LOWER(CAST(s.description AS string)) LIKE LOWER(CONCAT('%', CAST(:description AS string), '%'))) AND " +
+           "(:isEncrypted IS NULL OR s.isEncrypted = :isEncrypted) " +
+           "ORDER BY s.category, s.key")
+    List<SystemSetting> advancedSearch(@Param("category") String category,
+                                        @Param("key") String key,
+                                        @Param("description") String description,
+                                        @Param("isEncrypted") Boolean isEncrypted);
+
+    // Get all unique categories
+    @Query("SELECT DISTINCT s.category FROM SystemSetting s ORDER BY s.category")
+    List<String> findAllCategories();
 }
