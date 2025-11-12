@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { userService } from '../../services';
+import Modal from './Modal';
+import './admin.css';
+import './modal.css';
 
 // Role color mapping
 const ROLE_COLORS = {
@@ -55,49 +58,48 @@ const StatusToggle = ({ active, onChange }) => {
 // Three-dot menu
 const ActionsMenu = ({ user, onEdit, onDelete, onViewDetails }) => {
   const [open, setOpen] = useState(false);
+  
   return (
-    <div>
+    <div className="actions-menu">
       <button
+        className="actions-menu-btn"
         onClick={() => setOpen(!open)}
+        title="More actions"
       >
         ⋮
       </button>
       {open && (
         <>
           <div
+            className="actions-overlay"
             onClick={() => setOpen(false)}
           />
-          <div>
+          <div className="actions-popover">
             <button
               onClick={() => {
                 onViewDetails(user);
                 setOpen(false);
               }}
-              onMouseEnter={(e) => (e.target.style.background = '#f3f4f6')}
-              onMouseLeave={(e) => (e.target.style.background = 'none')}
             >
-              View Details
+              👁️ View Details
             </button>
             <button
               onClick={() => {
                 onEdit(user);
                 setOpen(false);
               }}
-              onMouseEnter={(e) => (e.target.style.background = '#f3f4f6')}
-              onMouseLeave={(e) => (e.target.style.background = 'none')}
             >
-              Send Email
+              ✉️ Send Email
             </button>
-            <div />
+            <div style={{ margin: '4px 0', borderTop: '1px solid rgba(0,0,0,0.06)' }} />
             <button
+              className="danger"
               onClick={() => {
                 onDelete(user);
                 setOpen(false);
               }}
-              onMouseEnter={(e) => (e.target.style.background = '#fef2f2')}
-              onMouseLeave={(e) => (e.target.style.background = 'none')}
             >
-              Delete User
+              🗑️ Delete
             </button>
           </div>
         </>
@@ -151,110 +153,127 @@ const UserModal = ({ user, onClose, onSave, roles }) => {
   };
 
   return (
-    <>
-      <div
-        onClick={onClose}
-      >
-        <div
-          onClick={(e) => e.stopPropagation()}
-        >
-          <h2>
-            {form.id ? 'Edit User' : 'Add New User'}
-          </h2>
-          {error && (
-            <div>
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSubmit}>
-            <div>
-              <label>
-                Name *
-              </label>
-              <input
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label>
-                Email *
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label>
-                Phone
-              </label>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              />
-            </div>
-            <div>
-              <label>
-                Role *
-              </label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              >
-                {roles.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {!form.id && (
-              <div>
-                <label>
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  required={!form.id}
-                />
-                <small>Minimum 6 characters</small>
-              </div>
-            )}
-            {form.role && rolePermissions[form.role] && (
-              <div>
-                <div>Role Permissions:</div>
-                <ul>
-                  {rolePermissions[form.role].map((perm, idx) => (
-                    <li key={idx}>{perm}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <div>
-              <button
-                type="button"
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-              >
-                {submitting ? 'Saving...' : form.id ? 'Save Changes' : 'Add User'}
-              </button>
-            </div>
-          </form>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={form.id ? '✏️ Edit User' : '➕ Add New User'}
+      size="medium"
+      isLoading={submitting}
+    >
+      {error && <div className="modal-error">{error}</div>}
+      
+      <form onSubmit={handleSubmit} className="modal-form">
+        <div className="form-row full">
+          <div className="form-group">
+            <label>
+              Name <span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              placeholder="Enter user's full name"
+              required
+            />
+          </div>
         </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>
+              Email <span className="required">*</span>
+            </label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="user@example.com"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Phone</label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="(123) 456-7890"
+            />
+          </div>
+        </div>
+
+        <div className="form-row full">
+          <div className="form-group">
+            <label>
+              Role <span className="required">*</span>
+            </label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+            >
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {!form.id && (
+          <div className="form-row full">
+            <div className="form-group">
+              <label>
+                Password <span className="required">*</span>
+              </label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="Minimum 6 characters"
+                required={!form.id}
+              />
+              <div className="form-help">Minimum 6 characters</div>
+            </div>
+          </div>
+        )}
+
+        {form.role && rolePermissions[form.role] && (
+          <div className="form-row full" style={{ marginTop: '8px' }}>
+            <div style={{ padding: '12px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
+              <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '13px' }}>
+                Role Permissions:
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px' }}>
+                {rolePermissions[form.role].map((perm, idx) => (
+                  <li key={idx}>{perm}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </form>
+
+      <div className="modal-footer">
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onClose}
+          disabled={submitting}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="btn"
+          onClick={handleSubmit}
+          disabled={submitting}
+        >
+          {submitting ? '⏳ Saving...' : form.id ? '💾 Save Changes' : '➕ Add User'}
+        </button>
       </div>
-    </>
+    </Modal>
   );
 };
 
@@ -276,7 +295,7 @@ const UserManagementPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await userService.getUsers(0, 1000); // Load all
+      const data = await userService.getUsers(0, 1000);
       setUsers(data.content || []);
       setFilteredUsers(data.content || []);
     } catch (err) {
@@ -338,22 +357,21 @@ const UserManagementPage = () => {
   const totalPages = Math.ceil(filteredUsers.length / size);
 
   return (
-    <div className="user-management-container">
+    <div className="admin-page-container">
       {/* Header */}
-      <div>
-        <h1>
-          User Management
-        </h1>
-        <p>
-          Manage your team members and their permissions
-        </p>
+      <div className="admin-page-header">
+        <h1>👥 User Management</h1>
+        <p>Manage your team members and their permissions</p>
       </div>
 
-      {/* Search, Filter, Add */}
-      <div>
+      {/* Error banner */}
+      {error && <div className="error-banner">{error}</div>}
+
+      {/* Toolbar */}
+      <div className="admin-page-toolbar">
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder="🔍 Search by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -369,30 +387,26 @@ const UserManagementPage = () => {
           ))}
         </select>
         <button
+          className="btn"
           onClick={() => {
             setEditingUser(null);
             setShowModal(true);
           }}
         >
-          + Add User
+          ➕ Add User
         </button>
       </div>
 
-      {/* Error banner */}
-      {error && (
-        <div>
-          {error}
-        </div>
-      )}
-
-      {/* Table */}
+      {/* Table or Empty State */}
       {loading ? (
-        <div>Loading users...</div>
+        <div className="loading-state">
+          <span className="loading-spinner"></span> Loading users...
+        </div>
       ) : filteredUsers.length === 0 ? (
-        <div>
-          <div>👥</div>
-          <div>No users found</div>
-          <div>
+        <div className="empty-state">
+          <div className="empty-state-icon">👥</div>
+          <div className="empty-state-title">No users found</div>
+          <div className="empty-state-description">
             {searchTerm || roleFilter !== 'ALL'
               ? 'Try adjusting your search or filters'
               : 'Get started by adding your first user'}
@@ -400,42 +414,30 @@ const UserManagementPage = () => {
         </div>
       ) : (
         <>
-          <div>
-            <table>
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
               <thead>
                 <tr>
-                  <th>
-                    User
-                  </th>
-                  <th>
-                    Email
-                  </th>
-                  <th>
-                    Role
-                  </th>
-                  <th>
-                    Status
-                  </th>
-                  <th>
-                    Actions
-                  </th>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedUsers.map((user) => (
                   <tr key={user.id}>
                     <td>
-                      <div>
+                      <div className="user-row">
                         <Avatar name={user.username} />
-                        <div>
-                          <div>{user.username}</div>
-                          <div>ID: {user.id}</div>
+                        <div className="user-info">
+                          <div className="user-name">{user.username}</div>
+                          <div className="user-id">ID: {user.id}</div>
                         </div>
                       </div>
                     </td>
-                    <td>
-                      {user.email}
-                    </td>
+                    <td>{user.email}</td>
                     <td>
                       <RoleBadge role={user.role} />
                     </td>
@@ -446,8 +448,10 @@ const UserManagementPage = () => {
                       />
                     </td>
                     <td>
-                      <div>
+                      <div className="actions-cell">
                         <button
+                          className="action-btn"
+                          title="Edit user"
                           onClick={() => {
                             setEditingUser(user);
                             setShowModal(true);
@@ -456,19 +460,12 @@ const UserManagementPage = () => {
                           ✏️
                         </button>
                         <button
+                          className="action-btn danger"
+                          title="Delete user"
                           onClick={() => handleDelete(user)}
                         >
                           🗑️
                         </button>
-                        <ActionsMenu
-                          user={user}
-                          onEdit={(u) => {
-                            setEditingUser(u);
-                            setShowModal(true);
-                          }}
-                          onDelete={handleDelete}
-                          onViewDetails={(u) => alert(`View details for ${u.username}`)}
-                        />
                       </div>
                     </td>
                   </tr>
@@ -479,23 +476,25 @@ const UserManagementPage = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div>
-              <div>
+            <div className="pagination">
+              <div className="pagination-info">
                 Showing {page * size + 1} to {Math.min((page + 1) * size, filteredUsers.length)} of{' '}
                 {filteredUsers.length} users
               </div>
-              <div>
+              <div className="pagination-controls">
                 <button
+                  className="btn btn-secondary btn-small"
                   onClick={() => setPage(page - 1)}
                   disabled={page === 0}
                 >
-                  Previous
+                  ← Previous
                 </button>
                 <button
+                  className="btn btn-secondary btn-small"
                   onClick={() => setPage(page + 1)}
                   disabled={page + 1 >= totalPages}
                 >
-                  Next
+                  Next →
                 </button>
               </div>
             </div>
