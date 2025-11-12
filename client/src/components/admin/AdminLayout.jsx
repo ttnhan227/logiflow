@@ -77,9 +77,18 @@ const AdminLayout = () => {
           {!sidebarCollapsed ? (
             <>
               <div className="profile-row">
-                <div className="avatar">
-                  {user?.username?.charAt(0).toUpperCase() || 'A'}
-                </div>
+                {user?.profilePictureUrl ? (
+                  <img 
+                    src={user.profilePictureUrl} 
+                    alt={user?.username}
+                    className="avatar-image"
+                    title={user?.username}
+                  />
+                ) : (
+                  <div className="avatar">
+                    {user?.username?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                )}
                 <div className="profile-info">
                   <div className="profile-name">{user?.username || 'Admin'}</div>
                   <div className="profile-role">{user?.role || 'ADMIN'}</div>

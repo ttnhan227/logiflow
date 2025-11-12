@@ -73,7 +73,16 @@ const MainLayout = () => {
             {user ? (
               <>
                 <div className="nav-user">
-                  <div className="avatar">{getInitials(user)}</div>
+                  {user.profilePictureUrl ? (
+                    <img 
+                      src={user.profilePictureUrl} 
+                      alt={user.username}
+                      className="avatar-image-small"
+                      title={user.username}
+                    />
+                  ) : (
+                    <div className="avatar">{getInitials(user)}</div>
+                  )}
                   <span className="greeting">Hi, {user.username || user.email || 'User'}</span>
                 </div>
                 <button onClick={handleLogout} className="nav-link logout-button">

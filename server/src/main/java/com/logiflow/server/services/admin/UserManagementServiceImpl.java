@@ -53,6 +53,9 @@ public class UserManagementServiceImpl implements UserManagementService {
         user.setUsername(userCreationDto.getUsername());
         user.setEmail(userCreationDto.getEmail());
         user.setPasswordHash(passwordEncoder.encode(userCreationDto.getPassword()));
+        user.setFullName(userCreationDto.getFullName());
+        user.setPhone(userCreationDto.getPhone());
+        user.setProfilePictureUrl(userCreationDto.getProfilePictureUrl());
         user.setRole(role);
         user.setIsActive(true);
 
@@ -85,6 +88,16 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         user.setUsername(userUpdateDto.getUsername());
         user.setEmail(userUpdateDto.getEmail());
+        
+        if (userUpdateDto.getFullName() != null) {
+            user.setFullName(userUpdateDto.getFullName());
+        }
+        if (userUpdateDto.getPhone() != null) {
+            user.setPhone(userUpdateDto.getPhone());
+        }
+        if (userUpdateDto.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(userUpdateDto.getProfilePictureUrl());
+        }
 
         if (userUpdateDto.getRoleId() != null) {
             Role role = roleRepository.findById(userUpdateDto.getRoleId())
@@ -123,24 +136,6 @@ public class UserManagementServiceImpl implements UserManagementService {
             "Toggled status for user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ") to " + savedUser.getIsActive()
         );
         return convertToDto(savedUser);
-    }
-
-    @Override
-    @Transactional
-    public void deleteUser(Integer userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Soft delete - deactivate instead of hard delete
-        user.setIsActive(false);
-        userRepository.save(user);
-
-        auditLogService.log(
-            "DELETE_USER",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
-            "Deactivated user: " + user.getUsername() + " (ID: " + user.getUserId() + ")"
-        );
     }
 
     @Override
@@ -203,6 +198,9 @@ public class UserManagementServiceImpl implements UserManagementService {
             user.getUserId(),
             user.getUsername(),
             user.getEmail(),
+            user.getFullName(),
+            user.getPhone(),
+            user.getProfilePictureUrl(),
             user.getRole() != null ? user.getRole().getRoleName() : null,
             user.getIsActive(),
             user.getCreatedAt(),

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { userService } from '../../services';
 import Modal from './Modal';
 import './admin.css';
@@ -15,39 +16,88 @@ const ROLE_COLORS = {
 
 const ROLE_IDS = { ADMIN: 1, MANAGER: 2, DISPATCHER: 3, DRIVER: 4, CUSTOMER: 5 };
 
-// Avatar component with initials
-const Avatar = ({ name }) => {
+// Format date utility
+const formatDate = (dateString) => {
+  if (!dateString) return 'Never';
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  // Check if today
+  if (date.toDateString() === today.toDateString()) {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+  // Check if yesterday
+  if (date.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday';
+  }
+  // Otherwise show date
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
+};
+
+// Role icon mapping
+const ROLE_ICONS = {
+  ADMIN: '👨‍💼',
+  MANAGER: '📊',
+  DISPATCHER: '📦',
+  DRIVER: '🚗',
+  CUSTOMER: '👤',
+};
+
+// Avatar component with profile picture or initials
+const Avatar = ({ name, profilePictureUrl }) => {
   const initials = name
     ?.split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2) || '?';
+  
+  if (profilePictureUrl) {
+    return (
+      <img 
+        src={profilePictureUrl} 
+        alt={name}
+        className="avatar-image"
+        title={name}
+      />
+    );
+  }
+  
   return (
-    <div>
+    <div className="avatar">
       {initials}
     </div>
   );
 };
 
-// Role badge with color
+// Role badge with color and icon
 const RoleBadge = ({ role }) => {
   const cls = `role-badge ${role ? role.toLowerCase() : ''}`;
+  const icon = ROLE_ICONS[role] || '❓';
   return (
     <span className={cls}>
+      <span style={{ marginRight: '4px' }}>{icon}</span>
       {role || 'N/A'}
     </span>
   );
 };
 
 // Status toggle (styled switch)
-const StatusToggle = ({ active, onChange }) => {
+const StatusToggle = ({ active, onChange, disabled, title }) => {
   return (
-    <label className="status-toggle" aria-checked={!!active} role="switch">
+    <label 
+      className={`status-toggle ${disabled ? 'disabled' : ''}`} 
+      aria-checked={!!active} 
+      role="switch"
+      title={title}
+    >
       <input
         type="checkbox"
         checked={!!active}
         onChange={onChange}
+        disabled={disabled}
         aria-label={active ? 'Deactivate user' : 'Activate user'}
       />
       <span className="slider" />
@@ -279,6 +329,7 @@ const UserModal = ({ user, onClose, onSave, roles }) => {
 
 // Main component
 const UserManagementPage = () => {
+  const navigate = useNavigate();
   const roles = ['ADMIN', 'MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -331,16 +382,6 @@ const UserManagementPage = () => {
       await loadUsers();
     } catch (err) {
       setError(typeof err === 'string' ? err : 'Failed to toggle status');
-    }
-  };
-
-  const handleDelete = async (user) => {
-    if (!window.confirm(`Are you sure you want to delete ${user.username}?`)) return;
-    try {
-      await userService.deleteUser(user.id);
-      await loadUsers();
-    } catch (err) {
-      setError(typeof err === 'string' ? err : 'Failed to delete user');
     }
   };
 
@@ -421,6 +462,8 @@ const UserManagementPage = () => {
                   <th>User</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Created</th>
+                  <th>Last Login</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -430,7 +473,7 @@ const UserManagementPage = () => {
                   <tr key={user.id}>
                     <td>
                       <div className="user-row">
-                        <Avatar name={user.username} />
+                        <Avatar name={user.username} profilePictureUrl={user.profilePictureUrl} />
                         <div className="user-info">
                           <div className="user-name">{user.username}</div>
                           <div className="user-id">ID: {user.id}</div>
@@ -442,29 +485,34 @@ const UserManagementPage = () => {
                       <RoleBadge role={user.role} />
                     </td>
                     <td>
+                      <span className="table-date">{formatDate(user.createdAt)}</span>
+                    </td>
+                    <td>
+                      <span className="table-date">{formatDate(user.lastLogin)}</span>
+                    </td>
+                    <td>
                       <StatusToggle
                         active={user.active}
                         onChange={() => handleToggleStatus(user)}
+                        disabled={user.role === 'ADMIN'}
+                        title={user.role === 'ADMIN' ? 'Cannot deactivate admin users' : 'Toggle user status'}
                       />
                     </td>
                     <td>
                       <div className="actions-cell">
                         <button
                           className="action-btn"
-                          title="Edit user"
-                          onClick={() => {
-                            setEditingUser(user);
-                            setShowModal(true);
-                          }}
+                          title="View details"
+                          onClick={() => navigate(`/admin/users/${user.id}`)}
                         >
-                          ✏️
+                          👁️
                         </button>
                         <button
-                          className="action-btn danger"
-                          title="Delete user"
-                          onClick={() => handleDelete(user)}
+                          className="action-btn"
+                          title="Edit user"
+                          onClick={() => navigate(`/admin/users/${user.id}/edit`)}
                         >
-                          🗑️
+                          ✏️
                         </button>
                       </div>
                     </td>

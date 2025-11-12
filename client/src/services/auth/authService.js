@@ -1,18 +1,28 @@
 import api from '../api';
 
+// Get base URL (removes /api suffix)
+const getBaseUrl = () => {
+  const baseURL = api.defaults.baseURL; // http://localhost:8080/api
+  return baseURL.replace(/\/api\/?$/, ''); // http://localhost:8080
+};
+
 const authService = {
   login: async (username, password) => {
     const response = await api.post('/auth/login', { username, password });
-    const { token, user, role } = response.data;
+    const { token, username: returnedUsername, role, profilePictureUrl } = response.data;
     
     localStorage.setItem('token', token);
-    // Store the username correctly - if user is the username string, use it directly
-    // If user is an object with a username property, use user.username
-    const usernameToStore = typeof user === 'string' ? user : user?.username || username;
-    localStorage.setItem('user', JSON.stringify({ 
-      username: usernameToStore, 
-      role 
-    }));
+    
+    // Build full user object with profilePictureUrl
+    const userObj = {
+      username: returnedUsername || username, 
+      role,
+      profilePictureUrl: profilePictureUrl 
+        ? `${getBaseUrl()}${profilePictureUrl}`
+        : null,
+    };
+    
+    localStorage.setItem('user', JSON.stringify(userObj));
     
     return response.data;
   },

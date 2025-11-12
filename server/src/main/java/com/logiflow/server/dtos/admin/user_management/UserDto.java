@@ -18,6 +18,9 @@ public class UserDto {
     private Integer userId;
     private String username;
     private String email;
+    private String fullName;
+    private String phone;
+    private String profilePictureUrl;
     private String roleName;
     private Boolean isActive;
     private LocalDateTime createdAt;
@@ -25,13 +28,16 @@ public class UserDto {
 
     // Factory method for better readability
     public static UserDto fromUser(
-            Integer userId, String username, String email,
-            String roleName, Boolean isActive, LocalDateTime createdAt, LocalDateTime lastLogin) {
+            Integer userId, String username, String email, String fullName, String phone,
+            String profilePictureUrl, String roleName, Boolean isActive, LocalDateTime createdAt, LocalDateTime lastLogin) {
 
         return UserDto.builder()
                 .userId(userId)
                 .username(username)
                 .email(email)
+                .fullName(fullName)
+                .phone(phone)
+                .profilePictureUrl(profilePictureUrl)
                 .roleName(roleName)
                 .isActive(isActive)
                 .createdAt(createdAt)
