@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/audit-logs")
@@ -28,5 +29,17 @@ public class AdminAuditLogController {
     ) {
         List<AuditLogDto> logs = auditLogService.searchLogs(username, role, action, from, to);
         return ResponseEntity.ok(logs);
+    }
+
+    @GetMapping("/filters/roles")
+    public ResponseEntity<List<String>> getAvailableRoles() {
+        List<String> roles = auditLogService.getAvailableRoles();
+        return ResponseEntity.ok(roles);
+    }
+
+    @GetMapping("/filters/actions")
+    public ResponseEntity<List<String>> getAvailableActions() {
+        List<String> actions = auditLogService.getAvailableActions();
+        return ResponseEntity.ok(actions);
     }
 }

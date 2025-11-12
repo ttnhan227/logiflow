@@ -145,6 +145,28 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<SystemSettingDto> advancedSearch(String category, String key, String description, Boolean isEncrypted, Pageable pageable) {
+        List<SystemSetting> settings = systemSettingRepository.advancedSearch(category, key, description, isEncrypted);
+        List<SystemSettingDto> dtos = settings.stream()
+            .map(this::convertToDto)
+            .collect(Collectors.toList());
+
+        // Simple pagination for search results
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), dtos.size());
+        List<SystemSettingDto> pageContent = dtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, dtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAvailableCategories() {
+        return systemSettingRepository.findAllCategories();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean settingExists(String category, String key) {
         return systemSettingRepository.existsByCategoryAndKey(category, key);
     }

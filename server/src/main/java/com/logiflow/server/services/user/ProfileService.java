@@ -7,4 +7,6 @@ public interface ProfileService {
     ProfileDto getProfile(String username);
 
     ProfileDto getProfileByUserId(Integer userId);
+
+    ProfileDto updateProfile(String username, com.logiflow.server.dtos.user.ProfileUpdateDto profileUpdateDto);
 }

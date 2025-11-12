@@ -21,18 +21,43 @@ const AdminSettingsPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  
+  // Filter states
+  const [filters, setFilters] = useState({ category: '', key: '', description: '', isEncrypted: '' });
+  const [categories, setCategories] = useState([]);
 
-  const fetchSettings = async (pageNum = 0, searchTerm = '') => {
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await settingsService.getAvailableCategories();
+        setCategories(data || []);
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const fetchSettings = async (pageNum = 0, filterObj = filters) => {
     setLoading(true);
     try {
+      const hasFilters = filterObj.category || filterObj.key || filterObj.description || filterObj.isEncrypted;
+      
       let data;
-      if (searchTerm) {
-        data = await settingsService.searchSettings(searchTerm, pageNum, PAGE_SIZE);
+      if (hasFilters) {
+        data = await settingsService.advancedSearch(
+          filterObj.category || null,
+          filterObj.key || null,
+          filterObj.description || null,
+          filterObj.isEncrypted ? filterObj.isEncrypted === 'true' : null,
+          pageNum,
+          PAGE_SIZE
+        );
       } else {
         data = await settingsService.getSettings(pageNum, PAGE_SIZE);
       }
@@ -46,13 +71,29 @@ const AdminSettingsPage = () => {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
-    fetchSettings();
+    fetchSettings(0, filters);
   }, []);
 
   const handleInputChange = e => {
     const { name, value, type, checked } = e.target;
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleFilterChange = e => {
+    const { name, value } = e.target;
+    const updatedFilters = { ...filters, [name]: value };
+    setFilters(updatedFilters);
+    setPage(0);
+    fetchSettings(0, updatedFilters);
+  };
+
+  const handleClearFilters = () => {
+    const clearedFilters = { category: '', key: '', description: '', isEncrypted: '' };
+    setFilters(clearedFilters);
+    setPage(0);
+    fetchSettings(0, clearedFilters);
   };
 
   const handleEdit = setting => {
@@ -72,7 +113,7 @@ const AdminSettingsPage = () => {
     if (!window.confirm('Delete this setting?')) return;
     try {
       await settingsService.deleteSetting(id);
-      fetchSettings(page, search);
+      fetchSettings(page, filters);
     } catch {
       setError('Delete failed');
     }
@@ -91,7 +132,7 @@ const AdminSettingsPage = () => {
       setForm(emptyForm);
       setEditingId(null);
       setShowModal(false);
-      fetchSettings(page, search);
+      fetchSettings(page, filters);
     } catch {
       setError('Save failed. Check required fields.');
     } finally {
@@ -104,11 +145,6 @@ const AdminSettingsPage = () => {
     setEditingId(null);
     setError('');
     setShowModal(false);
-  };
-
-  const handleSearch = e => {
-    e.preventDefault();
-    fetchSettings(0, search);
   };
 
   return (
@@ -144,16 +180,49 @@ const AdminSettingsPage = () => {
         </button>
         <form
           className={`admin-filters-content ${filtersCollapsed ? 'collapsed' : ''}`}
-          onSubmit={handleSearch}
         >
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 Search settings..."
-          />
-          <button type="submit" className="btn btn-small">
-            Search
-          </button>
+          <div className="filters-grid">
+            <select
+              name="category"
+              value={filters.category}
+              onChange={handleFilterChange}
+            >
+              <option value="">📁 All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <input
+              name="key"
+              value={filters.key}
+              onChange={handleFilterChange}
+              placeholder="🔑 Search by key"
+            />
+            <input
+              name="description"
+              value={filters.description}
+              onChange={handleFilterChange}
+              placeholder="� Search description"
+            />
+            <select
+              name="isEncrypted"
+              value={filters.isEncrypted}
+              onChange={handleFilterChange}
+            >
+              <option value="">🔓 All Settings</option>
+              <option value="true">🔒 Encrypted Only</option>
+              <option value="false">🔓 Not Encrypted</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-small"
+              onClick={handleClearFilters}
+            >
+              ✕ Clear All Filters
+            </button>
+          </div>
         </form>
       </div>
 
@@ -167,7 +236,7 @@ const AdminSettingsPage = () => {
           <div className="empty-state-icon">⚙️</div>
           <div className="empty-state-title">No settings found</div>
           <div className="empty-state-description">
-            {search ? 'Try adjusting your search' : 'Get started by adding your first setting'}
+            {Object.values(filters).some(v => v) ? 'Try adjusting your filters' : 'Get started by adding your first setting'}
           </div>
         </div>
       ) : (
@@ -242,14 +311,14 @@ const AdminSettingsPage = () => {
                 <button
                   className="btn btn-secondary btn-small"
                   disabled={page === 0}
-                  onClick={() => fetchSettings(page - 1, search)}
+                  onClick={() => fetchSettings(page - 1, filters)}
                 >
                   ← Previous
                 </button>
                 <button
                   className="btn btn-secondary btn-small"
                   disabled={(page + 1) * PAGE_SIZE >= totalElements}
-                  onClick={() => fetchSettings(page + 1, search)}
+                  onClick={() => fetchSettings(page + 1, filters)}
                 >
                   Next →
                 </button>
