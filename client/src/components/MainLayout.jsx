@@ -23,6 +23,19 @@ const MainLayout = () => {
     setUser(currentUser);
   }, []);
 
+  // Listen for global user updates (dispatched by ProfilePage after save)
+  useEffect(() => {
+    const onUserUpdated = (e) => {
+      try {
+        setUser(e?.detail || authService.getCurrentUser());
+      } catch (ex) {
+        setUser(authService.getCurrentUser());
+      }
+    };
+    window.addEventListener('userUpdated', onUserUpdated);
+    return () => window.removeEventListener('userUpdated', onUserUpdated);
+  }, []);
+
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -72,6 +85,7 @@ const MainLayout = () => {
             )}
             {user ? (
               <>
+                <Link to="/profile" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
                 <div className="nav-user">
                   {user.profilePictureUrl ? (
                     <img 

@@ -116,6 +116,9 @@ public class ProfileServiceImpl implements ProfileService {
             profileDto.setRoleDescription(user.getRole().getDescription());
         }
 
+        // Include profile picture path if present
+        profileDto.setProfilePictureUrl(user.getProfilePictureUrl());
+
         // Check if user is a driver and get driver details
         Optional<Driver> driverOpt = driverRepository.findByUserId(user.getUserId());
         if (driverOpt.isPresent()) {

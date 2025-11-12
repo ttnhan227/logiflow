@@ -16,6 +16,8 @@ import AdminSettingsPage from "./components/admin/AdminSettingsPage";
 import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
+import ProfilePage from "./components/profile/ProfilePage";
+import ProfileEditPage from "./components/profile/ProfileEditPage";
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -61,6 +63,8 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Route>
 
