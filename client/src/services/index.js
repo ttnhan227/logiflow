@@ -2,7 +2,8 @@ import api from './api';
 import authService from './auth/authService';
 import userService from './admin/userService';
 import dashboardService from './admin/dashboardService';
-import uploadService from './uploadService';
+import uploadService from './upload/uploadService';
+import profileService from './profile/profileService';
 
 export {
   api,
@@ -10,6 +11,7 @@ export {
   userService,
   dashboardService,
   uploadService,
+  profileService,
 };
 
 // Example usage:
