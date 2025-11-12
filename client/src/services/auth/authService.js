@@ -45,6 +45,8 @@ const authService = {
     const token = localStorage.getItem('token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   },
+
+  getBaseUrl,
 };
 
 export default authService;

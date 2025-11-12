@@ -116,7 +116,10 @@ const AdminUserEditPage = () => {
         setPreviewUrl(buildFullUrl(data.path));
       }
     } catch (err) {
-      setError(typeof err === 'string' ? err : 'Failed to upload image');
+      const errorMsg = typeof err === 'string' 
+        ? err 
+        : (err?.message || err?.msg || 'Failed to upload image');
+      setError(errorMsg);
     } finally {
       setUploading(false);
     }
@@ -163,6 +166,28 @@ const AdminUserEditPage = () => {
         role: form.role,
         active: form.active,
       });
+
+      // If updating current user, dispatch event to update navbar
+      const currentUser = authService.getCurrentUser();
+      if (currentUser && currentUser.username === form.username) {
+        const baseUrl = authService.getBaseUrl();
+        const updatedProfilePictureUrl = form.profilePictureUrl 
+          ? (form.profilePictureUrl.startsWith('http') 
+              ? form.profilePictureUrl 
+              : `${baseUrl}${form.profilePictureUrl.startsWith('/') ? '' : '/'}${form.profilePictureUrl}`)
+          : null;
+
+        const updatedUser = {
+          ...currentUser,
+          username: form.username,
+          profilePictureUrl: updatedProfilePictureUrl,
+          role: form.role,
+        };
+        
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        window.dispatchEvent(new CustomEvent('userUpdated', { detail: updatedUser }));
+      }
+
       navigate('/admin/users');
     } catch (err) {
       setError(typeof err === 'string' ? err : 'Failed to update user');

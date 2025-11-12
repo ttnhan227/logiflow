@@ -5,13 +5,21 @@ const uploadService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await api.post('/uploads/profile-picture', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress,
-    });
+    try {
+      const response = await api.post('/uploads/profile-picture', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress,
+      });
 
-    // response.data should be { path: '/uploads/profile-pictures/..' }
-    return response.data;
+      // response.data should be { path: '/uploads/profile-pictures/..' }
+      if (!response.data || !response.data.path) {
+        throw new Error('Server did not return file path');
+      }
+
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };
 

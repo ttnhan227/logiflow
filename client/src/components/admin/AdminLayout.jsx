@@ -6,7 +6,7 @@ import './admin.css';
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = authService.getCurrentUser();
+  const [user, setUser] = useState(authService.getCurrentUser());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -16,6 +16,19 @@ const AdminLayout = () => {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Listen for user updates (e.g., from profile edit or admin user management)
+  React.useEffect(() => {
+    const handleUserUpdated = (e) => {
+      try {
+        setUser(e?.detail || authService.getCurrentUser());
+      } catch (ex) {
+        setUser(authService.getCurrentUser());
+      }
+    };
+    window.addEventListener('userUpdated', handleUserUpdated);
+    return () => window.removeEventListener('userUpdated', handleUserUpdated);
   }, []);
 
   const menuItems = [
@@ -30,6 +43,15 @@ const AdminLayout = () => {
   const handleLogout = () => {
     authService.logout();
     navigate('/login');
+  };
+
+  const getProfilePictureUrl = (u) => {
+    if (!u?.profilePictureUrl) return null;
+    if (u.profilePictureUrl.startsWith('http://') || u.profilePictureUrl.startsWith('https://')) {
+      return u.profilePictureUrl;
+    }
+    const baseUrl = authService.getBaseUrl();
+    return `${baseUrl}${u.profilePictureUrl.startsWith('/') ? '' : '/'}${u.profilePictureUrl}`;
   };
 
   return (
@@ -77,9 +99,9 @@ const AdminLayout = () => {
           {!sidebarCollapsed ? (
             <>
               <div className="profile-row">
-                {user?.profilePictureUrl ? (
+                {user?.profilePictureUrl && getProfilePictureUrl(user) ? (
                   <img 
-                    src={user.profilePictureUrl} 
+                    src={getProfilePictureUrl(user)} 
                     alt={user?.username}
                     className="avatar-image"
                     title={user?.username}

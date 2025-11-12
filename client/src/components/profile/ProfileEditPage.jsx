@@ -85,7 +85,10 @@ const ProfileEditPage = () => {
         setTimeout(() => setSuccess(null), 3000);
       }
     } catch (err) {
-      setError(typeof err === 'string' ? err : 'Upload failed');
+      const errorMsg = typeof err === 'string' 
+        ? err 
+        : (err?.message || err?.msg || 'Upload failed');
+      setError(errorMsg);
     } finally {
       setUploading(false);
       setUploadProgress(0);
