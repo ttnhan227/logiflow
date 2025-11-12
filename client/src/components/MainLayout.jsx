@@ -63,6 +63,15 @@ const MainLayout = () => {
       .toUpperCase();
   };
 
+  const getProfilePictureUrl = (u) => {
+    if (!u?.profilePictureUrl) return null;
+    if (u.profilePictureUrl.startsWith('http://') || u.profilePictureUrl.startsWith('https://')) {
+      return u.profilePictureUrl;
+    }
+    const baseUrl = authService.getBaseUrl();
+    return `${baseUrl}${u.profilePictureUrl.startsWith('/') ? '' : '/'}${u.profilePictureUrl}`;
+  };
+
   return (
     <div className="app-container">
       <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
@@ -87,9 +96,9 @@ const MainLayout = () => {
               <>
                 <Link to="/profile" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
                 <div className="nav-user">
-                  {user.profilePictureUrl ? (
+                  {user.profilePictureUrl && getProfilePictureUrl(user) ? (
                     <img 
-                      src={user.profilePictureUrl} 
+                      src={getProfilePictureUrl(user)} 
                       alt={user.username}
                       className="avatar-image-small"
                       title={user.username}
