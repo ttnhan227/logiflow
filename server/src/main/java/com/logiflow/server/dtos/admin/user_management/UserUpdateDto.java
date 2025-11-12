@@ -29,6 +29,15 @@ public class UserUpdateDto {
     @Email(message = "Email should be valid")
     private String email;
 
+    @Size(max = 100, message = "Full name must be at most 100 characters")
+    private String fullName;
+
+    @Size(max = 20, message = "Phone must be at most 20 characters")
+    private String phone;
+
+    @Size(max = 500, message = "Profile picture URL must be at most 500 characters")
+    private String profilePictureUrl;
+
     private Integer roleId;
 
     private Boolean isActive;

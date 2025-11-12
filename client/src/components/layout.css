@@ -135,6 +135,16 @@
   box-shadow: var(--soft-shadow);
 }
 
+.avatar-image-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: inline-block;
+  box-shadow: var(--soft-shadow);
+  flex-shrink: 0;
+}
+
 .nav-user .greeting {
   font-size: 0.9rem;
   color: var(--text-color);

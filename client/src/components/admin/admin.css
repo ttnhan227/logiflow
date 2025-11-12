@@ -78,6 +78,17 @@
 	color: var(--text-color);
 	font-weight: 600;
 }
+
+.avatar-image {
+	width: 40px;
+	height: 40px;
+	border-radius: 8px;
+	object-fit: cover;
+	display: block;
+	flex-shrink: 0;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .profile-info{ display:flex; flex-direction:column; line-height:1; }
 .profile-name{ font-weight:600; }
 .profile-role{ font-size:12px; color:var(--muted); }
@@ -751,6 +762,14 @@
 	);
 }
 
+/* Table date formatting */
+.table-date {
+	font-size: 13px;
+	color: var(--muted);
+	font-family: 'Monaco', 'Courier New', monospace;
+	white-space: nowrap;
+}
+
 /* Status toggle as switch */
 .status-toggle {
 	position: relative;
@@ -801,6 +820,20 @@
 
 .status-toggle input:checked + .slider::before {
 	transform: translateX(20px);
+}
+
+.status-toggle.disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.status-toggle.disabled .slider {
+	cursor: not-allowed;
+	background: #d1d5db !important;
+}
+
+.status-toggle.disabled input {
+	cursor: not-allowed;
 }
 
 /* Actions */
@@ -1131,6 +1164,169 @@
 	outline: none;
 	border-color: var(--accent);
 	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Admin Details Page Styles */
+.admin-details-container {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	padding: 20px;
+	background: var(--admin-bg);
+}
+
+.details-card {
+	background: var(--card-bg);
+	border: 1px solid rgba(0, 0, 0, 0.06);
+	border-radius: 12px;
+	overflow: hidden;
+	transition: box-shadow var(--admin-transition);
+}
+
+.details-card:hover {
+	box-shadow: var(--soft-shadow);
+}
+
+.card-header {
+	padding: 20px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+	background: rgba(0, 0, 0, 0.01);
+}
+
+.card-header h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--text-color);
+}
+
+.card-content {
+	padding: 24px;
+}
+
+.details-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: 24px;
+}
+
+.detail-item {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.detail-item label {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--muted);
+}
+
+.detail-value {
+	font-size: 14px;
+	color: var(--text-color);
+	padding: 10px;
+	background: rgba(0, 0, 0, 0.02);
+	border-radius: 6px;
+	word-break: break-word;
+}
+
+.detail-value.detail-date {
+	font-family: 'Monaco', 'Courier New', monospace;
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.profile-picture-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 20px;
+	min-height: 250px;
+}
+
+.profile-picture-img {
+	max-width: 200px;
+	max-height: 200px;
+	width: 100%;
+	height: auto;
+	border-radius: 8px;
+	object-fit: cover;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-details-actions {
+	display: flex;
+	gap: 12px;
+	padding: 20px;
+	border-top: 1px solid rgba(0, 0, 0, 0.06);
+	background: var(--admin-bg);
+}
+
+.admin-details-actions .btn {
+	flex: 1;
+	max-width: 200px;
+}
+
+/* Form Styles for Edit Page */
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.form-group label {
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--muted);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+	padding: 10px 12px;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 6px;
+	font-size: 14px;
+	font-family: inherit;
+	background: white;
+	color: var(--text-color);
+	transition: border-color var(--admin-transition), box-shadow var(--admin-transition);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+	outline: none;
+	border-color: #0b74d1;
+	box-shadow: 0 0 0 3px rgba(11, 116, 209, 0.1);
+}
+
+.form-group input::placeholder {
+	color: var(--muted);
+}
+
+.form-group select {
+	cursor: pointer;
+}
+
+.admin-edit-actions {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+	padding: 24px;
+	background: var(--admin-bg);
+	border-top: 1px solid rgba(0, 0, 0, 0.06);
+	margin-top: 20px;
+	border-radius: 8px;
+}
+
+.admin-edit-actions .btn {
+	min-width: 120px;
 }
 
 /* Responsive */

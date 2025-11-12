@@ -104,27 +104,30 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         List<User> users = Arrays.asList(
-            createUserWithRole("admin", "admin@logiflow.com", "123", roles.get(0)), // ADMIN
-            createUserWithRole("john.dispatcher", "john.d@logiflow.com", "123", roles.get(1)), // DISPATCHER
-            createUserWithRole("sarah.manager", "sarah.m@logiflow.com", "123", roles.get(3)), // MANAGER
-            createUserWithRole("mike.driver", "mike.d@logiflow.com", "123", roles.get(2)), // DRIVER
-            createUserWithRole("amy.dispatcher2", "amy.d@logiflow.com", "123", roles.get(1)), // DISPATCHER
-            createUserWithRole("carl.driver2", "carl.d@logiflow.com", "123", roles.get(2)), // DRIVER
-            createUserWithRole("lisa.manager2", "lisa.m@logiflow.com", "123", roles.get(3)), // MANAGER
-            createUserWithRole("david.driver3", "david.d@logiflow.com", "123", roles.get(2)), // DRIVER
-            createUserWithRole("emma.driver4", "emma.d@logiflow.com", "123", roles.get(2)), // DRIVER
-            createUserWithRole("bob.driver5", "bob.d@logiflow.com", "123", roles.get(2)) // DRIVER
+            createUserWithRole("admin", "admin@logiflow.com", "123", roles.get(0), "Admin User", "+84-901-000-001", "/uploads/profile-pictures/albert-dera-ILip77SbmOE-unsplash.jpg"), // ADMIN
+            createUserWithRole("john.dispatcher", "john.d@logiflow.com", "123", roles.get(1), "John Dispatcher", "+84-901-234-501", "/uploads/profile-pictures/boy-snow-hoodie.jpg"), // DISPATCHER
+            createUserWithRole("sarah.manager", "sarah.m@logiflow.com", "123", roles.get(3), "Sarah Manager", "+84-901-234-502", "/uploads/profile-pictures/woman-on-a-football-field.jpg"), // MANAGER
+            createUserWithRole("mike.driver", "mike.d@logiflow.com", "123", roles.get(2), "Mike Driver", "+84-901-234-503", "/uploads/profile-pictures/man-portrait.jpg"), // DRIVER
+            createUserWithRole("amy.dispatcher2", "amy.d@logiflow.com", "123", roles.get(1), "Amy Dispatcher", "+84-901-234-504", "/uploads/profile-pictures/vicky-hladynets-C8Ta0gwPbQg-unsplash.jpg"), // DISPATCHER
+            createUserWithRole("carl.driver2", "carl.d@logiflow.com", "123", roles.get(2), "Carl Driver", "+84-901-234-505", "/uploads/profile-pictures/smile.jpg"), // DRIVER
+            createUserWithRole("lisa.manager2", "lisa.m@logiflow.com", "123", roles.get(3), "Lisa Manager", "+84-901-234-506", "/uploads/profile-pictures/look-up.jpg"), // MANAGER
+            createUserWithRole("david.driver3", "david.d@logiflow.com", "123", roles.get(2), "David Driver", "+84-901-234-507", "/uploads/profile-pictures/toa-heftiba-O3ymvT7Wf9U-unsplash.jpg"), // DRIVER
+            createUserWithRole("emma.driver4", "emma.d@logiflow.com", "123", roles.get(2), "Emma Driver", "+84-901-234-508", "/uploads/profile-pictures/upscale-face-1.jpg"), // DRIVER
+            createUserWithRole("bob.driver5", "bob.d@logiflow.com", "123", roles.get(2), "Bob Driver", "+84-901-234-509", "/uploads/profile-pictures/smiling-man.jpg") // DRIVER
         );
         userRepository.saveAll(users);
         System.out.println("Seeded 10 users with roles");
     }
 
-    private User createUserWithRole(String username, String email, String password, Role role) {
+    private User createUserWithRole(String username, String email, String password, Role role, String fullName, String phone, String profilePictureUrl) {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setRole(role);
+        user.setFullName(fullName);
+        user.setPhone(phone);
+        user.setProfilePictureUrl(profilePictureUrl);
         user.setIsActive(true);
         user.setLastLogin(LocalDateTime.now());
         user.setCreatedAt(LocalDateTime.now());

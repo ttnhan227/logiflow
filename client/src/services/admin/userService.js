@@ -1,10 +1,21 @@
 import api from '../api';
 
+// Get base URL (removes /api suffix)
+const getBaseUrl = () => {
+  const baseURL = api.defaults.baseURL; // http://localhost:8080/api
+  return baseURL.replace(/\/api\/?$/, ''); // http://localhost:8080
+};
+
 // Map backend DTO -> UI shape
 const mapDtoToUi = (u) => ({
   id: u?.userId,
   username: u?.username,
   email: u?.email,
+  fullName: u?.fullName,
+  phone: u?.phone,
+  profilePictureUrl: u?.profilePictureUrl 
+    ? `${getBaseUrl()}${u.profilePictureUrl}` 
+    : null,
   role: u?.roleName,
   active: u?.isActive,
   createdAt: u?.createdAt,
@@ -57,13 +68,16 @@ const userService = {
     api.post('/admin/user-management', userData).then((res) => res.data).then(mapDtoToUi),
 
   // Update user: map UI -> backend DTO shape
-  // UI provides: { id, username, email, role, active }
-  // Backend expects: { userId, username, email, roleId?, isActive? }
+  // UI provides: { id, username, email, fullName, phone, profilePictureUrl, role, active }
+  // Backend expects: { userId, username, email, fullName, phone, profilePictureUrl, roleId?, isActive? }
   updateUser: (userData) => {
     const payload = {
       userId: userData.id,
       username: userData.username,
       email: userData.email,
+      fullName: userData.fullName,
+      phone: userData.phone,
+      profilePictureUrl: userData.profilePictureUrl,
       // roleId intentionally omitted unless provided; role name -> id mapping not available here
       isActive: userData.active,
     };
@@ -77,11 +91,6 @@ const userService = {
     api
       .put(`/admin/user-management/${id}/toggle-status`)
       .then((res) => mapDtoToUi(res.data)),
-
-  deleteUser: (id) =>
-    api
-      .delete(`/admin/user-management/${id}`)
-      .then((response) => response.status === 204),
 };
 
 export default userService;

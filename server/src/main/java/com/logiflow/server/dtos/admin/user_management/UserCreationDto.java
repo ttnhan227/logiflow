@@ -33,6 +33,15 @@ public class UserCreationDto {
     @NotNull(message = "Role ID is required")
     private Integer roleId;
 
+    @Size(max = 100, message = "Full name must be at most 100 characters")
+    private String fullName;
+
+    @Size(max = 20, message = "Phone must be at most 20 characters")
+    private String phone;
+
+    @Size(max = 500, message = "Profile picture URL must be at most 500 characters")
+    private String profilePictureUrl;
+
     // Factory method for better readability
     public static UserCreationDto of(String username, String email, String password, Integer roleId) {
         return UserCreationDto.builder()
