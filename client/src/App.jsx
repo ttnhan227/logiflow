@@ -10,6 +10,8 @@ import HomePage from "./components/home/HomePage";
 import AboutPage from "./components/home/AboutPage";
 import AdminDashboardPage from "./components/admin/AdminDashboardPage";
 import UserManagementPage from "./components/admin/AdminUserManagementPage";
+import AdminSettingsPage from "./components/admin/AdminSettingsPage";
+import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 
@@ -70,6 +72,16 @@ function App() {
           <Route path="/admin/users" element={
             <ProtectedRoute requiredRole="ADMIN">
               <UserManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/settings" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminSettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/audit-logs" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminAuditLogPage />
             </ProtectedRoute>
           } />
         </Route>

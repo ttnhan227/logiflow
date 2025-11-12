@@ -19,11 +19,12 @@ const AdminLayout = () => {
   }, []);
 
   const menuItems = [
-    { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
-    { path: '/admin/users', icon: '👥', label: 'User Management' },
-    { path: '/admin/routes', icon: '📦', label: 'Routes', disabled: true },
-    { path: '/admin/drivers', icon: '🚗', label: 'Drivers', disabled: true },
-    { path: '/admin/settings', icon: '⚙️', label: 'Settings', disabled: true },
+  { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
+  { path: '/admin/users', icon: '👥', label: 'User Management' },
+  { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
+  { path: '/admin/routes', icon: '📦', label: 'Routes', disabled: true },
+  { path: '/admin/drivers', icon: '🚗', label: 'Drivers', disabled: true },
+  { path: '/admin/settings', icon: '⚙️', label: 'Settings' },
   ];
 
   const handleLogout = () => {
