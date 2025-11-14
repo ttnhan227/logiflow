@@ -3,13 +3,13 @@ package com.logiflow.server.services.manager.alerts;
 import com.logiflow.server.dtos.manager.alerts.AlertDto;
 import com.logiflow.server.repositories.manager.operations.TripStatsRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
-import org.springframework.stereotype.Service;   // <-- thêm
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service  // <-- thêm
+@Service
 public class AlertServiceImpl implements AlertService {
     private final OrderRepository orderRepository;
     private final TripStatsRepository tripStatsRepository;
