@@ -26,6 +26,8 @@ public class ProfileDto {
     // Driver details (nullable if user is not a driver)
     private Boolean isDriver;
     private Integer driverId;
+    // Public path to profile picture (e.g. /uploads/profile-pictures/<file>)
+    private String profilePictureUrl;
     private String fullName;
     private String phone;
     private String licenseType;

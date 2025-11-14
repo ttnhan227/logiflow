@@ -25,7 +25,17 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
-    return Promise.reject(error.response?.data?.message || 'An error occurred');
+    
+    // Handle error response
+    const errorData = error.response?.data;
+    const errorMessage = errorData?.message || error.message || 'An error occurred';
+    
+    // If response body is empty (400 from upload), provide generic message
+    if (error.response?.status === 400 && !errorMessage) {
+      return Promise.reject('Validation error: Invalid file or request');
+    }
+    
+    return Promise.reject(errorData || errorMessage);
   }
 );
 

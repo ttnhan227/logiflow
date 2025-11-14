@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket GPS Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+  <button onclick="connect()">Connect</button>
+  <button onclick="sendLocation()">Send Location</button>
+  <pre id="output"></pre>
+  <script>
+    let stompClient = null;
+
+    function connect() {
+      const socket = new SockJS('http://localhost:8080/ws/tracking?token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlbW1hLmRyaXZlcjQiLCJyb2xlIjoiRFJJVkVSIiwiaWF0IjoxNzYyNzA0ODkxLCJleHAiOjE3NjI3NDA4OTF9.7vCOQQv6o-hdnMYgQgIyJrmrwzcV6Euc858pFiH1wH8');
+      stompClient = Stomp.over(socket);
+      stompClient.connect({}, function (frame) {
+        document.getElementById('output').textContent += 'Connected: ' + frame + '\\n';
+        stompClient.subscribe('/topic/locations', function (message) {
+          document.getElementById('output').textContent += 'Received: ' + message.body + '\\n';
+        });
+      });
+    }
+
+    function sendLocation() {
+      if (!stompClient) return;
+      const location = {
+  driverId: 'emma.driver4',
+  tripId: '9',
+  latitude: 10.12345,
+  longitude: 106.54321
+};
+      stompClient.send('/app/tracking', {}, JSON.stringify(location));
+      document.getElementById('output').textContent += 'Sent: ' + JSON.stringify(location) + '\n';
+    }
+  </script>
+</body>
+</html>

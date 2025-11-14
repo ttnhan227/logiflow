@@ -13,12 +13,17 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.logiflow.server.services.file.FileStorageService;
 
 @Service
 public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Autowired
     private DriverRepository driverRepository;
@@ -48,6 +53,53 @@ public class ProfileServiceImpl implements ProfileService {
         return buildProfileDto(user);
     }
 
+    @Override
+    public ProfileDto updateProfile(String username, com.logiflow.server.dtos.user.ProfileUpdateDto profileUpdateDto) {
+        User user = userRepository.findByUsernameWithRole(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String oldProfilePicture = user.getProfilePictureUrl();
+
+        // If email is being updated, ensure uniqueness
+        if (profileUpdateDto.getEmail() != null && !profileUpdateDto.getEmail().equalsIgnoreCase(user.getEmail())) {
+            userRepository.findByEmail(profileUpdateDto.getEmail()).ifPresent(u -> {
+                throw new RuntimeException("Email already exists");
+            });
+            user.setEmail(profileUpdateDto.getEmail());
+        }
+
+        if (profileUpdateDto.getFullName() != null) {
+            user.setFullName(profileUpdateDto.getFullName());
+        }
+        if (profileUpdateDto.getPhone() != null) {
+            user.setPhone(profileUpdateDto.getPhone());
+        }
+        if (profileUpdateDto.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(profileUpdateDto.getProfilePictureUrl());
+        }
+
+        User saved = userRepository.save(user);
+
+        // If profile picture changed, attempt to delete the old file if it's local and not referenced by others
+        try {
+            if (oldProfilePicture != null && !oldProfilePicture.equals(saved.getProfilePictureUrl())) {
+                int refs = userRepository.countByProfilePictureUrl(oldProfilePicture);
+                if (refs <= 0) {
+                    // no other users reference it, delete safely
+                    try {
+                        fileStorageService.deleteProfilePicture(oldProfilePicture);
+                    } catch (Exception ex) {
+                        // ignore deletion errors to avoid failing the update
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            // swallow to avoid failing the update when deletion fails
+        }
+
+        return buildProfileDto(saved);
+    }
+
     private ProfileDto buildProfileDto(User user) {
         ProfileDto profileDto = new ProfileDto();
 
@@ -63,6 +115,9 @@ public class ProfileServiceImpl implements ProfileService {
             profileDto.setRoleName(user.getRole().getRoleName());
             profileDto.setRoleDescription(user.getRole().getDescription());
         }
+
+        // Include profile picture path if present
+        profileDto.setProfilePictureUrl(user.getProfilePictureUrl());
 
         // Check if user is a driver and get driver details
         Optional<Driver> driverOpt = driverRepository.findByUserId(user.getUserId());

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import dashboardService from '../../services/admin/dashboardService';
-import './admin.css';
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -19,9 +18,6 @@ const Section = ({ title, children, columns = 1 }) => (
     <h2 className="section-title">{title}</h2>
     <div 
       className="section-grid"
-      style={{
-        gridTemplateColumns: `repeat(${columns}, 1fr)`
-      }}
     >
       {children}
     </div>
@@ -34,7 +30,7 @@ const ActivityItem = ({ activity }) => (
       <span><strong>{activity.role}:</strong> {activity.username}</span>
       <span>{formatDate(activity.timestamp)}</span>
     </div>
-    <div style={{ marginBottom: '0.25rem' }}>
+    <div>
       {activity.action} - {activity.details}
     </div>
     <div className="activity-meta">

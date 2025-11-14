@@ -22,6 +22,9 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
     @Autowired
     private SystemSettingRepository systemSettingRepository;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     // TODO: Add encryption service when implementing encryption feature
     // @Autowired
     // private EncryptionService encryptionService;
@@ -45,6 +48,13 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
         // TODO: Encrypt value if isEncrypted is true
 
         SystemSetting savedSetting = systemSettingRepository.save(setting);
+
+        auditLogService.log(
+            "CREATE_SETTING",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Created setting: [" + savedSetting.getCategory() + "] " + savedSetting.getKey() + " (ID: " + savedSetting.getSettingId() + ")"
+        );
         return convertToDto(savedSetting);
     }
 
@@ -74,6 +84,13 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
         // TODO: Handle encryption/decryption based on isEncrypted change
 
         SystemSetting savedSetting = systemSettingRepository.save(setting);
+
+        auditLogService.log(
+            "UPDATE_SETTING",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Updated setting: [" + savedSetting.getCategory() + "] " + savedSetting.getKey() + " (ID: " + savedSetting.getSettingId() + ")"
+        );
         return convertToDto(savedSetting);
     }
 
@@ -84,6 +101,12 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
             throw new RuntimeException("Setting not found");
         }
         systemSettingRepository.deleteById(settingId);
+        auditLogService.log(
+            "DELETE_SETTING",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Deleted setting with ID: " + settingId
+        );
     }
 
     @Override
@@ -118,6 +141,28 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
         List<SystemSettingDto> pageContent = dtos.subList(start, end);
 
         return new PageImpl<>(pageContent, pageable, dtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<SystemSettingDto> advancedSearch(String category, String key, String description, Boolean isEncrypted, Pageable pageable) {
+        List<SystemSetting> settings = systemSettingRepository.advancedSearch(category, key, description, isEncrypted);
+        List<SystemSettingDto> dtos = settings.stream()
+            .map(this::convertToDto)
+            .collect(Collectors.toList());
+
+        // Simple pagination for search results
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), dtos.size());
+        List<SystemSettingDto> pageContent = dtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, dtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAvailableCategories() {
+        return systemSettingRepository.findAllCategories();
     }
 
     @Override

@@ -1,5 +1,20 @@
 /* Layout-specific styles (variables moved to src/styles/global.css) */
 
+/* CSS Variables */
+:root {
+  --header-height: 160px;
+  --primary-color: #0b74d1;
+  --accent: #0ea5a4;
+  --primary-strong: #0b74d1;
+  --text-color: #0f172a;
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --soft-shadow: 0 4px 16px rgba(12, 18, 36, 0.08);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --transition: all 0.22s cubic-bezier(.2,.9,.2,1);
+  --text-light: #64748b;
+}
+
 /* Base Layout */
 .app-container {
   min-height: 100vh;
@@ -118,6 +133,16 @@
   font-weight: 700;
   font-size: 0.9rem;
   box-shadow: var(--soft-shadow);
+}
+
+.avatar-image-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: inline-block;
+  box-shadow: var(--soft-shadow);
+  flex-shrink: 0;
 }
 
 .nav-user .greeting {

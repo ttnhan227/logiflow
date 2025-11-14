@@ -50,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtUtils.generateToken(user.getUsername(), user.getRole() != null ? user.getRole().getRoleName() : "");
 
-        return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(), "Login successful");
+        return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(), user.getProfilePictureUrl(), "Login successful");
     }
 
     @Override
@@ -77,6 +77,6 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtUtils.generateToken(user.getUsername(), user.getRole().getRoleName());
 
-        return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(), "Registration successful");
+        return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(), user.getProfilePictureUrl(), "Registration successful");
     }
 }
