@@ -11,6 +11,8 @@ import com.logiflow.server.models.User;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.services.dispatch.ShippingFeeCalculator;
+import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.utils.OrderFileParser;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
@@ -26,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -45,6 +49,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private TripRepository tripRepository;
+
+    @Autowired
+    private ShippingFeeCalculator shippingFeeCalculator;
+
+    @Autowired(required = false)
+    private MapsService mapsService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -128,15 +138,44 @@ public class OrderServiceImpl implements OrderService {
         order.setCreatedBy(createdBy);
         order.setCreatedAt(LocalDateTime.now());
 
+        // Set distance, weight, and package value
+        order.setDistanceKm(request.getDistanceKm());
+        order.setWeightKg(request.getWeightKg());
+        order.setPackageValue(request.getPackageValue());
+
+        // Calculate distance automatically if not provided and MapsService is available
+        if (order.getDistanceKm() == null && mapsService != null) {
+            try {
+                var distanceResult = mapsService.calculateDistance(
+                    request.getPickupAddress(),
+                    request.getDeliveryAddress()
+                );
+                if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
+                    java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
+                            .divide(new java.math.BigDecimal("1000"), 2, java.math.RoundingMode.HALF_UP);
+                    order.setDistanceKm(distanceKm);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to calculate distance: " + e.getMessage());
+            }
+        }
+
+        // Calculate shipping fee
+        java.math.BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
+            order.getDistanceKm(),
+            order.getWeightKg(),
+            order.getPackageValue(),
+            order.getPriorityLevel()
+        );
+        order.setShippingFee(shippingFee);
+
         if (request.getTripId() != null) {
             Trip trip = tripRepository.findById(request.getTripId())
                     .orElseThrow(() -> new RuntimeException("Trip not found with id: " + request.getTripId()));
             order.setTrip(trip);
         }
 
-
         Order savedOrder = orderRepository.save(order);
-
 
         Order orderWithRelations = orderRepository.findByIdWithRelations(savedOrder.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve saved order"));
@@ -179,7 +218,6 @@ public class OrderServiceImpl implements OrderService {
             int rowNumber = i + 2; // +2 because row 1 is header, and we start from index 0
 
             try {
-                // Validate required fields
                 if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
                     errors.add("Row " + rowNumber + ": Customer name is required");
                     failureCount++;
@@ -212,6 +250,36 @@ public class OrderServiceImpl implements OrderService {
                 order.setOrderStatus(Order.OrderStatus.PENDING);
                 order.setCreatedBy(createdBy);
                 order.setCreatedAt(LocalDateTime.now());
+
+                order.setDistanceKm(request.getDistanceKm());
+                order.setWeightKg(request.getWeightKg());
+                order.setPackageValue(request.getPackageValue());
+
+
+                if (order.getDistanceKm() == null && mapsService != null) {
+                    try {
+                        var distanceResult = mapsService.calculateDistance(
+                            request.getPickupAddress(),
+                            request.getDeliveryAddress()
+                        );
+                        if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
+                            BigDecimal distanceKm = new BigDecimal(distanceResult.getDistanceMeters())
+                                    .divide(new BigDecimal("1000"), 2, RoundingMode.HALF_UP);
+                            order.setDistanceKm(distanceKm);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Row " + rowNumber + ": Failed to calculate distance: " + e.getMessage());
+                    }
+                }
+
+
+                BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
+                    order.getDistanceKm(),
+                    order.getWeightKg(),
+                    order.getPackageValue(),
+                    order.getPriorityLevel()
+                );
+                order.setShippingFee(shippingFee);
 
                 if (request.getTripId() != null) {
                     Trip trip = tripRepository.findById(request.getTripId()).orElse(null);
@@ -253,7 +321,7 @@ public class OrderServiceImpl implements OrderService {
     private byte[] generateCSVTemplate() throws IOException {
         StringWriter writer = new StringWriter();
         try (CSVWriter csvWriter = new CSVWriter(writer)) {
-            // Write header
+
             csvWriter.writeNext(new String[]{
                 "Customer Name",
                 "Customer Phone",
@@ -261,6 +329,9 @@ public class OrderServiceImpl implements OrderService {
                 "Delivery Address",
                 "Package Details",
                 "Priority Level",
+                "Distance (km)",
+                "Weight (kg)",
+                "Package Value (VND)",
                 "Trip ID"
             });
 
@@ -271,6 +342,9 @@ public class OrderServiceImpl implements OrderService {
                 "456 Nguyen Hue, District 1, Ho Chi Minh City",
                 "5kg documents",
                 "NORMAL",
+                "10.5",
+                "5.0",
+                "500000",
                 ""
             });
 
@@ -297,6 +371,9 @@ public class OrderServiceImpl implements OrderService {
                 "Delivery Address",
                 "Package Details",
                 "Priority Level",
+                "Distance (km)",
+                "Weight (kg)",
+                "Package Value (VND)",
                 "Trip ID"
             };
 
@@ -313,7 +390,10 @@ public class OrderServiceImpl implements OrderService {
             exampleRow.createCell(3).setCellValue("456 Nguyen Hue, District 1, Ho Chi Minh City");
             exampleRow.createCell(4).setCellValue("5kg documents");
             exampleRow.createCell(5).setCellValue("NORMAL");
-            exampleRow.createCell(6).setCellValue("");
+            exampleRow.createCell(6).setCellValue(10.5); // Distance in km
+            exampleRow.createCell(7).setCellValue(5.0); // Weight in kg
+            exampleRow.createCell(8).setCellValue(500000); // Package value in VND
+            exampleRow.createCell(9).setCellValue("");
 
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
@@ -341,7 +421,6 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Order can only be updated when status is PENDING. Current status: " + order.getOrderStatus());
         }
 
-        //Update allowed fields
         order.setCustomerName(request.getCustomerName());
         order.setCustomerPhone(request.getCustomerPhone());
         order.setPickupAddress(request.getPickupAddress());
@@ -349,10 +428,37 @@ public class OrderServiceImpl implements OrderService {
         order.setPackageDetails(request.getPackageDetails());
         order.setPriorityLevel(request.getPriorityLevel());
 
-        //save
+        order.setDistanceKm(request.getDistanceKm());
+        order.setWeightKg(request.getWeightKg());
+        order.setPackageValue(request.getPackageValue());
+
+        if (order.getDistanceKm() == null && mapsService != null) {
+            try {
+                var distanceResult = mapsService.calculateDistance(
+                    request.getPickupAddress(),
+                    request.getDeliveryAddress()
+                );
+                if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
+                    java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
+                            .divide(new java.math.BigDecimal("1000"), 2, java.math.RoundingMode.HALF_UP);
+                    order.setDistanceKm(distanceKm);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to calculate distance: " + e.getMessage());
+            }
+        }
+
+       BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
+            order.getDistanceKm(),
+            order.getWeightKg(),
+            order.getPackageValue(),
+            order.getPriorityLevel()
+        );
+        order.setShippingFee(shippingFee);
+
+
         Order updatedOrder = orderRepository.save(order);
 
-        // Retrieve with relations to return complete DTO
         Order orderWithRelations = orderRepository.findByIdWithRelations(updatedOrder.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve updated order"));
 

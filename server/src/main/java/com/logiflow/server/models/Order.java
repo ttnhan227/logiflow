@@ -2,6 +2,8 @@ package com.logiflow.server.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.EnumType;
@@ -35,6 +37,18 @@ public class Order {
 
     @Column(name = "package_details", length = 500, nullable = true)
     private String packageDetails;
+
+    @Column(name = "distance_km", precision = 10, scale = 2, nullable = true)
+    private BigDecimal distanceKm;
+
+    @Column(name = "weight_kg", precision = 10, scale = 2, nullable = true)
+    private BigDecimal weightKg;
+
+    @Column(name = "package_value", precision = 15, scale = 2, nullable = true)
+    private BigDecimal packageValue;
+
+    @Column(name = "shipping_fee", precision = 15, scale = 2, nullable = true)
+    private BigDecimal shippingFee;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")

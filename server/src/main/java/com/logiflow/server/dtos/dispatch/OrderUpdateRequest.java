@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,7 +29,14 @@ public class OrderUpdateRequest {
     
     @NotNull(message = "Priority level is required")
     private Order.PriorityLevel priorityLevel;
+    
+    private BigDecimal distanceKm;
+    
+    private BigDecimal weightKg;
+    
+    private BigDecimal packageValue;
 }
+
 
 
 

@@ -30,7 +30,6 @@ public class DriverController {
         this.driverService = driverService;
     }
 
-    // 1) GET /api/driver/me/trips?status={status}
     @GetMapping("/trips")
     public ResponseEntity<List<TripSummaryDto>> getMyTrips(
             @RequestParam(required = false) String status,
