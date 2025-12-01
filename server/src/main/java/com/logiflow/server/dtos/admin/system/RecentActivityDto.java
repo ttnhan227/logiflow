@@ -1,4 +1,4 @@
-package com.logiflow.server.dtos.admin.dashboard;
+package com.logiflow.server.dtos.admin.system;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

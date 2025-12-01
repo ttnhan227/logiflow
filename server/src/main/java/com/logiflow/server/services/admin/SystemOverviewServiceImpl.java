@@ -1,8 +1,8 @@
 package com.logiflow.server.services.admin;
 
-import com.logiflow.server.dtos.admin.dashboard.DashboardOverviewDto;
-import com.logiflow.server.dtos.admin.dashboard.UserStatsDto;
-import com.logiflow.server.dtos.admin.dashboard.FleetOverviewDto;
+import com.logiflow.server.dtos.admin.system.SystemOverviewDto;
+import com.logiflow.server.dtos.admin.system.UserStatsDto;
+import com.logiflow.server.dtos.admin.system.FleetOverviewDto;
 import com.logiflow.server.models.Order;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
@@ -21,8 +21,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.logiflow.server.dtos.admin.dashboard.RecentActivityDto;
-import com.logiflow.server.dtos.admin.dashboard.SystemHealthDto;
+import com.logiflow.server.dtos.admin.system.RecentActivityDto;
+import com.logiflow.server.dtos.admin.system.SystemHealthDto;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class DashboardServiceImpl implements DashboardService {
+public class SystemOverviewServiceImpl implements SystemOverviewService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -48,7 +48,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
     private final Runtime runtime = Runtime.getRuntime();
 
-    public DashboardServiceImpl(UserRepository userRepository, 
+    public SystemOverviewServiceImpl(UserRepository userRepository, 
                               RoleRepository roleRepository,
                               VehicleRepository vehicleRepository,
                               DriverRepository driverRepository,
@@ -66,7 +66,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     @Transactional(readOnly = true)
-    public DashboardOverviewDto getDashboardOverview() {
+    public SystemOverviewDto getSystemOverview() {
         // Update uptime cache
         updateUptime();
 
@@ -157,7 +157,7 @@ public class DashboardServiceImpl implements DashboardService {
             orderRepository.countByOrderStatus(Order.OrderStatus.PENDING)
         );
 
-        return DashboardOverviewDto.of(
+        return SystemOverviewDto.of(
             systemUptimeCache,
             activeAlerts,
             systemVersion,

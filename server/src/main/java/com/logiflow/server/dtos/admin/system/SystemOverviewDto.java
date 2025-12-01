@@ -1,4 +1,4 @@
-package com.logiflow.server.dtos.admin.dashboard;
+package com.logiflow.server.dtos.admin.system;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
-public class DashboardOverviewDto {
+public class SystemOverviewDto {
     // System Information
     private final String systemUptime;
     private final int activeAlerts;
@@ -29,7 +29,7 @@ public class DashboardOverviewDto {
     private final List<RecentActivityDto> recentActivities;
 
     // Add a static factory method for better readability
-    public static DashboardOverviewDto of(
+    public static SystemOverviewDto of(
             String systemUptime,
             int activeAlerts,
             String systemVersion,
@@ -37,8 +37,7 @@ public class DashboardOverviewDto {
             List<RecentActivityDto> recentActivities,
             SystemHealthDto systemHealth,
             FleetOverviewDto fleetOverview) {
-        
-        return DashboardOverviewDto.builder()
+        return SystemOverviewDto.builder()
             .systemUptime(systemUptime)
             .activeAlerts(activeAlerts)
             .systemVersion(systemVersion)

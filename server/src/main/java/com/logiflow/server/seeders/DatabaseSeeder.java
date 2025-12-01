@@ -478,35 +478,14 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedSystemSettings() {
         List<SystemSetting> settings = Arrays.asList(
-            // Map Settings
+            // Essentials only
             createSystemSetting("maps", "map_provider", "openstreet", false, "Primary map provider (openstreet, mapbox)"),
-            createSystemSetting("maps", "map_display_marker_clusters", "true", false, "Enable marker clustering for multiple vehicles/locations"),
-            createSystemSetting("maps", "map_default_zoom_level", "10", false, "Default zoom level for map views"),
-            createSystemSetting("maps", "map_route_color", "#4285F4", false, "Default color for route visualization on maps"),
-            createSystemSetting("maps", "map_vehicle_icon_style", "truck", false, "Vehicle icon style on map (truck, van, motorcycle)"),
-            createSystemSetting("maps", "map_refresh_interval_seconds", "30", false, "Map refresh interval in seconds for real-time updates"),
-            createSystemSetting("maps", "geocoding_cache_enabled", "true", false, "Enable geocoding result caching for performance"),
-            createSystemSetting("maps", "geocoding_cache_expiry_hours", "24", false, "Geocoding cache expiry time in hours"),
-
-            // GPS Settings
             createSystemSetting("gps", "gps_tracking_enabled", "true", false, "Enable GPS tracking for vehicles and drivers"),
-            createSystemSetting("gps", "gps_tracking_frequency_seconds", "60", false, "GPS position update frequency in seconds"),
-            createSystemSetting("gps", "gps_data_retention_days", "90", false, "Number of days to retain GPS location data"),
-            createSystemSetting("gps", "gps_accuracy_required_meters", "50", false, "Required GPS accuracy in meters (lower is better)"),
-            createSystemSetting("gps", "gps_battery_optimization", "false", false, "Enable battery optimization for GPS tracking"),
-            createSystemSetting("gps", "gps_stop_detection_enabled", "true", false, "Enable automatic stop detection when vehicle is stationary"),
-            createSystemSetting("gps", "gps_speed_threshold_kmph", "5", false, "Speed threshold in km/h to consider vehicle stopped"),
-            createSystemSetting("gps", "gps_idle_timeout_minutes", "10", false, "Time in minutes to consider vehicle idle"),
-            createSystemSetting("gps", "gps_geofencing_enabled", "true", false, "Enable geofencing alerts and notifications"),
-            createSystemSetting("gps", "gps_trip_logging_enabled", "true", false, "Enable detailed trip logging with GPS coordinates"),
-
-            // Existing integration settings
             createSystemSetting("integration", "notification_sms_enabled", "false", false, "Enable SMS notifications through third-party provider"),
-            createSystemSetting("integration", "email_service_provider", "none", false, "Email service provider (smtp, sendgrid, mailgun, etc.)"),
-            createSystemSetting("integration", "third_party_logistics_enabled", "false", false, "Enable third-party logistics API integrations")
+            createSystemSetting("integration", "email_service_provider", "none", false, "Email service provider (smtp, sendgrid, mailgun, etc.)")
         );
         systemSettingRepository.saveAll(settings);
-        System.out.println("Seeded 21 system settings");
+        System.out.println("Seeded 4 system settings");
     }
 
     private SystemSetting createSystemSetting(String category, String key, String value, boolean isEncrypted, String description) {

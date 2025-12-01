@@ -1,17 +1,17 @@
 import api from './api';
 import authService from './auth/authService';
 import userService from './admin/userService';
-import dashboardService from './admin/dashboardService';
 import uploadService from './upload/uploadService';
 import profileService from './profile/profileService';
+import settingsService from './admin/settingsService';
 
 export {
   api,
   authService,
   userService,
-  dashboardService,
   uploadService,
   profileService,
+  settingsService,
 };
 
 // Example usage:

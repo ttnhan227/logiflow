@@ -13,6 +13,7 @@ import UserManagementPage from "./components/admin/AdminUserManagementPage";
 import AdminUserDetailsPage from "./components/admin/AdminUserDetailsPage";
 import AdminUserEditPage from "./components/admin/AdminUserEditPage";
 import AdminSettingsPage from "./components/admin/AdminSettingsPage";
+import AdminSystemOverviewPage from "./components/admin/AdminSystemOverviewPage";
 import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
@@ -90,9 +91,14 @@ function App() {
               <AdminUserEditPage />
             </ProtectedRoute>
           } />
-          <Route path="/admin/settings" element={
+          <Route path="/admin/system/configuration" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminSettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/system/overview" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminSystemOverviewPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/audit-logs" element={

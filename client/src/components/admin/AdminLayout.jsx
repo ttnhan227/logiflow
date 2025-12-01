@@ -9,6 +9,7 @@ const AdminLayout = () => {
   const [user, setUser] = useState(authService.getCurrentUser());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [systemMenuOpen, setSystemMenuOpen] = useState(false);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -32,12 +33,19 @@ const AdminLayout = () => {
   }, []);
 
   const menuItems = [
-  { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
-  { path: '/admin/users', icon: '👥', label: 'User Management' },
-  { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
-  { path: '/admin/routes', icon: '📦', label: 'Routes', disabled: true },
-  { path: '/admin/drivers', icon: '🚗', label: 'Drivers', disabled: true },
-  { path: '/admin/settings', icon: '⚙️', label: 'Settings' },
+    { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
+    { path: '/admin/users', icon: '👥', label: 'User Management' },
+    { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
+    { path: '/admin/routes', icon: '📦', label: 'Routes', disabled: true },
+    { path: '/admin/drivers', icon: '🚗', label: 'Drivers', disabled: true },
+    {
+      label: 'System',
+      icon: '🛠️',
+      children: [
+        { path: '/admin/system/overview', icon: '📈', label: 'System Overview' },
+        { path: '/admin/system/configuration', icon: '⚙️', label: 'Configuration' },
+      ]
+    }
   ];
 
   const handleLogout = () => {
@@ -77,20 +85,67 @@ const AdminLayout = () => {
         {/* Menu Items */}
         <nav className="admin-nav" role="navigation" aria-label="Admin navigation">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const isDisabled = item.disabled;
-            return (
-              <Link
-                key={item.path}
-                to={isDisabled ? '#' : item.path}
-                className={`nav-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
-                aria-disabled={isDisabled}
-                tabIndex={isDisabled ? -1 : 0}
-              >
-                <span className="nav-icon" aria-hidden>{item.icon}</span>
-                {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
-              </Link>
-            );
+            if (item.children) {
+              // Render parent with children (System)
+              const isParentActive = item.children.some(child => location.pathname.startsWith(child.path));
+              return (
+                <div key={item.label} className={`nav-parent ${isParentActive ? 'active' : ''}`}> 
+                  <div
+                    className={`nav-item nav-parent-label${systemMenuOpen ? ' open' : ''}`}
+                    onClick={() => setSystemMenuOpen((open) => !open)}
+                    tabIndex={0}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSystemMenuOpen((open) => !open);
+                      }
+                    }}
+                    aria-expanded={systemMenuOpen}
+                    aria-haspopup="true"
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    <span className="nav-icon" aria-hidden>{item.icon}</span>
+                    {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+                    {!sidebarCollapsed && (
+                      <span className="dropdown-arrow" aria-hidden>{systemMenuOpen ? '▲' : '▼'}</span>
+                    )}
+                  </div>
+                  {!sidebarCollapsed && systemMenuOpen && (
+                    <div className="nav-children" style={{ transition: 'max-height 0.2s', overflow: 'hidden' }}>
+                      {item.children.map(child => {
+                        const isActive = location.pathname === child.path;
+                        return (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            className={`nav-item nav-child ${isActive ? 'active' : ''}`}
+                            style={{ paddingLeft: 32, fontSize: '0.97em' }}
+                          >
+                            <span className="nav-icon" aria-hidden>{child.icon}</span>
+                            <span className="nav-label">{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            } else {
+              const isActive = location.pathname === item.path;
+              const isDisabled = item.disabled;
+              return (
+                <Link
+                  key={item.path}
+                  to={isDisabled ? '#' : item.path}
+                  className={`nav-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                  aria-disabled={isDisabled}
+                  tabIndex={isDisabled ? -1 : 0}
+                >
+                  <span className="nav-icon" aria-hidden>{item.icon}</span>
+                  {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+                </Link>
+              );
+            }
           })}
         </nav>
 

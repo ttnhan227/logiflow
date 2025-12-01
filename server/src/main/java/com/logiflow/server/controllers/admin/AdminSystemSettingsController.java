@@ -1,6 +1,8 @@
 package com.logiflow.server.controllers.admin;
 
 import com.logiflow.server.dtos.admin.system.SystemSettingDto;
+import com.logiflow.server.dtos.admin.system.SystemOverviewDto;
+import com.logiflow.server.services.admin.SystemOverviewService;
 import com.logiflow.server.dtos.admin.system.SystemSettingCreationDto;
 import com.logiflow.server.dtos.admin.system.SystemSettingUpdateDto;
 import com.logiflow.server.services.admin.SystemSettingsService;
@@ -20,9 +22,15 @@ import java.util.Optional;
 public class AdminSystemSettingsController {
 
     private final SystemSettingsService systemSettingsService;
+    private final SystemOverviewService systemOverviewService;
 
-    public AdminSystemSettingsController(SystemSettingsService systemSettingsService) {
+    public AdminSystemSettingsController(SystemSettingsService systemSettingsService, SystemOverviewService systemOverviewService) {
         this.systemSettingsService = systemSettingsService;
+        this.systemOverviewService = systemOverviewService;
+    }
+    @GetMapping("/overview")
+    public ResponseEntity<SystemOverviewDto> getSystemOverview() {
+        return ResponseEntity.ok(systemOverviewService.getSystemOverview());
     }
 
     @GetMapping
