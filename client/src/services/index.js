@@ -1,5 +1,6 @@
 import api from './api';
 import authService from './auth/authService';
+import driverRegistrationService from './auth/driverRegistrationService';
 import userService from './admin/userService';
 import uploadService from './upload/uploadService';
 import profileService from './profile/profileService';
@@ -9,6 +10,7 @@ import dashboardService from './admin/dashboardService';
 export {
   api,
   authService,
+  driverRegistrationService,
   userService,
   uploadService,
   profileService,

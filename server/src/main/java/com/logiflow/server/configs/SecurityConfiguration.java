@@ -44,6 +44,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/uploads/license-image").permitAll()
                                 .requestMatchers("/api/uploads/**").authenticated()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/dispatch/**").hasRole("DISPATCHER")

@@ -113,9 +113,14 @@ const MainLayout = () => {
                 </button>
               </>
             ) : (
-              <Link to="/login" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-                Login
-              </Link>
+              <>
+                <Link to="/register/driver" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  Do you wanna becom a driver
+                </Link>
+                <Link to="/login" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  Login
+                </Link>
+              </>
             )}
           </nav>
         </div>

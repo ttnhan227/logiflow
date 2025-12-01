@@ -43,4 +43,34 @@ public class UploadController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping(value = "/license-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UploadResponse> uploadLicenseImage(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            String path = fileStorageService.storeLicenseImage(file);
+            UploadResponse response = new UploadResponse(path);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping(value = "/cv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UploadResponse> uploadCV(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            String path = fileStorageService.storeCV(file);
+            UploadResponse response = new UploadResponse(path);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

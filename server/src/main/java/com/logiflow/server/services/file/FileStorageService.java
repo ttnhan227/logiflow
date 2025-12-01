@@ -15,4 +15,26 @@ public interface FileStorageService {
      * This method should be safe and only delete files that were stored under the configured upload dir.
      */
     void deleteProfilePicture(String publicPath);
+
+    /**
+     * Store a driver's license image in a public license-images folder and return the public path
+     * (e.g. /uploads/license-images/<filename>).
+     */
+    String storeLicenseImage(MultipartFile file);
+
+    /**
+     * Delete a stored driver's license image given its public path.
+     */
+    void deleteLicenseImage(String publicPath);
+
+    /**
+     * Store a CV file (PDF or document) and return the public path
+     * (e.g. /uploads/cv-documents/<filename>).
+     */
+    String storeCV(MultipartFile file);
+
+    /**
+     * Delete a stored CV file given its public path.
+     */
+    void deleteCV(String publicPath);
 }

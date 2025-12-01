@@ -15,6 +15,9 @@ import AdminUserEditPage from "./components/admin/AdminUserEditPage";
 import AdminSettingsPage from "./components/admin/AdminSettingsPage";
 import AdminSystemOverviewPage from "./components/admin/AdminSystemOverviewPage";
 import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
+import AdminRegistrationRequestsPage from "./components/admin/AdminRegistrationRequestsPage";
+import AdminRegistrationRequestDetailsPage from "./components/admin/AdminRegistrationRequestDetailsPage";
+import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 import ProfilePage from "./components/profile/ProfilePage";
@@ -106,12 +109,23 @@ function App() {
               <AdminAuditLogPage />
             </ProtectedRoute>
           } />
+          <Route path="/admin/registration-requests" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminRegistrationRequestsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/registration-requests/:requestId" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminRegistrationRequestDetailsPage />
+            </ProtectedRoute>
+          } />
         </Route>
         <Route path="/login" element={
           authService.getCurrentUser() ? 
           <AuthRedirect /> : 
           <LoginPage />
         } />
+        <Route path="/register/driver" element={<DriverRegisterPage />} />
 
         {/* 404 - Not Found */}
         <Route path="*" element={<NotFoundPage />} />
