@@ -16,6 +16,9 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Query("SELECT COUNT(DISTINCT ta.driver.driverId) FROM TripAssignment ta WHERE ta.status IN ('assigned', 'in_progress')")
     int countOnDutyDrivers();
     
+    // Count trips by status for statistics
+    long countByStatus(String status);
+    
     @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route LEFT JOIN FETCH t.orders o LEFT JOIN FETCH o.createdBy WHERE t.tripId = :id")
     Optional<Trip> findByIdWithRelations(@Param("id") Integer id);
 
@@ -42,4 +45,12 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     List<Trip> findTripsByDriverAndDateRange(@Param("driverId") Integer driverId,
                                              @Param("from") LocalDateTime from,
                                              @Param("to") LocalDateTime to);
+    
+    // Get completed trips with actual arrival times for delivery time analysis
+    @Query("SELECT t FROM Trip t WHERE t.status = 'completed' " +
+            "AND t.actualArrival IS NOT NULL " +
+            "AND t.scheduledDeparture IS NOT NULL " +
+            "AND t.actualArrival >= :fromDate " +
+            "ORDER BY t.actualArrival DESC")
+    List<Trip> findCompletedTripsForStats(@Param("fromDate") LocalDateTime fromDate);
 }

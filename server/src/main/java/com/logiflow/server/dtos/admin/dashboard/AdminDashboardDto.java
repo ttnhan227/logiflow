@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * DTO for admin dashboard data.
+ * DTO for admin dashboard data.            
  */
 @Data
 @Builder
@@ -22,15 +22,25 @@ public class AdminDashboardDto {
     // Recent Activities
     private final List<RecentActivityDto> recentActivities;
 
+    // Shipment Statistics
+    private final ShipmentStatisticsDto shipmentStatistics;
+
+    // Delivery Time Statistics
+    private final List<DeliveryTimeStatsDto> deliveryTimeStats;
+
     // Static factory method for better readability
     public static AdminDashboardDto of(
             UserStatsDto userStats,
             List<RecentActivityDto> recentActivities,
-            FleetOverviewDto fleetOverview) {
+            FleetOverviewDto fleetOverview,
+            ShipmentStatisticsDto shipmentStatistics,
+            List<DeliveryTimeStatsDto> deliveryTimeStats) {
         return AdminDashboardDto.builder()
             .userStats(userStats)
             .recentActivities(recentActivities)
             .fleetOverview(fleetOverview)
+            .shipmentStatistics(shipmentStatistics)
+            .deliveryTimeStats(deliveryTimeStats)
             .build();
     }
 }

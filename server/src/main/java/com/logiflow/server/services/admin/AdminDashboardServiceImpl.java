@@ -4,18 +4,30 @@ import com.logiflow.server.dtos.admin.dashboard.AdminDashboardDto;
 import com.logiflow.server.dtos.admin.dashboard.UserStatsDto;
 import com.logiflow.server.dtos.admin.dashboard.FleetOverviewDto;
 import com.logiflow.server.dtos.admin.dashboard.RecentActivityDto;
+import com.logiflow.server.dtos.admin.dashboard.ActiveDriverLocationDto;
+import com.logiflow.server.dtos.admin.dashboard.ShipmentStatisticsDto;
+import com.logiflow.server.dtos.admin.dashboard.DeliveryTimeStatsDto;
 import com.logiflow.server.models.Order;
+import com.logiflow.server.models.Driver;
+import com.logiflow.server.models.Trip;
+import com.logiflow.server.models.TripAssignment;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
+import com.logiflow.server.repositories.driver.DriverRepository;
+import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.DayOfWeek;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,15 +37,24 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final RoleRepository roleRepository;
     private final VehicleRepository vehicleRepository;
     private final OrderRepository orderRepository;
+    private final DriverRepository driverRepository;
+    private final TripAssignmentRepository tripAssignmentRepository;
+    private final com.logiflow.server.repositories.trip.TripRepository tripRepository;
 
     public AdminDashboardServiceImpl(UserRepository userRepository, 
                                     RoleRepository roleRepository,
                                     VehicleRepository vehicleRepository,
-                                    OrderRepository orderRepository) {
+                                    OrderRepository orderRepository,
+                                    DriverRepository driverRepository,
+                                    TripAssignmentRepository tripAssignmentRepository,
+                                    com.logiflow.server.repositories.trip.TripRepository tripRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.vehicleRepository = vehicleRepository;
         this.orderRepository = orderRepository;
+        this.driverRepository = driverRepository;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+        this.tripRepository = tripRepository;
     }
 
     @Override
@@ -74,22 +95,105 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             ))
             .collect(Collectors.toList());
         
+        // Calculate total revenue from delivered orders
+        BigDecimal totalRevenue = orderRepository.sumDeliveryFeeByStatus(Order.OrderStatus.DELIVERED);
+        
         // Get fleet overview data
         FleetOverviewDto fleetOverview = FleetOverviewDto.of(
             (int) vehicleRepository.count(),
             orderRepository.countByOrderStatus(Order.OrderStatus.IN_TRANSIT),
-            orderRepository.countByOrderStatus(Order.OrderStatus.PENDING)
+            orderRepository.countByOrderStatus(Order.OrderStatus.PENDING),
+            totalRevenue
         );
+
+        // Get shipment statistics
+        ShipmentStatisticsDto shipmentStatistics = ShipmentStatisticsDto.of(
+            (int) tripRepository.countByStatus("scheduled"),
+            (int) tripRepository.countByStatus("in_progress") + (int) tripRepository.countByStatus("arrived"),
+            (int) tripRepository.countByStatus("completed"),
+            (int) tripRepository.countByStatus("cancelled")
+        );
+
+        // Get delivery time statistics (last 30 days)
+        List<DeliveryTimeStatsDto> deliveryTimeStats = calculateDeliveryTimeStats();
 
         return AdminDashboardDto.of(
             userStats,
             recentActivities,
-            fleetOverview
+            fleetOverview,
+            shipmentStatistics,
+            deliveryTimeStats
         );
+    }
+
+    private List<DeliveryTimeStatsDto> calculateDeliveryTimeStats() {
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        List<Trip> completedTrips = tripRepository.findCompletedTripsForStats(thirtyDaysAgo);
+
+        // Group by day of week and calculate average
+        Map<DayOfWeek, List<Long>> deliveryTimesByDay = completedTrips.stream()
+            .filter(t -> t.getActualArrival() != null && t.getScheduledDeparture() != null)
+            .collect(Collectors.groupingBy(
+                t -> t.getActualArrival().getDayOfWeek(),
+                Collectors.mapping(
+                    t -> Duration.between(t.getScheduledDeparture(), t.getActualArrival()).toMinutes(),
+                    Collectors.toList()
+                )
+            ));
+
+        // Create result list for each day of week
+        List<DeliveryTimeStatsDto> result = new ArrayList<>();
+        String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        DayOfWeek[] days = {DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, 
+                           DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY};
+
+        for (int i = 0; i < days.length; i++) {
+            List<Long> times = deliveryTimesByDay.getOrDefault(days[i], new ArrayList<>());
+            Double avgMinutes = times.isEmpty() ? 0.0 : 
+                times.stream().mapToLong(Long::longValue).average().orElse(0.0);
+            result.add(DeliveryTimeStatsDto.of(dayNames[i], avgMinutes));
+        }
+
+        return result;
     }
 
     private int countActiveUsersByRole(Map<String, Integer> roleNameToId, String roleName) {
         return roleNameToId.containsKey(roleName) ? 
             userRepository.countByRole_RoleIdAndIsActive(roleNameToId.get(roleName), true) : 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ActiveDriverLocationDto> getActiveDriverLocations() {
+        // Find all trip assignments with status 'accepted' and trip status 'in_progress' or 'arrived'
+        List<TripAssignment> activeAssignments = tripAssignmentRepository.findAll().stream()
+            .filter(ta -> "accepted".equalsIgnoreCase(ta.getStatus()))
+            .filter(ta -> {
+                Trip trip = ta.getTrip();
+                String status = trip.getStatus();
+                return "in_progress".equalsIgnoreCase(status) || "arrived".equalsIgnoreCase(status);
+            })
+            .collect(Collectors.toList());
+
+        // Map to DTOs with driver location and trip info
+        return activeAssignments.stream()
+            .filter(ta -> ta.getDriver() != null)
+            .filter(ta -> ta.getDriver().getCurrentLocationLat() != null && ta.getDriver().getCurrentLocationLng() != null)
+            .map(ta -> {
+                Driver driver = ta.getDriver();
+                Trip trip = ta.getTrip();
+                return ActiveDriverLocationDto.of(
+                    driver.getDriverId(),
+                    driver.getFullName(),
+                    driver.getPhone(),
+                    trip.getTripId(),
+                    trip.getStatus(),
+                    driver.getCurrentLocationLat(),
+                    driver.getCurrentLocationLng(),
+                    trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null,
+                    trip.getRoute() != null ? trip.getRoute().getRouteName() : null
+                );
+            })
+            .collect(Collectors.toList());
     }
 }
