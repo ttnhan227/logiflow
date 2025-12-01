@@ -5,22 +5,26 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.server.HandshakeInterceptor;
 
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic"); // For broadcasting to clients
+        config.enableSimpleBroker("/topic", "/queue"); // For broadcasting to clients and personal queues
         config.setApplicationDestinationPrefixes("/app"); // For client-to-server messages
+        config.setUserDestinationPrefix("/user"); // For user-specific destinations
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        HandshakeInterceptor jwtInterceptor = new JwtHandshakeInterceptor();
+        // Driver tracking endpoint
         registry.addEndpoint("/ws/tracking")
-                .addInterceptors(jwtInterceptor)
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
+        
+        // Admin notifications endpoint
+        registry.addEndpoint("/ws/notifications")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
     }

@@ -59,7 +59,8 @@ public class AuditLogServiceImpl implements AuditLogService {
             "CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS",
             "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING",
             "CREATE_VEHICLE", "UPDATE_VEHICLE", "DELETE_VEHICLE",
-            "CREATE_ROUTE", "UPDATE_ROUTE", "DELETE_ROUTE"
+            "CREATE_ROUTE", "UPDATE_ROUTE", "DELETE_ROUTE",
+            "APPROVE_REGISTRATION", "REJECT_REGISTRATION"
         );
     }
 

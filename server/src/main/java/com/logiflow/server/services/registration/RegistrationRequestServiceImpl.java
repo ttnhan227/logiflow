@@ -6,6 +6,7 @@ import com.logiflow.server.models.Role;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.websocket.NotificationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,16 +20,19 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
     public RegistrationRequestServiceImpl(
             RegistrationRequestRepository registrationRequestRepository,
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            NotificationService notificationService) {
         this.registrationRequestRepository = registrationRequestRepository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -67,6 +71,13 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
         entity.setLicenseImageUrl(req.getLicenseImageUrl());
         entity.setCvUrl(req.getCvUrl());
 
-        registrationRequestRepository.save(entity);
+        RegistrationRequest saved = registrationRequestRepository.save(entity);
+        
+        // Send notification to admins about new registration request
+        notificationService.notifyNewRegistrationRequest(
+            saved.getUsername(), 
+            driverRole.getRoleName(), 
+            saved.getRequestId()
+        );
     }
 }

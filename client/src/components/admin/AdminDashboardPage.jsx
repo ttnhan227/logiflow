@@ -94,7 +94,7 @@ const AdminDashboardPage = () => {
     );
   }
 
-  const { userStats, fleetOverview, recentActivities, shipmentStatistics, deliveryTimeStats } = dashboardData || {};
+  const { userStats, fleetOverview, recentActivities, shipmentStatistics, deliveryTimeStats, complianceAlerts } = dashboardData || {};
   
   const totalActiveUsers = (userStats?.activeDispatchers || 0) + 
                           (userStats?.activeDrivers || 0) + 
@@ -350,8 +350,8 @@ const AdminDashboardPage = () => {
                 </span>
               </span>
             </div>
-            <div className="stat-value">{fleetOverview?.activeVehicles || 0}</div>
-            <div className="stat-subtitle">Fleet capacity</div>
+            <div className="stat-value">{fleetOverview?.totalVehicles || 0}</div>
+            <div className="stat-subtitle">{fleetOverview?.vehicleUtilization?.toFixed(1) || 0}% utilization</div>
           </div>
           <div className="stat-card warning">
             <div style={{ fontSize: '28px', marginBottom: '8px' }}>🚚</div>
@@ -779,6 +779,42 @@ const AdminDashboardPage = () => {
           )}
         </div>
       </div>
+
+      {/* Compliance Alerts Section */}
+      {complianceAlerts && complianceAlerts.length > 0 && (
+        <div className="dashboard-section">
+          <h2 className="section-title">🚨 Compliance Alerts</h2>
+          <div className="activity-list">
+            {complianceAlerts.map((alert, index) => {
+              const severityStyle = alert.severity === 'CRITICAL' 
+                ? { backgroundColor: '#fee2e2', borderLeft: '4px solid #dc2626' }
+                : alert.severity === 'WARNING'
+                ? { backgroundColor: '#fef3c7', borderLeft: '4px solid #f59e0b' }
+                : { backgroundColor: '#dbeafe', borderLeft: '4px solid #3b82f6' };
+              
+              return (
+                <div
+                  key={index}
+                  className="activity-item"
+                  style={severityStyle}
+                >
+                  <div className="activity-header">
+                    <span className="activity-title">
+                      {alert.severity === 'CRITICAL' ? '🔴' : alert.severity === 'WARNING' ? '⚠️' : 'ℹ️'} {alert.alertType.replace(/_/g, ' ')}
+                    </span>
+                    <span className="activity-time">{formatDate(alert.timestamp)}</span>
+                  </div>
+                  <div className="activity-details">{alert.message}</div>
+                  <div className="activity-meta">
+                    <span>📦 {alert.entityType}</span>
+                    {alert.entityName && <span>🏷️ {alert.entityName}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Recent Activities Section */}
       <div className="dashboard-section">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services';
+import NotificationBell from '../common/NotificationBell';
 import './admin.css';
 
 const AdminTopNav = ({ user, onLogout, className = '' }) => {
@@ -26,11 +27,8 @@ const AdminTopNav = ({ user, onLogout, className = '' }) => {
       <div className="admin-topnav-content">
         {/* User Profile Section */}
         <div className="topnav-right">
-          {/* Notification Icon (placeholder for future) */}
-          <button className="topnav-icon-btn" title="Notifications">
-            <span className="icon">🔔</span>
-            <span className="notification-badge">3</span>
-          </button>
+          {/* Notification Bell */}
+          <NotificationBell />
 
           {/* User Dropdown */}
           <div className="user-dropdown">
@@ -72,16 +70,6 @@ const AdminTopNav = ({ user, onLogout, className = '' }) => {
                   >
                     <span className="dropdown-icon">👤</span>
                     My Profile
-                  </button>
-                  <button 
-                    className="dropdown-item"
-                    onClick={() => {
-                      navigate('/admin/settings');
-                      setDropdownOpen(false);
-                    }}
-                  >
-                    <span className="dropdown-icon">⚙️</span>
-                    Settings
                   </button>
                   <div className="dropdown-divider" />
                   <button 

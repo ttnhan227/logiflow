@@ -8,6 +8,8 @@ import com.logiflow.server.repositories.registration.RegistrationRequestReposito
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
+import com.logiflow.server.services.admin.AuditLogService;
+import com.logiflow.server.websocket.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,10 @@ public class AdminRegistrationRequestController {
     private RoleRepository roleRepository;
     @Autowired
     private DriverRepository driverRepository;
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private NotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<List<RegistrationRequest>> getAllRequests() {
@@ -80,6 +86,14 @@ public class AdminRegistrationRequestController {
         // Update request status
         req.setStatus(RegistrationRequest.RequestStatus.APPROVED);
         registrationRequestRepository.save(req);
+        
+        auditLogService.log(
+            "APPROVE_REGISTRATION",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Approved registration for: " + req.getUsername() + " (Role: " + req.getRole().getRoleName() + ")"
+        );
+        
         return ResponseEntity.ok("Request approved successfully");
     }
 
@@ -95,6 +109,14 @@ public class AdminRegistrationRequestController {
         }
         req.setStatus(RegistrationRequest.RequestStatus.REJECTED);
         registrationRequestRepository.save(req);
+        
+        auditLogService.log(
+            "REJECT_REGISTRATION",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Rejected registration for: " + req.getUsername() + " (Role: " + req.getRole().getRoleName() + ")"
+        );
+        
         return ResponseEntity.ok("Request rejected successfully");
     }
 }

@@ -43,6 +43,8 @@ public class SecurityConfiguration {
                         (authorize) -> authorize
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
+                                .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()
+                                .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/uploads/license-image").permitAll()
                                 .requestMatchers("/api/uploads/**").authenticated()
