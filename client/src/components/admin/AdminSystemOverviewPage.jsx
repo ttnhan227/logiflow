@@ -24,23 +24,7 @@ const Section = ({ title, children, columns = 1 }) => (
   </div>
 );
 
-const ActivityItem = ({ activity }) => (
-  <div className="activity-item">
-    <div className="activity-header">
-      <span><strong>{activity.role}:</strong> {activity.username}</span>
-      <span>{formatDate(activity.timestamp)}</span>
-    </div>
-    <div>
-      {activity.action} - {activity.details}
-    </div>
-    <div className="activity-meta">
-      <span>IP: {activity.ipAddress}</span>
-      <span className={`status ${activity.success ? 'success' : 'error'}`}>
-        {activity.success ? 'Success' : 'Failed'}
-      </span>
-    </div>
-  </div>
-);
+// Recent activity component removed as activity feed moved to Dashboard
 
 const AdminSystemOverviewPage = () => {
   const [loading, setLoading] = useState(true);
@@ -50,9 +34,7 @@ const AdminSystemOverviewPage = () => {
     activeAlerts: 0,
     systemVersion: '',
     systemHealth: {},
-    userStats: {},
-    fleetOverview: {},
-    recentActivities: []
+    // Sections moved to Admin Dashboard: userStats, fleetOverview, recentActivities
   });
 
   useEffect(() => {
@@ -85,18 +67,14 @@ const AdminSystemOverviewPage = () => {
     systemUptime, 
     activeAlerts, 
     systemVersion, 
-    systemHealth = {},
-    userStats = {},
-    fleetOverview = {},
-    recentActivities = []
+    systemHealth = {}
   } = dashboardData;
 
   return (
     <div className="admin-page-container">
-      {/* Header */}
       <div className="admin-page-header">
         <h1>📊 System Overview</h1>
-        <p>Monitor system health, performance, and recent activities</p>
+        <p>Monitor core system health and runtime status</p>
       </div>
 
       <div className="stats-grid">
@@ -116,49 +94,15 @@ const AdminSystemOverviewPage = () => {
         />
       </div>
 
-      <div className="two-column-layout">
-        <div>
-          <Section title="System Health" columns={2}>
-            <StatCard title="CPU Usage" value={systemHealth.cpuUsage || 'N/A'} unit="%" />
-            <StatCard title="Memory Usage" value={`${systemHealth.usedMemoryMB || 0} / ${systemHealth.maxMemoryMB || 0}`} unit=" MB" />
-            <StatCard title="Free Disk Space" value={systemHealth.freeDiskSpaceGB || 'N/A'} unit=" GB" />
-            <StatCard 
-              title="Database Status" 
-              value={systemHealth.dbStatus || 'N/A'} 
-              highlight={systemHealth.dbStatus === 'UP'}
-            />
-          </Section>
-          
-          <Section title="Fleet Overview" columns={3}>
-            <StatCard title="Active Vehicles" value={fleetOverview.activeVehicles || 0} />
-            <StatCard title="Active Deliveries" value={fleetOverview.activeDeliveries || 0} />
-            <StatCard 
-              title="Pending Deliveries" 
-              value={fleetOverview.pendingDeliveries || 0}
-              highlight={(fleetOverview.pendingDeliveries || 0) > 0}
-            />
-          </Section>
-        </div>
-        
-        <Section title="User Statistics" columns={1}>
-          <StatCard title="Total Users" value={userStats.totalUsers || 0} />
-          <StatCard title="New Signups" value={userStats.newSignups || 0} />
-          <StatCard title="Active Dispatchers" value={userStats.activeDispatchers || 0} />
-          <StatCard title="Active Drivers" value={userStats.activeDrivers || 0} />
-          <StatCard title="Active Managers" value={userStats.activeManagers || 0} />
-        </Section>
-      </div>
-
-      <Section title="Recent Activities">
-        {recentActivities.length > 0 ? (
-          recentActivities.map((activity, index) => (
-            <ActivityItem key={index} activity={activity} />
-          ))
-        ) : (
-          <div className="empty-state">
-            No recent activities found
-          </div>
-        )}
+      <Section title="System Health" columns={2}>
+        <StatCard title="CPU Usage" value={systemHealth.cpuUsage || 'N/A'} unit="%" />
+        <StatCard title="Memory Usage" value={`${systemHealth.usedMemoryMB || 0} / ${systemHealth.maxMemoryMB || 0}`} unit=" MB" />
+        <StatCard title="Free Disk Space" value={systemHealth.freeDiskSpaceGB || 'N/A'} unit=" GB" />
+        <StatCard 
+          title="Database Status" 
+          value={systemHealth.dbStatus || 'N/A'} 
+          highlight={systemHealth.dbStatus === 'UP'}
+        />
       </Section>
     </div>
   );

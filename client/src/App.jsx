@@ -4,7 +4,7 @@ import { authService } from './services';
 import './App.css';
 import './components/layout.css';
 import MainLayout from './components/MainLayout';
-import AdminLayout from './components/admin/AdminLayout';
+import AdminSideNav from './components/admin/AdminSideNav';
 import LoginPage from "./components/auth/LoginPage";
 import HomePage from "./components/home/HomePage";
 import AboutPage from "./components/home/AboutPage";
@@ -70,7 +70,7 @@ function App() {
         </Route>
 
         {/* Admin routes with AdminLayout (sidebar) */}
-        <Route element={<AdminLayout />}>
+        <Route element={<AdminSideNav />}>
           <Route path="/admin/dashboard" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminDashboardPage />

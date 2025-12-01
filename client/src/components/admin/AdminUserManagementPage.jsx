@@ -330,13 +330,13 @@ const UserModal = ({ user, onClose, onSave, roles }) => {
 // Main component
 const UserManagementPage = () => {
   const navigate = useNavigate();
-  const roles = ['ADMIN', 'MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
+  // Available roles for creating/editing users (ADMIN excluded)
+  const roles = ['MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [page, setPage] = useState(0);
@@ -347,8 +347,9 @@ const UserManagementPage = () => {
     setError(null);
     try {
       const data = await userService.getUsers(0, 1000);
-      setUsers(data.content || []);
-      setFilteredUsers(data.content || []);
+      const list = (data.content || []).filter((u) => u.role !== 'ADMIN');
+      setUsers(list);
+      setFilteredUsers(list);
     } catch (err) {
       setError(typeof err === 'string' ? err : 'Failed to load users');
     } finally {
@@ -369,12 +370,9 @@ const UserManagementPage = () => {
           u.username?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term)
       );
     }
-    if (roleFilter !== 'ALL') {
-      result = result.filter((u) => u.role === roleFilter);
-    }
     setFilteredUsers(result);
     setPage(0);
-  }, [searchTerm, roleFilter, users]);
+  }, [searchTerm, users]);
 
   const handleToggleStatus = async (user) => {
     try {
@@ -416,17 +414,6 @@ const UserManagementPage = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-        >
-          <option value="ALL">All Roles</option>
-          {roles.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
         <button
           className="btn"
           onClick={() => {
@@ -448,9 +435,7 @@ const UserManagementPage = () => {
           <div className="empty-state-icon">👥</div>
           <div className="empty-state-title">No users found</div>
           <div className="empty-state-description">
-            {searchTerm || roleFilter !== 'ALL'
-              ? 'Try adjusting your search or filters'
-              : 'Get started by adding your first user'}
+            {searchTerm ? 'Try adjusting your search' : 'Get started by adding your first user'}
           </div>
         </div>
       ) : (

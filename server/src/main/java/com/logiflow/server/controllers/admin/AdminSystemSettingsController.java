@@ -28,6 +28,7 @@ public class AdminSystemSettingsController {
         this.systemSettingsService = systemSettingsService;
         this.systemOverviewService = systemOverviewService;
     }
+
     @GetMapping("/overview")
     public ResponseEntity<SystemOverviewDto> getSystemOverview() {
         return ResponseEntity.ok(systemOverviewService.getSystemOverview());

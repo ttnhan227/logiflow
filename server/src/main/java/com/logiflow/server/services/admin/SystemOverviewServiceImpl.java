@@ -1,44 +1,21 @@
 package com.logiflow.server.services.admin;
 
 import com.logiflow.server.dtos.admin.system.SystemOverviewDto;
-import com.logiflow.server.dtos.admin.system.UserStatsDto;
-import com.logiflow.server.dtos.admin.system.FleetOverviewDto;
-import com.logiflow.server.models.Order;
-import com.logiflow.server.repositories.user.UserRepository;
-import com.logiflow.server.repositories.role.RoleRepository;
-import com.logiflow.server.repositories.vehicle.VehicleRepository;
-import com.logiflow.server.repositories.driver.DriverRepository;
-import com.logiflow.server.repositories.trip.TripRepository;
-import com.logiflow.server.repositories.order.OrderRepository;
+import com.logiflow.server.dtos.admin.system.SystemHealthDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.PageRequest;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import com.logiflow.server.dtos.admin.system.RecentActivityDto;
-import com.logiflow.server.dtos.admin.system.SystemHealthDto;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.ThreadMXBean;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Service
 public class SystemOverviewServiceImpl implements SystemOverviewService {
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final VehicleRepository vehicleRepository;
-    private final DriverRepository driverRepository;
-    private final OrderRepository orderRepository;
-    private final TripRepository tripRepository;
     private final LocalDateTime systemStartTime;
     private String systemUptimeCache;
 
@@ -48,18 +25,7 @@ public class SystemOverviewServiceImpl implements SystemOverviewService {
     private final OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
     private final Runtime runtime = Runtime.getRuntime();
 
-    public SystemOverviewServiceImpl(UserRepository userRepository, 
-                              RoleRepository roleRepository,
-                              VehicleRepository vehicleRepository,
-                              DriverRepository driverRepository,
-                              OrderRepository orderRepository,
-                              TripRepository tripRepository) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.vehicleRepository = vehicleRepository;
-        this.driverRepository = driverRepository;
-        this.orderRepository = orderRepository;
-        this.tripRepository = tripRepository;
+    public SystemOverviewServiceImpl() {
         this.systemStartTime = LocalDateTime.now();
         updateUptime();
     }
@@ -70,65 +36,7 @@ public class SystemOverviewServiceImpl implements SystemOverviewService {
         // Update uptime cache
         updateUptime();
 
-        // Get role name to ID mapping
-        Map<String, Integer> roleNameToId = roleRepository.findAll().stream()
-            .collect(Collectors.toMap(
-                role -> role.getRoleName().toUpperCase(),
-                role -> role.getRoleId()
-            ));
-
-        // Count active users by role
-        long activeDispatchers = countActiveUsersByRole(roleNameToId, "DISPATCHER");
-        long activeDrivers = countActiveUsersByRole(roleNameToId, "DRIVER");
-        long activeManagers = countActiveUsersByRole(roleNameToId, "MANAGER");
-        
-        long totalActiveUsers = userRepository.countByIsActive(true);
-
-        // Get user statistics
-        UserStatsDto userStats = new UserStatsDto(
-            userRepository.count(),  // total users
-            userRepository.countByCreatedAtAfter(LocalDateTime.now().minusDays(7)),  // new signups (last 7 days)
-            (int) activeDispatchers,
-            (int) activeDrivers,
-            (int) activeManagers
-        );
-
-        // Get recent user activities (last 5 logins)
-        List<RecentActivityDto> recentActivities = userRepository
-            .findRecentActiveUsers(PageRequest.of(0, 5))
-            .stream()
-            .map(user -> RecentActivityDto.loginActivity(
-                user.getUsername(),
-                user.getRole().getRoleName(),
-                true, // success
-                "127.0.0.1", // TODO: Get actual IP from authentication context
-                "N/A", // TODO: Get actual user agent from request
-                null // No consecutive failures for successful logins
-            ))
-            .collect(Collectors.toList());
-            
-        // Add system events
-        if (recentActivities.size() < 5) {
-            // Add system startup event with server IP
-            recentActivities.add(0, RecentActivityDto.systemEvent(
-                "System Startup",
-                String.format("Application v%s started successfully. Environment: %s", 
-                    systemVersion,
-                    System.getenv().getOrDefault("SPRING_PROFILES_ACTIVE", "default")
-                ),
-                "127.0.0.1" // Server IP - in production, get from server config
-            ));
-
-            // Add a sample security alert (in real app, this would be triggered by actual events)
-            if (recentActivities.size() < 4) {
-                recentActivities.add(1, RecentActivityDto.complianceAlert(
-                    "Multiple failed login attempts detected for user 'admin' from IP 192.168.1.100",
-                    "192.168.1.100"
-                ));
-            }
-        }
-
-            // Get active alerts (placeholder - implement as needed)
+        // Get active alerts (placeholder - implement as needed)
         int activeAlerts = 0;
         
         // Get system health metrics
@@ -149,28 +57,13 @@ public class SystemOverviewServiceImpl implements SystemOverviewService {
             // Timestamp
             LocalDateTime.now()
         );
-        
-        // Get fleet overview data
-        FleetOverviewDto fleetOverview = FleetOverviewDto.of(
-            (int) vehicleRepository.count(),
-            orderRepository.countByOrderStatus(Order.OrderStatus.IN_TRANSIT),
-            orderRepository.countByOrderStatus(Order.OrderStatus.PENDING)
-        );
 
         return SystemOverviewDto.of(
             systemUptimeCache,
             activeAlerts,
             systemVersion,
-            userStats,
-            recentActivities,
-            systemHealth,
-            fleetOverview
+            systemHealth
         );
-    }
-
-    private int countActiveUsersByRole(Map<String, Integer> roleNameToId, String roleName) {
-        return roleNameToId.containsKey(roleName) ? 
-            userRepository.countByRole_RoleIdAndIsActive(roleNameToId.get(roleName), true) : 0;
     }
 
     @Scheduled(fixedRate = 60000)

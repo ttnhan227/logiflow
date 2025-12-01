@@ -4,6 +4,7 @@ import userService from './admin/userService';
 import uploadService from './upload/uploadService';
 import profileService from './profile/profileService';
 import settingsService from './admin/settingsService';
+import dashboardService from './admin/dashboardService';
 
 export {
   api,
@@ -12,6 +13,7 @@ export {
   uploadService,
   profileService,
   settingsService,
+  dashboardService,
 };
 
 // Example usage:
