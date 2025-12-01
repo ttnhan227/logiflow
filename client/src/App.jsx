@@ -17,6 +17,8 @@ import AdminSystemOverviewPage from "./components/admin/AdminSystemOverviewPage"
 import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
 import AdminRegistrationRequestsPage from "./components/admin/AdminRegistrationRequestsPage";
 import AdminRegistrationRequestDetailsPage from "./components/admin/AdminRegistrationRequestDetailsPage";
+import AdminRoutesPage from "./components/admin/AdminRoutesPage";
+import AdminVehiclesPage from "./components/admin/AdminVehiclesPage";
 import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
@@ -117,6 +119,16 @@ function App() {
           <Route path="/admin/registration-requests/:requestId" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminRegistrationRequestDetailsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/routes" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminRoutesPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/vehicles" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminVehiclesPage />
             </ProtectedRoute>
           } />
         </Route>

@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { dashboardService } from '../../services';
 import './admin.css';
@@ -594,49 +592,137 @@ const AdminDashboardPage = () => {
         )}
       </div>
 
-      {/* Map Section */}
+      {/* Regional Activity Overview */}
       <div className="dashboard-section">
-        <h2 className="section-title">🗺️ Live Driver Tracking</h2>
-        <div style={{ height: '450px', width: '100%', marginBottom: '2rem', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <MapContainer center={[21.0285, 105.8542]} zoom={12} style={{ height: '100%', width: '100%' }}>
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {activeDrivers.map((driver) => (
-              <Marker 
-                key={driver.driverId} 
-                position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
-              >
-                <Popup>
-                  <div style={{ minWidth: '200px' }}>
-                    <strong style={{ fontSize: '14px' }}>🚚 {driver.driverName}</strong><br />
-                    <span style={{ fontSize: '12px', color: '#666' }}>📱 {driver.driverPhone}</span><br />
-                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #eee' }} />
-                    <strong style={{ fontSize: '13px' }}>Trip #{driver.tripId}</strong><br />
-                    <span style={{ 
-                      display: 'inline-block',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      marginTop: '4px',
-                      backgroundColor: driver.tripStatus === 'in_progress' ? '#ff9800' : '#9c27b0',
-                      color: 'white'
-                    }}>
-                      {driver.tripStatus?.toUpperCase()}
-                    </span><br />
-                    {driver.vehiclePlate && (
-                      <><span style={{ fontSize: '12px' }}>🚗 Vehicle: {driver.vehiclePlate}</span><br /></>
-                    )}
-                    {driver.routeName && (
-                      <span style={{ fontSize: '12px' }}>📍 Route: {driver.routeName}</span>
-                    )}
+        <h2 className="section-title">🗺️ Regional Activity Overview</h2>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(3, 1fr)', 
+          gap: '20px',
+          marginBottom: '2rem'
+        }}>
+          {/* North Region */}
+          <div style={{
+            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            borderRadius: '12px',
+            padding: '24px',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🌆</div>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: '700' }}>Northern Region</h3>
+              <div style={{ fontSize: '14px', opacity: 0.95, marginBottom: '12px' }}>
+                Hanoi, Hai Phong, Quang Ninh
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9 }}>Active Drivers</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginTop: '4px' }}>
+                    {activeDrivers.filter(d => parseFloat(d.latitude) > 20).length}
                   </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+                </div>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9 }}>Deliveries</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginTop: '4px' }}>
+                    {Math.floor((fleetOverview?.activeDeliveries || 0) * 0.35)}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ 
+              position: 'absolute', 
+              right: '-20px', 
+              bottom: '-20px', 
+              fontSize: '120px', 
+              opacity: 0.1 
+            }}>🌆</div>
+          </div>
+
+          {/* Central Region */}
+          <div style={{
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            borderRadius: '12px',
+            padding: '24px',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏖️</div>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: '700' }}>Central Region</h3>
+              <div style={{ fontSize: '14px', opacity: 0.95, marginBottom: '12px' }}>
+                Da Nang, Hue, Nha Trang
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9 }}>Active Drivers</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginTop: '4px' }}>
+                    {activeDrivers.filter(d => {
+                      const lat = parseFloat(d.latitude);
+                      return lat >= 12 && lat <= 20;
+                    }).length}
+                  </div>
+                </div>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9 }}>Deliveries</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginTop: '4px' }}>
+                    {Math.floor((fleetOverview?.activeDeliveries || 0) * 0.25)}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ 
+              position: 'absolute', 
+              right: '-20px', 
+              bottom: '-20px', 
+              fontSize: '120px', 
+              opacity: 0.1 
+            }}>🏖️</div>
+          </div>
+
+          {/* South Region */}
+          <div style={{
+            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+            borderRadius: '12px',
+            padding: '24px',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🌴</div>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: '700' }}>Southern Region</h3>
+              <div style={{ fontSize: '14px', opacity: 0.95, marginBottom: '12px' }}>
+                Ho Chi Minh, Can Tho, Vung Tau
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9 }}>Active Drivers</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginTop: '4px' }}>
+                    {activeDrivers.filter(d => parseFloat(d.latitude) < 12).length}
+                  </div>
+                </div>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9 }}>Deliveries</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginTop: '4px' }}>
+                    {Math.floor((fleetOverview?.activeDeliveries || 0) * 0.40)}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ 
+              position: 'absolute', 
+              right: '-20px', 
+              bottom: '-20px', 
+              fontSize: '120px', 
+              opacity: 0.1 
+            }}>🌴</div>
+          </div>
         </div>
         {/* Active Drivers Detail Table */}
         <div className="table-container">

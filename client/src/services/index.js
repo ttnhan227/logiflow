@@ -6,6 +6,8 @@ import uploadService from './upload/uploadService';
 import profileService from './profile/profileService';
 import settingsService from './admin/settingsService';
 import dashboardService from './admin/dashboardService';
+import routeService from './admin/routeService';
+import vehicleService from './admin/vehicleService';
 
 export {
   api,
@@ -16,6 +18,8 @@ export {
   profileService,
   settingsService,
   dashboardService,
+  routeService,
+  vehicleService,
 };
 
 // Example usage:

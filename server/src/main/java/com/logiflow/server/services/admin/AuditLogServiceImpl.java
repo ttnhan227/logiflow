@@ -27,6 +27,7 @@ public class AuditLogServiceImpl implements AuditLogService {
         log.setRole(role);
         log.setDetails(details);
         log.setTimestamp(LocalDateTime.now());
+        log.setSuccess(true);
         auditLogRepository.save(log);
     }
 
@@ -54,7 +55,12 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     @Transactional(readOnly = true)
     public List<String> getAvailableActions() {
-        return Arrays.asList("CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS", "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING");
+        return Arrays.asList(
+            "CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS",
+            "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING",
+            "CREATE_VEHICLE", "UPDATE_VEHICLE", "DELETE_VEHICLE",
+            "CREATE_ROUTE", "UPDATE_ROUTE", "DELETE_ROUTE"
+        );
     }
 
     private AuditLogDto toDto(AuditLog log) {
@@ -65,6 +71,7 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .role(log.getRole())
                 .details(log.getDetails())
                 .timestamp(log.getTimestamp())
+                .success(log.getSuccess())
                 .build();
     }
 }

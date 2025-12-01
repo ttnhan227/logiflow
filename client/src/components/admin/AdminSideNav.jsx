@@ -39,8 +39,8 @@ const AdminSideNav = () => {
     { path: '/admin/users', icon: '👥', label: 'User Management' },
     { path: '/admin/registration-requests', icon: '📋', label: 'Registration Requests' },
     { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
-    { path: '/admin/routes', icon: '📦', label: 'Routes', disabled: true },
-    { path: '/admin/drivers', icon: '🚗', label: 'Drivers', disabled: true },
+    { path: '/admin/routes', icon: '🗺️', label: 'Routes' },
+    { path: '/admin/vehicles', icon: '🚗', label: 'Vehicles' },
     {
       label: 'System',
       icon: '🛠️',

@@ -53,4 +53,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             "AND t.actualArrival >= :fromDate " +
             "ORDER BY t.actualArrival DESC")
     List<Trip> findCompletedTripsForStats(@Param("fromDate") LocalDateTime fromDate);
+    
+    // Count trips by vehicle and status for admin vehicle management
+    long countByVehicleAndStatusIn(com.logiflow.server.models.Vehicle vehicle, List<String> statuses);
 }
