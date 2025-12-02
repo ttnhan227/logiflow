@@ -10,6 +10,7 @@ import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
+import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,6 +49,9 @@ public class DatabaseSeeder implements CommandLineRunner {
     private TripAssignmentRepository tripAssignmentRepository;
 
     @Autowired
+    private RegistrationRequestRepository registrationRequestRepository;
+
+    @Autowired
     private DriverWorkLogRepository driverWorkLogRepository;
 
     @Autowired
@@ -70,6 +74,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             seedOrders();
             seedTripAssignments();
             seedDriverWorkLogs();
+            seedRegistrationRequests();
             System.out.println("Database seeding completed successfully!");
         } else {
             System.out.println("Database already seeded. Skipping...");
@@ -185,22 +190,22 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedVehicles() {
         List<Vehicle> vehicles = Arrays.asList(
-            createVehicle("truck", "51A-12345", 2000, "C", new BigDecimal("21.0285"), new BigDecimal("105.8342")),
-            createVehicle("bus", "51B-23456", 45, "D", new BigDecimal("16.0471"), new BigDecimal("108.2068")),
-            createVehicle("container", "51C-34567", 25000, "FC", new BigDecimal("21.5867"), new BigDecimal("105.3819")),
-            createVehicle("truck", "51A-45678", 5000, "C", new BigDecimal("21.0313"), new BigDecimal("105.8518")),
-            createVehicle("bus", "51B-56789", 50, "E", new BigDecimal("16.0628"), new BigDecimal("108.2328")),
-            createVehicle("truck", "51A-67890", 3000, "D", new BigDecimal("21.0282"), new BigDecimal("105.8542")),
-            createVehicle("container", "51C-78901", 20000, "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282")),
-            createVehicle("bus", "51B-89012", 40, "E", new BigDecimal("20.8462"), new BigDecimal("106.6884")),
-            createVehicle("truck", "51A-90123", 4000, "C", new BigDecimal("21.0278"), new BigDecimal("105.8342")),
-            createVehicle("container", "51C-01234", 22000, "FC", new BigDecimal("10.8230"), new BigDecimal("106.6297"))
+            createVehicle("truck", "51A-12345", 2000, "C", new BigDecimal("21.0285"), new BigDecimal("105.8342"), "available"),
+            createVehicle("van", "51B-23456", 800, "B2", new BigDecimal("16.0471"), new BigDecimal("108.2068"), "available"),
+            createVehicle("container", "51C-34567", 25000, "FC", new BigDecimal("21.5867"), new BigDecimal("105.3819"), "maintenance"),
+            createVehicle("truck", "51A-45678", 5000, "C", new BigDecimal("21.0313"), new BigDecimal("105.8518"), "available"),
+            createVehicle("motorbike", "51F-56789", 30, "A2", new BigDecimal("16.0628"), new BigDecimal("108.2328"), "available"),
+            createVehicle("truck", "51A-67890", 3000, "D", new BigDecimal("21.0282"), new BigDecimal("105.8542"), "in_use"),
+            createVehicle("container", "51C-78901", 20000, "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282"), "available"),
+            createVehicle("van", "51B-89012", 1000, "C", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "maintenance"),
+            createVehicle("truck", "51A-90123", 4000, "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "available"),
+            createVehicle("motorbike", "51F-01234", 25, "A2", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use")
         );
         vehicleRepository.saveAll(vehicles);
-        System.out.println("Seeded 10 vehicles");
+        System.out.println("Seeded 10 vehicles: 6 available, 2 in_use, 2 maintenance");
     }
 
-    private Vehicle createVehicle(String vehicleType, String licensePlate, int capacity, String requiredLicense, BigDecimal lat, BigDecimal lng) {
+    private Vehicle createVehicle(String vehicleType, String licensePlate, int capacity, String requiredLicense, BigDecimal lat, BigDecimal lng, String status) {
         Vehicle vehicle = new Vehicle();
         vehicle.setVehicleType(vehicleType);
         vehicle.setLicensePlate(licensePlate);
@@ -208,7 +213,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         vehicle.setRequiredLicense(requiredLicense);
         vehicle.setCurrentLocationLat(lat);
         vehicle.setCurrentLocationLng(lng);
-        vehicle.setStatus("available");
+        vehicle.setStatus(status);
         vehicle.setCreatedAt(LocalDateTime.now());
         return vehicle;
     }
@@ -280,80 +285,83 @@ public class DatabaseSeeder implements CommandLineRunner {
         List<Vehicle> vehicles = vehicleRepository.findAll().stream().limit(10).toList();
         List<Route> routes = routeRepository.findAll().stream().limit(10).toList();
         LocalDateTime now = LocalDateTime.now();
+        
+        // Spread completed trips across last 60 days for realistic reports
+        java.util.Random random = new java.util.Random(42); // Fixed seed for consistency
 
         List<Trip> trips = Arrays.asList(
             // Driver 0 - 5 trips (2 completed, 1 in_progress, 2 scheduled)
-            createCompletedTrip(vehicles.get(0), routes.get(0), "freight", now.minusDays(7), now.minusDays(7).plusHours(24), now.minusDays(7).plusMinutes(5), now.minusDays(7).plusHours(26).plusMinutes(30)),
-            createCompletedTrip(vehicles.get(0), routes.get(1), "mixed", now.minusDays(5), now.minusDays(5).plusHours(12), now.minusDays(5).plusMinutes(10), now.minusDays(5).plusHours(13).plusMinutes(15)),
+            createCompletedTrip(vehicles.get(0), routes.get(0), "freight", now.minusDays(45), now.minusDays(45).plusHours(24), now.minusDays(45).plusMinutes(5), now.minusDays(45).plusHours(26).plusMinutes(30)),
+            createCompletedTrip(vehicles.get(0), routes.get(1), "mixed", now.minusDays(32), now.minusDays(32).plusHours(12), now.minusDays(32).plusMinutes(10), now.minusDays(32).plusHours(13).plusMinutes(15)),
             createTrip(vehicles.get(0), routes.get(6), "mixed", now.minusHours(1), now.plusHours(2), "in_progress"),
             createTrip(vehicles.get(0), routes.get(3), "freight", now.plusDays(2), now.plusDays(2).plusHours(1), "scheduled"),
             createTrip(vehicles.get(0), routes.get(2), "freight", now.plusDays(3), now.plusDays(3).plusHours(7), "scheduled"),
             
             // Driver 1 - 5 trips (2 completed, 1 arrived, 2 scheduled)
-            createCompletedTrip(vehicles.get(1), routes.get(1), "passenger", now.minusDays(6), now.minusDays(6).plusHours(2), now.minusDays(6).plusMinutes(8), now.minusDays(6).plusHours(2).plusMinutes(25)),
-            createCompletedTrip(vehicles.get(1), routes.get(3), "passenger", now.minusDays(4), now.minusDays(4).plusHours(1), now.minusDays(4).plusMinutes(3), now.minusDays(4).plusHours(1).plusMinutes(18)),
+            createCompletedTrip(vehicles.get(1), routes.get(1), "passenger", now.minusDays(28), now.minusDays(28).plusHours(2), now.minusDays(28).plusMinutes(8), now.minusDays(28).plusHours(2).plusMinutes(25)),
+            createCompletedTrip(vehicles.get(1), routes.get(3), "passenger", now.minusDays(22), now.minusDays(22).plusHours(1), now.minusDays(22).plusMinutes(3), now.minusDays(22).plusHours(1).plusMinutes(18)),
             createTrip(vehicles.get(1), routes.get(7), "passenger", now.minusHours(3), now.minusMinutes(10), "arrived"),
             createTrip(vehicles.get(1), routes.get(4), "passenger", now.plusDays(1), now.plusDays(1).plusHours(2), "scheduled"),
             createTrip(vehicles.get(1), routes.get(5), "passenger", now.plusDays(4), now.plusDays(4).plusHours(2), "scheduled"),
             
             // Driver 2 - 6 trips (3 completed, 1 in_progress, 2 scheduled)
-            createCompletedTrip(vehicles.get(2), routes.get(2), "mixed", now.minusDays(10), now.minusDays(10).plusHours(5), now.minusDays(10).plusMinutes(15), now.minusDays(10).plusHours(5).plusMinutes(45)),
-            createCompletedTrip(vehicles.get(2), routes.get(4), "freight", now.minusDays(8), now.minusDays(8).plusHours(2), now.minusDays(8).plusMinutes(5), now.minusDays(8).plusHours(2).plusMinutes(35)),
-            createCompletedTrip(vehicles.get(2), routes.get(6), "mixed", now.minusDays(3), now.minusDays(3).plusHours(0).plusMinutes(20), now.minusDays(3).plusMinutes(2), now.minusDays(3).plusHours(0).plusMinutes(28)),
+            createCompletedTrip(vehicles.get(2), routes.get(2), "mixed", now.minusDays(55), now.minusDays(55).plusHours(5), now.minusDays(55).plusMinutes(15), now.minusDays(55).plusHours(5).plusMinutes(45)),
+            createCompletedTrip(vehicles.get(2), routes.get(4), "freight", now.minusDays(18), now.minusDays(18).plusHours(2), now.minusDays(18).plusMinutes(5), now.minusDays(18).plusHours(2).plusMinutes(35)),
+            createCompletedTrip(vehicles.get(2), routes.get(6), "mixed", now.minusDays(12), now.minusDays(12).plusHours(0).plusMinutes(20), now.minusDays(12).plusMinutes(2), now.minusDays(12).plusHours(0).plusMinutes(28)),
             createTrip(vehicles.get(2), routes.get(8), "freight", now.minusMinutes(30), now.plusHours(4), "in_progress"),
             createTrip(vehicles.get(2), routes.get(5), "mixed", now.plusDays(3), now.plusDays(3).plusHours(1), "scheduled"),
             createTrip(vehicles.get(2), routes.get(7), "freight", now.plusDays(5), now.plusDays(5).plusHours(0).plusMinutes(30), "scheduled"),
             
             // Driver 3 - 5 trips (2 completed, 1 in_progress, 2 scheduled, 1 cancelled)
-            createCompletedTrip(vehicles.get(3), routes.get(0), "freight", now.minusDays(9), now.minusDays(8), now.minusDays(9).plusMinutes(20), now.minusDays(8).plusHours(1).plusMinutes(10)),
-            createCompletedTrip(vehicles.get(3), routes.get(5), "freight", now.minusDays(2), now.minusDays(2).plusHours(1), now.minusDays(2).plusMinutes(7), now.minusDays(2).plusHours(1).plusMinutes(22)),
+            createCompletedTrip(vehicles.get(3), routes.get(0), "freight", now.minusDays(38), now.minusDays(37), now.minusDays(38).plusMinutes(20), now.minusDays(37).plusHours(1).plusMinutes(10)),
+            createCompletedTrip(vehicles.get(3), routes.get(5), "freight", now.minusDays(7), now.minusDays(7).plusHours(1), now.minusDays(7).plusMinutes(7), now.minusDays(7).plusHours(1).plusMinutes(22)),
             createTrip(vehicles.get(3), routes.get(3), "freight", now.minusHours(2), now.plusHours(1), "in_progress"),
             createTrip(vehicles.get(3), routes.get(9), "freight", now.plusHours(5), now.plusHours(6), "scheduled"),
             createTrip(vehicles.get(3), routes.get(1), "freight", now.plusDays(1).plusHours(6), now.plusDays(2).plusHours(6), "scheduled"),
             createTrip(vehicles.get(3), routes.get(2), "freight", now.minusDays(5), now.minusDays(5).plusHours(7), "cancelled"),
             
             // Driver 4 - 5 trips (2 completed, 1 arrived, 2 scheduled, 1 cancelled)
-            createCompletedTrip(vehicles.get(4), routes.get(7), "passenger", now.minusDays(11), now.minusDays(11).plusHours(0).plusMinutes(30), now.minusDays(11).plusMinutes(4), now.minusDays(11).plusHours(0).plusMinutes(38)),
-            createCompletedTrip(vehicles.get(4), routes.get(9), "passenger", now.minusDays(1), now.minusDays(1).plusHours(0).plusMinutes(17), now.minusDays(1).plusMinutes(2), now.minusDays(1).plusHours(0).plusMinutes(20)),
+            createCompletedTrip(vehicles.get(4), routes.get(7), "passenger", now.minusDays(50), now.minusDays(50).plusHours(0).plusMinutes(30), now.minusDays(50).plusMinutes(4), now.minusDays(50).plusHours(0).plusMinutes(38)),
+            createCompletedTrip(vehicles.get(4), routes.get(9), "passenger", now.minusDays(5), now.minusDays(5).plusHours(0).plusMinutes(17), now.minusDays(5).plusMinutes(2), now.minusDays(5).plusHours(0).plusMinutes(20)),
             createTrip(vehicles.get(4), routes.get(4), "passenger", now.minusHours(4), now.minusMinutes(5), "arrived"),
             createTrip(vehicles.get(4), routes.get(6), "mixed", now.plusHours(8), now.plusHours(8).plusMinutes(40), "scheduled"),
             createTrip(vehicles.get(4), routes.get(1), "passenger", now.plusDays(4), now.plusDays(4).plusHours(12), "scheduled"),
             createTrip(vehicles.get(4), routes.get(3), "mixed", now.minusDays(6), now.minusDays(6).plusHours(1), "cancelled"),
             
             // Driver 5 - 6 trips (3 completed, 1 in_progress, 2 scheduled)
-            createCompletedTrip(vehicles.get(5), routes.get(0), "freight", now.minusDays(12), now.minusDays(11), now.minusDays(12).plusMinutes(12), now.minusDays(11).plusHours(0).plusMinutes(50)),
-            createCompletedTrip(vehicles.get(5), routes.get(8), "mixed", now.minusDays(7), now.minusDays(7).plusHours(0).plusMinutes(15), now.minusDays(7).plusMinutes(3), now.minusDays(7).plusHours(0).plusMinutes(22)),
-            createCompletedTrip(vehicles.get(5), routes.get(4), "freight", now.minusDays(4), now.minusDays(4).plusHours(2), now.minusDays(4).plusMinutes(10), now.minusDays(4).plusHours(2).plusMinutes(28)),
+            createCompletedTrip(vehicles.get(5), routes.get(0), "freight", now.minusDays(60), now.minusDays(59), now.minusDays(60).plusMinutes(12), now.minusDays(59).plusHours(0).plusMinutes(50)),
+            createCompletedTrip(vehicles.get(5), routes.get(8), "mixed", now.minusDays(25), now.minusDays(25).plusHours(0).plusMinutes(15), now.minusDays(25).plusMinutes(3), now.minusDays(25).plusHours(0).plusMinutes(22)),
+            createCompletedTrip(vehicles.get(5), routes.get(4), "freight", now.minusDays(14), now.minusDays(14).plusHours(2), now.minusDays(14).plusMinutes(10), now.minusDays(14).plusHours(2).plusMinutes(28)),
             createTrip(vehicles.get(5), routes.get(5), "freight", now.minusHours(1), now.plusHours(3), "in_progress"),
             createTrip(vehicles.get(5), routes.get(7), "mixed", now.plusHours(6), now.plusHours(7), "scheduled"),
             createTrip(vehicles.get(5), routes.get(2), "freight", now.plusDays(2).plusHours(8), now.plusDays(2).plusHours(15), "scheduled"),
             
             // Driver 6 - 5 trips (2 completed, 1 arrived, 2 scheduled)
-            createCompletedTrip(vehicles.get(6), routes.get(2), "mixed", now.minusDays(13), now.minusDays(13).plusHours(7), now.minusDays(13).plusMinutes(18), now.minusDays(13).plusHours(8).plusMinutes(5)),
-            createCompletedTrip(vehicles.get(6), routes.get(9), "freight", now.minusDays(9), now.minusDays(9).plusHours(0).plusMinutes(17), now.minusDays(9).plusMinutes(6), now.minusDays(9).plusHours(0).plusMinutes(25)),
+            createCompletedTrip(vehicles.get(6), routes.get(2), "mixed", now.minusDays(42), now.minusDays(42).plusHours(7), now.minusDays(42).plusMinutes(18), now.minusDays(42).plusHours(8).plusMinutes(5)),
+            createCompletedTrip(vehicles.get(6), routes.get(9), "freight", now.minusDays(20), now.minusDays(20).plusHours(0).plusMinutes(17), now.minusDays(20).plusMinutes(6), now.minusDays(20).plusHours(0).plusMinutes(25)),
             createTrip(vehicles.get(6), routes.get(6), "mixed", now.minusHours(5), now.minusMinutes(15), "arrived"),
             createTrip(vehicles.get(6), routes.get(8), "freight", now.plusHours(10), now.plusHours(10).plusMinutes(25), "scheduled"),
             createTrip(vehicles.get(6), routes.get(4), "passenger", now.plusDays(3).plusHours(4), now.plusDays(3).plusHours(6), "scheduled"),
             
             // Driver 7 - 5 trips (2 completed, 1 in_progress, 2 scheduled)
-            createCompletedTrip(vehicles.get(7), routes.get(6), "passenger", now.minusDays(14), now.minusDays(14).plusHours(0).plusMinutes(20), now.minusDays(14).plusMinutes(5), now.minusDays(14).plusHours(0).plusMinutes(30)),
-            createCompletedTrip(vehicles.get(7), routes.get(8), "mixed", now.minusDays(8), now.minusDays(8).plusHours(0).plusMinutes(15), now.minusDays(8).plusMinutes(8), now.minusDays(8).plusHours(0).plusMinutes(28)),
+            createCompletedTrip(vehicles.get(7), routes.get(6), "passenger", now.minusDays(35), now.minusDays(35).plusHours(0).plusMinutes(20), now.minusDays(35).plusMinutes(5), now.minusDays(35).plusHours(0).plusMinutes(30)),
+            createCompletedTrip(vehicles.get(7), routes.get(8), "mixed", now.minusDays(16), now.minusDays(16).plusHours(0).plusMinutes(15), now.minusDays(16).plusMinutes(8), now.minusDays(16).plusHours(0).plusMinutes(28)),
             createTrip(vehicles.get(7), routes.get(7), "passenger", now.minusMinutes(45), now.plusHours(2), "in_progress"),
             createTrip(vehicles.get(7), routes.get(9), "mixed", now.plusHours(5), now.plusHours(5).plusMinutes(20), "scheduled"),
             createTrip(vehicles.get(7), routes.get(3), "freight", now.plusDays(5), now.plusDays(5).plusHours(1), "scheduled"),
             
             // Driver 8 - 6 trips (3 completed, 1 arrived, 2 scheduled)
-            createCompletedTrip(vehicles.get(8), routes.get(1), "freight", now.minusDays(15), now.minusDays(15).plusHours(12), now.minusDays(15).plusMinutes(20), now.minusDays(15).plusHours(13).plusMinutes(10)),
-            createCompletedTrip(vehicles.get(8), routes.get(3), "mixed", now.minusDays(10), now.minusDays(10).plusHours(1), now.minusDays(10).plusMinutes(12), now.minusDays(10).plusHours(1).plusMinutes(35)),
-            createCompletedTrip(vehicles.get(8), routes.get(7), "freight", now.minusDays(5), now.minusDays(5).plusHours(0).plusMinutes(30), now.minusDays(5).plusMinutes(7), now.minusDays(5).plusHours(0).plusMinutes(42)),
+            createCompletedTrip(vehicles.get(8), routes.get(1), "freight", now.minusDays(48), now.minusDays(48).plusHours(12), now.minusDays(48).plusMinutes(20), now.minusDays(48).plusHours(13).plusMinutes(10)),
+            createCompletedTrip(vehicles.get(8), routes.get(3), "mixed", now.minusDays(30), now.minusDays(30).plusHours(1), now.minusDays(30).plusMinutes(12), now.minusDays(30).plusHours(1).plusMinutes(35)),
+            createCompletedTrip(vehicles.get(8), routes.get(7), "freight", now.minusDays(10), now.minusDays(10).plusHours(0).plusMinutes(30), now.minusDays(10).plusMinutes(7), now.minusDays(10).plusHours(0).plusMinutes(42)),
             createTrip(vehicles.get(8), routes.get(8), "freight", now.minusHours(6), now.minusMinutes(20), "arrived"),
             createTrip(vehicles.get(8), routes.get(6), "mixed", now.plusHours(12), now.plusHours(12).plusMinutes(35), "scheduled"),
             createTrip(vehicles.get(8), routes.get(5), "freight", now.plusDays(1).plusHours(10), now.plusDays(1).plusHours(12), "scheduled"),
             
             // Driver 9 - 6 trips (3 completed, 1 in_progress, 2 scheduled, 1 cancelled)
-            createCompletedTrip(vehicles.get(9), routes.get(4), "mixed", now.minusDays(16), now.minusDays(16).plusHours(2), now.minusDays(16).plusMinutes(15), now.minusDays(16).plusHours(2).plusMinutes(45)),
-            createCompletedTrip(vehicles.get(9), routes.get(6), "freight", now.minusDays(11), now.minusDays(11).plusHours(0).plusMinutes(20), now.minusDays(11).plusMinutes(8), now.minusDays(11).plusHours(0).plusMinutes(32)),
-            createCompletedTrip(vehicles.get(9), routes.get(8), "mixed", now.minusDays(6), now.minusDays(6).plusHours(0).plusMinutes(15), now.minusDays(6).plusMinutes(10), now.minusDays(6).plusHours(0).plusMinutes(28)),
+            createCompletedTrip(vehicles.get(9), routes.get(4), "mixed", now.minusDays(52), now.minusDays(52).plusHours(2), now.minusDays(52).plusMinutes(15), now.minusDays(52).plusHours(2).plusMinutes(45)),
+            createCompletedTrip(vehicles.get(9), routes.get(6), "freight", now.minusDays(26), now.minusDays(26).plusHours(0).plusMinutes(20), now.minusDays(26).plusMinutes(8), now.minusDays(26).plusHours(0).plusMinutes(32)),
+            createCompletedTrip(vehicles.get(9), routes.get(8), "mixed", now.minusDays(8), now.minusDays(8).plusHours(0).plusMinutes(15), now.minusDays(8).plusMinutes(10), now.minusDays(8).plusHours(0).plusMinutes(28)),
             createTrip(vehicles.get(9), routes.get(9), "mixed", now.minusHours(2), now.plusHours(5), "in_progress"),
             createTrip(vehicles.get(9), routes.get(0), "freight", now.plusHours(8), now.plusHours(9), "scheduled"),
             createTrip(vehicles.get(9), routes.get(2), "mixed", now.plusDays(6), now.plusDays(6).plusHours(7), "scheduled"),
@@ -368,31 +376,66 @@ public class DatabaseSeeder implements CommandLineRunner {
         User dispatcher = userRepository.findByUsername("john.dispatcher").orElseThrow(() -> new RuntimeException("Dispatcher not found"));
 
         List<Order> orders = Arrays.asList(
-            // Orders for completed trips - DELIVERED status
+            // Orders for completed trips - DELIVERED status (spread across last 60 days)
+            // Driver 0 completed trips (days 45, 32)
             createOrder(trips.get(0), "Nguyen Thi Mai", "+84-901-111-111", "1.5kg laptop with charger and mouse, handle with care", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "Ben Thanh Market, HCM City"),
             createOrder(trips.get(1), "Tran Van Binh", "+84-902-222-222", "10kg cement bags and steel pipes, fragile construction materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "My Dinh Station", "Da Nang Central"),
             
+            // Driver 1 completed trips (days 28, 22)
+            createOrder(trips.get(5), "Pham Van Duc", "+84-903-333-333", "5kg office supplies and documents", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "Ba Dinh Square"),
+            createOrder(trips.get(6), "Le Thi Huong", "+84-904-444-444", "3kg electronics and accessories", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Ben Thanh Market", "District 7 HCM"),
+            
+            // Driver 2 completed trips (days 55, 18, 12)
+            createOrder(trips.get(10), "Hoang Minh Tam", "+84-905-555-555", "20kg fresh fruits and vegetables, refrigerate immediately upon receipt", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Dragon Bridge", "Japanese Bridge, Hoi An"),
+            createOrder(trips.get(11), "Diep Van Loc", "+84-906-666-666", "15kg 55-inch LCD TV in original packaging, glass screen - handle carefully", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Notre Dame Cathedral", "Phu My Hung District 7"),
+            createOrder(trips.get(12), "Vo Thanh Nhung", "+84-907-777-777", "8kg fashion items and shoes", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Train Station", "Bac Ninh Culture Center"),
+            
+            // Driver 3 completed trips (days 38, 7)
+            createOrder(trips.get(16), "Bui Duc Phong", "+84-908-888-888", "25kg furniture parts", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Tan Son Nhat Airport", "Nha Trang Beach"),
+            createOrder(trips.get(17), "Do Thi Huong", "+84-909-999-999", "2kg custom wedding cake with edible decorations, keep cool", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Ninh Kieu Wharf", "Cai Rang Market"),
+            
+            // Driver 4 completed trips (days 50, 5)
+            createOrder(trips.get(22), "Ly Ngoc Son", "+84-910-000-000", "5kg framed oil paintings, valuable artwork - handle with extreme care", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Noi Bai Airport"),
+            createOrder(trips.get(23), "Nguyen Van Hai", "+84-911-111-111", "12kg medical equipment", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Nha Trang Beach", "Vinpearl Cable Car"),
+            
+            // Driver 5 completed trips (days 60, 25, 14)
+            createOrder(trips.get(28), "Tran Thi Lan", "+84-912-222-222", "18kg industrial equipment parts", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "Ben Thanh Market"),
+            createOrder(trips.get(29), "Le Van Minh", "+84-913-333-333", "3kg pharmaceutical supplies, temperature sensitive", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "HCM District 1", "District 7 Residential"),
+            createOrder(trips.get(30), "Pham Thi Thu", "+84-914-444-444", "22kg office furniture and supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Center", "West Lake Office Park"),
+            
+            // Driver 6 completed trips (days 42, 20)
+            createOrder(trips.get(35), "Hoang Van Nam", "+84-915-555-555", "7kg fashion accessories and shoes", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "My Dinh Station", "Da Nang Central"),
+            createOrder(trips.get(36), "Dinh Thi Hoa", "+84-916-666-666", "30kg building materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Bac Ninh Province", "Hanoi Train Station"),
+            
+            // Driver 7 completed trips (days 35, 16)
+            createOrder(trips.get(40), "Tran Minh Duc", "+84-917-777-777", "4kg electronics and gadgets", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Center", "West Lake Area"),
+            createOrder(trips.get(41), "Nguyen Thi Lan", "+84-918-888-888", "10kg kitchenware and appliances", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Ben Thanh Market", "Pham Ngu Lao"),
+            
+            // Driver 8 completed trips (days 48, 30, 10)
+            createOrder(trips.get(46), "Le Van Tuan", "+84-919-999-999", "6kg books and educational materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi University", "Da Nang University"),
+            createOrder(trips.get(47), "Pham Thi Hanh", "+84-920-000-000", "15kg sports equipment", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "HCM Sports Complex", "Hanoi Stadium"),
+            createOrder(trips.get(48), "Hoang Van Cuong", "+84-921-111-111", "20kg automotive parts", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "HCM Auto Center", "Da Nang Garage"),
+            
+            // Driver 9 completed trips (days 52, 26, 8)
+            createOrder(trips.get(51), "Do Thi Mai", "+84-922-222-222", "8kg beauty products and cosmetics", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "HCM Beauty District", "Hanoi Spa"),
+            createOrder(trips.get(52), "Bui Van Hung", "+84-923-333-333", "12kg pet supplies and food", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Pet Store", "Da Nang Vet"),
+            createOrder(trips.get(53), "Vo Minh Tam", "+84-924-444-444", "25kg gardening tools and plants", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "HCM Garden Center", "Hanoi Nursery"),
+            
             // Orders for in_progress trips - IN_TRANSIT status  
-            createOrder(trips.get(2), "Pham Van Duc", "+84-904-444-444", "2kg important documents in waterproof envelope, confidential", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Hoan Kiem Lake", "West Lake Area"),
-            createOrder(trips.get(9), "Hoang Minh Tam", "+84-905-555-555", "20kg fresh fruits and vegetables, refrigerate immediately upon receipt", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Dragon Bridge", "Japanese Bridge, Hoi An"),
+            createOrder(trips.get(2), "Nguyen Thi Bao", "+84-925-555-555", "2kg important documents in waterproof envelope, confidential", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Hoan Kiem Lake", "West Lake Area"),
+            createOrder(trips.get(13), "Tran Van Dung", "+84-926-666-666", "10kg food supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "HCM Market", "Hanoi Restaurant"),
             
             // Orders for arrived trips - IN_TRANSIT status
-            createOrder(trips.get(7), "Diep Van Loc", "+84-906-666-666", "15kg 55-inch LCD TV in original packaging, glass screen - handle carefully", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Notre Dame Cathedral", "Phu My Hung District 7"),
+            createOrder(trips.get(7), "Le Thi Hong", "+84-927-777-777", "5kg textile materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Hanoi Fabric Store", "Da Nang Tailor"),
             
             // Orders for scheduled trips - PENDING status
-            createOrder(trips.get(3), "Vo Thanh Nhung", "+84-907-777-777", "3kg designer shirts and dresses, dry clean only items", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Train Station", "Bac Ninh Culture Center"),
-            createOrder(trips.get(4), "Bui Duc Phong", "+84-908-888-888", "50kg solid wood dining table and chairs, assemble before noon", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Tan Son Nhat Airport", "Nha Trang Beach"),
-            createOrder(trips.get(8), "Do Thi Huong", "+84-909-999-999", "2kg custom wedding cake with edible decorations, keep cool", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Ninh Kieu Wharf", "Cai Rang Market"),
-            createOrder(trips.get(11), "Ly Ngoc Son", "+84-910-000-000", "5kg framed oil paintings, valuable artwork - handle with extreme care", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Cat Bi Airport", "Noi Bai Airport"),
-            createOrder(trips.get(13), "Nguyen Van Hai", "+84-911-111-111", "8kg electronics and accessories, keep dry", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Nha Trang Beach", "Vinpearl Cable Car"),
-            createOrder(trips.get(15), "Tran Thi Lan", "+84-912-222-222", "25kg industrial equipment parts", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Hanoi Old Quarter", "Ben Thanh Market"),
-            createOrder(trips.get(17), "Le Van Minh", "+84-913-333-333", "3kg pharmaceutical supplies, temperature sensitive", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "HCM District 1", "District 7 Residential"),
-            createOrder(trips.get(19), "Pham Thi Thu", "+84-914-444-444", "12kg office furniture and supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Center", "West Lake Office Park"),
-            createOrder(trips.get(21), "Hoang Van Nam", "+84-915-555-555", "7kg fashion accessories and shoes", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "My Dinh Station", "Da Nang Central"),
-            createOrder(trips.get(23), "Dinh Thi Hoa", "+84-916-666-666", "30kg building materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Bac Ninh Province", "Hanoi Train Station")
+            createOrder(trips.get(3), "Pham Van Luc", "+84-928-888-888", "3kg designer shirts and dresses, dry clean only items", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Train Station", "Bac Ninh Culture Center"),
+            createOrder(trips.get(4), "Hoang Thi Nga", "+84-929-999-999", "50kg solid wood dining table and chairs, assemble before noon", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Tan Son Nhat Airport", "Nha Trang Beach"),
+            createOrder(trips.get(8), "Dinh Van Phong", "+84-930-000-000", "7kg computer parts", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM Tech Store", "Hanoi Computer Shop"),
+            createOrder(trips.get(14), "Bui Thi Thao", "+84-931-111-111", "15kg household items", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Home Store", "Da Nang Residence")
         );
         orderRepository.saveAll(orders);
-        System.out.println("Seeded 17 orders: 3 delivered, 3 in_transit, 11 pending");
+        System.out.println("Seeded 34 orders: 24 delivered (spread over 60 days), 3 in_transit, 7 pending");
     }
 
     private Order createOrder(Trip trip, String customerName, String customerPhone, String packageDetails, User createdBy, Order.PriorityLevel priorityLevel, Order.OrderStatus orderStatus, String pickupAddress, String deliveryAddress) {
@@ -406,7 +449,10 @@ public class DatabaseSeeder implements CommandLineRunner {
         order.setOrderStatus(orderStatus);
         order.setPickupAddress(pickupAddress);
         order.setDeliveryAddress(deliveryAddress);
-        order.setCreatedAt(LocalDateTime.now());
+        
+        // Set order creation date based on trip date (orders created 1-3 hours before trip departure)
+        LocalDateTime orderCreatedAt = trip.getScheduledDeparture().minusHours(2);
+        order.setCreatedAt(orderCreatedAt);
         
         // Calculate delivery fee based on priority and package weight
         java.math.BigDecimal baseFee = new java.math.BigDecimal("150000"); // Base fee in VND
@@ -466,10 +512,14 @@ public class DatabaseSeeder implements CommandLineRunner {
         assignment.setTrip(trip);
         assignment.setDriver(driver);
         assignment.setRole(role);
-        assignment.setAssignedAt(LocalDateTime.now());
+        
+        // Set assignment date based on trip schedule (assigned 1 day before trip)
+        assignment.setAssignedAt(trip.getScheduledDeparture().minusDays(1));
+        
         if (status.equals("completed")) {
-            assignment.setStartedAt(LocalDateTime.now().minusHours(2));
-            assignment.setCompletedAt(LocalDateTime.now());
+            // For completed trips, use actual trip times
+            assignment.setStartedAt(trip.getActualDeparture());
+            assignment.setCompletedAt(trip.getActualArrival());
         }
         assignment.setStatus(status);
         return assignment;
@@ -533,5 +583,59 @@ public class DatabaseSeeder implements CommandLineRunner {
         log.setRestHoursRequired(restRequired);
         log.setNextAvailableTime(end.plusHours(restRequired.longValue()));
         return log;
+    }
+
+    private void seedRegistrationRequests() {
+        Role driverRole = roleRepository.findByRoleName("DRIVER")
+                .orElseThrow(() -> new RuntimeException("DRIVER role not found"));
+        LocalDateTime now = LocalDateTime.now();
+
+        // Create APPROVED registration requests for existing driver users (matching the actual seeded users)
+        List<RegistrationRequest> requests = Arrays.asList(
+            // APPROVED - Match existing driver users
+            createRegistrationRequest("mike.driver", "mike.d@logiflow.com", "Mike Driver", "+84-901-234-503", 
+                "DL123456", "B2", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(90)),
+            createRegistrationRequest("carl.driver2", "carl.d@logiflow.com", "Carl Driver", "+84-901-234-505", 
+                "DL234567", "C", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(85)),
+            createRegistrationRequest("david.driver3", "david.d@logiflow.com", "David Driver", "+84-901-234-507", 
+                "DL345678", "D", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(80)),
+            createRegistrationRequest("emma.driver4", "emma.d@logiflow.com", "Emma Driver", "+84-901-234-508", 
+                "DL456789", "E", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(75)),
+            createRegistrationRequest("bob.driver5", "bob.d@logiflow.com", "Bob Driver", "+84-901-234-509", 
+                "DL567890", "FC", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(70)),
+
+            // REJECTED - These accounts were never created
+            createRegistrationRequest("rejected.nguyen", "rejected.nguyen@example.com", "Nguyen Van Rejected", "+84-914-567-890", 
+                "DL999001", "C", now.plusYears(1), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(20)),
+            createRegistrationRequest("rejected.tran", "rejected.tran@example.com", "Tran Thi Rejected", "+84-915-678-901", 
+                "DL999002", "B2", now.plusYears(1), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(15)),
+            createRegistrationRequest("rejected.le", "rejected.le@example.com", "Le Minh Rejected", "+84-916-789-012", 
+                "DL999003", "D", now.plusYears(1), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(10))
+        );
+
+        registrationRequestRepository.saveAll(requests);
+        System.out.println("Seeded 8 registration requests: 5 approved (matching existing drivers), 3 rejected");
+    }
+
+    private RegistrationRequest createRegistrationRequest(String username, String email, String fullName, String phone,
+                                                          String licenseNumber, String licenseType, LocalDateTime licenseExpiry,
+                                                          Role role, RegistrationRequest.RequestStatus status, LocalDateTime createdAt) {
+        RegistrationRequest request = new RegistrationRequest();
+        request.setUsername(username);
+        request.setPasswordHash(passwordEncoder.encode("123")); // Default password for demo
+        request.setEmail(email);
+        request.setFullName(fullName);
+        request.setPhone(phone);
+        request.setLicenseNumber(licenseNumber);
+        request.setLicenseType(licenseType);
+        request.setLicenseExpiry(licenseExpiry.toLocalDate());
+        request.setDateOfBirth(LocalDateTime.now().minusYears(30).toLocalDate()); // Default 30 years old
+        request.setAddress("Sample Address, Vietnam");
+        request.setEmergencyContactName("Emergency Contact");
+        request.setEmergencyContactPhone("+84-999-999-999");
+        request.setRole(role);
+        request.setStatus(status);
+        request.setCreatedAt(createdAt);
+        return request;
     }
 }

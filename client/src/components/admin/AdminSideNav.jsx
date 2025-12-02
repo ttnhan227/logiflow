@@ -36,6 +36,7 @@ const AdminSideNav = () => {
 
   const menuItems = [
     { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
+    { path: '/admin/reports', icon: '📈', label: 'Reports & Analytics' },
     { path: '/admin/users', icon: '👥', label: 'User Management' },
     { path: '/admin/registration-requests', icon: '📋', label: 'Registration Requests' },
     { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
@@ -45,7 +46,7 @@ const AdminSideNav = () => {
       label: 'System',
       icon: '🛠️',
       children: [
-        { path: '/admin/system/overview', icon: '📈', label: 'System Overview' },
+        { path: '/admin/system/overview', icon: '🔍', label: 'System Overview' },
         { path: '/admin/system/configuration', icon: '⚙️', label: 'Configuration' },
       ]
     }

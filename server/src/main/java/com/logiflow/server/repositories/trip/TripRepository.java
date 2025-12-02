@@ -56,4 +56,20 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     
     // Count trips by vehicle and status for admin vehicle management
     long countByVehicleAndStatusIn(com.logiflow.server.models.Vehicle vehicle, List<String> statuses);
+    
+    // Find trips by date range for reports
+    List<Trip> findByScheduledDepartureBetween(LocalDateTime startDateTime, LocalDateTime endDateTime);
+    
+    // Find trips by status and date range
+    List<Trip> findByStatusAndScheduledDepartureBetween(String status, LocalDateTime startDateTime, LocalDateTime endDateTime);
+    
+    // Find trips by driver and date range
+    @Query("SELECT t FROM Trip t JOIN t.tripAssignments ta " +
+            "WHERE ta.driver = :driver " +
+            "AND t.scheduledDeparture BETWEEN :startDateTime AND :endDateTime " +
+            "ORDER BY t.scheduledDeparture DESC")
+    List<Trip> findByDriverAndScheduledDepartureBetween(
+            @Param("driver") com.logiflow.server.models.Driver driver, 
+            @Param("startDateTime") LocalDateTime startDateTime, 
+            @Param("endDateTime") LocalDateTime endDateTime);
 }

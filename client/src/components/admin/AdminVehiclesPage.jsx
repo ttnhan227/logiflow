@@ -139,6 +139,7 @@ const AdminVehiclesPage = () => {
       case 'motorbike': return '🏍️ Motorbike';
       case 'van': return '🚐 Van';
       case 'truck': return '🚚 Truck';
+      case 'container': return '📦 Container';
       default: return type;
     }
   };
@@ -148,6 +149,7 @@ const AdminVehiclesPage = () => {
       case 'motorbike': return '#f59e0b';
       case 'van': return '#3b82f6';
       case 'truck': return '#8b5cf6';
+      case 'container': return '#10b981';
       default: return '#6b7280';
     }
   };
@@ -192,7 +194,8 @@ const AdminVehiclesPage = () => {
   const typeChartData = statistics ? [
     { type: 'Motorbike', count: statistics.motorbikes },
     { type: 'Van', count: statistics.vans },
-    { type: 'Truck', count: statistics.trucks }
+    { type: 'Truck', count: statistics.trucks },
+    { type: 'Container', count: statistics.containers }
   ].filter(item => item.count > 0) : [];
 
   return (
@@ -603,6 +606,7 @@ const AdminVehiclesPage = () => {
                     <option value="motorbike">🏍️ Motorbike</option>
                     <option value="van">🚐 Van</option>
                     <option value="truck">🚚 Truck</option>
+                    <option value="container">📦 Container</option>
                   </select>
                 </div>
 
