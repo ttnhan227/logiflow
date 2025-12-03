@@ -87,10 +87,11 @@ public class DatabaseSeeder implements CommandLineRunner {
             createRole("DISPATCHER", "Manages trip assignments and routing"),
             createRole("DRIVER", "Vehicle driver"),
             createRole("MANAGER", "Fleet and operations manager"),
+            createRole("CUSTOMER", "Customer who places delivery orders"),
             createRole("USER", "Standard user")
         );
         roleRepository.saveAll(roles);
-        System.out.println("Seeded 5 roles");
+        System.out.println("Seeded 6 roles");
     }
 
     private Role createRole(String name, String description) {
@@ -103,7 +104,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedUsersWithRoles() {
         List<Role> roles = roleRepository.findAll();
-        if (roles.size() < 5) {
+        if (roles.size() < 6) {
             System.out.println("Roles not seeded yet. Skipping user creation.");
             return;
         }
@@ -124,10 +125,22 @@ public class DatabaseSeeder implements CommandLineRunner {
             createUserWithRole("grace.driver7", "grace.d@logiflow.com", "123", roles.get(2), "Grace Driver", "+84-901-234-511", "/uploads/profile-pictures/girl-urban-view.jpg", now.minusDays(59), now.minusDays(11)), // DRIVER
             createUserWithRole("henry.driver8", "henry.d@logiflow.com", "123", roles.get(2), "Henry Driver", "+84-901-234-512", "/uploads/profile-pictures/man-on-a-street.jpg", now.minusDays(54), now.minusDays(6)), // DRIVER
             createUserWithRole("iris.driver9", "iris.d@logiflow.com", "123", roles.get(2), "Iris Driver", "+84-901-234-513", "/uploads/profile-pictures/outdoor-woman.jpg", now.minusDays(49), now.minusDays(13)), // DRIVER
-            createUserWithRole("jack.driver10", "jack.d@logiflow.com", "123", roles.get(2), "Jack Driver", "+84-901-234-514", "/uploads/profile-pictures/shoe.jpg", now.minusDays(44), now.minusDays(14)) // DRIVER
+            createUserWithRole("jack.driver10", "jack.d@logiflow.com", "123", roles.get(2), "Jack Driver", "+84-901-234-514", "/uploads/profile-pictures/shoe.jpg", now.minusDays(44), now.minusDays(14)), // DRIVER
+            
+            // CUSTOMER users (10 total)
+            createUserWithRole("nguyen.mai", "nguyen.mai@gmail.com", "123", roles.get(4), "Nguyen Thi Mai", "+84-901-111-111", "/uploads/profile-pictures/julian-wan-2EdIX-O2lkI-unsplash.jpg", now.minusDays(60), now.minusDays(1)), // CUSTOMER
+            createUserWithRole("tran.binh", "tran.binh@gmail.com", "123", roles.get(4), "Tran Van Binh", "+84-902-222-222", "/uploads/profile-pictures/jake-nackos-IF9TK5Uy-KI-unsplash.jpg", now.minusDays(55), now.minusDays(2)), // CUSTOMER
+            createUserWithRole("pham.duc", "pham.duc@gmail.com", "123", roles.get(4), "Pham Van Duc", "+84-903-333-333", "/uploads/profile-pictures/christopher-campbell-rDEOVtE7vOs-unsplash.jpg", now.minusDays(50), now.minusDays(3)), // CUSTOMER
+            createUserWithRole("le.huong", "le.huong@gmail.com", "123", roles.get(4), "Le Thi Huong", "+84-904-444-444", "/uploads/profile-pictures/alex-suprun-bYODySpLIhE-unsplash.jpg", now.minusDays(45), now.minusDays(4)), // CUSTOMER
+            createUserWithRole("hoang.tam", "hoang.tam@gmail.com", "123", roles.get(4), "Hoang Minh Tam", "+84-905-555-555", "/uploads/profile-pictures/oguz-yagiz-kara-MZf0mI14RI0-unsplash.jpg", now.minusDays(40), now.minusDays(5)), // CUSTOMER
+            createUserWithRole("diep.loc", "diep.loc@gmail.com", "123", roles.get(4), "Diep Van Loc", "+84-906-666-666", "/uploads/profile-pictures/linkedin-sales-solutions-pAtA8xe_iVM-unsplash.jpg", now.minusDays(35), now.minusDays(6)), // CUSTOMER
+            createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(4), "Vo Thanh Nhung", "+84-907-777-777", "/uploads/profile-pictures/vince-veras-AJIqZDAUD7A-unsplash.jpg", now.minusDays(30), now.minusDays(7)), // CUSTOMER
+            createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(4), "Bui Duc Phong", "+84-908-888-888", "/uploads/profile-pictures/juan-encalada-WC7KIHo13Fc-unsplash.jpg", now.minusDays(25), now.minusDays(8)), // CUSTOMER
+            createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(4), "Do Thi Huong", "+84-909-999-999", "/uploads/profile-pictures/ed-pylypenko-7zcbtbI4E2o-unsplash.jpg", now.minusDays(20), now.minusDays(9)), // CUSTOMER
+            createUserWithRole("ly.son", "ly.son@gmail.com", "123", roles.get(4), "Ly Ngoc Son", "+84-910-000-000", "/uploads/profile-pictures/alex-suprun-mynsNaNwVDc-unsplash.jpg", now.minusDays(15), now.minusDays(10)) // CUSTOMER
         );
         userRepository.saveAll(users);
-        System.out.println("Seeded 15 users with roles");
+        System.out.println("Seeded 25 users with roles (15 staff + 10 customers)");
     }
 
     private User createUserWithRole(String username, String email, String password, Role role, String fullName, String phone, String profilePictureUrl, LocalDateTime createdAt, LocalDateTime lastLogin) {
@@ -390,95 +403,111 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedOrders() {
         List<Trip> trips = tripRepository.findAll();
+        
+        // Get dispatcher users
         User dispatcher = userRepository.findByUsername("john.dispatcher").orElseThrow(() -> new RuntimeException("Dispatcher not found"));
+        User dispatcher2 = userRepository.findByUsername("amy.dispatcher2").orElseThrow(() -> new RuntimeException("Dispatcher2 not found"));
+        
+        // Get customer users (10 total)
+        User customer1 = userRepository.findByUsername("nguyen.mai").orElseThrow(() -> new RuntimeException("Customer nguyen.mai not found"));
+        User customer2 = userRepository.findByUsername("tran.binh").orElseThrow(() -> new RuntimeException("Customer tran.binh not found"));
+        User customer3 = userRepository.findByUsername("pham.duc").orElseThrow(() -> new RuntimeException("Customer pham.duc not found"));
+        User customer4 = userRepository.findByUsername("le.huong").orElseThrow(() -> new RuntimeException("Customer le.huong not found"));
+        User customer5 = userRepository.findByUsername("hoang.tam").orElseThrow(() -> new RuntimeException("Customer hoang.tam not found"));
+        User customer6 = userRepository.findByUsername("diep.loc").orElseThrow(() -> new RuntimeException("Customer diep.loc not found"));
+        User customer7 = userRepository.findByUsername("vo.nhung").orElseThrow(() -> new RuntimeException("Customer vo.nhung not found"));
+        User customer8 = userRepository.findByUsername("bui.phong").orElseThrow(() -> new RuntimeException("Customer bui.phong not found"));
+        User customer9 = userRepository.findByUsername("do.huong").orElseThrow(() -> new RuntimeException("Customer do.huong not found"));
+        User customer10 = userRepository.findByUsername("ly.son").orElseThrow(() -> new RuntimeException("Customer ly.son not found"));
 
         List<Order> orders = Arrays.asList(
             // Orders for 10 completed trips (revenue-generating DELIVERED orders)
             // Driver 0 (Mike) - 2 completed trips (indices 0, 1)
-            createOrder(trips.get(0), "Nguyen Thi Mai", "+84-901-111-111", "15kg laptop with charger and mouse, handle with care", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "Ben Thanh Market, HCM City"),
-            createOrder(trips.get(1), "Tran Van Binh", "+84-902-222-222", "8kg office documents and supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "My Dinh Station", "Da Nang Central"),
+            createOrder(trips.get(0), "Nguyen Thi Mai", "+84-901-111-111", "15kg laptop with charger and mouse, handle with care", customer1, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "Ben Thanh Market, HCM City"),
+            createOrder(trips.get(1), "Tran Van Binh", "+84-902-222-222", "8kg office documents and supplies", customer2, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "My Dinh Station", "Da Nang Central"),
             
             // Driver 1 (Carl) - 2 completed trips (indices 6, 7)
-            createOrder(trips.get(6), "Pham Van Duc", "+84-903-333-333", "10kg cement bags and steel pipes, fragile construction materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "Ba Dinh Square"),
-            createOrder(trips.get(7), "Le Thi Huong", "+84-904-444-444", "5kg electronics and accessories", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Ben Thanh Market", "District 7 HCM"),
+            createOrder(trips.get(6), "Pham Van Duc", "+84-903-333-333", "10kg cement bags and steel pipes, fragile construction materials", customer3, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "Ba Dinh Square"),
+            createOrder(trips.get(7), "Le Thi Huong", "+84-904-444-444", "5kg electronics and accessories", customer4, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Ben Thanh Market", "District 7 HCM"),
             
             // Driver 2 (David) - 3 completed trips (indices 12, 13, 14)
-            createOrder(trips.get(12), "Hoang Minh Tam", "+84-905-555-555", "20kg fresh fruits and vegetables, refrigerate immediately upon receipt", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Dragon Bridge", "Japanese Bridge, Hoi An"),
-            createOrder(trips.get(13), "Diep Van Loc", "+84-906-666-666", "12kg machinery parts", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Notre Dame Cathedral", "Phu My Hung District 7"),
-            createOrder(trips.get(14), "Vo Thanh Nhung", "+84-907-777-777", "3kg fashion items and shoes", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Train Station", "Bac Ninh Culture Center"),
+            createOrder(trips.get(12), "Hoang Minh Tam", "+84-905-555-555", "20kg fresh fruits and vegetables, refrigerate immediately upon receipt", customer5, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Dragon Bridge", "Japanese Bridge, Hoi An"),
+            createOrder(trips.get(13), "Diep Van Loc", "+84-906-666-666", "12kg machinery parts", customer6, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Notre Dame Cathedral", "Phu My Hung District 7"),
+            createOrder(trips.get(14), "Vo Thanh Nhung", "+84-907-777-777", "3kg fashion items and shoes", customer7, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Train Station", "Bac Ninh Culture Center"),
             
             // Driver 3 (Emma) - 2 completed trips (indices 18, 19)
-            createOrder(trips.get(18), "Bui Duc Phong", "+84-908-888-888", "18kg 55-inch LCD TV in original packaging, glass screen - handle carefully", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Tan Son Nhat Airport", "Nha Trang Beach"),
-            createOrder(trips.get(19), "Do Thi Huong", "+84-909-999-999", "7kg medical supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Ninh Kieu Wharf", "Cai Rang Market"),
+            createOrder(trips.get(18), "Bui Duc Phong", "+84-908-888-888", "18kg 55-inch LCD TV in original packaging, glass screen - handle carefully", customer8, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Tan Son Nhat Airport", "Nha Trang Beach"),
+            createOrder(trips.get(19), "Do Thi Huong", "+84-909-999-999", "7kg medical supplies", customer9, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Ninh Kieu Wharf", "Cai Rang Market"),
             
             // Driver 4 (Bob) - 1 completed trip (index 24)
-            createOrder(trips.get(24), "Ly Ngoc Son", "+84-910-000-000", "22kg furniture parts and tools", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Noi Bai Airport"),
+            createOrder(trips.get(24), "Ly Ngoc Son", "+84-910-000-000", "22kg furniture parts and tools", customer10, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Noi Bai Airport"),
             
             // Driver 5 (Frank) - 2 completed trips (indices 30, 31)
-            createOrder(trips.get(30), "Phan Thi Thao", "+84-924-111-111", "14kg industrial tools", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Da Nang Airport", "Hoi An"),
-            createOrder(trips.get(31), "Nguyen Van Khanh", "+84-925-222-222", "6kg office supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Center", "West Lake"),
+            createOrder(trips.get(30), "Phan Thi Thao", "+84-924-111-111", "14kg industrial tools", customer5, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Da Nang Airport", "Hoi An"),
+            createOrder(trips.get(31), "Nguyen Van Khanh", "+84-925-222-222", "6kg office supplies", customer6, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Hanoi Center", "West Lake"),
             
             // Driver 6 (Grace) - 2 completed trips (indices 36, 37)
-            createOrder(trips.get(36), "Tran Minh Quang", "+84-926-333-333", "25kg construction materials", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "HCM City Center"),
-            createOrder(trips.get(37), "Le Thi Ngoc", "+84-927-444-444", "8kg electronic components", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Hanoi Station"),
+            createOrder(trips.get(36), "Tran Minh Quang", "+84-926-333-333", "25kg construction materials", customer7, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Hanoi Old Quarter", "HCM City Center"),
+            createOrder(trips.get(37), "Le Thi Ngoc", "+84-927-444-444", "8kg electronic components", customer8, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Hanoi Station"),
             
             // Driver 7 (Henry) - 3 completed trips (indices 42, 43, 44)
-            createOrder(trips.get(42), "Hoang Van Duc", "+84-928-555-555", "4kg medical instruments", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "HCM District 1", "District 7"),
-            createOrder(trips.get(43), "Pham Thi Lan", "+84-929-666-666", "18kg fresh produce, keep refrigerated", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Tan Son Nhat Airport", "Nha Trang Center"),
-            createOrder(trips.get(44), "Nguyen Minh Tam", "+84-930-777-777", "10kg textile materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Hanoi"),
+            createOrder(trips.get(42), "Hoang Van Duc", "+84-928-555-555", "4kg medical instruments", customer9, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "HCM District 1", "District 7"),
+            createOrder(trips.get(43), "Pham Thi Lan", "+84-929-666-666", "18kg fresh produce, keep refrigerated", customer1, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Tan Son Nhat Airport", "Nha Trang Center"),
+            createOrder(trips.get(44), "Nguyen Minh Tam", "+84-930-777-777", "10kg textile materials", customer2, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Hanoi"),
             
             // Driver 8 (Iris) - 2 completed trips (indices 48, 49)
-            createOrder(trips.get(48), "Bui Van Long", "+84-931-888-888", "12kg automotive parts", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Hanoi Auto Center"),
-            createOrder(trips.get(49), "Vo Thi Huong", "+84-932-999-999", "3kg jewelry and valuables, handle with extreme care", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Nha Trang Beach", "Vinpearl"),
+            createOrder(trips.get(48), "Bui Van Long", "+84-931-888-888", "12kg automotive parts", customer3, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Cat Bi Airport", "Hanoi Auto Center"),
+            createOrder(trips.get(49), "Vo Thi Huong", "+84-932-999-999", "3kg jewelry and valuables, handle with extreme care", customer4, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.DELIVERED, "Nha Trang Beach", "Vinpearl"),
             
             // Driver 9 (Jack) - 1 completed trip (index 54)
-            createOrder(trips.get(54), "Do Van Minh", "+84-933-000-000", "5kg books and documents", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Nha Trang Beach", "Vinpearl Cable Car"),
+            createOrder(trips.get(54), "Do Van Minh", "+84-933-000-000", "5kg books and documents", customer5, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.DELIVERED, "Nha Trang Beach", "Vinpearl Cable Car"),
             
             // Orders for in_progress trips (IN_TRANSIT status)
-            createOrder(trips.get(2), "Nguyen Van Hai", "+84-911-111-111", "12kg industrial equipment", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Nha Trang Beach", "Vinpearl Cable Car"),
-            createOrder(trips.get(15), "Tran Thi Lan", "+84-912-222-222", "5kg pharmaceutical supplies, temperature sensitive", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "HCM District 1", "District 7 Residential"),
-            createOrder(trips.get(25), "Le Van Minh", "+84-913-333-333", "9kg electronics and gadgets", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Hanoi Center", "West Lake Office Park"),
-            createOrder(trips.get(32), "Dang Thi Phuong", "+84-934-111-111", "7kg handicrafts", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Nha Trang", "Cam Ranh"),
-            createOrder(trips.get(45), "Le Van Hung", "+84-935-222-222", "20kg rice and grains", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Hanoi", "HCM City"),
-            createOrder(trips.get(55), "Nguyen Thi Hanh", "+84-936-333-333", "15kg household items", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Tan Son Nhat", "Nha Trang"),
+            createOrder(trips.get(2), "Nguyen Van Hai", "+84-911-111-111", "12kg industrial equipment", customer6, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Nha Trang Beach", "Vinpearl Cable Car"),
+            createOrder(trips.get(15), "Tran Thi Lan", "+84-912-222-222", "5kg pharmaceutical supplies, temperature sensitive", customer7, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "HCM District 1", "District 7 Residential"),
+            createOrder(trips.get(25), "Le Van Minh", "+84-913-333-333", "9kg electronics and gadgets", customer8, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Hanoi Center", "West Lake Office Park"),
+            createOrder(trips.get(32), "Dang Thi Phuong", "+84-934-111-111", "7kg handicrafts", customer9, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Nha Trang", "Cam Ranh"),
+            createOrder(trips.get(45), "Le Van Hung", "+84-935-222-222", "20kg rice and grains", customer10, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Hanoi", "HCM City"),
+            createOrder(trips.get(55), "Nguyen Thi Hanh", "+84-936-333-333", "15kg household items", customer1, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "Tan Son Nhat", "Nha Trang"),
             
             // Orders for arrived trips (IN_TRANSIT status - nearly delivered)
-            createOrder(trips.get(8), "Pham Thi Thu", "+84-914-444-444", "6kg custom wedding cake with edible decorations, keep cool", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Ninh Kieu Wharf", "Cai Rang Market"),
-            createOrder(trips.get(20), "Hoang Van Nam", "+84-915-555-555", "14kg office furniture", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "My Dinh Station", "Da Nang Central"),
-            createOrder(trips.get(38), "Tran Van Phong", "+84-937-444-444", "9kg computer equipment", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Nha Trang Beach", "Vinpearl"),
-            createOrder(trips.get(50), "Pham Minh Duc", "+84-938-555-555", "11kg sports equipment", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "My Dinh", "Da Nang"),
+            createOrder(trips.get(8), "Pham Thi Thu", "+84-914-444-444", "6kg custom wedding cake with edible decorations, keep cool", customer2, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Ninh Kieu Wharf", "Cai Rang Market"),
+            createOrder(trips.get(20), "Hoang Van Nam", "+84-915-555-555", "14kg office furniture", customer3, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "My Dinh Station", "Da Nang Central"),
+            createOrder(trips.get(38), "Tran Van Phong", "+84-937-444-444", "9kg computer equipment", customer4, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Nha Trang Beach", "Vinpearl"),
+            createOrder(trips.get(50), "Pham Minh Duc", "+84-938-555-555", "11kg sports equipment", customer5, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "My Dinh", "Da Nang"),
             
             // Orders for scheduled trips (PENDING status)
-            createOrder(trips.get(3), "Dinh Thi Hoa", "+84-916-666-666", "25kg building materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Bac Ninh Province", "Hanoi Train Station"),
-            createOrder(trips.get(4), "Tran Minh Duc", "+84-917-777-777", "4kg fashion accessories", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Center", "West Lake Area"),
-            createOrder(trips.get(9), "Nguyen Thi Lan", "+84-918-888-888", "11kg artwork and paintings", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Ben Thanh Market", "Thu Duc City"),
-            createOrder(trips.get(10), "Pham Van Thanh", "+84-919-999-999", "8kg medical equipment", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Da Nang Central", "Hue Imperial City"),
-            createOrder(trips.get(16), "Le Thi Huyen", "+84-920-000-000", "13kg construction tools", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Station", "Ninh Binh"),
-            createOrder(trips.get(17), "Hoang Minh Tuan", "+84-921-111-111", "7kg textiles and fabrics", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "District 7", "Binh Duong"),
-            createOrder(trips.get(21), "Vo Van Kiet", "+84-922-222-222", "16kg sporting goods", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Nha Trang", "Cam Ranh"),
-            createOrder(trips.get(22), "Bui Thi Mai", "+84-923-333-333", "5kg fresh seafood, keep cold", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Vung Tau", "Ho Chi Minh City"),
-            createOrder(trips.get(33), "Hoang Thi Nga", "+84-939-666-666", "10kg packaging materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Tan Son Nhat", "Nha Trang"),
-            createOrder(trips.get(34), "Nguyen Van Tuan", "+84-940-777-777", "6kg laboratory equipment", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Cat Bi", "Hanoi"),
-            createOrder(trips.get(39), "Le Minh Khoa", "+84-941-888-888", "8kg art supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
-            createOrder(trips.get(40), "Phan Van Hai", "+84-942-999-999", "12kg fitness equipment", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "Da Nang"),
-            createOrder(trips.get(46), "Tran Thi Hoa", "+84-943-000-000", "5kg beauty products", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Cat Bi Airport", "Hanoi Center"),
-            createOrder(trips.get(47), "Bui Van Loc", "+84-944-111-111", "14kg gardening tools", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Nha Trang", "Vinpearl"),
-            createOrder(trips.get(51), "Vo Thi Mai", "+84-945-222-222", "9kg baby products", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Hanoi", "West Lake"),
-            createOrder(trips.get(52), "Do Minh Tuan", "+84-946-333-333", "7kg pet supplies", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
-            createOrder(trips.get(56), "Nguyen Van Nam", "+84-947-444-444", "20kg building materials", dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "HCM City"),
-            createOrder(trips.get(57), "Le Thi Thao", "+84-948-555-555", "4kg musical instruments", dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Nha Trang Beach", "Vinpearl Cable Car")
+            createOrder(trips.get(3), "Dinh Thi Hoa", "+84-916-666-666", "25kg building materials", customer1, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Bac Ninh Province", "Hanoi Train Station"),
+            createOrder(trips.get(4), "Tran Minh Duc", "+84-917-777-777", "4kg fashion accessories", customer2, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Center", "West Lake Area"),
+            createOrder(trips.get(9), "Nguyen Thi Lan", "+84-918-888-888", "11kg artwork and paintings", customer3, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Ben Thanh Market", "Thu Duc City"),
+            createOrder(trips.get(10), "Pham Van Thanh", "+84-919-999-999", "8kg medical equipment", customer4, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Da Nang Central", "Hue Imperial City"),
+            createOrder(trips.get(16), "Le Thi Huyen", "+84-920-000-000", "13kg construction tools", customer5, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Station", "Ninh Binh"),
+            createOrder(trips.get(17), "Hoang Minh Tuan", "+84-921-111-111", "7kg textiles and fabrics", customer6, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "District 7", "Binh Duong"),
+            createOrder(trips.get(21), "Vo Van Kiet", "+84-922-222-222", "16kg sporting goods", customer7, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Nha Trang", "Cam Ranh"),
+            createOrder(trips.get(22), "Bui Thi Mai", "+84-923-333-333", "5kg fresh seafood, keep cold", customer8, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Vung Tau", "Ho Chi Minh City"),
+            createOrder(trips.get(33), "Hoang Thi Nga", "+84-939-666-666", "10kg packaging materials", customer9, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Tan Son Nhat", "Nha Trang"),
+            createOrder(trips.get(34), "Nguyen Van Tuan", "+84-940-777-777", "6kg laboratory equipment", customer10, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Cat Bi", "Hanoi"),
+            createOrder(trips.get(39), "Le Minh Khoa", "+84-941-888-888", "8kg art supplies", customer6, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
+            createOrder(trips.get(40), "Phan Van Hai", "+84-942-999-999", "12kg fitness equipment", customer7, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "Da Nang"),
+            createOrder(trips.get(46), "Tran Thi Hoa", "+84-943-000-000", "5kg beauty products", customer8, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Cat Bi Airport", "Hanoi Center"),
+            createOrder(trips.get(47), "Bui Van Loc", "+84-944-111-111", "14kg gardening tools", customer9, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Nha Trang", "Vinpearl"),
+            createOrder(trips.get(51), "Vo Thi Mai", "+84-945-222-222", "9kg baby products", customer10, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Hanoi", "West Lake"),
+            createOrder(trips.get(52), "Do Minh Tuan", "+84-946-333-333", "7kg pet supplies", customer1, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
+            createOrder(trips.get(56), "Nguyen Van Nam", "+84-947-444-444", "20kg building materials", customer2, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "HCM City"),
+            createOrder(trips.get(57), "Le Thi Thao", "+84-948-555-555", "4kg musical instruments", customer3, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Nha Trang Beach", "Vinpearl Cable Car")
         );
         orderRepository.saveAll(orders);
         System.out.println("Seeded " + orders.size() + " orders");
     }
 
-    private Order createOrder(Trip trip, String customerName, String customerPhone, String packageDetails, User createdBy, Order.PriorityLevel priorityLevel, Order.OrderStatus orderStatus, String pickupAddress, String deliveryAddress) {
+    private Order createOrder(Trip trip, String customerName, String customerPhone, String packageDetails, User customer, User dispatcher, Order.PriorityLevel priorityLevel, Order.OrderStatus orderStatus, String pickupAddress, String deliveryAddress) {
         Order order = new Order();
         order.setTrip(trip);
         order.setCustomerName(customerName);
         order.setCustomerPhone(customerPhone);
         order.setPackageDetails(packageDetails);
-        order.setCreatedBy(createdBy);
+        order.setCustomer(customer);
+        order.setCreatedBy(dispatcher);
         order.setPriorityLevel(priorityLevel);
         order.setOrderStatus(orderStatus);
         order.setPickupAddress(pickupAddress);
