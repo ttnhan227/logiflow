@@ -23,6 +23,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     
     @Query("SELECT COALESCE(SUM(o.deliveryFee), 0) FROM Order o WHERE o.orderStatus = :status")
     java.math.BigDecimal sumDeliveryFeeByStatus(@Param("status") Order.OrderStatus status);
+    
+    @Query("SELECT COALESCE(SUM(o.deliveryFee), 0) FROM Order o WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
+    java.math.BigDecimal sumDeliveryFeeByStatusAndDateRange(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+    
+    @Query("SELECT o FROM Order o WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
+    List<Order> findByOrderStatusAndDateRange(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     // Find by status only
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.orderStatus = :status")

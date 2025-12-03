@@ -51,6 +51,9 @@ public class AdminVehicleServiceImpl implements AdminVehicleService {
         stats.setTrucks((int) allVehicles.stream()
                 .filter(v -> "truck".equalsIgnoreCase(v.getVehicleType()))
                 .count());
+        stats.setContainers((int) allVehicles.stream()
+                .filter(v -> "container".equalsIgnoreCase(v.getVehicleType()))
+                .count());
         
         return stats;
     }
