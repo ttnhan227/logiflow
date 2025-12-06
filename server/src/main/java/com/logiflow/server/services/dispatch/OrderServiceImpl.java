@@ -175,12 +175,7 @@ public class OrderServiceImpl implements OrderService {
             order.setTrip(trip);
         }
 
-
         Order savedOrder = orderRepository.save(order);
-
-
-        Order savedOrder = orderRepository.save(order);
-
         Order orderWithRelations = orderRepository.findByIdWithRelations(savedOrder.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve saved order"));
 
@@ -435,10 +430,7 @@ public class OrderServiceImpl implements OrderService {
         order.setPackageDetails(request.getPackageDetails());
         order.setPriorityLevel(request.getPriorityLevel());
 
-        //save
-        Order updatedOrder = orderRepository.save(order);
-
-        // Retrieve with relations to return complete DTO
+        // Set distance, weight and value
         order.setDistanceKm(request.getDistanceKm());
         order.setWeightKg(request.getWeightKg());
         order.setPackageValue(request.getPackageValue());
@@ -467,7 +459,7 @@ public class OrderServiceImpl implements OrderService {
         );
         order.setShippingFee(shippingFee);
 
-
+        //save
         Order updatedOrder = orderRepository.save(order);
 
         Order orderWithRelations = orderRepository.findByIdWithRelations(updatedOrder.getOrderId())

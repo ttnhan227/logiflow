@@ -15,8 +15,11 @@ import java.util.stream.Stream;
 
 @Service
 public class AuditLogServiceImpl implements AuditLogService {
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+    private final AuditLogRepository auditLogRepository;
+
+    public AuditLogServiceImpl(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
 
     @Override
     @Transactional
