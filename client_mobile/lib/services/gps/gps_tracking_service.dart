@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_client.dart';
