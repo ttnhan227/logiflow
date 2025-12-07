@@ -147,8 +147,8 @@ public class OrderServiceImpl implements OrderService {
         if (order.getDistanceKm() == null && mapsService != null) {
             try {
                 var distanceResult = mapsService.calculateDistance(
-                    request.getPickupAddress(),
-                    request.getDeliveryAddress()
+                        request.getPickupAddress(),
+                        request.getDeliveryAddress()
                 );
                 if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
                     java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
@@ -162,10 +162,10 @@ public class OrderServiceImpl implements OrderService {
 
         // Calculate shipping fee
         java.math.BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-            order.getDistanceKm(),
-            order.getWeightKg(),
-            order.getPackageValue(),
-            order.getPriorityLevel()
+                order.getDistanceKm(),
+                order.getWeightKg(),
+                order.getPackageValue(),
+                order.getPriorityLevel()
         );
         order.setShippingFee(shippingFee);
 
@@ -174,10 +174,6 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new RuntimeException("Trip not found with id: " + request.getTripId()));
             order.setTrip(trip);
         }
-
-
-        Order savedOrder = orderRepository.save(order);
-
 
         Order savedOrder = orderRepository.save(order);
 
@@ -195,9 +191,9 @@ public class OrderServiceImpl implements OrderService {
         List<OrderCreateRequest> requests = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         String fileName = file.getOriginalFilename();
-        String fileExtension = fileName != null && fileName.contains(".") 
-            ? fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase() 
-            : "";
+        String fileExtension = fileName != null && fileName.contains(".")
+                ? fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase()
+                : "";
 
         try {
             if ("csv".equals(fileExtension)) {
@@ -222,7 +218,6 @@ public class OrderServiceImpl implements OrderService {
             int rowNumber = i + 2; // +2 because row 1 is header, and we start from index 0
 
             try {
-                // Validate required fields
                 if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
                     errors.add("Row " + rowNumber + ": Customer name is required");
                     failureCount++;
@@ -264,8 +259,8 @@ public class OrderServiceImpl implements OrderService {
                 if (order.getDistanceKm() == null && mapsService != null) {
                     try {
                         var distanceResult = mapsService.calculateDistance(
-                            request.getPickupAddress(),
-                            request.getDeliveryAddress()
+                                request.getPickupAddress(),
+                                request.getDeliveryAddress()
                         );
                         if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
                             BigDecimal distanceKm = new BigDecimal(distanceResult.getDistanceMeters())
@@ -279,10 +274,10 @@ public class OrderServiceImpl implements OrderService {
 
 
                 BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-                    order.getDistanceKm(),
-                    order.getWeightKg(),
-                    order.getPackageValue(),
-                    order.getPriorityLevel()
+                        order.getDistanceKm(),
+                        order.getWeightKg(),
+                        order.getPackageValue(),
+                        order.getPriorityLevel()
                 );
                 order.setShippingFee(shippingFee);
 
@@ -326,31 +321,31 @@ public class OrderServiceImpl implements OrderService {
     private byte[] generateCSVTemplate() throws IOException {
         StringWriter writer = new StringWriter();
         try (CSVWriter csvWriter = new CSVWriter(writer)) {
-            // Write header
+
             csvWriter.writeNext(new String[]{
-                "Customer Name",
-                "Customer Phone",
-                "Pickup Address",
-                "Delivery Address",
-                "Package Details",
-                "Priority Level",
-                "Distance (km)",
-                "Weight (kg)",
-                "Package Value (VND)",
-                "Trip ID"
+                    "Customer Name",
+                    "Customer Phone",
+                    "Pickup Address",
+                    "Delivery Address",
+                    "Package Details",
+                    "Priority Level",
+                    "Distance (km)",
+                    "Weight (kg)",
+                    "Package Value (VND)",
+                    "Trip ID"
             });
 
             csvWriter.writeNext(new String[]{
-                "Nguyen Van A",
-                "+84-912-345-678",
-                "123 Le Loi, District 1, Ho Chi Minh City",
-                "456 Nguyen Hue, District 1, Ho Chi Minh City",
-                "5kg documents",
-                "NORMAL",
-                "10.5",
-                "5.0",
-                "500000",
-                ""
+                    "Nguyen Van A",
+                    "+84-912-345-678",
+                    "123 Le Loi, District 1, Ho Chi Minh City",
+                    "456 Nguyen Hue, District 1, Ho Chi Minh City",
+                    "5kg documents",
+                    "NORMAL",
+                    "10.5",
+                    "5.0",
+                    "500000",
+                    ""
             });
 
             return writer.toString().getBytes("UTF-8");
@@ -370,16 +365,16 @@ public class OrderServiceImpl implements OrderService {
 
             Row headerRow = sheet.createRow(0);
             String[] headers = {
-                "Customer Name",
-                "Customer Phone",
-                "Pickup Address",
-                "Delivery Address",
-                "Package Details",
-                "Priority Level",
-                "Distance (km)",
-                "Weight (kg)",
-                "Package Value (VND)",
-                "Trip ID"
+                    "Customer Name",
+                    "Customer Phone",
+                    "Pickup Address",
+                    "Delivery Address",
+                    "Package Details",
+                    "Priority Level",
+                    "Distance (km)",
+                    "Weight (kg)",
+                    "Package Value (VND)",
+                    "Trip ID"
             };
 
             for (int i = 0; i < headers.length; i++) {
@@ -395,7 +390,6 @@ public class OrderServiceImpl implements OrderService {
             exampleRow.createCell(3).setCellValue("456 Nguyen Hue, District 1, Ho Chi Minh City");
             exampleRow.createCell(4).setCellValue("5kg documents");
             exampleRow.createCell(5).setCellValue("NORMAL");
-            exampleRow.createCell(6).setCellValue("");
             exampleRow.createCell(6).setCellValue(10.5); // Distance in km
             exampleRow.createCell(7).setCellValue(5.0); // Weight in kg
             exampleRow.createCell(8).setCellValue(500000); // Package value in VND
@@ -427,7 +421,6 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Order can only be updated when status is PENDING. Current status: " + order.getOrderStatus());
         }
 
-        //Update allowed fields
         order.setCustomerName(request.getCustomerName());
         order.setCustomerPhone(request.getCustomerPhone());
         order.setPickupAddress(request.getPickupAddress());
@@ -435,10 +428,6 @@ public class OrderServiceImpl implements OrderService {
         order.setPackageDetails(request.getPackageDetails());
         order.setPriorityLevel(request.getPriorityLevel());
 
-        //save
-        Order updatedOrder = orderRepository.save(order);
-
-        // Retrieve with relations to return complete DTO
         order.setDistanceKm(request.getDistanceKm());
         order.setWeightKg(request.getWeightKg());
         order.setPackageValue(request.getPackageValue());
@@ -446,8 +435,8 @@ public class OrderServiceImpl implements OrderService {
         if (order.getDistanceKm() == null && mapsService != null) {
             try {
                 var distanceResult = mapsService.calculateDistance(
-                    request.getPickupAddress(),
-                    request.getDeliveryAddress()
+                        request.getPickupAddress(),
+                        request.getDeliveryAddress()
                 );
                 if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
                     java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
@@ -459,11 +448,11 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-       BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-            order.getDistanceKm(),
-            order.getWeightKg(),
-            order.getPackageValue(),
-            order.getPriorityLevel()
+        BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
+                order.getDistanceKm(),
+                order.getWeightKg(),
+                order.getPackageValue(),
+                order.getPriorityLevel()
         );
         order.setShippingFee(shippingFee);
 

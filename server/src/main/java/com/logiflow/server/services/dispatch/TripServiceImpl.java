@@ -126,6 +126,14 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public TripDto getTripById(Integer tripId) {
+        Trip trip = tripRepository.findByIdWithRelations(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+        return TripDto.fromTrip(trip);
+    }
+
+    @Override
     @Transactional
     public TripDto assignTrip(Integer tripId, TripAssignRequest request) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
@@ -160,6 +168,10 @@ public class TripServiceImpl implements TripService {
         assignment.setStatus("assigned");
 
         tripAssignmentRepository.save(assignment);
+
+        // Update driver status to reflect assignment
+        driver.setStatus("assigned");
+        driverRepository.save(driver);
 
         if (trip.getStatus() == null || trip.getStatus().equalsIgnoreCase("scheduled")) {
             trip.setStatus("in_progress");

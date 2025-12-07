@@ -29,6 +29,12 @@ public class Driver {
     @Column(name = "license_type", length = 10, nullable = false)
     private String licenseType;
 
+    @Column(name = "license_number", length = 50)
+    private String licenseNumber;
+
+    @Column(name = "license_expiry")
+    private java.time.LocalDate licenseExpiryDate;
+
     @Column(name = "years_experience", nullable = false)
     private Integer yearsExperience;
 
@@ -41,6 +47,12 @@ public class Driver {
 
     @Column(name = "current_location_lng", precision = 11, scale = 8)
     private BigDecimal currentLocationLng;
+
+    @Column(name = "rating", precision = 3, scale = 2)
+    private java.math.BigDecimal rating;
+
+    @Column(name = "total_trips", nullable = false)
+    private Long totalTrips = 0L;
 
     @Column(name = "status", length = 20, nullable = false)
     private String status = "available";

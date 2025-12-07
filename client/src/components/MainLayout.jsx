@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services';
 import './layout.css';
 
@@ -8,6 +8,7 @@ const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,10 +88,36 @@ const MainLayout = () => {
           </button>
           
           <nav className={`nav-links ${isMobileMenuOpen ? 'active' : ''}`}>
-            <Link to="/" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
-            <Link to="/about" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+            <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+            <Link to="/about" className={`nav-link ${location.pathname.startsWith('/about') ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>About</Link>
             {user && user.role === 'ADMIN' && (
-              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
+              <Link to="/admin/dashboard" className={`nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
+            )}
+            {/* Dispatch links for dispatchers (and admins) */}
+            {user && (user.role === 'DISPATCHER' || user.role === 'ADMIN') && (
+              <>
+                <Link
+                  to="/dispatch/orders"
+                  className={`nav-link ${location.pathname.startsWith('/dispatch/orders') ? 'active' : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Orders
+                </Link>
+                <Link
+                  to="/dispatch/trips"
+                  className={`nav-link ${location.pathname.startsWith('/dispatch/trips') ? 'active' : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Trips
+                </Link>
+                <Link
+                  to="/dispatch/drivers"
+                  className={`nav-link ${location.pathname.startsWith('/dispatch/drivers') ? 'active' : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Drivers
+                </Link>
+              </>
             )}
             {user ? (
               <>

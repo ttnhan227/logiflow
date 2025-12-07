@@ -20,13 +20,23 @@ public class TripController {
     @Autowired
     private TripService tripService;
 
-    @PostMapping("/trips")
-    public ResponseEntity<TripDto> createTrip(
     @GetMapping("/trips")
     public ResponseEntity<?> getTrips(@RequestParam(required = false) String status) {
         try {
             TripListResponse response = tripService.getTrips(status);
             return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/trips/{tripId}")
+    public ResponseEntity<?> getTripById(@PathVariable Integer tripId) {
+        try {
+            TripDto trip = tripService.getTripById(tripId);
+            return ResponseEntity.ok(trip);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -41,9 +51,6 @@ public class TripController {
             TripDto createdTrip = tripService.createTrip(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
@@ -78,6 +85,7 @@ public class TripController {
         }
     }
 }
+
 
 
 

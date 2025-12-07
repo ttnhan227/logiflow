@@ -17,4 +17,6 @@ public interface DriverWorkLogRepository extends JpaRepository<DriverWorkLog, In
 
     @Query("SELECT MAX(dwl.nextAvailableTime) FROM DriverWorkLog dwl WHERE dwl.driver.driverId = :driverId")
     LocalDateTime findLatestNextAvailableTimeByDriverId(@Param("driverId") Integer driverId);
+
+    Long countByDriver_DriverId(Integer driverId);
 }

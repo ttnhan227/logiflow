@@ -20,7 +20,7 @@ public class DriverAvailabilityController {
     @Autowired
     private DispatchDriverService dispatchDriverService;
 
-    @GetMapping("/drivers/available")
+    @GetMapping("/drivers/availability")
     public ResponseEntity<List<AvailableDriverDto>> getAvailableDrivers(
             @RequestParam(name = "datetime", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime datetime

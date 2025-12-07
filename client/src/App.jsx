@@ -20,6 +20,13 @@ import AdminRegistrationRequestDetailsPage from "./components/admin/AdminRegistr
 import AdminRoutesPage from "./components/admin/AdminRoutesPage";
 import AdminVehiclesPage from "./components/admin/AdminVehiclesPage";
 import AdminReportsPage from "./components/admin/AdminReportsPage";
+import OrdersPage from "./components/dispatch/OrdersPage";
+import OrderImportPage from "./components/dispatch/OrderImportPage";
+import AvailableDriversPage from './components/dispatch/AvailableDriversPage';
+import TripsPage from "./components/dispatch/TripsPage";
+import TripCreatePage from "./components/dispatch/TripCreatePage";
+import TripDetailPage from "./components/dispatch/TripDetailPage";
+import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
@@ -40,8 +47,8 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     return <div>Loading...</div>;
   }
 
-  // Only redirect to login if coming from login page
-  if (!authState.user && location.state?.from === '/login') {
+  // Redirect to login if not authenticated
+  if (!authState.user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -73,6 +80,43 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+          {/* Dispatch routes - placed under MainLayout so header shows */}
+          <Route path="/dispatch/orders" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <OrdersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/orders/import" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <OrderImportPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/create" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripCreatePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/:tripId" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripDetailPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/:tripId/assign" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripAssignPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/drivers" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <AvailableDriversPage />
+            </ProtectedRoute>
+          } />
         </Route>
 
         {/* Admin routes with AdminLayout (sidebar) */}
@@ -148,6 +192,7 @@ function App() {
           <AuthRedirect /> : 
           <LoginPage />
         } />
+        
         <Route path="/register/driver" element={<DriverRegisterPage />} />
 
         {/* 404 - Not Found */}
