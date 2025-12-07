@@ -31,22 +31,51 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Order> findByOrderStatusAndDateRange(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     // Find by status only
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.orderStatus = :status")
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH t.vehicle " +
+           "LEFT JOIN FETCH t.tripAssignments ta " +
+           "LEFT JOIN FETCH ta.driver " +
+           "WHERE o.orderStatus = :status")
     Page<Order> findByOrderStatus(@Param("status") Order.OrderStatus orderStatus, Pageable pageable);
 
     // Find by date only
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.createdAt >= :startDate AND o.createdAt < :endDate")
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH t.vehicle " +
+           "LEFT JOIN FETCH t.tripAssignments ta " +
+           "LEFT JOIN FETCH ta.driver " +
+           "WHERE o.createdAt >= :startDate AND o.createdAt < :endDate")
     Page<Order> findByCreatedAtDate(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
     // Find by status and date
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH t.vehicle " +
+           "LEFT JOIN FETCH t.tripAssignments ta " +
+           "LEFT JOIN FETCH ta.driver " +
+           "WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
     Page<Order> findByOrderStatusAndCreatedAtDate(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy")
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH t.vehicle " +
+           "LEFT JOIN FETCH t.tripAssignments ta " +
+           "LEFT JOIN FETCH ta.driver")
     Page<Order> findAllWithRelations(Pageable pageable);
 
     // Find by ID with relations
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.orderId = :id")
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH t.vehicle " +
+           "LEFT JOIN FETCH t.tripAssignments ta " +
+           "LEFT JOIN FETCH ta.driver " +
+           "WHERE o.orderId = :id")
     Optional<Order> findByIdWithRelations(@Param("id") Integer id);
 
     // Find by order IDs with relations (for trip creation)

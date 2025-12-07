@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
-import '../../models/user.dart';
 import 'dart:convert';
 import '../main_layout.dart';
 import 'driver_trip_detail_screen.dart';

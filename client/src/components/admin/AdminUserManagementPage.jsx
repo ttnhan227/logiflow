@@ -337,10 +337,22 @@ const UserManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [page, setPage] = useState(0);
   const [size] = useState(10);
+
+  // Role sort priority (DISPATCHER > MANAGER > DRIVER > CUSTOMER)
+  const ROLE_PRIORITY = { DISPATCHER: 1, MANAGER: 2, DRIVER: 3, CUSTOMER: 4, ADMIN: 99 };
+
+  const sortByRolePriority = (userList) => {
+    return [...userList].sort((a, b) => {
+      const priorityA = ROLE_PRIORITY[a.role] || 999;
+      const priorityB = ROLE_PRIORITY[b.role] || 999;
+      return priorityA - priorityB;
+    });
+  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -348,8 +360,9 @@ const UserManagementPage = () => {
     try {
       const data = await userService.getUsers(0, 1000);
       const list = (data.content || []).filter((u) => u.role !== 'ADMIN');
-      setUsers(list);
-      setFilteredUsers(list);
+      const sorted = sortByRolePriority(list);
+      setUsers(sorted);
+      setFilteredUsers(sorted);
     } catch (err) {
       setError(typeof err === 'string' ? err : 'Failed to load users');
     } finally {
@@ -363,6 +376,11 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     let result = users;
+    // Filter by role
+    if (roleFilter !== 'ALL') {
+      result = result.filter((u) => u.role === roleFilter);
+    }
+    // Filter by search
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -370,9 +388,11 @@ const UserManagementPage = () => {
           u.username?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term)
       );
     }
+    // Sort by role priority
+    result = sortByRolePriority(result);
     setFilteredUsers(result);
     setPage(0);
-  }, [searchTerm, users]);
+  }, [searchTerm, roleFilter, users]);
 
   const handleToggleStatus = async (user) => {
     try {
@@ -414,6 +434,23 @@ const UserManagementPage = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+            backgroundColor: 'white'
+          }}
+        >
+          <option value="ALL">All Roles</option>
+          <option value="DISPATCHER">Dispatcher</option>
+          <option value="MANAGER">Manager</option>
+          <option value="DRIVER">Driver</option>
+          <option value="CUSTOMER">Customer</option>
+        </select>
         <button
           className="btn"
           onClick={() => {

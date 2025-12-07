@@ -476,25 +476,27 @@ public class DatabaseSeeder implements CommandLineRunner {
             createOrder(trips.get(38), "Tran Van Phong", "+84-937-444-444", "9kg computer equipment", customer4, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.IN_TRANSIT, "Nha Trang Beach", "Vinpearl"),
             createOrder(trips.get(50), "Pham Minh Duc", "+84-938-555-555", "11kg sports equipment", customer5, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.IN_TRANSIT, "My Dinh", "Da Nang"),
             
-            // Orders for scheduled trips (PENDING status)
-            createOrder(trips.get(3), "Dinh Thi Hoa", "+84-916-666-666", "25kg building materials", customer1, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Bac Ninh Province", "Hanoi Train Station"),
-            createOrder(trips.get(4), "Tran Minh Duc", "+84-917-777-777", "4kg fashion accessories", customer2, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Center", "West Lake Area"),
-            createOrder(trips.get(9), "Nguyen Thi Lan", "+84-918-888-888", "11kg artwork and paintings", customer3, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Ben Thanh Market", "Thu Duc City"),
-            createOrder(trips.get(10), "Pham Van Thanh", "+84-919-999-999", "8kg medical equipment", customer4, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Da Nang Central", "Hue Imperial City"),
-            createOrder(trips.get(16), "Le Thi Huyen", "+84-920-000-000", "13kg construction tools", customer5, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Station", "Ninh Binh"),
-            createOrder(trips.get(17), "Hoang Minh Tuan", "+84-921-111-111", "7kg textiles and fabrics", customer6, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "District 7", "Binh Duong"),
-            createOrder(trips.get(21), "Vo Van Kiet", "+84-922-222-222", "16kg sporting goods", customer7, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Nha Trang", "Cam Ranh"),
-            createOrder(trips.get(22), "Bui Thi Mai", "+84-923-333-333", "5kg fresh seafood, keep cold", customer8, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Vung Tau", "Ho Chi Minh City"),
-            createOrder(trips.get(33), "Hoang Thi Nga", "+84-939-666-666", "10kg packaging materials", customer9, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Tan Son Nhat", "Nha Trang"),
-            createOrder(trips.get(34), "Nguyen Van Tuan", "+84-940-777-777", "6kg laboratory equipment", customer10, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Cat Bi", "Hanoi"),
-            createOrder(trips.get(39), "Le Minh Khoa", "+84-941-888-888", "8kg art supplies", customer6, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
-            createOrder(trips.get(40), "Phan Van Hai", "+84-942-999-999", "12kg fitness equipment", customer7, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "Da Nang"),
-            createOrder(trips.get(46), "Tran Thi Hoa", "+84-943-000-000", "5kg beauty products", customer8, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Cat Bi Airport", "Hanoi Center"),
-            createOrder(trips.get(47), "Bui Van Loc", "+84-944-111-111", "14kg gardening tools", customer9, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Nha Trang", "Vinpearl"),
-            createOrder(trips.get(51), "Vo Thi Mai", "+84-945-222-222", "9kg baby products", customer10, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Hanoi", "West Lake"),
-            createOrder(trips.get(52), "Do Minh Tuan", "+84-946-333-333", "7kg pet supplies", customer1, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
-            createOrder(trips.get(56), "Nguyen Van Nam", "+84-947-444-444", "20kg building materials", customer2, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "HCM City"),
-            createOrder(trips.get(57), "Le Thi Thao", "+84-948-555-555", "4kg musical instruments", customer3, dispatcher, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Nha Trang Beach", "Vinpearl Cable Car")
+              // Orders for scheduled trips (PENDING status)
+              // PENDING orders: all restored, trip, dispatcher, and driver set to null
+              createOrder(null, "Dinh Thi Hoa", "+84-916-666-666", "25kg building materials", customer1, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Bac Ninh Province", "Hanoi Train Station"),
+              createOrder(null, "Tran Minh Duc", "+84-917-777-777", "4kg fashion accessories", customer2, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Center", "West Lake Area"),
+              createOrder(null, "Le Thi Huyen", "+84-920-000-000", "13kg construction tools", customer5, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi Station", "Ninh Binh"),
+              createOrder(null, "Hoang Minh Tuan", "+84-921-111-111", "7kg textiles and fabrics", customer6, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "District 7", "Binh Duong"),
+              createOrder(null, "Hoang Thi Nga", "+84-939-666-666", "10kg packaging materials", customer9, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Tan Son Nhat", "Nha Trang"),
+              createOrder(null, "Nguyen Van Tuan", "+84-940-777-777", "6kg laboratory equipment", customer10, null, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Cat Bi", "Hanoi"),
+              createOrder(null, "Le Minh Khoa", "+84-941-888-888", "8kg art supplies", customer6, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
+              createOrder(null, "Phan Van Hai", "+84-942-999-999", "12kg fitness equipment", customer7, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "Da Nang"),
+              createOrder(null, "Vo Thi Mai", "+84-945-222-222", "9kg baby products", customer10, null, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Hanoi", "West Lake"),
+              createOrder(null, "Do Minh Tuan", "+84-946-333-333", "7kg pet supplies", customer1, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "HCM District 1", "District 7"),
+              createOrder(null, "Nguyen Van Nam", "+84-947-444-444", "20kg building materials", customer2, null, Order.PriorityLevel.NORMAL, Order.OrderStatus.PENDING, "Hanoi", "HCM City"),
+              createOrder(null, "Le Thi Thao", "+84-948-555-555", "4kg musical instruments", customer3, null, Order.PriorityLevel.URGENT, Order.OrderStatus.PENDING, "Nha Trang Beach", "Vinpearl Cable Car"),
+              // ASSIGNED orders (with trip/driver)
+              createOrder(trips.get(9), "Nguyen Thi Lan", "+84-918-888-888", "11kg artwork and paintings", customer3, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.ASSIGNED, "Ben Thanh Market", "Thu Duc City"),
+              createOrder(trips.get(10), "Pham Van Thanh", "+84-919-999-999", "8kg medical equipment", customer4, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.ASSIGNED, "Da Nang Central", "Hue Imperial City"),
+              createOrder(trips.get(21), "Vo Van Kiet", "+84-922-222-222", "16kg sporting goods", customer7, dispatcher2, Order.PriorityLevel.NORMAL, Order.OrderStatus.ASSIGNED, "Nha Trang", "Cam Ranh"),
+              createOrder(trips.get(22), "Bui Thi Mai", "+84-923-333-333", "5kg fresh seafood, keep cold", customer8, dispatcher2, Order.PriorityLevel.URGENT, Order.OrderStatus.ASSIGNED, "Vung Tau", "Ho Chi Minh City"),
+              createOrder(trips.get(46), "Tran Thi Hoa", "+84-943-000-000", "5kg beauty products", customer8, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.ASSIGNED, "Cat Bi Airport", "Hanoi Center"),
+              createOrder(trips.get(47), "Bui Van Loc", "+84-944-111-111", "14kg gardening tools", customer9, dispatcher, Order.PriorityLevel.NORMAL, Order.OrderStatus.ASSIGNED, "Nha Trang", "Vinpearl")
         );
         orderRepository.saveAll(orders);
         System.out.println("Seeded " + orders.size() + " orders");
@@ -512,15 +514,36 @@ public class DatabaseSeeder implements CommandLineRunner {
         order.setOrderStatus(orderStatus);
         order.setPickupAddress(pickupAddress);
         order.setDeliveryAddress(deliveryAddress);
-        
-        // Set order creation date based on trip date (orders created 1-3 hours before trip departure)
-        LocalDateTime orderCreatedAt = trip.getScheduledDeparture().minusHours(2);
-        order.setCreatedAt(orderCreatedAt);
-        
+
+        // Set order creation date
+        if (trip != null) {
+            // Orders created 1-3 hours before trip departure
+            LocalDateTime orderCreatedAt = trip.getScheduledDeparture().minusHours(2);
+            order.setCreatedAt(orderCreatedAt);
+        } else if (orderStatus == Order.OrderStatus.PENDING) {
+            // For PENDING orders, create a mix of ON_TRACK, DUE_SOON, and OVERDUE
+            int hash = Math.abs(customerName.hashCode());
+            int mod = hash % 3;
+            if (mod == 0) {
+                // ON_TRACK: created now
+                order.setCreatedAt(LocalDateTime.now());
+            } else if (mod == 1) {
+                // DUE_SOON: created 3 hours ago (for URGENT, SLA is 4h, so 1h left)
+                order.setCreatedAt(LocalDateTime.now().minusHours(3));
+            } else {
+                // OVERDUE: created 6 hours ago (for URGENT, SLA is 4h, so 2h overdue)
+                order.setCreatedAt(LocalDateTime.now().minusHours(6));
+            }
+        } else {
+            // For unassigned non-pending orders, use a different time in the past for each order for realism
+            int offset = Math.abs(customerName.hashCode() % 30) + 30; // 30 to 59 days ago
+            order.setCreatedAt(LocalDateTime.now().minusDays(offset));
+        }
+
         // Calculate delivery fee based on priority and package weight
         java.math.BigDecimal baseFee = new java.math.BigDecimal("150000"); // Base fee in VND
         java.math.BigDecimal fee = baseFee;
-        
+
         // Extract weight from package details if available
         String details = packageDetails.toLowerCase();
         if (details.contains("kg")) {
@@ -531,12 +554,12 @@ public class DatabaseSeeder implements CommandLineRunner {
                 fee = fee.add(new java.math.BigDecimal(weight * 5000)); // 5000 VND per kg
             } catch (Exception ignored) {}
         }
-        
+
         // Add urgent priority surcharge (50%)
         if (priorityLevel == Order.PriorityLevel.URGENT) {
             fee = fee.multiply(new java.math.BigDecimal("1.5"));
         }
-        
+
         order.setDeliveryFee(fee);
         return order;
     }

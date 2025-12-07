@@ -15,4 +15,3 @@ public interface OrderService {
     OrderDto getOrderById(Integer orderId);
     OrderDto updateOrder(Integer orderId, OrderUpdateRequest request);
 }
-

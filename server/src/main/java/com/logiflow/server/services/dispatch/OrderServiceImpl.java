@@ -147,8 +147,8 @@ public class OrderServiceImpl implements OrderService {
         if (order.getDistanceKm() == null && mapsService != null) {
             try {
                 var distanceResult = mapsService.calculateDistance(
-                    request.getPickupAddress(),
-                    request.getDeliveryAddress()
+                        request.getPickupAddress(),
+                        request.getDeliveryAddress()
                 );
                 if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
                     java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
@@ -162,10 +162,10 @@ public class OrderServiceImpl implements OrderService {
 
         // Calculate shipping fee
         java.math.BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-            order.getDistanceKm(),
-            order.getWeightKg(),
-            order.getPackageValue(),
-            order.getPriorityLevel()
+                order.getDistanceKm(),
+                order.getWeightKg(),
+                order.getPackageValue(),
+                order.getPriorityLevel()
         );
         order.setShippingFee(shippingFee);
 
@@ -190,9 +190,9 @@ public class OrderServiceImpl implements OrderService {
         List<OrderCreateRequest> requests = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         String fileName = file.getOriginalFilename();
-        String fileExtension = fileName != null && fileName.contains(".") 
-            ? fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase() 
-            : "";
+        String fileExtension = fileName != null && fileName.contains(".")
+                ? fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase()
+                : "";
 
         try {
             if ("csv".equals(fileExtension)) {
@@ -259,8 +259,8 @@ public class OrderServiceImpl implements OrderService {
                 if (order.getDistanceKm() == null && mapsService != null) {
                     try {
                         var distanceResult = mapsService.calculateDistance(
-                            request.getPickupAddress(),
-                            request.getDeliveryAddress()
+                                request.getPickupAddress(),
+                                request.getDeliveryAddress()
                         );
                         if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
                             BigDecimal distanceKm = new BigDecimal(distanceResult.getDistanceMeters())
@@ -274,10 +274,10 @@ public class OrderServiceImpl implements OrderService {
 
 
                 BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-                    order.getDistanceKm(),
-                    order.getWeightKg(),
-                    order.getPackageValue(),
-                    order.getPriorityLevel()
+                        order.getDistanceKm(),
+                        order.getWeightKg(),
+                        order.getPackageValue(),
+                        order.getPriorityLevel()
                 );
                 order.setShippingFee(shippingFee);
 
@@ -323,29 +323,29 @@ public class OrderServiceImpl implements OrderService {
         try (CSVWriter csvWriter = new CSVWriter(writer)) {
             // Write header
             csvWriter.writeNext(new String[]{
-                "Customer Name",
-                "Customer Phone",
-                "Pickup Address",
-                "Delivery Address",
-                "Package Details",
-                "Priority Level",
-                "Distance (km)",
-                "Weight (kg)",
-                "Package Value (VND)",
-                "Trip ID"
+                    "Customer Name",
+                    "Customer Phone",
+                    "Pickup Address",
+                    "Delivery Address",
+                    "Package Details",
+                    "Priority Level",
+                    "Distance (km)",
+                    "Weight (kg)",
+                    "Package Value (VND)",
+                    "Trip ID"
             });
 
             csvWriter.writeNext(new String[]{
-                "Nguyen Van A",
-                "+84-912-345-678",
-                "123 Le Loi, District 1, Ho Chi Minh City",
-                "456 Nguyen Hue, District 1, Ho Chi Minh City",
-                "5kg documents",
-                "NORMAL",
-                "10.5",
-                "5.0",
-                "500000",
-                ""
+                    "Nguyen Van A",
+                    "+84-912-345-678",
+                    "123 Le Loi, District 1, Ho Chi Minh City",
+                    "456 Nguyen Hue, District 1, Ho Chi Minh City",
+                    "5kg documents",
+                    "NORMAL",
+                    "10.5",
+                    "5.0",
+                    "500000",
+                    ""
             });
 
             return writer.toString().getBytes("UTF-8");
@@ -365,16 +365,16 @@ public class OrderServiceImpl implements OrderService {
 
             Row headerRow = sheet.createRow(0);
             String[] headers = {
-                "Customer Name",
-                "Customer Phone",
-                "Pickup Address",
-                "Delivery Address",
-                "Package Details",
-                "Priority Level",
-                "Distance (km)",
-                "Weight (kg)",
-                "Package Value (VND)",
-                "Trip ID"
+                    "Customer Name",
+                    "Customer Phone",
+                    "Pickup Address",
+                    "Delivery Address",
+                    "Package Details",
+                    "Priority Level",
+                    "Distance (km)",
+                    "Weight (kg)",
+                    "Package Value (VND)",
+                    "Trip ID"
             };
 
             for (int i = 0; i < headers.length; i++) {
@@ -438,8 +438,8 @@ public class OrderServiceImpl implements OrderService {
         if (order.getDistanceKm() == null && mapsService != null) {
             try {
                 var distanceResult = mapsService.calculateDistance(
-                    request.getPickupAddress(),
-                    request.getDeliveryAddress()
+                        request.getPickupAddress(),
+                        request.getDeliveryAddress()
                 );
                 if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
                     java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
@@ -451,11 +451,11 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-       BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-            order.getDistanceKm(),
-            order.getWeightKg(),
-            order.getPackageValue(),
-            order.getPriorityLevel()
+        BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
+                order.getDistanceKm(),
+                order.getWeightKg(),
+                order.getPackageValue(),
+                order.getPriorityLevel()
         );
         order.setShippingFee(shippingFee);
 
@@ -469,4 +469,3 @@ public class OrderServiceImpl implements OrderService {
     }
 
 }
-
