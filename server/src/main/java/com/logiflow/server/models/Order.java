@@ -70,6 +70,12 @@ public class Order {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "delay_reason", length = 500, nullable = true)
+    private String delayReason;
+
+    @Column(name = "sla_extension_minutes", nullable = true)
+    private Integer slaExtensionMinutes = 0;
+
     public static enum PriorityLevel {
         NORMAL, URGENT
     }

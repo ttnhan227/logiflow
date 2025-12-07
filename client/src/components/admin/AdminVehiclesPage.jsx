@@ -374,7 +374,7 @@ const AdminVehiclesPage = () => {
                     </span>
                   </td>
                   <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
-                    {vehicle.capacity} kg
+                    {(vehicle.capacity / 1000).toFixed(1)} T
                   </td>
                   <td style={{ padding: '16px', fontSize: '14px', color: '#6b7280' }}>
                     {vehicle.requiredLicense}
@@ -525,7 +525,7 @@ const AdminVehiclesPage = () => {
                   </span>
                 </div>
                 <div>
-                  <strong>Capacity:</strong> {selectedVehicle.capacity} kg
+                  <strong>Capacity:</strong> {(selectedVehicle.capacity / 1000).toFixed(1)} T
                 </div>
                 <div>
                   <strong>Required License:</strong> {selectedVehicle.requiredLicense}
@@ -612,7 +612,7 @@ const AdminVehiclesPage = () => {
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '14px' }}>
-                    Capacity (kg) *
+                    Capacity (T) *
                   </label>
                   <input
                     type="number"

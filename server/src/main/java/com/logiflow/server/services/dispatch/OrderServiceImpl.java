@@ -14,6 +14,7 @@ import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.dispatch.ShippingFeeCalculator;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.utils.OrderFileParser;
+// import removed: DriverComplianceService
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 import org.apache.poi.ss.usermodel.*;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -55,6 +57,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired(required = false)
     private MapsService mapsService;
+
+
+
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -108,8 +113,8 @@ public class OrderServiceImpl implements OrderService {
 
 
         List<OrderDto> orderDtos = orderPage.getContent().stream()
-                .map(OrderDto::fromOrder)
-                .collect(Collectors.toList());
+            .map(OrderDto::fromOrder)
+            .collect(Collectors.toList());
         OrderListResponse response = new OrderListResponse();
         response.setOrders(orderDtos);
         response.setCurrentPage(orderPage.getNumber());
@@ -465,6 +470,56 @@ public class OrderServiceImpl implements OrderService {
         Order orderWithRelations = orderRepository.findByIdWithRelations(updatedOrder.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve updated order"));
 
+        return OrderDto.fromOrder(orderWithRelations);
+    }
+
+    @Override
+    public OrderDto updateStatus(Integer orderId, String status) {
+        Order order = orderRepository.findByIdWithRelations(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        if (status == null || status.isBlank()) {
+            throw new RuntimeException("Status is required");
+        }
+
+        Order.OrderStatus parsedStatus;
+        try {
+            parsedStatus = Order.OrderStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Invalid status: " + status);
+        }
+
+        order.setOrderStatus(parsedStatus);
+        Order saved = orderRepository.save(order);
+
+        Order orderWithRelations = orderRepository.findByIdWithRelations(saved.getOrderId())
+                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated order"));
+        return OrderDto.fromOrder(orderWithRelations);
+    }
+
+    @Override
+    public OrderDto updateOrderDelay(Integer orderId, String delayReason, Integer delayMinutesExtension) {
+        Order order = orderRepository.findByIdWithRelations(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        if (delayReason == null || delayReason.isBlank()) {
+            throw new RuntimeException("Delay reason is required");
+        }
+        if (delayMinutesExtension == null || delayMinutesExtension < 0) {
+            throw new RuntimeException("Delay minutes must be non-negative");
+        }
+
+        // Store delay reason and accumulate SLA extension
+        order.setDelayReason(delayReason);
+        
+        // Extend SLA by the specified minutes (accumulate existing extensions)
+        Integer currentExtension = order.getSlaExtensionMinutes() != null ? order.getSlaExtensionMinutes() : 0;
+        order.setSlaExtensionMinutes(currentExtension + delayMinutesExtension);
+
+        Order saved = orderRepository.save(order);
+        Order orderWithRelations = orderRepository.findByIdWithRelations(saved.getOrderId())
+                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated order"));
+        
         return OrderDto.fromOrder(orderWithRelations);
     }
 

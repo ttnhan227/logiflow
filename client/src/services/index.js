@@ -9,6 +9,7 @@ import dashboardService from './admin/dashboardService';
 import routeService from './admin/routeService';
 import vehicleService from './admin/vehicleService';
 import reportsService from './admin/reportsService';
+import ordersOversightService from './admin/ordersOversightService';
 
 export {
   api,
@@ -22,6 +23,7 @@ export {
   routeService,
   vehicleService,
   reportsService,
+  ordersOversightService,
 };
 
 // Example usage:
