@@ -1,4 +1,4 @@
-package com.logiflow.server.dtos.dispatch;
+package com.logiflow.server.dtos.admin.order;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

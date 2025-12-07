@@ -14,7 +14,4 @@ public interface OrderService {
     byte[] downloadTemplate(String format);
     OrderDto getOrderById(Integer orderId);
     OrderDto updateOrder(Integer orderId, OrderUpdateRequest request);
-    OrderDto updateStatus(Integer orderId, String status);
-    OrderDto updateOrderDelay(Integer orderId, String delayReason, Integer delayMinutesExtension);
 }
-

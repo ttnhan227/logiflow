@@ -1,9 +1,9 @@
 package com.logiflow.server.controllers.admin;
 
-import com.logiflow.server.dtos.admin.OrderStatusUpdateRequest;
-import com.logiflow.server.dtos.dispatch.OrderDto;
-import com.logiflow.server.dtos.dispatch.OrderListResponse;
-import com.logiflow.server.services.dispatch.OrderService;
+import com.logiflow.server.dtos.admin.order.OrderStatusUpdateRequest;
+import com.logiflow.server.dtos.admin.order.OrderOversightDto;
+import com.logiflow.server.dtos.admin.order.OrderOversightListResponse;
+import com.logiflow.server.services.admin.AdminOrderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,15 +14,15 @@ import org.springframework.web.bind.annotation.*;
 public class AdminOrderController {
 
     @Autowired
-    private OrderService orderService;
+    private AdminOrderService adminOrderService;
 
     @GetMapping("/oversight")
-    public ResponseEntity<OrderListResponse> getOversightOrders(
+    public ResponseEntity<OrderOversightListResponse> getOversightOrders(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
-            OrderListResponse response = orderService.getOrders(status, null, page, size);
+            OrderOversightListResponse response = adminOrderService.getOversightOrders(status, page, size);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -30,11 +30,11 @@ public class AdminOrderController {
     }
 
     @PutMapping("/{orderId}/status")
-    public ResponseEntity<OrderDto> updateStatus(
+    public ResponseEntity<OrderOversightDto> updateStatus(
             @PathVariable Integer orderId,
             @Valid @RequestBody OrderStatusUpdateRequest request) {
         try {
-            OrderDto dto = orderService.updateStatus(orderId, request.getStatus());
+            OrderOversightDto dto = adminOrderService.updateStatus(orderId, request.getStatus());
             return ResponseEntity.ok(dto);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().build();
@@ -44,11 +44,11 @@ public class AdminOrderController {
     }
 
     @PutMapping("/{orderId}/delay")
-    public ResponseEntity<OrderDto> updateDelay(
+    public ResponseEntity<OrderOversightDto> updateDelay(
             @PathVariable Integer orderId,
             @RequestBody DelayUpdateRequest request) {
         try {
-            OrderDto dto = orderService.updateOrderDelay(orderId, request.getDelayReason(), request.getDelayMinutesExtension());
+            OrderOversightDto dto = adminOrderService.updateOrderDelay(orderId, request.getDelayReason(), request.getDelayMinutesExtension());
             return ResponseEntity.ok(dto);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().build();
