@@ -73,7 +73,7 @@ The system uses a relational database with the following key tables:
 - **Drivers** → **Work Logs** (One-to-Many)
 - **Trips** → **Work Logs** (One-to-Many, optional)
 
-## 🚀 Getting Started
+## 🚀 Getting Starteds
 
 ### Prerequisites
 - **Java 21** - For backend development
