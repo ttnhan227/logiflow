@@ -20,9 +20,6 @@ public interface UserManagementService {
     // Deactivate/Activate user
     UserDto toggleUserActiveStatus(Integer userId);
 
-    // Delete user (soft delete)
-    void deleteUser(Integer userId);
-
     // Get user by ID
     Optional<UserDto> getUserById(Integer userId);
 

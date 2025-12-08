@@ -31,6 +31,12 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private com.logiflow.server.services.file.FileStorageService fileStorageService;
+
     @Override
     @Transactional
     public UserDto createUser(UserCreationDto userCreationDto) {
@@ -50,10 +56,20 @@ public class UserManagementServiceImpl implements UserManagementService {
         user.setUsername(userCreationDto.getUsername());
         user.setEmail(userCreationDto.getEmail());
         user.setPasswordHash(passwordEncoder.encode(userCreationDto.getPassword()));
+        user.setFullName(userCreationDto.getFullName());
+        user.setPhone(userCreationDto.getPhone());
+        user.setProfilePictureUrl(userCreationDto.getProfilePictureUrl());
         user.setRole(role);
         user.setIsActive(true);
 
         User savedUser = userRepository.save(user);
+
+        auditLogService.log(
+            "CREATE_USER",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Created user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ")"
+        );
         return convertToDto(savedUser);
     }
 
@@ -75,6 +91,22 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         user.setUsername(userUpdateDto.getUsername());
         user.setEmail(userUpdateDto.getEmail());
+        
+        if (userUpdateDto.getFullName() != null) {
+            user.setFullName(userUpdateDto.getFullName());
+        }
+        if (userUpdateDto.getPhone() != null) {
+            user.setPhone(userUpdateDto.getPhone());
+        }
+        String oldProfilePicture = user.getProfilePictureUrl();
+        int oldRefs = 0;
+        if (oldProfilePicture != null) {
+            oldRefs = userRepository.countByProfilePictureUrl(oldProfilePicture);
+        }
+
+        if (userUpdateDto.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(userUpdateDto.getProfilePictureUrl());
+        }
 
         if (userUpdateDto.getRoleId() != null) {
             Role role = roleRepository.findById(userUpdateDto.getRoleId())
@@ -87,6 +119,26 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
 
         User savedUser = userRepository.save(user);
+
+        // If profile picture changed and old was only referenced by this user, delete file
+        try {
+            if (oldProfilePicture != null && !oldProfilePicture.equals(savedUser.getProfilePictureUrl()) && oldRefs <= 1) {
+                try {
+                    fileStorageService.deleteProfilePicture(oldProfilePicture);
+                } catch (Exception ex) {
+                    // ignore deletion errors
+                }
+            }
+        } catch (Exception ex) {
+            // swallow
+        }
+
+        auditLogService.log(
+            "UPDATE_USER",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Updated user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ")"
+        );
         return convertToDto(savedUser);
     }
 
@@ -98,18 +150,14 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         user.setIsActive(!user.getIsActive());
         User savedUser = userRepository.save(user);
+
+        auditLogService.log(
+            "TOGGLE_USER_STATUS",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Toggled status for user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ") to " + savedUser.getIsActive()
+        );
         return convertToDto(savedUser);
-    }
-
-    @Override
-    @Transactional
-    public void deleteUser(Integer userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Soft delete - deactivate instead of hard delete
-        user.setIsActive(false);
-        userRepository.save(user);
     }
 
     @Override
@@ -172,6 +220,9 @@ public class UserManagementServiceImpl implements UserManagementService {
             user.getUserId(),
             user.getUsername(),
             user.getEmail(),
+            user.getFullName(),
+            user.getPhone(),
+            user.getProfilePictureUrl(),
             user.getRole() != null ? user.getRole().getRoleName() : null,
             user.getIsActive(),
             user.getCreatedAt(),

@@ -20,6 +20,25 @@ public class DriverDtos {
         private LocalDateTime scheduledArrival;
         private String routeName;        // gợi ý hiển thị
         private String vehiclePlate;     // gợi ý hiển thị
+
+            public static TripSummaryDto fromTrip(com.logiflow.server.models.Trip trip) {
+                if (trip == null) return null;
+                TripSummaryDto dto = new TripSummaryDto();
+                dto.setTripId(trip.getTripId());
+                dto.setStatus(trip.getStatus());
+                // Assignment status: get from first assignment if available
+                String assignmentStatus = null;
+                if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
+                    assignmentStatus = trip.getTripAssignments().get(0).getStatus();
+                }
+                dto.setAssignmentStatus(assignmentStatus);
+                dto.setTripType(trip.getTripType());
+                dto.setScheduledDeparture(trip.getScheduledDeparture());
+                dto.setScheduledArrival(trip.getScheduledArrival());
+                dto.setRouteName(trip.getRoute() != null ? trip.getRoute().getRouteName() : null);
+                dto.setVehiclePlate(trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null);
+                return dto;
+            }
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor

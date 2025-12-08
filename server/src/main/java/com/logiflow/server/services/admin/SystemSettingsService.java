@@ -29,6 +29,12 @@ public interface SystemSettingsService {
     // Search settings by term
     Page<SystemSettingDto> searchSettings(String searchTerm, Pageable pageable);
 
+    // Advanced search with multiple filters
+    Page<SystemSettingDto> advancedSearch(String category, String key, String description, Boolean isEncrypted, Pageable pageable);
+
+    // Get all available categories
+    List<String> getAvailableCategories();
+
     // Check if setting exists by category and key
     boolean settingExists(String category, String key);
 }

@@ -62,18 +62,7 @@ The system uses a relational database with the following key tables:
 - **Orders**: Order tracking and management
 - **Work Logs**: Driver working hours and rest periods
 
-### 🔗 Key Relationships
-
-- **Users** → **Drivers** (One-to-One, optional)
-- **Drivers** → **Trip Assignments** (One-to-Many)
-- **Vehicles** → **Trips** (One-to-Many)
-- **Routes** → **Trips** (One-to-Many)
-- **Trips** → **Trip Assignments** (One-to-Many)
-- **Trips** → **Orders** (One-to-Many)
-- **Drivers** → **Work Logs** (One-to-Many)
-- **Trips** → **Work Logs** (One-to-Many, optional)
-
-## 🚀 Getting Starteds
+## 🚀 Getting Started
 
 ### Prerequisites
 - **Java 21** - For backend development

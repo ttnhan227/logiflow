@@ -1,24 +1,30 @@
 package com.logiflow.server.controllers.admin;
 
-import com.logiflow.server.dtos.admin.dashboard.DashboardOverviewDto;
-import com.logiflow.server.services.admin.DashboardService;
+import com.logiflow.server.dtos.admin.dashboard.AdminDashboardDto;
+import com.logiflow.server.dtos.admin.dashboard.ActiveDriverLocationDto;
+import com.logiflow.server.services.admin.AdminDashboardService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/dashboard")
 public class AdminDashboardController {
 
-    private final DashboardService dashboardService;
+    private final AdminDashboardService adminDashboardService;
 
-    public AdminDashboardController(DashboardService dashboardService) {
-        this.dashboardService = dashboardService;
+    public AdminDashboardController(AdminDashboardService adminDashboardService) {
+        this.adminDashboardService = adminDashboardService;
     }
 
-    @GetMapping("/overview")
-    public ResponseEntity<DashboardOverviewDto> getDashboardOverview() {
-        return ResponseEntity.ok(dashboardService.getDashboardOverview());
+    @GetMapping
+    public ResponseEntity<AdminDashboardDto> getDashboardData() {
+        return ResponseEntity.ok(adminDashboardService.getDashboardData());
+    }
+
+    @GetMapping("/active-drivers")
+    public ResponseEntity<List<ActiveDriverLocationDto>> getActiveDriverLocations() {
+        return ResponseEntity.ok(adminDashboardService.getActiveDriverLocations());
     }
 }

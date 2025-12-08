@@ -21,8 +21,11 @@ public class AuthController {
         try {
             AuthResponse response = authService.login(loginRequest);
             return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            // Return the specific error message (rejection, pending, etc.)
+            return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, null, e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, "Invalid credentials"));
+            return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, null, "Invalid credentials"));
         }
     }
 
@@ -32,7 +35,7 @@ public class AuthController {
             AuthResponse response = authService.register(registerRequest);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, e.getMessage()));
+            return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, null, e.getMessage()));
         }
     }
 }

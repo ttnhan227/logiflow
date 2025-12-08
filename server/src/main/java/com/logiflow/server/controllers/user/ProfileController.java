@@ -34,4 +34,15 @@ public class ProfileController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/profile")
+    public ResponseEntity<ProfileDto> updateProfile(Authentication authentication, @RequestBody com.logiflow.server.dtos.user.ProfileUpdateDto profileUpdateDto) {
+        try {
+            String username = authentication.getName();
+            ProfileDto updated = profileService.updateProfile(username, profileUpdateDto);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

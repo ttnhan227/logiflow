@@ -49,4 +49,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     @Query("SELECT DISTINCT u FROM User u JOIN FETCH u.role ORDER BY u.username")
     List<User> findAllUsersWithRole();
+
+    // Count how many users reference the given profile picture URL
+    int countByProfilePictureUrl(String profilePictureUrl);
 }

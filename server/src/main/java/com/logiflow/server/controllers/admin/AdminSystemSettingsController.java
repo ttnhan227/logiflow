@@ -1,6 +1,8 @@
 package com.logiflow.server.controllers.admin;
 
 import com.logiflow.server.dtos.admin.system.SystemSettingDto;
+import com.logiflow.server.dtos.admin.system.SystemOverviewDto;
+import com.logiflow.server.services.admin.SystemOverviewService;
 import com.logiflow.server.dtos.admin.system.SystemSettingCreationDto;
 import com.logiflow.server.dtos.admin.system.SystemSettingUpdateDto;
 import com.logiflow.server.services.admin.SystemSettingsService;
@@ -20,9 +22,16 @@ import java.util.Optional;
 public class AdminSystemSettingsController {
 
     private final SystemSettingsService systemSettingsService;
+    private final SystemOverviewService systemOverviewService;
 
-    public AdminSystemSettingsController(SystemSettingsService systemSettingsService) {
+    public AdminSystemSettingsController(SystemSettingsService systemSettingsService, SystemOverviewService systemOverviewService) {
         this.systemSettingsService = systemSettingsService;
+        this.systemOverviewService = systemOverviewService;
+    }
+
+    @GetMapping("/overview")
+    public ResponseEntity<SystemOverviewDto> getSystemOverview() {
+        return ResponseEntity.ok(systemOverviewService.getSystemOverview());
     }
 
     @GetMapping
@@ -47,6 +56,24 @@ public class AdminSystemSettingsController {
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(systemSettingsService.searchSettings(term, pageable));
+    }
+
+    @GetMapping("/filters/categories")
+    public ResponseEntity<List<String>> getAvailableCategories() {
+        List<String> categories = systemSettingsService.getAvailableCategories();
+        return ResponseEntity.ok(categories);
+    }
+
+    @GetMapping("/filters/advanced")
+    public ResponseEntity<Page<SystemSettingDto>> advancedSearch(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String key,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Boolean isEncrypted,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(systemSettingsService.advancedSearch(category, key, description, isEncrypted, pageable));
     }
 
     @PostMapping

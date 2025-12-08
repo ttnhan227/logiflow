@@ -23,6 +23,19 @@ const MainLayout = () => {
     setUser(currentUser);
   }, []);
 
+  // Listen for global user updates (dispatched by ProfilePage after save)
+  useEffect(() => {
+    const onUserUpdated = (e) => {
+      try {
+        setUser(e?.detail || authService.getCurrentUser());
+      } catch (ex) {
+        setUser(authService.getCurrentUser());
+      }
+    };
+    window.addEventListener('userUpdated', onUserUpdated);
+    return () => window.removeEventListener('userUpdated', onUserUpdated);
+  }, []);
+
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -50,6 +63,15 @@ const MainLayout = () => {
       .toUpperCase();
   };
 
+  const getProfilePictureUrl = (u) => {
+    if (!u?.profilePictureUrl) return null;
+    if (u.profilePictureUrl.startsWith('http://') || u.profilePictureUrl.startsWith('https://')) {
+      return u.profilePictureUrl;
+    }
+    const baseUrl = authService.getBaseUrl();
+    return `${baseUrl}${u.profilePictureUrl.startsWith('/') ? '' : '/'}${u.profilePictureUrl}`;
+  };
+
   return (
     <div className="app-container">
       <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
@@ -68,12 +90,22 @@ const MainLayout = () => {
             <Link to="/" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
             <Link to="/about" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
             {user && user.role === 'ADMIN' && (
-              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin</Link>
+              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
             )}
             {user ? (
               <>
+                <Link to="/profile" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
                 <div className="nav-user">
-                  <div className="avatar">{getInitials(user)}</div>
+                  {user.profilePictureUrl && getProfilePictureUrl(user) ? (
+                    <img 
+                      src={getProfilePictureUrl(user)} 
+                      alt={user.username}
+                      className="avatar-image-small"
+                      title={user.username}
+                    />
+                  ) : (
+                    <div className="avatar">{getInitials(user)}</div>
+                  )}
                   <span className="greeting">Hi, {user.username || user.email || 'User'}</span>
                 </div>
                 <button onClick={handleLogout} className="nav-link logout-button">
@@ -81,9 +113,14 @@ const MainLayout = () => {
                 </button>
               </>
             ) : (
-              <Link to="/login" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-                Login
-              </Link>
+              <>
+                <Link to="/register/driver" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  Do you wanna becom a driver
+                </Link>
+                <Link to="/login" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  Login
+                </Link>
+              </>
             )}
           </nav>
         </div>

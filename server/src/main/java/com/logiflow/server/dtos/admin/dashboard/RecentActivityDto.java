@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecentActivityDto {
+public class    RecentActivityDto {
     public enum ActivityType {
         USER_LOGIN,      // Successful user login
         LOGIN_FAILED,    // Failed login attempt
