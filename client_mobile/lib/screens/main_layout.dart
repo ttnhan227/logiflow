@@ -6,6 +6,10 @@ import 'auth/login_screen.dart';
 import 'driver/driver_trips_screen.dart';
 import 'driver/driver_schedule_screen.dart';
 import 'driver/driver_compliance_screen.dart';
+import 'customer/create_order_screen.dart';
+import 'customer/track_orders_screen.dart';
+import 'customer/order_history_screen.dart';
+import 'customer/profile_screen.dart';
 import 'home/home_screen.dart';
 
 class MainLayout extends StatefulWidget {
@@ -241,6 +245,48 @@ class _MainLayoutState extends State<MainLayout> {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => const DriverComplianceScreen()),
+                );
+              },
+            ),
+          ],
+          if (_currentUser != null && _currentUser!.role.toUpperCase() == 'CUSTOMER') ...[
+            ListTile(
+              leading: const Icon(Icons.add_shopping_cart),
+              title: const Text('Create Order'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const CreateOrderScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.track_changes),
+              title: const Text('Track Orders'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const TrackOrdersScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Order History'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const OrderHistoryScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('My Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
                 );
               },
             ),

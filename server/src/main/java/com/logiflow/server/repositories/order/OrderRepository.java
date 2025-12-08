@@ -12,12 +12,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.trip.tripId IN (SELECT t.tripId FROM Trip t JOIN t.tripAssignments ta WHERE ta.driver.driverId = :driverId)")
     int countByDriverTrips(@Param("driverId") Integer driverId);
-    
+
     @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = :status")
     int countByOrderStatus(@Param("status") Order.OrderStatus status);
     
@@ -81,4 +84,14 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     // Find by order IDs with relations (for trip creation)
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.orderId IN :orderIds")
     List<Order> findByIdsWithRelations(@Param("orderIds") List<Integer> orderIds);
+
+    // Customer-specific queries
+    @Query("SELECT o FROM Order o WHERE o.customer.userId = :customerId ORDER BY o.createdAt DESC")
+    List<Order> findByCustomerId(@Param("customerId") Integer customerId);
+
+    @Query("SELECT o FROM Order o WHERE o.customer.userId = :customerId AND o.orderId = :orderId")
+    Optional<Order> findByCustomerIdAndOrderId(@Param("customerId") Integer customerId, @Param("orderId") Integer orderId);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.customer.userId = :customerId")
+    int countByCustomerId(@Param("customerId") Integer customerId);
 }

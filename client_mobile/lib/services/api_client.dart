@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://192.168.1.20:8080/api';
+  static const String baseUrl = 'http://192.168.1.22:8080/api';
   final http.Client _client = http.Client();
 
   Future<Map<String, String>> _getHeaders() async {

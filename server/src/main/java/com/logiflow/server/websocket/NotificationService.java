@@ -101,4 +101,18 @@ public class NotificationService {
         );
         sendAdminNotification(notification);
     }
+
+    public void sendCustomerNotification(Integer customerId, String type, String message) {
+        String destination = "/topic/customer/" + customerId;
+        TripNotificationDto notification = new TripNotificationDto();
+        notification.setType(type);
+        notification.setMessage(message);
+        messagingTemplate.convertAndSend(destination, notification);
+    }
+
+    public void sendOrderNotification(Integer customerId, Integer orderId, String type, String message, String orderStatus) {
+        String destination = "/topic/customer/" + customerId;
+        TripNotificationDto notification = new TripNotificationDto(type, message, orderId, orderStatus);
+        messagingTemplate.convertAndSend(destination, notification);
+    }
 }
