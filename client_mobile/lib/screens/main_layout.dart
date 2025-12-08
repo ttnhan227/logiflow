@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/api_client.dart';
 import '../services/auth/auth_service.dart';
 import '../services/notification/notification_service.dart';
 import '../models/user.dart';
@@ -30,11 +32,17 @@ class _MainLayoutState extends State<MainLayout> {
   User? _currentUser;
   bool _isLoading = true;
   final NotificationService _notificationService = NotificationService();
+  late StreamSubscription<User?> _userSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _userSubscription = authService.userStream.listen((user) {
+      if (mounted) {
+        setState(() => _currentUser = user);
+      }
+    });
   }
 
   Future<void> _loadUser() async {
@@ -102,6 +110,7 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void dispose() {
     _notificationService.disconnect();
+    _userSubscription.cancel();
     super.dispose();
   }
 
@@ -120,6 +129,17 @@ class _MainLayoutState extends State<MainLayout> {
     return name.isNotEmpty
         ? name.substring(0, 1).toUpperCase()
         : '';
+  }
+
+  String _getImageUrl(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) return '';
+
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+
+    // Base URL without /api (same as web client logic)
+    return '${ApiClient.baseImageUrl}${imagePath.startsWith('/') ? '' : '/'}$imagePath';
   }
 
   @override
@@ -186,8 +206,11 @@ class _MainLayoutState extends State<MainLayout> {
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundColor: Theme.of(context).primaryColor,
-                    child: Text(
+                    backgroundImage: _currentUser!.profilePictureUrl != null && _getImageUrl(_currentUser!.profilePictureUrl).isNotEmpty
+                      ? NetworkImage(_getImageUrl(_currentUser!.profilePictureUrl))
+                      : null,
+                    backgroundColor: _currentUser!.profilePictureUrl != null ? null : Theme.of(context).primaryColor,
+                    child: _currentUser!.profilePictureUrl != null ? null : Text(
                       _getInitials(_currentUser),
                       style: const TextStyle(
                         color: Colors.white,

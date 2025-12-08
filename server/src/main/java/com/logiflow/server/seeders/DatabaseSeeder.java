@@ -24,6 +24,10 @@ import java.util.List;
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
 
+    // Cloudinary placeholder image URL - single image for all seeded users
+    // Note: When uploaded via the app, URLs include the folder path. For seeding, use a consistent URL.
+    private static final String PLACEHOLDER_PROFILE_IMAGE_URL = "https://res.cloudinary.com/dpp97gxhf/image/upload/v1765183836/logiflow/profile-pictures/75af113f-26e7-40aa-856a-017e28495325.jpg";
+
     @Autowired
     private RoleRepository roleRepository;
 
@@ -204,33 +208,33 @@ public class DatabaseSeeder implements CommandLineRunner {
         LocalDateTime now = LocalDateTime.now();
 
         List<User> users = Arrays.asList(
-            createUserWithRole("admin", "admin@logiflow.com", "123", roles.get(0), "Admin User", "+84-901-000-001", "/uploads/profile-pictures/albert-dera-ILip77SbmOE-unsplash.jpg", now.minusDays(120), now.minusDays(1)), // ADMIN
-            createUserWithRole("john.dispatcher", "john.d@logiflow.com", "123", roles.get(1), "John Dispatcher", "+84-901-234-501", "/uploads/profile-pictures/boy-snow-hoodie.jpg", now.minusDays(110), now.minusDays(2)), // DISPATCHER
-            createUserWithRole("sarah.manager", "sarah.m@logiflow.com", "123", roles.get(3), "Sarah Manager", "+84-901-234-502", "/uploads/profile-pictures/woman-on-a-football-field.jpg", now.minusDays(105), now.minusDays(3)), // MANAGER
-            createUserWithRole("mike.driver", "mike.d@logiflow.com", "123", roles.get(2), "Mike Driver", "+84-901-234-503", "/uploads/profile-pictures/man-portrait.jpg", now.minusDays(89), now.minusDays(10)), // DRIVER
-            createUserWithRole("amy.dispatcher2", "amy.d@logiflow.com", "123", roles.get(1), "Amy Dispatcher", "+84-901-234-504", "/uploads/profile-pictures/vicky-hladynets-C8Ta0gwPbQg-unsplash.jpg", now.minusDays(95), now.minusDays(5)), // DISPATCHER
-            createUserWithRole("carl.driver2", "carl.d@logiflow.com", "123", roles.get(2), "Carl Driver", "+84-901-234-505", "/uploads/profile-pictures/smile.jpg", now.minusDays(84), now.minusDays(8)), // DRIVER
-            createUserWithRole("lisa.manager2", "lisa.m@logiflow.com", "123", roles.get(3), "Lisa Manager", "+84-901-234-506", "/uploads/profile-pictures/look-up.jpg", now.minusDays(100), now.minusDays(4)), // MANAGER
-            createUserWithRole("david.driver3", "david.d@logiflow.com", "123", roles.get(2), "David Driver", "+84-901-234-507", "/uploads/profile-pictures/toa-heftiba-O3ymvT7Wf9U-unsplash.jpg", now.minusDays(79), now.minusDays(12)), // DRIVER
-            createUserWithRole("emma.driver4", "emma.d@logiflow.com", "123", roles.get(2), "Emma Driver", "+84-901-234-508", "/uploads/profile-pictures/upscale-face-1.jpg", now.minusDays(74), now.minusDays(15)), // DRIVER
-            createUserWithRole("bob.driver5", "bob.d@logiflow.com", "123", roles.get(2), "Bob Driver", "+84-901-234-509", "/uploads/profile-pictures/smiling-man.jpg", now.minusDays(69), now.minusDays(7)), // DRIVER
-            createUserWithRole("frank.driver6", "frank.d@logiflow.com", "123", roles.get(2), "Frank Driver", "+84-901-234-510", "/uploads/profile-pictures/cloudinary-group.jpg", now.minusDays(64), now.minusDays(9)), // DRIVER
-            createUserWithRole("grace.driver7", "grace.d@logiflow.com", "123", roles.get(2), "Grace Driver", "+84-901-234-511", "/uploads/profile-pictures/girl-urban-view.jpg", now.minusDays(59), now.minusDays(11)), // DRIVER
-            createUserWithRole("henry.driver8", "henry.d@logiflow.com", "123", roles.get(2), "Henry Driver", "+84-901-234-512", "/uploads/profile-pictures/man-on-a-street.jpg", now.minusDays(54), now.minusDays(6)), // DRIVER
-            createUserWithRole("iris.driver9", "iris.d@logiflow.com", "123", roles.get(2), "Iris Driver", "+84-901-234-513", "/uploads/profile-pictures/outdoor-woman.jpg", now.minusDays(49), now.minusDays(13)), // DRIVER
-            createUserWithRole("jack.driver10", "jack.d@logiflow.com", "123", roles.get(2), "Jack Driver", "+84-901-234-514", "/uploads/profile-pictures/shoe.jpg", now.minusDays(44), now.minusDays(14)), // DRIVER
-            
+            createUserWithRole("admin", "admin@logiflow.com", "123", roles.get(0), "Admin User", "+84-901-000-001", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(120), now.minusDays(1)), // ADMIN
+            createUserWithRole("john.dispatcher", "john.d@logiflow.com", "123", roles.get(1), "John Dispatcher", "+84-901-234-501", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(110), now.minusDays(2)), // DISPATCHER
+            createUserWithRole("sarah.manager", "sarah.m@logiflow.com", "123", roles.get(3), "Sarah Manager", "+84-901-234-502", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(105), now.minusDays(3)), // MANAGER
+            createUserWithRole("mike.driver", "mike.d@logiflow.com", "123", roles.get(2), "Mike Driver", "+84-901-234-503", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(89), now.minusDays(10)), // DRIVER
+            createUserWithRole("amy.dispatcher2", "amy.d@logiflow.com", "123", roles.get(1), "Amy Dispatcher", "+84-901-234-504", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(95), now.minusDays(5)), // DISPATCHER
+            createUserWithRole("carl.driver2", "carl.d@logiflow.com", "123", roles.get(2), "Carl Driver", "+84-901-234-505", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(84), now.minusDays(8)), // DRIVER
+            createUserWithRole("lisa.manager2", "lisa.m@logiflow.com", "123", roles.get(3), "Lisa Manager", "+84-901-234-506", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(100), now.minusDays(4)), // MANAGER
+            createUserWithRole("david.driver3", "david.d@logiflow.com", "123", roles.get(2), "David Driver", "+84-901-234-507", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(79), now.minusDays(12)), // DRIVER
+            createUserWithRole("emma.driver4", "emma.d@logiflow.com", "123", roles.get(2), "Emma Driver", "+84-901-234-508", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(74), now.minusDays(15)), // DRIVER
+            createUserWithRole("bob.driver5", "bob.d@logiflow.com", "123", roles.get(2), "Bob Driver", "+84-901-234-509", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(69), now.minusDays(7)), // DRIVER
+            createUserWithRole("frank.driver6", "frank.d@logiflow.com", "123", roles.get(2), "Frank Driver", "+84-901-234-510", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(64), now.minusDays(9)), // DRIVER
+            createUserWithRole("grace.driver7", "grace.d@logiflow.com", "123", roles.get(2), "Grace Driver", "+84-901-234-511", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(59), now.minusDays(11)), // DRIVER
+            createUserWithRole("henry.driver8", "henry.d@logiflow.com", "123", roles.get(2), "Henry Driver", "+84-901-234-512", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(54), now.minusDays(6)), // DRIVER
+            createUserWithRole("iris.driver9", "iris.d@logiflow.com", "123", roles.get(2), "Iris Driver", "+84-901-234-513", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(49), now.minusDays(13)), // DRIVER
+            createUserWithRole("jack.driver10", "jack.d@logiflow.com", "123", roles.get(2), "Jack Driver", "+84-901-234-514", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(44), now.minusDays(14)), // DRIVER
+
             // CUSTOMER users (10 total)
-            createUserWithRole("nguyen.mai", "nguyen.mai@gmail.com", "123", roles.get(4), "Nguyen Thi Mai", "+84-901-111-111", "/uploads/profile-pictures/julian-wan-2EdIX-O2lkI-unsplash.jpg", now.minusDays(60), now.minusDays(1)), // CUSTOMER
-            createUserWithRole("tran.binh", "tran.binh@gmail.com", "123", roles.get(4), "Tran Van Binh", "+84-902-222-222", "/uploads/profile-pictures/jake-nackos-IF9TK5Uy-KI-unsplash.jpg", now.minusDays(55), now.minusDays(2)), // CUSTOMER
-            createUserWithRole("pham.duc", "pham.duc@gmail.com", "123", roles.get(4), "Pham Van Duc", "+84-903-333-333", "/uploads/profile-pictures/christopher-campbell-rDEOVtE7vOs-unsplash.jpg", now.minusDays(50), now.minusDays(3)), // CUSTOMER
-            createUserWithRole("le.huong", "le.huong@gmail.com", "123", roles.get(4), "Le Thi Huong", "+84-904-444-444", "/uploads/profile-pictures/alex-suprun-bYODySpLIhE-unsplash.jpg", now.minusDays(45), now.minusDays(4)), // CUSTOMER
-            createUserWithRole("hoang.tam", "hoang.tam@gmail.com", "123", roles.get(4), "Hoang Minh Tam", "+84-905-555-555", "/uploads/profile-pictures/oguz-yagiz-kara-MZf0mI14RI0-unsplash.jpg", now.minusDays(40), now.minusDays(5)), // CUSTOMER
-            createUserWithRole("diep.loc", "diep.loc@gmail.com", "123", roles.get(4), "Diep Van Loc", "+84-906-666-666", "/uploads/profile-pictures/linkedin-sales-solutions-pAtA8xe_iVM-unsplash.jpg", now.minusDays(35), now.minusDays(6)), // CUSTOMER
-            createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(4), "Vo Thanh Nhung", "+84-907-777-777", "/uploads/profile-pictures/vince-veras-AJIqZDAUD7A-unsplash.jpg", now.minusDays(30), now.minusDays(7)), // CUSTOMER
-            createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(4), "Bui Duc Phong", "+84-908-888-888", "/uploads/profile-pictures/juan-encalada-WC7KIHo13Fc-unsplash.jpg", now.minusDays(25), now.minusDays(8)), // CUSTOMER
-            createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(4), "Do Thi Huong", "+84-909-999-999", "/uploads/profile-pictures/ed-pylypenko-7zcbtbI4E2o-unsplash.jpg", now.minusDays(20), now.minusDays(9)), // CUSTOMER
-            createUserWithRole("ly.son", "ly.son@gmail.com", "123", roles.get(4), "Ly Ngoc Son", "+84-910-000-000", "/uploads/profile-pictures/alex-suprun-mynsNaNwVDc-unsplash.jpg", now.minusDays(15), now.minusDays(10)) // CUSTOMER
+            createUserWithRole("nguyen.mai", "nguyen.mai@gmail.com", "123", roles.get(4), "Nguyen Thi Mai", "+84-901-111-111", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(60), now.minusDays(1)), // CUSTOMER
+            createUserWithRole("tran.binh", "tran.binh@gmail.com", "123", roles.get(4), "Tran Van Binh", "+84-902-222-222", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(55), now.minusDays(2)), // CUSTOMER
+            createUserWithRole("pham.duc", "pham.duc@gmail.com", "123", roles.get(4), "Pham Van Duc", "+84-903-333-333", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(50), now.minusDays(3)), // CUSTOMER
+            createUserWithRole("le.huong", "le.huong@gmail.com", "123", roles.get(4), "Le Thi Huong", "+84-904-444-444", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(45), now.minusDays(4)), // CUSTOMER
+            createUserWithRole("hoang.tam", "hoang.tam@gmail.com", "123", roles.get(4), "Hoang Minh Tam", "+84-905-555-555", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(40), now.minusDays(5)), // CUSTOMER
+            createUserWithRole("diep.loc", "diep.loc@gmail.com", "123", roles.get(4), "Diep Van Loc", "+84-906-666-666", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(35), now.minusDays(6)), // CUSTOMER
+            createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(4), "Vo Thanh Nhung", "+84-907-777-777", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(30), now.minusDays(7)), // CUSTOMER
+            createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(4), "Bui Duc Phong", "+84-908-888-888", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(25), now.minusDays(8)), // CUSTOMER
+            createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(4), "Do Thi Huong", "+84-909-999-999", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(20), now.minusDays(9)), // CUSTOMER
+            createUserWithRole("ly.son", "ly.son@gmail.com", "123", roles.get(4), "Ly Ngoc Son", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10)) // CUSTOMER
         );
         userRepository.saveAll(users);
         System.out.println("Seeded 25 users with roles (15 staff + 10 customers)");

@@ -79,12 +79,14 @@ class UpdateProfileRequest extends Equatable {
   final String? phone;
   final String? address;
   final String? paymentMethod;
+  final String? profilePictureUrl;
 
   const UpdateProfileRequest({
     this.fullName,
     this.phone,
     this.address,
     this.paymentMethod,
+    this.profilePictureUrl,
   });
 
   Map<String, dynamic> toJson() {
@@ -93,9 +95,10 @@ class UpdateProfileRequest extends Equatable {
       'phone': phone,
       'address': address,
       'paymentMethod': paymentMethod,
+      'profilePictureUrl': profilePictureUrl,
     };
   }
 
   @override
-  List<Object?> get props => [fullName, phone, address, paymentMethod];
+  List<Object?> get props => [fullName, phone, address, paymentMethod, profilePictureUrl];
 }

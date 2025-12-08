@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_client.dart';
@@ -6,6 +7,14 @@ import '../../models/user.dart';
 class AuthService {
   static const String _tokenKey = 'token';
   static const String _userKey = 'user';
+
+  final StreamController<User?> _userController = StreamController<User?>.broadcast();
+
+  Stream<User?> get userStream => _userController.stream;
+
+  void _notifyUserUpdate(User? user) {
+    _userController.add(user);
+  }
 
   Future<User> login(String username, String password) async {
     try {
@@ -27,6 +36,7 @@ class AuthService {
         // Store user data (without token)
         await prefs.setString(_userKey, jsonEncode(user.toJson()));
 
+        _notifyUserUpdate(user);
         return user;
       } else {
         throw Exception('Login failed: ${response.body}');
@@ -40,6 +50,7 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
+    _notifyUserUpdate(null);
   }
 
   Future<User?> getCurrentUser() async {
@@ -74,6 +85,20 @@ class AuthService {
       return {'Authorization': 'Bearer ${token.replaceAll('"', '')}'};
     }
     return {};
+  }
+
+  Future<void> updateCurrentUserProfileImage(String profilePictureUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString(_userKey);
+
+    if (userJson != null) {
+      final userMap = jsonDecode(userJson) as Map<String, dynamic>;
+      userMap['profilePictureUrl'] = profilePictureUrl;
+      await prefs.setString(_userKey, jsonEncode(userMap));
+
+      final updatedUser = User.fromStored(userMap);
+      _notifyUserUpdate(updatedUser);
+    }
   }
 }
 

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../../services/customer/customer_service.dart';
+import '../../services/upload/upload_service.dart';
+import '../../services/auth/auth_service.dart';
+import '../../services/api_client.dart';
 import '../../models/customer/customer_profile.dart';
 
 class CustomerProfileScreen extends StatefulWidget {
@@ -20,16 +25,18 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   final _addressController = TextEditingController();
   String? _paymentMethod;
 
+  XFile? _selectedImage;
+  bool _isUploading = false;
+
   String _getImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return '';
 
-    if (imagePath.startsWith('http')) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
 
     // Base URL without /api (same as web client logic)
-    const baseUrl = 'http://192.168.1.22:8080'; // Match ApiClient baseUrl pattern
-    return '$baseUrl${imagePath.startsWith('/') ? '' : '/'}$imagePath';
+    return '${ApiClient.baseImageUrl}${imagePath.startsWith('/') ? '' : '/'}$imagePath';
   }
 
   @override
@@ -44,6 +51,51 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile == null) return; // User canceled
+
+    // Immediately start upload
+    setState(() {
+      _selectedImage = pickedFile;
+      _isUploading = true;
+      _error = null;
+    });
+
+    try {
+      final file = File(_selectedImage!.path);
+      final uploadResponse = await uploadService.uploadProfilePicture(file);
+
+      if (uploadResponse.path.isNotEmpty) {
+        // Update profile with new path
+        final request = UpdateProfileRequest(
+          profilePictureUrl: uploadResponse.path,
+        );
+
+        final updatedProfile = await customerService.updateProfile(request);
+
+        await authService.updateCurrentUserProfileImage(updatedProfile.profilePictureUrl ?? '');
+        setState(() {
+          _profile = updatedProfile;
+          _selectedImage = null;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully')),
+        );
+      }
+    } catch (e) {
+      setState(() => _error = e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
+    } finally {
+      setState(() => _isUploading = false);
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -289,17 +341,27 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.grey[200],
-              backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-              child: imageUrl.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.grey) : null,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _profile!.fullName ?? _profile!.username,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
+            _selectedImage != null
+              ? CircleAvatar(
+                  radius: 50,
+                  backgroundImage: FileImage(File(_selectedImage!.path)),
+                )
+              : CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey[200],
+                  backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+                  child: imageUrl.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.grey) : null,
+                ),
+            const SizedBox(height: 16),
+            if (_isEditing) ...[
+              ElevatedButton.icon(
+                onPressed: _isUploading ? null : _pickAndUploadImage,
+                icon: _isUploading
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.photo_library),
+                label: Text(_isUploading ? 'Uploading...' : 'Update Profile Picture'),
+              ),
+            ],
           ],
         ),
       ),

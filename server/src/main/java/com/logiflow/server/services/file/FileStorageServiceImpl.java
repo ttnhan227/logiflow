@@ -1,5 +1,7 @@
 package com.logiflow.server.services.file;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,18 +20,23 @@ import java.util.UUID;
 @Service
 public class FileStorageServiceImpl implements FileStorageService {
 
-    @Value("${app.upload.dir}")
-    private String uploadDir;
+    private final Cloudinary cloudinary;
 
-    @Value("${app.upload.license.dir:uploads/license-images}")
-    private String licenseUploadDir;
-
-    @Value("${app.upload.cv.dir:uploads/cv-documents}")
-    private String cvUploadDir;
-
-    // fallback to property if present; otherwise default will be handled by spring property itself
     @Value("${app.upload.max-size:5242880}")
     private long maxSize;
+
+    @Value("${app.upload.folder.profile-pictures}")
+    private String profilePicturesFolder;
+
+    @Value("${app.upload.folder.license-images}")
+    private String licenseImagesFolder;
+
+    @Value("${app.upload.folder.cv-documents}")
+    private String cvDocumentsFolder;
+
+    public FileStorageServiceImpl(Cloudinary cloudinary) {
+        this.cloudinary = cloudinary;
+    }
 
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "image/jpeg",
@@ -69,63 +76,47 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new RuntimeException("Unsupported file type: " + contentType);
         }
 
-        String extension = getExtension(file.getOriginalFilename(), contentType);
-        String filename = UUID.randomUUID().toString() + extension;
-
         try {
-            Path targetDir = Paths.get(uploadDir).toAbsolutePath().normalize();
-            // create directories if not exist
-            Files.createDirectories(targetDir);
+            String filename = UUID.randomUUID().toString();
 
-            Path target = targetDir.resolve(filename);
+            Map<String, Object> params = ObjectUtils.asMap(
+                    "folder", profilePicturesFolder,
+                    "public_id", filename,
+                    "resource_type", "auto"
+            );
 
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+            String secureUrl = (String) uploadResult.get("secure_url");
+
+            if (secureUrl == null) {
+                throw new RuntimeException("Cloudinary upload failed - no URL returned");
             }
 
-            // Build public path starting with / (as stored in DB and expected by client)
-            String publicPath = "/" + uploadDir.replaceAll("\\\\", "/") + "/" + filename;
-            // Normalize duplicate slashes
-            publicPath = publicPath.replaceAll("/+", "/");
-            return publicPath;
+            return secureUrl;
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to store file", e);
+            throw new RuntimeException("Failed to upload file to Cloudinary", e);
         }
     }
 
     @Override
-    public void deleteProfilePicture(String publicPath) {
-        if (publicPath == null || publicPath.isBlank()) return;
+    public void deleteProfilePicture(String cloudinaryUrl) {
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) return;
 
         try {
-            // Only allow deleting files that are under the configured uploadDir
-            // uploadDir is like "uploads/profile-pictures"
-            String normalizedUploadDir = Paths.get(uploadDir).toAbsolutePath().normalize().toString();
+            // Cloudinary URLs look like: https://res.cloudinary.com/cloud_name/image/upload/folder/filename
+            // Extract public_id from URL (folder/filename without extension)
+            String publicId = extractPublicIdFromCloudinaryUrl(cloudinaryUrl);
 
-            // Derive filename from publicPath safely
-            String filename = null;
-            int lastSlash = publicPath.lastIndexOf('/');
-            if (lastSlash >= 0 && lastSlash < publicPath.length() - 1) {
-                filename = publicPath.substring(lastSlash + 1);
-            } else {
-                // nothing to delete
-                return;
+            if (publicId == null) {
+                return; // Invalid URL format
             }
 
-            Path target = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(filename);
+            Map<String, Object> deleteParams = ObjectUtils.asMap("resource_type", "image");
+            cloudinary.uploader().destroy(publicId, deleteParams);
 
-            // Ensure target is inside upload dir
-            if (!target.toAbsolutePath().normalize().startsWith(normalizedUploadDir)) {
-                return; // do not delete outside upload dir
-            }
-
-            if (Files.exists(target) && Files.isRegularFile(target)) {
-                Files.delete(target);
-            }
-        } catch (IOException e) {
-            // swallow or rethrow as runtime? we choose to throw wrapped runtime so caller can log/handle
-            throw new RuntimeException("Failed to delete file", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from Cloudinary", e);
         }
     }
 
@@ -145,44 +136,45 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new RuntimeException("Unsupported file type: " + contentType);
         }
 
-        String extension = getExtension(file.getOriginalFilename(), contentType);
-        String filename = UUID.randomUUID().toString() + extension;
-
         try {
-            Path targetDir = Paths.get(licenseUploadDir).toAbsolutePath().normalize();
-            Files.createDirectories(targetDir);
-            Path target = targetDir.resolve(filename);
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+            String filename = UUID.randomUUID().toString();
+
+            Map<String, Object> params = ObjectUtils.asMap(
+                    "folder", licenseImagesFolder,
+                    "public_id", filename,
+                    "resource_type", "auto"
+            );
+
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+            String secureUrl = (String) uploadResult.get("secure_url");
+
+            if (secureUrl == null) {
+                throw new RuntimeException("Cloudinary upload failed - no URL returned");
             }
-            String publicPath = "/" + licenseUploadDir.replaceAll("\\\\", "/") + "/" + filename;
-            return publicPath.replaceAll("/+", "/");
+
+            return secureUrl;
+
         } catch (IOException e) {
-            throw new RuntimeException("Failed to store file", e);
+            throw new RuntimeException("Failed to upload file to Cloudinary", e);
         }
     }
 
     @Override
-    public void deleteLicenseImage(String publicPath) {
-        if (publicPath == null || publicPath.isBlank()) return;
+    public void deleteLicenseImage(String cloudinaryUrl) {
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) return;
+
         try {
-            String normalizedUploadDir = Paths.get(licenseUploadDir).toAbsolutePath().normalize().toString();
-            String filename = null;
-            int lastSlash = publicPath.lastIndexOf('/');
-            if (lastSlash >= 0 && lastSlash < publicPath.length() - 1) {
-                filename = publicPath.substring(lastSlash + 1);
-            } else {
-                return;
+            String publicId = extractPublicIdFromCloudinaryUrl(cloudinaryUrl);
+
+            if (publicId == null) {
+                return; // Invalid URL format
             }
-            Path target = Paths.get(licenseUploadDir).toAbsolutePath().normalize().resolve(filename);
-            if (!target.toAbsolutePath().normalize().startsWith(normalizedUploadDir)) {
-                return;
-            }
-            if (Files.exists(target) && Files.isRegularFile(target)) {
-                Files.delete(target);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to delete file", e);
+
+            Map<String, Object> deleteParams = ObjectUtils.asMap("resource_type", "image");
+            cloudinary.uploader().destroy(publicId, deleteParams);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from Cloudinary", e);
         }
     }
 
@@ -201,44 +193,87 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new RuntimeException("Unsupported file type: " + contentType + ". Only PDF and Word documents are allowed.");
         }
 
-        String extension = getExtension(file.getOriginalFilename(), contentType);
-        String filename = UUID.randomUUID().toString() + extension;
-
         try {
-            Path targetDir = Paths.get(cvUploadDir).toAbsolutePath().normalize();
-            Files.createDirectories(targetDir);
-            Path target = targetDir.resolve(filename);
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+            String filename = UUID.randomUUID().toString();
+
+            Map<String, Object> params = ObjectUtils.asMap(
+                    "folder", cvDocumentsFolder,
+                    "public_id", filename,
+                    "resource_type", "raw"
+            );
+
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+            String secureUrl = (String) uploadResult.get("secure_url");
+
+            if (secureUrl == null) {
+                throw new RuntimeException("Cloudinary upload failed - no URL returned");
             }
-            String publicPath = "/" + cvUploadDir.replaceAll("\\\\", "/") + "/" + filename;
-            return publicPath.replaceAll("/+", "/");
+
+            return secureUrl;
+
         } catch (IOException e) {
-            throw new RuntimeException("Failed to store file", e);
+            throw new RuntimeException("Failed to upload file to Cloudinary", e);
         }
     }
 
     @Override
-    public void deleteCV(String publicPath) {
-        if (publicPath == null || publicPath.isBlank()) return;
+    public void deleteCV(String cloudinaryUrl) {
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) return;
+
         try {
-            String normalizedUploadDir = Paths.get(cvUploadDir).toAbsolutePath().normalize().toString();
-            String filename = null;
-            int lastSlash = publicPath.lastIndexOf('/');
-            if (lastSlash >= 0 && lastSlash < publicPath.length() - 1) {
-                filename = publicPath.substring(lastSlash + 1);
+            String publicId = extractPublicIdFromCloudinaryUrl(cloudinaryUrl);
+
+            if (publicId == null) {
+                return; // Invalid URL format
+            }
+
+            Map<String, Object> deleteParams = ObjectUtils.asMap("resource_type", "raw");
+            cloudinary.uploader().destroy(publicId, deleteParams);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from Cloudinary", e);
+        }
+    }
+
+    private String extractPublicIdFromCloudinaryUrl(String cloudinaryUrl) {
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) {
+            return null;
+        }
+
+        try {
+            // Cloudinary URL format: https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/{folder}/{public_id}.{ext}
+            // We need to extract: {folder}/{public_id}
+
+            int uploadIndex = cloudinaryUrl.indexOf("/upload/");
+            if (uploadIndex == -1) {
+                return null;
+            }
+
+            String afterUpload = cloudinaryUrl.substring(uploadIndex + 8); // Skip "/upload/"
+            int versionStart = afterUpload.indexOf("/v");
+
+            String pathPart;
+            if (versionStart != -1) {
+                // Skip version part: /v1234567890/
+                int firstSlashAfterVersion = afterUpload.indexOf('/', versionStart + 1);
+                if (firstSlashAfterVersion == -1) {
+                    return null;
+                }
+                pathPart = afterUpload.substring(firstSlashAfterVersion + 1);
             } else {
-                return;
+                pathPart = afterUpload;
             }
-            Path target = Paths.get(cvUploadDir).toAbsolutePath().normalize().resolve(filename);
-            if (!target.toAbsolutePath().normalize().startsWith(normalizedUploadDir)) {
-                return;
+
+            // Remove file extension
+            int lastDot = pathPart.lastIndexOf('.');
+            if (lastDot != -1) {
+                pathPart = pathPart.substring(0, lastDot);
             }
-            if (Files.exists(target) && Files.isRegularFile(target)) {
-                Files.delete(target);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to delete file", e);
+
+            return pathPart;
+
+        } catch (Exception e) {
+            return null;
         }
     }
 

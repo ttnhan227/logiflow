@@ -13,8 +13,10 @@ const mapDtoToUi = (u) => ({
   email: u?.email,
   fullName: u?.fullName,
   phone: u?.phone,
-  profilePictureUrl: u?.profilePictureUrl 
-    ? `${getBaseUrl()}${u.profilePictureUrl}` 
+  profilePictureUrl: u?.profilePictureUrl
+    ? (u.profilePictureUrl.startsWith('http://') || u.profilePictureUrl.startsWith('https://')
+        ? u.profilePictureUrl
+        : `${getBaseUrl()}${u.profilePictureUrl.startsWith('/') ? '' : '/'}${u.profilePictureUrl}`)
     : null,
   role: u?.roleName,
   active: u?.isActive,

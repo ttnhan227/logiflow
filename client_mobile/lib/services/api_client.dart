@@ -4,9 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
   static const String baseUrl = 'http://192.168.1.22:8080/api';
+  static String get baseImageUrl => baseUrl.replaceFirst('/api', '');
   final http.Client _client = http.Client();
 
-  Future<Map<String, String>> _getHeaders() async {
+  Future<Map<String, String>> getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
@@ -23,7 +24,7 @@ class ApiClient {
 
   Future<http.Response> get(String endpoint) async {
     final url = Uri.parse('$baseUrl$endpoint');
-    final headers = await _getHeaders();
+    final headers = await getHeaders();
 
     final response = await _client.get(url, headers: headers);
     await _handleResponse(response);
@@ -32,7 +33,7 @@ class ApiClient {
 
   Future<http.Response> post(String endpoint, {Map<String, dynamic>? body}) async {
     final url = Uri.parse('$baseUrl$endpoint');
-    final headers = await _getHeaders();
+    final headers = await getHeaders();
 
     final response = await _client.post(
       url,
@@ -45,7 +46,7 @@ class ApiClient {
 
   Future<http.Response> put(String endpoint, {Map<String, dynamic>? body}) async {
     final url = Uri.parse('$baseUrl$endpoint');
-    final headers = await _getHeaders();
+    final headers = await getHeaders();
 
     final response = await _client.put(
       url,
@@ -58,7 +59,7 @@ class ApiClient {
 
   Future<http.Response> delete(String endpoint) async {
     final url = Uri.parse('$baseUrl$endpoint');
-    final headers = await _getHeaders();
+    final headers = await getHeaders();
 
     final response = await _client.delete(url, headers: headers);
     await _handleResponse(response);
