@@ -35,8 +35,8 @@ class TrackOrderResponse extends Equatable {
 
   factory TrackOrderResponse.fromJson(Map<String, dynamic> json) {
     return TrackOrderResponse(
-      orderId: json['orderId'],
-      orderStatus: json['orderStatus'],
+      orderId: json['orderId'] ?? 0,
+      orderStatus: json['orderStatus'] ?? 'UNKNOWN',
       tripStatus: json['tripStatus'],
       estimatedPickupTime: json['estimatedPickupTime'] != null ? DateTime.parse(json['estimatedPickupTime']) : null,
       estimatedDeliveryTime: json['estimatedDeliveryTime'] != null ? DateTime.parse(json['estimatedDeliveryTime']) : null,
@@ -50,6 +50,7 @@ class TrackOrderResponse extends Equatable {
       vehicleType: json['vehicleType'],
       statusHistory: (json['statusHistory'] as List<dynamic>?)
           ?.map((e) => StatusUpdate.fromJson(e as Map<String, dynamic>))
+          .where((update) => update.status != null && update.status.isNotEmpty)
           .toList() ?? [],
     );
   }
@@ -86,8 +87,8 @@ class StatusUpdate extends Equatable {
 
   factory StatusUpdate.fromJson(Map<String, dynamic> json) {
     return StatusUpdate(
-      status: json['status'],
-      timestamp: DateTime.parse(json['timestamp']),
+      status: json['status'] ?? 'UNKNOWN',
+      timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp']) : DateTime.now(),
       notes: json['notes'],
     );
   }

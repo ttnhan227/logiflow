@@ -28,8 +28,14 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
         _error = null;
       });
 
-      final orders = await customerService.getMyOrders();
-      setState(() => _orders = orders);
+      final allOrders = await customerService.getMyOrders();
+      // Filter to show only ACTIVE orders (PENDING, ASSIGNED, IN_TRANSIT)
+      final activeOrders = allOrders.where((order) {
+        final status = order.orderStatus.toUpperCase();
+        return status == 'PENDING' || status == 'ASSIGNED' || status == 'IN_TRANSIT';
+      }).toList();
+
+      setState(() => _orders = activeOrders);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {

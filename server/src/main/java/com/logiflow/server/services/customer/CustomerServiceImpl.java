@@ -186,7 +186,8 @@ public class CustomerServiceImpl implements CustomerService {
         List<Order> orders = orderRepository.findByCustomerId(customer.getUserId());
 
         return orders.stream()
-                .filter(order -> order.getOrderStatus() == Order.OrderStatus.DELIVERED)
+                .filter(order -> order.getOrderStatus() == Order.OrderStatus.DELIVERED
+                              || order.getOrderStatus() == Order.OrderStatus.CANCELLED)
                 .map(order -> {
                     OrderHistoryDto history = new OrderHistoryDto();
                     history.setOrderId(order.getOrderId());

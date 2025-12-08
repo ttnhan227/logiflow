@@ -263,6 +263,7 @@ class _MainLayoutState extends State<MainLayout> {
             ListTile(
               leading: const Icon(Icons.track_changes),
               title: const Text('Track Orders'),
+              subtitle: const Text('Active deliveries'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(
@@ -273,6 +274,7 @@ class _MainLayoutState extends State<MainLayout> {
             ListTile(
               leading: const Icon(Icons.history),
               title: const Text('Order History'),
+              subtitle: const Text('Completed orders'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(

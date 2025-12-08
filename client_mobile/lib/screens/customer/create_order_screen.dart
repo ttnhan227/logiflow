@@ -18,6 +18,32 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _packageDetailsController = TextEditingController();
   String _priority = 'NORMAL';
   bool _isLoading = false;
+  bool _isInitializing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeForm();
+  }
+
+  Future<void> _initializeForm() async {
+    try {
+      // Pre-fill customer info from profile if available
+      final profile = await customerService.getProfile();
+      setState(() {
+        if (profile.fullName != null && profile.fullName!.isNotEmpty) {
+          _customerNameController.text = profile.fullName!;
+        }
+        if (profile.phone != null && profile.phone!.isNotEmpty) {
+          _customerPhoneController.text = profile.phone!;
+        }
+        _isInitializing = false;
+      });
+    } catch (e) {
+      // Skip pre-filling on error, user can still enter manually
+      setState(() => _isInitializing = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -73,6 +99,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Create New Order'),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create New Order'),
