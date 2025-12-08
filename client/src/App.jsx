@@ -8,6 +8,16 @@ import AdminSideNav from './components/admin/AdminSideNav';
 import LoginPage from "./components/auth/LoginPage";
 import HomePage from "./components/home/HomePage";
 import AboutPage from "./components/home/AboutPage";
+import ServicesPage from "./components/home/ServicesPage";
+import FleetPage from "./components/home/FleetPage";
+import CoveragePage from "./components/home/CoveragePage";
+import PricingPage from "./components/home/PricingPage";
+import TrackPage from "./components/home/TrackPage";
+import ContactPage from "./components/home/ContactPage";
+import FaqPage from "./components/home/FaqPage";
+import BusinessPage from "./components/home/BusinessPage";
+import DriversPage from "./components/home/DriversPage";
+import MobileAppPage from "./components/home/MobileAppPage";
 import AdminDashboardPage from "./components/admin/AdminDashboardPage";
 import UserManagementPage from "./components/admin/AdminUserManagementPage";
 import AdminUserDetailsPage from "./components/admin/AdminUserDetailsPage";
@@ -71,6 +81,16 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/fleet" element={<FleetPage />} />
+          <Route path="/coverage" element={<CoveragePage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/track" element={<TrackPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/business" element={<BusinessPage />} />
+          <Route path="/mobile-app" element={<MobileAppPage />} />
+          <Route path="/drivers" element={<DriversPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
