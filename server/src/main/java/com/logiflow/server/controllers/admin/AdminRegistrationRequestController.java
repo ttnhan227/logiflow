@@ -72,8 +72,7 @@ public class AdminRegistrationRequestController {
         if (req.getRole() != null && "DRIVER".equalsIgnoreCase(req.getRole().getRoleName())) {
             Driver driver = new Driver();
             driver.setUser(user);
-            driver.setFullName(user.getFullName());
-            driver.setPhone(user.getPhone());
+
             // Map licenseType if available
             driver.setLicenseType(req.getLicenseType() != null ? req.getLicenseType() : "");
             // Default yearsExperience to 0

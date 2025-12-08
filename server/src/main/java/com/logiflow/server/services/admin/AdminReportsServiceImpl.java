@@ -234,7 +234,7 @@ public class AdminReportsServiceImpl implements AdminReportsService {
                     .driverId(driver.getDriverId())
                     .driverName(driver.getUser().getFullName())
                     .email(driver.getUser().getEmail())
-                    .phone(driver.getPhone())
+                    .phone(driver.getUser().getPhone())
                     .totalTripsCompleted(completed)
                     .totalTripsCancelled(cancelled)
                     .completionRate(Math.round(completionRate * 10.0) / 10.0)

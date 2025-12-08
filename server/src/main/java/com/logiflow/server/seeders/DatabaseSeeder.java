@@ -112,14 +112,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             Customer customer = new Customer();
             customer.setUser(user);
 
-            // Generate varied business phone (sometimes different from personal)
-            if (index % 3 == 0) {
-                // Same as user phone
-                customer.setBusinessPhone(user.getPhone());
-            } else {
-                // Generate different business phone
-                customer.setBusinessPhone(generateVietnamesePhone());
-            }
+            // Business phone now managed in User entity (using user.getPhone())
 
             // Generate realistic Vietnamese address
             customer.setDefaultDeliveryAddress(generateAddress(neighborhoods, wards, streets, index));
@@ -297,8 +290,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private Driver createDriver(User user, String fullName, String phone, String licenseType, int experience, BigDecimal lat, BigDecimal lng, LocalDateTime createdAt) {
         Driver driver = new Driver();
         driver.setUser(user);
-        driver.setFullName(fullName);
-        driver.setPhone(phone);
+        // Contact info now stored in User entity (already set above)
         driver.setLicenseType(licenseType);
         driver.setYearsExperience(experience);
         driver.setHealthStatus(Driver.HealthStatus.FIT);

@@ -132,7 +132,7 @@ public class CustomerServiceImpl implements CustomerService {
                 if (assignment.getDriver() != null) {
                     Driver driver = assignment.getDriver();
                     response.setDriverName(driver.getUser().getUsername());
-                    response.setDriverPhone(driver.getPhone());
+                    response.setDriverPhone(driver.getUser().getPhone());
                     response.setVehiclePlate(trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null);
                     response.setVehicleType(trip.getVehicle() != null ? trip.getVehicle().getVehicleType() : null);
                     response.setCurrentLat(driver.getCurrentLocationLat());
@@ -162,7 +162,7 @@ public class CustomerServiceImpl implements CustomerService {
         profile.setUsername(customer.getUser().getUsername());
         profile.setEmail(customer.getUser().getEmail());
         profile.setFullName(customer.getUser().getFullName());
-        profile.setPhone(customer.getBusinessPhone());
+        profile.setPhone(customer.getUser().getPhone());
         profile.setAddress(customer.getDefaultDeliveryAddress());
         profile.setPaymentMethod(customer.getPreferredPaymentMethod());
         profile.setProfilePictureUrl(customer.getUser().getProfilePictureUrl());
@@ -188,7 +188,7 @@ public class CustomerServiceImpl implements CustomerService {
             customer.getUser().setFullName(request.getFullName());
         }
         if (request.getPhone() != null) {
-            customer.setBusinessPhone(request.getPhone());
+            customer.getUser().setPhone(request.getPhone());
         }
         if (request.getAddress() != null) {
             customer.setDefaultDeliveryAddress(request.getAddress());
@@ -268,7 +268,7 @@ public class CustomerServiceImpl implements CustomerService {
                 TripAssignment assignment = trip.getTripAssignments().get(0);
                 if (assignment.getDriver() != null) {
                     dto.setDriverName(assignment.getDriver().getUser().getUsername());
-                    dto.setDriverPhone(assignment.getDriver().getPhone());
+                    dto.setDriverPhone(assignment.getDriver().getUser().getPhone());
                 }
             }
             if (trip.getVehicle() != null) {

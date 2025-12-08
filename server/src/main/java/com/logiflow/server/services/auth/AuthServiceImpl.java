@@ -144,7 +144,6 @@ public class AuthServiceImpl implements AuthService {
             if ("CUSTOMER".equalsIgnoreCase(role.getRoleName())) {
                 Customer customer = new Customer();
                 customer.setUser(user);
-                customer.setBusinessPhone(user.getPhone());
                 customer.setDefaultDeliveryAddress(""); // Start empty, can be set later
                 customerRepository.save(customer);
             }

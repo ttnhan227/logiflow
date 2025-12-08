@@ -20,11 +20,7 @@ public class Driver {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    @Column(name = "full_name", length = 100, nullable = false)
-    private String fullName;
-
-    @Column(name = "phone", length = 20, nullable = false, unique = true)
-    private String phone;
+    // Contact information (using User phone and fullName)
 
     @Column(name = "license_type", length = 10, nullable = false)
     private String licenseType;

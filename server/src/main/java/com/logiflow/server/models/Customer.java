@@ -20,9 +20,7 @@ public class Customer {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    // Contact information
-    @Column(name = "business_phone", length = 20)
-    private String businessPhone;
+    // Contact information (using User phone)
 
     // Address information
     @Column(name = "default_delivery_address", columnDefinition = "TEXT")

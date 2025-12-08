@@ -277,12 +277,12 @@ const ProfileEditPage = () => {
           >
             Cancel
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
-            disabled={submitting}
+            disabled={submitting || uploading}
           >
-            {submitting ? 'Saving...' : 'Save Changes'}
+            {submitting ? 'Saving...' : uploading ? 'Uploading...' : 'Save Changes'}
           </button>
         </div>
       </form>

@@ -231,8 +231,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 Trip trip = ta.getTrip();
                 return ActiveDriverLocationDto.of(
                     driver.getDriverId(),
-                    driver.getFullName(),
-                    driver.getPhone(),
+                    driver.getUser().getFullName(),
+                    driver.getUser().getPhone(),
                     trip.getTripId(),
                     trip.getStatus(),
                     driver.getCurrentLocationLat(),

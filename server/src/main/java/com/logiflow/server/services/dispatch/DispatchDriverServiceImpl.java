@@ -43,8 +43,8 @@ public class DispatchDriverServiceImpl implements DispatchDriverService {
 
             AvailableDriverDto dto = new AvailableDriverDto();
             dto.setDriverId(d.getDriverId());
-            dto.setFullName(d.getFullName());
-            dto.setPhone(d.getPhone());
+            dto.setFullName(d.getUser().getFullName());
+            dto.setPhone(d.getUser().getPhone());
             dto.setLicenseType(d.getLicenseType());
             dto.setYearsExperience(d.getYearsExperience());
             dto.setHealthStatus(d.getHealthStatus());

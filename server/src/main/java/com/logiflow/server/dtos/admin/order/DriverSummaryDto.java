@@ -18,9 +18,9 @@ public class DriverSummaryDto {
         if (driver == null) return null;
         return new DriverSummaryDto(
             driver.getDriverId(),
-            driver.getFullName(),
+            driver.getUser().getFullName(),
             driver.getLicenseType(),
-            driver.getPhone()
+            driver.getUser().getPhone()
         );
     }
 }
