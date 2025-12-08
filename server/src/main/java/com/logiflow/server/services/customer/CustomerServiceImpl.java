@@ -2,6 +2,7 @@ package com.logiflow.server.services.customer;
 
 import com.logiflow.server.dtos.customer.CustomerDtos.*;
 import com.logiflow.server.models.*;
+import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.user.UserRepository;
@@ -20,15 +21,18 @@ import java.util.stream.Collectors;
 public class CustomerServiceImpl implements CustomerService {
 
     private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
     private final TripRepository tripRepository;
     private final NotificationService notificationService;
 
     public CustomerServiceImpl(UserRepository userRepository,
+                             CustomerRepository customerRepository,
                              OrderRepository orderRepository,
                              TripRepository tripRepository,
                              NotificationService notificationService) {
         this.userRepository = userRepository;
+        this.customerRepository = customerRepository;
         this.orderRepository = orderRepository;
         this.tripRepository = tripRepository;
         this.notificationService = notificationService;
@@ -151,32 +155,55 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerProfileDto getProfile(String customerUsername) {
-        User customer = getCurrentCustomer(customerUsername);
+        Customer customer = getCurrentCustomerEntity(customerUsername);
 
         CustomerProfileDto profile = new CustomerProfileDto();
-        profile.setUserId(customer.getUserId());
-        profile.setUsername(customer.getUsername());
-        profile.setEmail(customer.getEmail());
-        profile.setCreatedAt(customer.getCreatedAt());
-        profile.setTotalOrders(orderRepository.countByCustomerId(customer.getUserId()));
-
-        // For now, phone and address are not stored in User model
-        // In a full implementation, we might have a CustomerProfile model or extend User
-        profile.setFullName(customer.getUsername()); // Using username as display name
-        profile.setPhone(null);
-        profile.setAddress(null);
-        profile.setTotalSpent(BigDecimal.ZERO); // Would need calculation from orders
+        profile.setUserId(customer.getUser().getUserId());
+        profile.setUsername(customer.getUser().getUsername());
+        profile.setEmail(customer.getUser().getEmail());
+        profile.setFullName(customer.getUser().getFullName());
+        profile.setPhone(customer.getBusinessPhone());
+        profile.setAddress(customer.getDefaultDeliveryAddress());
+        profile.setPaymentMethod(customer.getPreferredPaymentMethod());
+        profile.setProfilePictureUrl(customer.getUser().getProfilePictureUrl());
+        profile.setCreatedAt(customer.getUser().getCreatedAt());
+        profile.setTotalOrders(customer.getTotalOrders());
+        profile.setTotalSpent(customer.getTotalSpent());
 
         return profile;
     }
 
+    private Customer getCurrentCustomerEntity(String authName) {
+        User user = getCurrentCustomer(authName);
+        return customerRepository.findByUserId(user.getUserId())
+                .orElseThrow(() -> new RuntimeException("Customer profile not found"));
+    }
+
     @Override
     public CustomerProfileDto updateProfile(String customerUsername, UpdateProfileRequest request) {
-        User customer = getCurrentCustomer(customerUsername);
+        Customer customer = getCurrentCustomerEntity(customerUsername);
 
-        // In this basic implementation, we don't have fields to update
-        // A full implementation would extend the User model or have a separate CustomerProfile entity
-        // For now, return the existing profile
+        // Update Customer entity fields
+        if (request.getFullName() != null) {
+            customer.getUser().setFullName(request.getFullName());
+        }
+        if (request.getPhone() != null) {
+            customer.setBusinessPhone(request.getPhone());
+        }
+        if (request.getAddress() != null) {
+            customer.setDefaultDeliveryAddress(request.getAddress());
+        }
+        if (request.getPaymentMethod() != null) {
+            customer.setPreferredPaymentMethod(request.getPaymentMethod());
+        }
+        if (request.getProfilePictureUrl() != null) {
+            customer.getUser().setProfilePictureUrl(request.getProfilePictureUrl());
+        }
+
+        // Save both User and Customer
+        userRepository.save(customer.getUser());
+        customerRepository.save(customer);
+
         return getProfile(customerUsername);
     }
 

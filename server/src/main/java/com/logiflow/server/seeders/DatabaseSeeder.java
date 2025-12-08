@@ -55,6 +55,9 @@ public class DatabaseSeeder implements CommandLineRunner {
     private DriverWorkLogRepository driverWorkLogRepository;
 
     @Autowired
+    private com.logiflow.server.repositories.customer.CustomerRepository customerRepository;
+
+    @Autowired
     private com.logiflow.server.repositories.system.SystemSettingRepository systemSettingRepository;
 
     @Autowired
@@ -66,6 +69,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         if (roleRepository.count() == 0) {
             seedRoles();
             seedUsersWithRoles();
+            seedCustomers();
             seedSystemSettings();
             seedDrivers();
             seedVehicles();
@@ -78,6 +82,95 @@ public class DatabaseSeeder implements CommandLineRunner {
             System.out.println("Database seeding completed successfully!");
         } else {
             System.out.println("Database already seeded. Skipping...");
+        }
+    }
+
+    private void seedCustomers() {
+        // Filter users with CUSTOMER role and create Customer entities
+        List<User> customerUsers = userRepository.findAllUsersWithRole().stream()
+                .filter(user -> user.getRole() != null && "CUSTOMER".equalsIgnoreCase(user.getRole().getRoleName()))
+                .toList();
+
+        if (customerUsers.isEmpty()) {
+            System.out.println("No customer users found. Skipping customer seeding.");
+            return;
+        }
+
+        String[] paymentMethods = {"cash", "credit_card", "digital_wallet", "debit_card"};
+        String[] neighborhoods = {"District 1", "District 7", "Thu Duc", "Go Vap", "Tan Binh"};
+        String[] wards = {"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11"};
+        String[] streets = {"Nguyen Trai", "Le Hong Phong", "Tran Hung Dao", "Vo Van Tan", "Pham Ngoc Thach", "Tong Huu Dinh"};
+
+        List<Customer> customers = java.util.stream.IntStream.range(0, customerUsers.size())
+                .mapToObj(index -> {
+                    User user = customerUsers.get(index);
+
+            Customer customer = new Customer();
+            customer.setUser(user);
+
+            // Generate varied business phone (sometimes different from personal)
+            if (index % 3 == 0) {
+                // Same as user phone
+                customer.setBusinessPhone(user.getPhone());
+            } else {
+                // Generate different business phone
+                customer.setBusinessPhone(generateVietnamesePhone());
+            }
+
+            // Generate realistic Vietnamese address
+            customer.setDefaultDeliveryAddress(generateAddress(neighborhoods, wards, streets, index));
+
+            // Random payment method preference
+            customer.setPreferredPaymentMethod(paymentMethods[Math.abs(user.getUsername().hashCode()) % paymentMethods.length]);
+
+            // Generate realistic order statistics
+            // Some customers are very active, others moderate, some new
+            int activityLevel = Math.abs(user.getEmail().hashCode()) % 100;
+            if (activityLevel > 70) { // 30% very active customers
+                customer.setTotalOrders(25 + (activityLevel % 45)); // 25-70 orders
+                customer.setTotalSpent(BigDecimal.valueOf(1500000 + (activityLevel % 5000000))); // 1.5M-6.5M VND
+            } else if (activityLevel > 30) { // 40% moderate customers
+                customer.setTotalOrders(3 + (activityLevel % 22)); // 3-25 orders
+                customer.setTotalSpent(BigDecimal.valueOf(150000 + (activityLevel % 1350000))); // 150k-1.5M VND
+            } else { // 30% new/occasional customers
+                customer.setTotalOrders(activityLevel % 3); // 0-2 orders
+                customer.setTotalSpent(BigDecimal.valueOf((activityLevel % 3) * 150000)); // Corresponding spent
+            }
+
+            // Set last order date based on activity
+            if (customer.getTotalOrders() > 0) {
+                int daysSinceLastOrder = 1 + (Math.abs(user.getUsername().hashCode()) % 60);
+                customer.setLastOrderDate(LocalDateTime.now().minusDays(daysSinceLastOrder));
+            }
+
+            return customer;
+        }).toList();
+
+        // Save customers
+        customerRepository.saveAll(customers);
+        System.out.println("Seeded " + customers.size() + " realistic customer profiles for CUSTOMER role users");
+    }
+
+    private String generateVietnamesePhone() {
+        // Generate mobile number starting with common Vietnamese prefixes
+        String[] prefixes = {"+84-35", "+84-36", "+84-37", "+84-38", "+84-39", "+84-96", "+84-97", "+84-98", "+84-32"};
+        String prefix = prefixes[(int)(Math.random() * prefixes.length)];
+        String number = String.format("%06d", (int)(Math.random() * 1000000));
+        return prefix + number;
+    }
+
+    private String generateAddress(String[] neighborhoods, String[] wards, String[] streets, int seed) {
+        // Generate realistic Vietnamese addresses
+        String neighborhood = neighborhoods[Math.abs(seed) % neighborhoods.length];
+        String ward = wards[Math.abs(seed * 3) % wards.length];
+        String street = streets[Math.abs(seed * 7) % streets.length];
+        int houseNumber = 1 + Math.abs(seed * 13) % 999;
+
+        // Some addresses include alley/number, some don't
+        if (seed % 2 == 0) {
+            return String.format("%d %s, %s, %s, Ho Chi Minh City", houseNumber, street, ward, neighborhood);
+        } else {
+            return String.format("%d/%d %s, %s, %s, Ho Chi Minh City", houseNumber, 1 + (seed % 50), street, ward, neighborhood);
         }
     }
 

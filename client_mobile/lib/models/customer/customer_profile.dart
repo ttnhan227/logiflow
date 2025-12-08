@@ -8,6 +8,7 @@ class CustomerProfile extends Equatable {
   final String? phone;
   final String? address;
   final String? paymentMethod;
+  final String? profilePictureUrl;
   final DateTime createdAt;
   final int totalOrders;
   final double totalSpent;
@@ -20,6 +21,7 @@ class CustomerProfile extends Equatable {
     this.phone,
     this.address,
     this.paymentMethod,
+    this.profilePictureUrl,
     required this.createdAt,
     required this.totalOrders,
     required this.totalSpent,
@@ -34,6 +36,7 @@ class CustomerProfile extends Equatable {
       phone: json['phone'],
       address: json['address'],
       paymentMethod: json['paymentMethod'],
+      profilePictureUrl: json['profilePictureUrl'],
       createdAt: DateTime.parse(json['createdAt']),
       totalOrders: json['totalOrders'] ?? 0,
       totalSpent: json['totalSpent']?.toDouble() ?? 0.0,
@@ -64,6 +67,7 @@ class CustomerProfile extends Equatable {
     phone,
     address,
     paymentMethod,
+    profilePictureUrl,
     createdAt,
     totalOrders,
     totalSpent,

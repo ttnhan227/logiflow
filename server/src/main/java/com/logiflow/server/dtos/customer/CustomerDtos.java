@@ -106,6 +106,7 @@ public class CustomerDtos {
         private String phone;
         private String address;
         private String paymentMethod; // optional: credit card, cash, etc.
+        private String profilePictureUrl; // from User model
         private LocalDateTime createdAt;
         private Integer totalOrders;
         private BigDecimal totalSpent;
@@ -117,5 +118,6 @@ public class CustomerDtos {
         private String phone;
         private String address;
         private String paymentMethod;
+        private String profilePictureUrl; // for profile image updates
     }
 }

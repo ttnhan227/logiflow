@@ -3,9 +3,11 @@ package com.logiflow.server.services.auth;
 import com.logiflow.server.dtos.auth.AuthResponse;
 import com.logiflow.server.dtos.auth.LoginRequest;
 import com.logiflow.server.dtos.auth.RegisterRequest;
+import com.logiflow.server.models.Customer;
 import com.logiflow.server.models.RegistrationRequest;
 import com.logiflow.server.models.Role;
 import com.logiflow.server.models.User;
+import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
@@ -33,6 +35,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -135,9 +140,18 @@ public class AuthServiceImpl implements AuthService {
 
             userRepository.save(user);
 
+            // Create Customer entity for customer users
+            if ("CUSTOMER".equalsIgnoreCase(role.getRoleName())) {
+                Customer customer = new Customer();
+                customer.setUser(user);
+                customer.setBusinessPhone(user.getPhone());
+                customer.setDefaultDeliveryAddress(""); // Start empty, can be set later
+                customerRepository.save(customer);
+            }
+
             String token = jwtUtils.generateToken(user.getUsername(), user.getRole().getRoleName());
 
-            return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(), 
+            return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(),
                 user.getProfilePictureUrl(), "Registration successful");
         }
     }

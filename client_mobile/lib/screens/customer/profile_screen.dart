@@ -20,6 +20,18 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   final _addressController = TextEditingController();
   String? _paymentMethod;
 
+  String _getImageUrl(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) return '';
+
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+
+    // Base URL without /api (same as web client logic)
+    const baseUrl = 'http://192.168.1.22:8080'; // Match ApiClient baseUrl pattern
+    return '$baseUrl${imagePath.startsWith('/') ? '' : '/'}$imagePath';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -145,6 +157,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          _buildProfilePicture(),
+                          const SizedBox(height: 16),
                           _buildProfileCard(),
                           const SizedBox(height: 16),
                           _buildAccountStatsCard(),
@@ -260,6 +274,35 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       onChanged: (value) {
         setState(() => _paymentMethod = value);
       },
+    );
+  }
+
+  Widget _buildProfilePicture() {
+    final imageUrl = _getImageUrl(_profile!.profilePictureUrl);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Text(
+              'Profile Picture',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.grey[200],
+              backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+              child: imageUrl.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.grey) : null,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _profile!.fullName ?? _profile!.username,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
