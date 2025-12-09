@@ -10,6 +10,11 @@ import routeService from './admin/routeService';
 import vehicleService from './admin/vehicleService';
 import reportsService from './admin/reportsService';
 import ordersOversightService from './admin/ordersOversightService';
+import orderService from './dispatch/orderService';
+import dispatchDriverService from './dispatch/driverService';
+import tripService from './dispatch/tripService';
+import dispatchRouteService from './dispatch/routeService';
+import dispatchVehicleService from './dispatch/vehicleService';
 
 export {
   api,
@@ -24,6 +29,11 @@ export {
   vehicleService,
   reportsService,
   ordersOversightService,
+  orderService,
+  dispatchDriverService,
+  tripService,
+  dispatchRouteService,
+  dispatchVehicleService,
 };
 
 // Example usage:

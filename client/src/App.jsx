@@ -36,6 +36,14 @@ import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 import ProfilePage from "./components/profile/ProfilePage";
 import ProfileEditPage from "./components/profile/ProfileEditPage";
+import OrdersPage from "./components/dispatch/OrdersPage";
+import OrderImportPage from "./components/dispatch/OrderImportPage";
+import AvailableDriversPage from './components/dispatch/AvailableDriversPage';
+import TripsPage from "./components/dispatch/TripsPage";
+import TripCreatePage from "./components/dispatch/TripCreatePage";
+import TripDetailPage from "./components/dispatch/TripDetailPage";
+import TripAssignPage from "./components/dispatch/TripAssignPage";
+import DispatchLayout from "./components/dispatch/DispatchLayout";
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -94,6 +102,45 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        </Route>
+
+        {/* Dispatch routes with DispatchLayout */}
+        <Route element={<DispatchLayout />}>
+          <Route path="/dispatch/orders" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <OrdersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/orders/import" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <OrderImportPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/create" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripCreatePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/:tripId" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripDetailPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/:tripId/assign" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripAssignPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/drivers" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <AvailableDriversPage />
+            </ProtectedRoute>
+          } />
         </Route>
 
         {/* Admin routes with AdminLayout (sidebar) */}

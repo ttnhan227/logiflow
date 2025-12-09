@@ -170,8 +170,12 @@ const MainLayout = () => {
               fontWeight: '600'
             }} onClick={() => setIsMobileMenuOpen(false)}>For Businesses</Link>
 
+            {user && user.role === 'DISPATCHER' && (
+              <Link to="/dispatch/orders" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Dispatch</Link>
+            )}
+
             {user && user.role === 'ADMIN' && (
-              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin</Link>
+              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link>
             )}
             {user ? (
               <>
