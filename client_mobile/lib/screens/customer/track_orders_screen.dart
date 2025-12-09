@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/customer/customer_service.dart';
 import '../../models/customer/order.dart';
 import '../../models/customer/order_tracking.dart';
+import '../../widgets/order_map_view.dart';
 
 class TrackOrdersScreen extends StatefulWidget {
   const TrackOrdersScreen({super.key});
@@ -327,6 +328,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Add the order map view at the top
+                OrderMapView(order: order, tracking: tracking),
+                const SizedBox(height: 16),
                 _buildOrderCard(order, tracking),
                 const SizedBox(height: 16),
                 _buildTrackingCard(tracking),
