@@ -47,9 +47,6 @@ public class Driver {
     @Column(name = "rating", precision = 3, scale = 2)
     private java.math.BigDecimal rating;
 
-    @Column(name = "total_trips", nullable = false)
-    private Long totalTrips = 0L;
-
     @Column(name = "status", length = 20, nullable = false)
     private String status = "available";
 

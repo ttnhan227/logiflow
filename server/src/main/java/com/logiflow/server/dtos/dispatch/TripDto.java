@@ -56,8 +56,8 @@ public class TripDto {
                     .findFirst()
                     .ifPresent(ta -> {
                         dto.setDriverId(ta.getDriver().getDriverId());
-                        dto.setDriverName(ta.getDriver().getFullName());
-                        dto.setDriverPhone(ta.getDriver().getPhone());
+                        dto.setDriverName(ta.getDriver().getUser().getFullName());
+                        dto.setDriverPhone(ta.getDriver().getUser().getPhone());
                     });
         }
 
@@ -73,4 +73,3 @@ public class TripDto {
         return dto;
     }
 }
-

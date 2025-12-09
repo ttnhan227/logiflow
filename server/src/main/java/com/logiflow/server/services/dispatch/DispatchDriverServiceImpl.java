@@ -72,10 +72,12 @@ public class DispatchDriverServiceImpl implements DispatchDriverService {
     private DriverDto toDriverDto(Driver d) {
         Long totalTrips = driverWorkLogRepository.countByDriver_DriverId(d.getDriverId());
         String email = d.getUser() != null ? d.getUser().getEmail() : null;
+        String fullName = d.getUser() != null ? d.getUser().getFullName() : null;
+        String phone = d.getUser() != null ? d.getUser().getPhone() : null;
         return new DriverDto(
                 d.getDriverId(),
-                d.getFullName(),
-                d.getPhone(),
+                fullName,
+                phone,
                 d.getLicenseType(),
                 email,
                 d.getLicenseNumber(),
