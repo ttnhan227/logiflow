@@ -13,7 +13,9 @@ class AuthService {
   Stream<User?> get userStream => _userController.stream;
 
   void _notifyUserUpdate(User? user) {
+    print('AuthService: _notifyUserUpdate called with user: ${user?.username}');
     _userController.add(user);
+    print('AuthService: Stream update sent');
   }
 
   Future<User> login(String username, String password) async {
@@ -36,7 +38,9 @@ class AuthService {
         // Store user data (without token)
         await prefs.setString(_userKey, jsonEncode(user.toJson()));
 
+        print('AuthService: Login successful, notifying stream - user: ${user.username}');
         _notifyUserUpdate(user);
+        print('AuthService: Login notification sent');
         return user;
       } else {
         throw Exception('Login failed: ${response.body}');
@@ -47,10 +51,12 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    print('AuthService: Logging out user');
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
     _notifyUserUpdate(null);
+    print('AuthService: Logout completed, notified stream');
   }
 
   Future<User?> getCurrentUser() async {

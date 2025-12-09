@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
 import 'dart:convert';
-import '../main_layout.dart';
 import 'driver_trip_detail_screen.dart';
 
 class DriverTripsScreen extends StatefulWidget {
@@ -82,9 +81,11 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      title: 'My Trips',
-      child: _isLoading
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Trips'),
+      ),
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Text(_error!))

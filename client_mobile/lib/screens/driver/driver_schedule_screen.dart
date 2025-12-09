@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
 import 'dart:convert';
-import '../main_layout.dart';
 
 class DriverScheduleScreen extends StatefulWidget {
   const DriverScheduleScreen({super.key});
@@ -87,9 +86,11 @@ class _DriverScheduleScreenState extends State<DriverScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      title: 'My Schedule',
-      child: Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Schedule'),
+      ),
+      body: Column(
         children: [
           Card(
             margin: const EdgeInsets.all(16),

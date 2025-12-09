@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth/auth_service.dart';
+import '../main_layout.dart';
 import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -42,9 +43,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        // Navigate to home screen
+        // Navigate to main layout with bottom navigation
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainLayout()),
         );
       }
     } catch (e) {

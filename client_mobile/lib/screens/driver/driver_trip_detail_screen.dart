@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
-import 'dart:convert';
-import '../main_layout.dart';
 import '../../services/driver/driver_service.dart';
+import 'dart:convert';
 import 'widgets/trip_map_view.dart';
 import 'delivery_confirmation_screen.dart';
 
@@ -125,9 +124,11 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      title: 'Trip Detail',
-      child: _isLoading
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Trip Detail'),
+      ),
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(child: Text(_error!))

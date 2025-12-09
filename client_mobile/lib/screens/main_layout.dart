@@ -15,14 +15,7 @@ import 'customer/profile_screen.dart';
 import 'home/home_screen.dart';
 
 class MainLayout extends StatefulWidget {
-  final Widget child;
-  final String title;
-
-  const MainLayout({
-    super.key,
-    required this.child,
-    this.title = 'LogiFlow',
-  });
+  const MainLayout({super.key});
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -31,13 +24,16 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   User? _currentUser;
   bool _isLoading = true;
+  int _currentIndex = 0;
   final NotificationService _notificationService = NotificationService();
   late StreamSubscription<User?> _userSubscription;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _pageController = PageController();
     _userSubscription = authService.userStream.listen((user) {
       if (mounted) {
         setState(() => _currentUser = user);
@@ -77,9 +73,8 @@ class _MainLayoutState extends State<MainLayout> {
               textColor: Colors.white,
               onPressed: () {
                 // Navigate to trips screen
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const DriverTripsScreen()),
-                );
+                setState(() => _currentIndex = 1);
+                _pageController.jumpToPage(1);
               },
             ),
           ),
@@ -111,6 +106,7 @@ class _MainLayoutState extends State<MainLayout> {
   void dispose() {
     _notificationService.disconnect();
     _userSubscription.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -142,13 +138,142 @@ class _MainLayoutState extends State<MainLayout> {
     return '${ApiClient.baseImageUrl}${imagePath.startsWith('/') ? '' : '/'}$imagePath';
   }
 
+  List<BottomNavigationBarItem> _getBottomNavItems() {
+    if (_currentUser == null) return [];
+
+    final role = _currentUser!.role.toUpperCase();
+    
+    switch (role) {
+      case 'DRIVER':
+        return [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.local_shipping),
+            label: 'My Trips',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.schedule),
+            label: 'Schedule',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.verified_user),
+            label: 'Compliance',
+          ),
+        ];
+      case 'CUSTOMER':
+        return [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.add_shopping_cart),
+            label: 'Create Order',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.track_changes),
+            label: 'Track Orders',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ];
+      case 'ADMIN':
+        return [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.admin_panel_settings),
+            label: 'Admin',
+          ),
+        ];
+      default:
+        return [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+        ];
+    }
+  }
+
+  List<Widget> _getPages() {
+    if (_currentUser == null) return [const HomeScreen()];
+
+    final role = _currentUser!.role.toUpperCase();
+    
+    switch (role) {
+      case 'DRIVER':
+        return [
+          const HomeScreen(),
+          const DriverTripsScreen(),
+          const DriverScheduleScreen(),
+          const DriverComplianceScreen(),
+        ];
+      case 'CUSTOMER':
+        return [
+          const HomeScreen(),
+          const CreateOrderScreen(),
+          const TrackOrdersScreen(),
+          const OrderHistoryScreen(),
+          const CustomerProfileScreen(),
+        ];
+      case 'ADMIN':
+        return [
+          const HomeScreen(),
+          AdminDashboardScreen(),
+        ];
+      default:
+        return [const HomeScreen()];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Image.asset(
+                'assets/logiflow-smarter_logistics-seamless_flow.png',
+                height: 40,
+                width: 40,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 8),
+              const Text('LogiFlow'),
+            ],
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // If user is null, show loading or redirect to login
+    if (_currentUser == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final pages = _getPages();
+    final bottomNavItems = _getBottomNavItems();
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            // Logo
             Image.asset(
               'assets/logiflow-smarter_logistics-seamless_flow.png',
               height: 40,
@@ -156,187 +281,131 @@ class _MainLayoutState extends State<MainLayout> {
               fit: BoxFit.contain,
             ),
             const SizedBox(width: 8),
-            Text(widget.title),
+            const Text('LogiFlow'),
           ],
         ),
-      ),
-      drawer: _buildDrawer(),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : widget.child,
-    );
-  }
-
-  Widget _buildDrawer() {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 50),
-                const Text(
-                  'LogiFlow',
-                  style: TextStyle(
+        actions: [
+          if (_currentUser != null)
+            PopupMenuButton<String>(
+              icon: CircleAvatar(
+                radius: 16,
+                backgroundImage: _currentUser!.profilePictureUrl != null && _getImageUrl(_currentUser!.profilePictureUrl).isNotEmpty
+                  ? NetworkImage(_getImageUrl(_currentUser!.profilePictureUrl))
+                  : null,
+                backgroundColor: _currentUser!.profilePictureUrl != null ? null : Theme.of(context).primaryColor,
+                child: _currentUser!.profilePictureUrl != null ? null : Text(
+                  _currentUser!.username.isNotEmpty ? _currentUser!.username.substring(0, 1).toUpperCase() : '',
+                  style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
-                const Text(
-                  'Smart Logistics Management',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
+              ),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  enabled: false,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundImage: _currentUser!.profilePictureUrl != null && _getImageUrl(_currentUser!.profilePictureUrl).isNotEmpty
+                          ? NetworkImage(_getImageUrl(_currentUser!.profilePictureUrl))
+                          : null,
+                        backgroundColor: _currentUser!.profilePictureUrl != null ? null : Theme.of(context).primaryColor,
+                        child: _currentUser!.profilePictureUrl != null ? null : Text(
+                          _currentUser!.username.isNotEmpty ? _currentUser!.username.substring(0, 1).toUpperCase() : '',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _currentUser!.username,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            _currentUser!.role,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, size: 20),
+                      SizedBox(width: 8),
+                      Text('Logout'),
+                    ],
                   ),
                 ),
               ],
+              onSelected: (value) {
+                if (value == 'logout') {
+                  _logout();
+                }
+              },
             ),
+        ],
+      ),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() => _currentIndex = index);
+        },
+        children: pages,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          _pageController.jumpToPage(index);
+        },
+        type: BottomNavigationBarType.fixed,
+        items: bottomNavItems,
+        selectedItemColor: Theme.of(context).primaryColor,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+      ),
+    );
+  }
+}
+
+// Temporary placeholder for Admin Dashboard
+class AdminDashboardScreen extends StatelessWidget {
+  const AdminDashboardScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.admin_panel_settings, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Admin Dashboard',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          if (_currentUser != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundImage: _currentUser!.profilePictureUrl != null && _getImageUrl(_currentUser!.profilePictureUrl).isNotEmpty
-                      ? NetworkImage(_getImageUrl(_currentUser!.profilePictureUrl))
-                      : null,
-                    backgroundColor: _currentUser!.profilePictureUrl != null ? null : Theme.of(context).primaryColor,
-                    child: _currentUser!.profilePictureUrl != null ? null : Text(
-                      _getInitials(_currentUser),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Hi, ${_currentUser!.username}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            },
-          ),
-          if (_currentUser != null && _currentUser!.role.toUpperCase() == 'DRIVER') ...[
-            ListTile(
-              leading: const Icon(Icons.local_shipping),
-              title: const Text('My Trips'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const DriverTripsScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.schedule),
-              title: const Text('My Schedule'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const DriverScheduleScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.verified_user),
-              title: const Text('Compliance'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const DriverComplianceScreen()),
-                );
-              },
-            ),
-          ],
-          if (_currentUser != null && _currentUser!.role.toUpperCase() == 'CUSTOMER') ...[
-            ListTile(
-              leading: const Icon(Icons.add_shopping_cart),
-              title: const Text('Create Order'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const CreateOrderScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.track_changes),
-              title: const Text('Track Orders'),
-              subtitle: const Text('Active deliveries'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const TrackOrdersScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Order History'),
-              subtitle: const Text('Completed orders'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const OrderHistoryScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('My Profile'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
-                );
-              },
-            ),
-          ],
-          if (_currentUser != null && _currentUser!.role.toUpperCase() == 'ADMIN') ...[
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings),
-              title: const Text('Admin Dashboard'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Navigate to admin dashboard
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Admin dashboard coming soon')),
-                );
-              },
-            ),
-          ],
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () {
-              Navigator.pop(context);
-              _logout();
-            },
+          SizedBox(height: 8),
+          Text(
+            'Admin features coming soon',
+            style: TextStyle(color: Colors.grey),
           ),
         ],
       ),

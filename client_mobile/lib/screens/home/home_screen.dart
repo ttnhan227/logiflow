@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth/auth_service.dart';
 import '../../models/user.dart';
-import '../main_layout.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,9 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      title: 'Home',
-      child: _isLoading
+    return Scaffold(
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),

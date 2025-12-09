@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
 import 'dart:convert';
-import '../main_layout.dart';
 
 class DriverComplianceScreen extends StatefulWidget {
   const DriverComplianceScreen({super.key});
@@ -67,9 +66,11 @@ class _DriverComplianceScreenState extends State<DriverComplianceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      title: 'Compliance',
-      child: _isLoading
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Compliance'),
+      ),
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Text(_error!))
