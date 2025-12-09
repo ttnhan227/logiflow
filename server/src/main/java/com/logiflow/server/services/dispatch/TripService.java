@@ -9,6 +9,7 @@ import com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest;
 public interface TripService {
     TripDto createTrip(TripCreateRequest request);
     TripListResponse getTrips(String status);
+    TripDto getTripById(Integer tripId);
     TripDto assignTrip(Integer tripId, TripAssignRequest request);
     TripDto updateTripStatus(Integer tripId, TripStatusUpdateRequest request);
 }

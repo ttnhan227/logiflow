@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface DispatchDriverService {
     List<AvailableDriverDto> getAvailableDrivers(LocalDateTime at);
+    List<?> getAllDrivers();
+    List<?> getAvailableDriversList();
 }

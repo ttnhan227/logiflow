@@ -176,6 +176,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order savedOrder = orderRepository.save(order);
+
         Order orderWithRelations = orderRepository.findByIdWithRelations(savedOrder.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve saved order"));
 
@@ -217,7 +218,6 @@ public class OrderServiceImpl implements OrderService {
             int rowNumber = i + 2; // +2 because row 1 is header, and we start from index 0
 
             try {
-                // Validate required fields
                 if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
                     errors.add("Row " + rowNumber + ": Customer name is required");
                     failureCount++;
@@ -321,7 +321,7 @@ public class OrderServiceImpl implements OrderService {
     private byte[] generateCSVTemplate() throws IOException {
         StringWriter writer = new StringWriter();
         try (CSVWriter csvWriter = new CSVWriter(writer)) {
-            // Write header
+
             csvWriter.writeNext(new String[]{
                     "Customer Name",
                     "Customer Phone",
@@ -390,7 +390,6 @@ public class OrderServiceImpl implements OrderService {
             exampleRow.createCell(3).setCellValue("456 Nguyen Hue, District 1, Ho Chi Minh City");
             exampleRow.createCell(4).setCellValue("5kg documents");
             exampleRow.createCell(5).setCellValue("NORMAL");
-            exampleRow.createCell(6).setCellValue("");
             exampleRow.createCell(6).setCellValue(10.5); // Distance in km
             exampleRow.createCell(7).setCellValue(5.0); // Weight in kg
             exampleRow.createCell(8).setCellValue(500000); // Package value in VND
@@ -422,7 +421,6 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Order can only be updated when status is PENDING. Current status: " + order.getOrderStatus());
         }
 
-        //Update allowed fields
         order.setCustomerName(request.getCustomerName());
         order.setCustomerPhone(request.getCustomerPhone());
         order.setPickupAddress(request.getPickupAddress());
@@ -430,7 +428,6 @@ public class OrderServiceImpl implements OrderService {
         order.setPackageDetails(request.getPackageDetails());
         order.setPriorityLevel(request.getPriorityLevel());
 
-        // Set distance, weight and value
         order.setDistanceKm(request.getDistanceKm());
         order.setWeightKg(request.getWeightKg());
         order.setPackageValue(request.getPackageValue());
@@ -459,7 +456,7 @@ public class OrderServiceImpl implements OrderService {
         );
         order.setShippingFee(shippingFee);
 
-        //save
+
         Order updatedOrder = orderRepository.save(order);
 
         Order orderWithRelations = orderRepository.findByIdWithRelations(updatedOrder.getOrderId())
@@ -469,3 +466,4 @@ public class OrderServiceImpl implements OrderService {
     }
 
 }
+

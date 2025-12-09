@@ -109,6 +109,12 @@
   background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(79, 70, 229, 0.04) 100%);
 }
 
+.nav-link.active {
+  color: var(--primary-strong);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(79, 70, 229, 0.06) 100%);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.12);
+}
+
 .nav-link::after {
   content: '';
   position: absolute;

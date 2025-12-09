@@ -32,6 +32,18 @@ public class TripController {
         }
     }
 
+    @GetMapping("/trips/{tripId}")
+    public ResponseEntity<?> getTripById(@PathVariable Integer tripId) {
+        try {
+            TripDto trip = tripService.getTripById(tripId);
+            return ResponseEntity.ok(trip);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/trips")
     public ResponseEntity<?> createTrip(
             @Valid @RequestBody TripCreateRequest request) {
@@ -73,6 +85,7 @@ public class TripController {
         }
     }
 }
+
 
 
 

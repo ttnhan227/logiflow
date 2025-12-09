@@ -37,3 +37,76 @@
 .read-the-docs {
   color: #888;
 }
+
+/* App-level UI helpers for pages, buttons, tables, forms */
+.page {
+  background: var(--card-bg, #fff);
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: var(--soft-shadow, 0 8px 28px rgba(12,18,36,0.06));
+}
+
+.page h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+  color: var(--text-color, #0f172a);
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(90deg, #6366f1, #7c3aed);
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(99,102,241,0.18);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(99,102,241,0.22); }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.table th, .table td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(15,23,42,0.06);
+  vertical-align: middle;
+}
+
+.table thead th {
+  font-size: 0.9rem;
+  color: var(--text-light, #64748b);
+  font-weight: 700;
+}
+
+.table tbody tr:hover { background: rgba(99,102,241,0.03); }
+
+.table a { color: var(--primary-strong, #4338ca); text-decoration: none; font-weight:600 }
+.table a:hover { text-decoration: underline }
+
+.form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 720px }
+.form label { font-weight: 600; color: var(--text-light,#334155); }
+.form input, .form select, .form textarea {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(15,23,42,0.08);
+  background: #fff;
+  outline: none;
+  transition: box-shadow .12s ease, border-color .12s ease;
+}
+.form input:focus, .form select:focus, .form textarea:focus { box-shadow: 0 6px 18px rgba(67,56,202,0.08); border-color: rgba(67,56,202,0.18) }
+.form textarea { min-height: 100px; resize: vertical }
+
+/* small utilities */
+.btn-muted { background: linear-gradient(90deg,#94a3b8,#64748b); }
+
+@media (max-width: 768px) {
+  .page { padding: 1rem }
+  .table th, .table td { padding: 0.5rem }
+}

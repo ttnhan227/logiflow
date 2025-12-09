@@ -17,4 +17,6 @@ public interface DriverRepository extends JpaRepository<Driver, Integer> {
 
     @Query("SELECT d FROM Driver d WHERE LOWER(d.status) = 'available' AND d.healthStatus = com.logiflow.server.models.Driver.HealthStatus.FIT")
     List<Driver> findAvailableDrivers();
+
+    List<Driver> findByStatus(String status);
 }

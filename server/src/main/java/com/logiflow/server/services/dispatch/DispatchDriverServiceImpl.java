@@ -54,4 +54,75 @@ public class DispatchDriverServiceImpl implements DispatchDriverService {
             return dto;
         }).filter(java.util.Objects::nonNull).collect(Collectors.toList());
     }
+
+    @Override
+    public List<?> getAllDrivers() {
+        return driverRepository.findAll().stream()
+                .map(this::toDriverDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<?> getAvailableDriversList() {
+        return driverRepository.findByStatus("available").stream()
+                .map(this::toDriverDto)
+                .collect(Collectors.toList());
+    }
+
+    private DriverDto toDriverDto(Driver d) {
+        Long totalTrips = driverWorkLogRepository.countByDriver_DriverId(d.getDriverId());
+        String email = d.getUser() != null ? d.getUser().getEmail() : null;
+        return new DriverDto(
+                d.getDriverId(),
+                d.getFullName(),
+                d.getPhone(),
+                d.getLicenseType(),
+                email,
+                d.getLicenseNumber(),
+                d.getLicenseExpiryDate(),
+                d.getRating() != null ? d.getRating().doubleValue() : 0.0,
+                totalTrips != null ? totalTrips : 0L,
+                d.getStatus()
+        );
+    }
+
+    public static class DriverDto {
+        private Integer driverId;
+        private String fullName;
+        private String phone;
+        private String licenseType;
+        private String email;
+        private String licenseNumber;
+        private java.time.LocalDate licenseExpiryDate;
+        private Double rating;
+        private Long totalTrips;
+        private String status;
+
+        public DriverDto(Integer driverId, String fullName, String phone, String licenseType, String email, 
+                        String licenseNumber, java.time.LocalDate licenseExpiryDate, 
+                        Double rating, Long totalTrips, String status) {
+            this.driverId = driverId;
+            this.fullName = fullName;
+            this.phone = phone;
+            this.licenseType = licenseType;
+            this.email = email;
+            this.licenseNumber = licenseNumber;
+            this.licenseExpiryDate = licenseExpiryDate;
+            this.rating = rating;
+            this.totalTrips = totalTrips;
+            this.status = status;
+        }
+
+        // Getters
+        public Integer getDriverId() { return driverId; }
+        public String getFullName() { return fullName; }
+        public String getPhone() { return phone; }
+        public String getLicenseType() { return licenseType; }
+        public String getEmail() { return email; }
+        public String getLicenseNumber() { return licenseNumber; }
+        public java.time.LocalDate getLicenseExpiryDate() { return licenseExpiryDate; }
+        public Double getRating() { return rating; }
+        public Long getTotalTrips() { return totalTrips; }
+        public String getStatus() { return status; }
+    }
 }

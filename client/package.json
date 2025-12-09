@@ -25,6 +25,7 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.9.5",
     "recharts": "^3.5.1",
+    "xlsx": "^0.18.5",
     "sockjs-client": "^1.6.1"
   },
   "devDependencies": {

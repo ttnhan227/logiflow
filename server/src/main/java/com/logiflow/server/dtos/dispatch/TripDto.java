@@ -14,8 +14,13 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class TripDto {
     private Integer tripId;
+    private Integer driverId;
+    private String driverName;
+    private String driverPhone;
     private Integer vehicleId;
     private String vehicleLicensePlate;
+    private String vehicleType;
+    private String vehicleRequiredLicense;
     private Integer routeId;
     private String routeName;
     private String tripType;
@@ -32,6 +37,8 @@ public class TripDto {
         dto.setTripId(trip.getTripId());
         dto.setVehicleId(trip.getVehicle() != null ? trip.getVehicle().getVehicleId() : null);
         dto.setVehicleLicensePlate(trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null);
+        dto.setVehicleType(trip.getVehicle() != null ? trip.getVehicle().getVehicleType() : null);
+        dto.setVehicleRequiredLicense(trip.getVehicle() != null ? trip.getVehicle().getRequiredLicense() : null);
         dto.setRouteId(trip.getRoute() != null ? trip.getRoute().getRouteId() : null);
         dto.setRouteName(trip.getRoute() != null ? trip.getRoute().getRouteName() : null);
         dto.setTripType(trip.getTripType());
@@ -41,6 +48,18 @@ public class TripDto {
         dto.setActualArrival(trip.getActualArrival());
         dto.setStatus(trip.getStatus());
         dto.setCreatedAt(trip.getCreatedAt());
+
+        // pick the first driver assignment (role=driver) if exists
+        if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
+            trip.getTripAssignments().stream()
+                    .filter(ta -> ta.getDriver() != null)
+                    .findFirst()
+                    .ifPresent(ta -> {
+                        dto.setDriverId(ta.getDriver().getDriverId());
+                        dto.setDriverName(ta.getDriver().getFullName());
+                        dto.setDriverPhone(ta.getDriver().getPhone());
+                    });
+        }
 
         if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
             dto.setOrders(trip.getOrders().stream()
