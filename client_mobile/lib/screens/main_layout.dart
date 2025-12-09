@@ -8,6 +8,7 @@ import 'auth/login_screen.dart';
 import 'driver/driver_trips_screen.dart';
 import 'driver/driver_schedule_screen.dart';
 import 'driver/driver_compliance_screen.dart';
+import 'driver/driver_profile_screen.dart';
 import 'customer/create_order_screen.dart';
 import 'customer/track_orders_screen.dart';
 import 'customer/order_history_screen.dart';
@@ -162,6 +163,10 @@ class _MainLayoutState extends State<MainLayout> {
             icon: Icon(Icons.verified_user),
             label: 'Compliance',
           ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ];
       case 'CUSTOMER':
         return [
@@ -219,6 +224,7 @@ class _MainLayoutState extends State<MainLayout> {
           const DriverTripsScreen(),
           const DriverScheduleScreen(),
           const DriverComplianceScreen(),
+          const DriverProfileScreen(),
         ];
       case 'CUSTOMER':
         return [

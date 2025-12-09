@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_client.dart';
 import '../../models/user.dart';
@@ -43,10 +44,44 @@ class AuthService {
         print('AuthService: Login notification sent');
         return user;
       } else {
-        throw Exception('Login failed: ${response.body}');
+        // Parse error response for better user messages
+        String errorMessage = _parseLoginError(response);
+        throw Exception(errorMessage);
+      }
+    } on Exception catch (e) {
+      // Handle network and other exceptions
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Connection') ||
+          e.toString().contains('Network')) {
+        throw Exception('Network error. Please check your internet connection and try again.');
+      } else if (e.toString().contains('TimeoutException')) {
+        throw Exception('Connection timeout. Please try again.');
+      } else {
+        throw Exception('Login failed: $e');
+      }
+    }
+  }
+
+  String _parseLoginError(http.Response response) {
+    try {
+      final data = jsonDecode(response.body);
+      final message = data['message'] as String? ?? 'Unknown error occurred';
+
+      // Map server messages to user-friendly messages
+      if (message.contains('Invalid credentials')) {
+        return 'Incorrect username or password. Please check your credentials and try again.';
+      } else if (message.contains('rejected by the administrator')) {
+        return 'Your registration has been rejected. Please contact support for assistance.';
+      } else if (message.contains('still pending approval')) {
+        return 'Your account registration is awaiting approval. Please try again later.';
+      } else if (message.contains('Bad credentials')) {
+        return 'Incorrect username or password. Please check your credentials and try again.';
+      } else {
+        return message;
       }
     } catch (e) {
-      throw Exception('Login failed: $e');
+      // If we can't parse the JSON, return a generic message
+      return 'Login failed. Please check your credentials and try again.';
     }
   }
 

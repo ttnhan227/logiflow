@@ -21,4 +21,7 @@ public interface DriverService {
     void cancelTripAssignment(Integer driverId, Integer tripId);
     void updateTripStatus(Integer driverId, Integer tripId, String status);
     void confirmDelivery(Integer driverId, Integer tripId, DeliveryConfirmationDto confirmationDto);
+
+    DriverProfileDto getProfile(String username);
+    DriverProfileDto updateProfile(String username, UpdateDriverProfileRequest request);
 }

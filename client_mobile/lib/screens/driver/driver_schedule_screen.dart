@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/api_client.dart';
-import 'dart:convert';
+import '../../services/driver/driver_service.dart';
+import '../../models/driver/schedule.dart';
 
 class DriverScheduleScreen extends StatefulWidget {
   const DriverScheduleScreen({super.key});
@@ -11,7 +11,7 @@ class DriverScheduleScreen extends StatefulWidget {
 
 class _DriverScheduleScreenState extends State<DriverScheduleScreen> {
   bool _isLoading = true;
-  List<dynamic> _schedule = [];
+  List<DriverScheduleItem> _schedule = [];
   String? _error;
   DateTimeRange? _dateRange;
 
@@ -32,18 +32,11 @@ class _DriverScheduleScreenState extends State<DriverScheduleScreen> {
     try {
       final start = _dateRange!.start.toIso8601String().split('T').first;
       final end = _dateRange!.end.toIso8601String().split('T').first;
-      final response = await apiClient.get('/driver/me/schedule?startDate=$start&endDate=$end');
-      if (response.statusCode == 200) {
-        setState(() {
-          _schedule = List.from(jsonDecode(response.body));
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = 'Failed to load schedule: ${response.body}';
-          _isLoading = false;
-        });
-      }
+      final schedule = await driverService.getMySchedule(start, end);
+      setState(() {
+        _schedule = schedule;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Error: $e';
@@ -147,48 +140,48 @@ class _DriverScheduleScreenState extends State<DriverScheduleScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text('Trip #${item['tripId']}',
+                                          Text('Trip #${item.tripId}',
                                               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                          if (item['status'] != null)
+                                          if (item.status != null)
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                               decoration: BoxDecoration(
-                                                color: _getTripStatusColor(item['status']),
+                                                color: _getTripStatusColor(item.status),
                                                 borderRadius: BorderRadius.circular(20),
                                               ),
                                               child: Text(
-                                                item['status']?.toUpperCase() ?? 'N/A',
+                                                item.status?.toUpperCase() ?? 'N/A',
                                                 style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                                               ),
                                             ),
                                         ],
                                       ),
                                       const Divider(height: 20),
-                                      if (item['routeName'] != null)
+                                      if (item.routeName != null)
                                         Row(
                                           children: [
                                             const Icon(Icons.route, size: 16, color: Colors.grey),
                                             const SizedBox(width: 8),
-                                            Expanded(child: Text(item['routeName'], style: const TextStyle(fontSize: 14))),
+                                            Expanded(child: Text(item.routeName!, style: const TextStyle(fontSize: 14))),
                                           ],
                                         ),
-                                      if (item['scheduledDeparture'] != null) ...[
+                                      if (item.scheduledDeparture != null) ...[
                                         const SizedBox(height: 8),
                                         Row(
                                           children: [
                                             const Icon(Icons.access_time, size: 16, color: Colors.green),
                                             const SizedBox(width: 8),
-                                            Expanded(child: Text('Departure: ${item['scheduledDeparture']}', style: const TextStyle(fontSize: 13))),
+                                            Expanded(child: Text('Departure: ${item.scheduledDeparture}', style: const TextStyle(fontSize: 13))),
                                           ],
                                         ),
                                       ],
-                                      if (item['scheduledArrival'] != null) ...[
+                                      if (item.scheduledArrival != null) ...[
                                         const SizedBox(height: 8),
                                         Row(
                                           children: [
                                             const Icon(Icons.alarm, size: 16, color: Colors.red),
                                             const SizedBox(width: 8),
-                                            Expanded(child: Text('Arrival: ${item['scheduledArrival']}', style: const TextStyle(fontSize: 13))),
+                                            Expanded(child: Text('Arrival: ${item.scheduledArrival}', style: const TextStyle(fontSize: 13))),
                                           ],
                                         ),
                                       ],

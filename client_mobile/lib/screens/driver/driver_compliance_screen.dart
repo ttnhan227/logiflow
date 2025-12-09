@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/api_client.dart';
-import 'dart:convert';
+import '../../services/driver/driver_service.dart';
+import '../../models/driver/compliance.dart';
 
 class DriverComplianceScreen extends StatefulWidget {
   const DriverComplianceScreen({super.key});
@@ -11,7 +11,7 @@ class DriverComplianceScreen extends StatefulWidget {
 
 class _DriverComplianceScreenState extends State<DriverComplianceScreen> {
   bool _isLoading = true;
-  Map<String, dynamic>? _compliance;
+  DriverCompliance? _compliance;
   String? _error;
 
   @override
@@ -26,18 +26,11 @@ class _DriverComplianceScreenState extends State<DriverComplianceScreen> {
       _error = null;
     });
     try {
-      final response = await apiClient.get('/driver/me/compliance/rest-periods');
-      if (response.statusCode == 200) {
-        setState(() {
-          _compliance = jsonDecode(response.body);
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = 'Failed to load compliance: ${response.body}';
-          _isLoading = false;
-        });
-      }
+      final compliance = await driverService.getMyCompliance();
+      setState(() {
+        _compliance = compliance;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Error: $e';
@@ -107,7 +100,7 @@ class _DriverComplianceScreenState extends State<DriverComplianceScreen> {
                                           Text('Hours Driven (Total)', 
                                             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                                           const SizedBox(height: 4),
-                                          Text('${_compliance!['hoursDrivenTotal'] ?? 'N/A'}', 
+                                          Text('${_compliance!.hoursDrivenTotal ?? 'N/A'}',
                                             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                         ],
                                       ),
@@ -126,14 +119,14 @@ class _DriverComplianceScreenState extends State<DriverComplianceScreen> {
                                           Text('Rest Required (Hours)', 
                                             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                                           const SizedBox(height: 4),
-                                          Text('${_compliance!['restRequiredHours'] ?? 'N/A'}', 
+                                          Text('${_compliance!.restRequiredHours ?? 'N/A'}',
                                             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                         ],
                                       ),
                                     ),
                                   ],
                                 ),
-                                if (_compliance!['nextAvailableTime'] != null) ...[
+                                if (_compliance!.nextAvailableTime != null) ...[
                                   const SizedBox(height: 16),
                                   Row(
                                     children: [
@@ -146,7 +139,7 @@ class _DriverComplianceScreenState extends State<DriverComplianceScreen> {
                                             Text('Next Available Time', 
                                               style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                                             const SizedBox(height: 4),
-                                            Text('${_compliance!['nextAvailableTime']}', 
+                                            Text('${_compliance!.nextAvailableTime}',
                                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
                                           ],
                                         ),

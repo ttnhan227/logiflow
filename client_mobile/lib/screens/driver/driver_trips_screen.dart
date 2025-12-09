@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/api_client.dart';
-import 'dart:convert';
+import '../../services/driver/driver_service.dart';
+import '../../models/driver/trip.dart';
 import 'driver_trip_detail_screen.dart';
 
 class DriverTripsScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class DriverTripsScreen extends StatefulWidget {
 
 class _DriverTripsScreenState extends State<DriverTripsScreen> {
   bool _isLoading = true;
-  List<dynamic> _trips = [];
+  List<DriverTrip> _trips = [];
   String? _error;
 
   @override
@@ -27,18 +27,11 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
       _error = null;
     });
     try {
-      final response = await apiClient.get('/driver/me/trips');
-      if (response.statusCode == 200) {
-        setState(() {
-          _trips = List.from(jsonDecode(response.body));
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = 'Failed to load trips: ${response.body}';
-          _isLoading = false;
-        });
-      }
+      final trips = await driverService.getMyTrips();
+      setState(() {
+        _trips = trips;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Error: $e';
@@ -103,7 +96,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => DriverTripDetailScreen(tripId: trip['tripId']),
+                                  builder: (context) => DriverTripDetailScreen(tripId: trip.tripId),
                                 ),
                               );
                             },
@@ -115,61 +108,61 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('Trip #${trip['tripId']}',
+                                      Text('Trip #${trip.tripId}',
                                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                         decoration: BoxDecoration(
-                                          color: _getTripStatusColor(trip['status']),
+                                          color: _getTripStatusColor(trip.status),
                                           borderRadius: BorderRadius.circular(20),
                                         ),
                                         child: Text(
-                                          trip['status']?.toUpperCase() ?? 'N/A',
+                                          trip.status?.toUpperCase() ?? 'N/A',
                                           style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  if (trip['assignmentStatus'] != null) ...[
+                                  if (trip.assignmentStatus != null) ...[
                                     const SizedBox(height: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: _getAssignmentStatusColor(trip['assignmentStatus']),
+                                        color: _getAssignmentStatusColor(trip.assignmentStatus),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        'Assignment: ${trip['assignmentStatus']?.toUpperCase()}',
+                                        'Assignment: ${trip.assignmentStatus?.toUpperCase()}',
                                         style: const TextStyle(color: Colors.white, fontSize: 10),
                                       ),
                                     ),
                                   ],
                                   const Divider(height: 20),
-                                  if (trip['routeName'] != null)
+                                  if (trip.routeName != null)
                                     Row(
                                       children: [
                                         const Icon(Icons.route, size: 16, color: Colors.grey),
                                         const SizedBox(width: 8),
-                                        Expanded(child: Text(trip['routeName'], style: const TextStyle(fontSize: 14))),
+                                        Expanded(child: Text(trip.routeName!, style: const TextStyle(fontSize: 14))),
                                       ],
                                     ),
-                                  if (trip['scheduledDeparture'] != null) ...[
+                                  if (trip.scheduledDeparture != null) ...[
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
                                         const Icon(Icons.access_time, size: 16, color: Colors.grey),
                                         const SizedBox(width: 8),
-                                        Expanded(child: Text('Departure: ${trip['scheduledDeparture']}', style: const TextStyle(fontSize: 13))),
+                                        Expanded(child: Text('Departure: ${trip.scheduledDeparture}', style: const TextStyle(fontSize: 13))),
                                       ],
                                     ),
                                   ],
-                                  if (trip['vehiclePlate'] != null) ...[
+                                  if (trip.vehiclePlate != null) ...[
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
                                         const Icon(Icons.local_shipping, size: 16, color: Colors.grey),
                                         const SizedBox(width: 8),
-                                        Text('Vehicle: ${trip['vehiclePlate']}', style: const TextStyle(fontSize: 13)),
+                                        Text('Vehicle: ${trip.vehiclePlate}', style: const TextStyle(fontSize: 13)),
                                       ],
                                     ),
                                   ],

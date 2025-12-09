@@ -103,4 +103,34 @@ public class DriverDtos {
         private BigDecimal longitude;
         private LocalDateTime timestamp;
     }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class DriverProfileDto {
+        private Integer userId;
+        private String username;
+        private String email;
+        private String fullName;
+        private String phone;
+        private String profilePictureUrl;
+        private String driverLicenseNumber;
+        private java.time.LocalDate licenseExpiryDate;
+        private String vehicleType;
+        private String vehiclePlateNumber;
+        private LocalDateTime createdAt;
+        private String status;
+        private Integer totalDeliveries;
+        private BigDecimal rating;
+        private BigDecimal totalEarnings;
+        private BigDecimal averageDeliveryTime; // in minutes
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class UpdateDriverProfileRequest {
+        private String fullName;
+        private String phone;
+        private String driverLicenseNumber;
+        private String vehicleType;
+        private String vehiclePlateNumber;
+        private String profilePictureUrl;
+    }
 }

@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -272,26 +273,29 @@ public class DatabaseSeeder implements CommandLineRunner {
         LocalDateTime now = LocalDateTime.now();
 
         List<Driver> drivers = Arrays.asList(
-            createDriver(driverUsers.get(0), "Mike Driver", "+84-904-567-890", "E", 15, new BigDecimal("21.0313"), new BigDecimal("105.8518"), now.minusDays(89)),
-            createDriver(driverUsers.get(1), "Carl Driver", "+84-906-789-012", "B2", 11, new BigDecimal("21.0282"), new BigDecimal("105.8542"), now.minusDays(84)),
-            createDriver(driverUsers.get(2), "David Driver", "+84-908-901-234", "D", 14, new BigDecimal("20.8462"), new BigDecimal("106.6884"), now.minusDays(79)),
-            createDriver(driverUsers.get(3), "Emma Driver", "+84-909-012-345", "E", 5, new BigDecimal("21.0278"), new BigDecimal("105.8342"), now.minusDays(74)),
-            createDriver(driverUsers.get(4), "Bob Driver", "+84-910-123-456", "FC", 13, new BigDecimal("10.8230"), new BigDecimal("106.6297"), now.minusDays(69)),
-            createDriver(driverUsers.get(5), "Frank Driver", "+84-911-234-567", "C", 8, new BigDecimal("16.0544"), new BigDecimal("108.2022"), now.minusDays(64)),
-            createDriver(driverUsers.get(6), "Grace Driver", "+84-912-345-678", "D", 12, new BigDecimal("12.2388"), new BigDecimal("109.1967"), now.minusDays(59)),
-            createDriver(driverUsers.get(7), "Henry Driver", "+84-913-456-789", "B2", 9, new BigDecimal("10.7726"), new BigDecimal("106.6980"), now.minusDays(54)),
-            createDriver(driverUsers.get(8), "Iris Driver", "+84-914-567-890", "E", 7, new BigDecimal("20.8197"), new BigDecimal("106.7242"), now.minusDays(49)),
-            createDriver(driverUsers.get(9), "Jack Driver", "+84-915-678-901", "C", 10, new BigDecimal("10.0378"), new BigDecimal("105.7833"), now.minusDays(44))
+            createDriver(driverUsers.get(0), "Mike Driver", "+84-904-567-890", "E", 15, "VN-E-123456789", LocalDateTime.of(1985, 3, 15, 10, 0), 4.8, new BigDecimal("21.0313"), new BigDecimal("105.8518"), now.minusDays(89)),
+            createDriver(driverUsers.get(1), "Carl Driver", "+84-906-789-012", "B2", 11, "VN-B2-234567890", LocalDateTime.of(1990, 7, 22, 14, 30), 4.6, new BigDecimal("21.0282"), new BigDecimal("105.8542"), now.minusDays(84)),
+            createDriver(driverUsers.get(2), "David Driver", "+84-908-901-234", "D", 14, "VN-D-345678901", LocalDateTime.of(1988, 1, 5, 9, 15), 4.9, new BigDecimal("20.8462"), new BigDecimal("106.6884"), now.minusDays(79)),
+            createDriver(driverUsers.get(3), "Emma Driver", "+84-909-012-345", "E", 5, "VN-E-456789012", LocalDateTime.of(1995, 11, 30, 16, 45), 4.4, new BigDecimal("21.0278"), new BigDecimal("105.8342"), now.minusDays(74)),
+            createDriver(driverUsers.get(4), "Bob Driver", "+84-910-123-456", "FC", 13, "VN-FC-567890123", LocalDateTime.of(1987, 5, 18, 11, 20), 4.7, new BigDecimal("10.8230"), new BigDecimal("106.6297"), now.minusDays(69)),
+            createDriver(driverUsers.get(5), "Frank Driver", "+84-911-234-567", "C", 8, "VN-C-678901234", LocalDateTime.of(1992, 9, 8, 13, 10), 4.5, new BigDecimal("16.0544"), new BigDecimal("108.2022"), now.minusDays(64)),
+            createDriver(driverUsers.get(6), "Grace Driver", "+84-912-345-678", "D", 12, "VN-D-789012345", LocalDateTime.of(1989, 4, 12, 15, 35), 4.8, new BigDecimal("12.2388"), new BigDecimal("109.1967"), now.minusDays(59)),
+            createDriver(driverUsers.get(7), "Henry Driver", "+84-913-456-789", "B2", 9, "VN-B2-890123456", LocalDateTime.of(1991, 8, 27, 8, 50), 4.3, new BigDecimal("10.7726"), new BigDecimal("106.6980"), now.minusDays(54)),
+            createDriver(driverUsers.get(8), "Iris Driver", "+84-914-567-890", "E", 7, "VN-E-901234567", LocalDateTime.of(1993, 12, 14, 10, 25), 4.6, new BigDecimal("20.8197"), new BigDecimal("106.7242"), now.minusDays(49)),
+            createDriver(driverUsers.get(9), "Jack Driver", "+84-915-678-901", "C", 10, "VN-C-012345678", LocalDateTime.of(1990, 6, 3, 12, 40), 4.7, new BigDecimal("10.0378"), new BigDecimal("105.7833"), now.minusDays(44))
         );
         driverRepository.saveAll(drivers);
         System.out.println("Seeded " + drivers.size() + " drivers (only DRIVER role users)");
     }
 
-    private Driver createDriver(User user, String fullName, String phone, String licenseType, int experience, BigDecimal lat, BigDecimal lng, LocalDateTime createdAt) {
+    private Driver createDriver(User user, String fullName, String phone, String licenseType, int experience, String licenseNumber, LocalDateTime licenseExpiry, double ratingValue, BigDecimal lat, BigDecimal lng, LocalDateTime createdAt) {
         Driver driver = new Driver();
         driver.setUser(user);
         // Contact info now stored in User entity (already set above)
         driver.setLicenseType(licenseType);
+        driver.setLicenseNumber(licenseNumber);
+        driver.setLicenseExpiryDate(licenseExpiry.toLocalDate());
+        driver.setRating(BigDecimal.valueOf(ratingValue));
         driver.setYearsExperience(experience);
         driver.setHealthStatus(Driver.HealthStatus.FIT);
         driver.setCurrentLocationLat(lat);
