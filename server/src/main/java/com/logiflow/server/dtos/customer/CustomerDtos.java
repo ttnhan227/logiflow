@@ -33,6 +33,9 @@ public class CustomerDtos {
         private String pickupAddress;
         private String deliveryAddress;
         private String packageDetails;
+        private BigDecimal weightKg;
+        private BigDecimal packageValue;
+        private BigDecimal distanceKm;
         private String priorityLevel;
         private String orderStatus;
         private String tripStatus; // if assigned to trip
@@ -52,6 +55,10 @@ public class CustomerDtos {
         private Integer orderId;
         private String pickupAddress;
         private String deliveryAddress;
+        private String packageDetails;
+        private BigDecimal weightKg;
+        private BigDecimal packageValue;
+        private BigDecimal distanceKm;
         private String orderStatus;
         private String tripStatus;
         private LocalDateTime createdAt;
@@ -89,6 +96,10 @@ public class CustomerDtos {
         private Integer orderId;
         private String pickupAddress;
         private String deliveryAddress;
+        private String packageDetails;
+        private BigDecimal weightKg;
+        private BigDecimal packageValue;
+        private BigDecimal distanceKm;
         private String orderStatus;
         private LocalDateTime createdAt;
         private LocalDateTime deliveredAt;

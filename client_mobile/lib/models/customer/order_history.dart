@@ -4,6 +4,10 @@ class OrderHistory extends Equatable {
   final int orderId;
   final String pickupAddress;
   final String deliveryAddress;
+  final String? packageDetails;
+  final double? weightKg;
+  final double? packageValue;
+  final double? distanceKm;
   final String orderStatus;
   final DateTime createdAt;
   final DateTime? deliveredAt;
@@ -15,6 +19,10 @@ class OrderHistory extends Equatable {
     required this.orderId,
     required this.pickupAddress,
     required this.deliveryAddress,
+    this.packageDetails,
+    this.weightKg,
+    this.packageValue,
+    this.distanceKm,
     required this.orderStatus,
     required this.createdAt,
     this.deliveredAt,
@@ -28,6 +36,10 @@ class OrderHistory extends Equatable {
       orderId: json['orderId'],
       pickupAddress: json['pickupAddress'],
       deliveryAddress: json['deliveryAddress'],
+      packageDetails: json['packageDetails'],
+      weightKg: json['weightKg']?.toDouble(),
+      packageValue: json['packageValue']?.toDouble(),
+      distanceKm: json['distanceKm']?.toDouble(),
       orderStatus: json['orderStatus'],
       createdAt: DateTime.parse(json['createdAt']),
       deliveredAt: json['deliveredAt'] != null ? DateTime.parse(json['deliveredAt']) : null,
@@ -42,6 +54,10 @@ class OrderHistory extends Equatable {
       'orderId': orderId,
       'pickupAddress': pickupAddress,
       'deliveryAddress': deliveryAddress,
+      'packageDetails': packageDetails,
+      'weightKg': weightKg,
+      'packageValue': packageValue,
+      'distanceKm': distanceKm,
       'orderStatus': orderStatus,
       'createdAt': createdAt.toIso8601String(),
       'deliveredAt': deliveredAt?.toIso8601String(),
@@ -56,6 +72,10 @@ class OrderHistory extends Equatable {
     orderId,
     pickupAddress,
     deliveryAddress,
+    packageDetails,
+    weightKg,
+    packageValue,
+    distanceKm,
     orderStatus,
     createdAt,
     deliveredAt,

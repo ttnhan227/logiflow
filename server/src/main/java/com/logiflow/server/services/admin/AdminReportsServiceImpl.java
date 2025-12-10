@@ -68,7 +68,7 @@ public class AdminReportsServiceImpl implements AdminReportsService {
             .orElse(0.0);
         
         // Calculate revenue using dashboard approach - query DELIVERED orders directly
-        BigDecimal totalRevenue = orderRepository.sumDeliveryFeeByStatusAndDateRange(
+        BigDecimal totalRevenue = orderRepository.sumShippingFeeByStatusAndDateRange(
             Order.OrderStatus.DELIVERED, startDateTime, endDateTime);
         
         List<Order> completedOrders = orderRepository.findByOrderStatusAndDateRange(
@@ -111,7 +111,7 @@ public class AdminReportsServiceImpl implements AdminReportsService {
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
 
         // Use dashboard approach - query DELIVERED orders directly
-        BigDecimal totalRevenue = orderRepository.sumDeliveryFeeByStatusAndDateRange(
+        BigDecimal totalRevenue = orderRepository.sumShippingFeeByStatusAndDateRange(
             Order.OrderStatus.DELIVERED, startDateTime, endDateTime);
         
         long totalOrders = orderRepository.findByOrderStatusAndDateRange(
@@ -216,18 +216,18 @@ public class AdminReportsServiceImpl implements AdminReportsService {
                     .average()
                     .orElse(0.0);
                 
-                // Calculate revenue from DELIVERED orders for this driver's completed trips
+        // Calculate revenue from DELIVERED orders for this driver's completed trips
                 List<Integer> completedTripIds = driverTrips.stream()
                     .filter(t -> "completed".equals(t.getStatus()))
                     .map(Trip::getTripId)
                     .collect(Collectors.toList());
-                
+
                 BigDecimal revenue = completedTripIds.isEmpty() ? BigDecimal.ZERO :
                     orderRepository.findAll().stream()
                         .filter(o -> o.getTrip() != null && completedTripIds.contains(o.getTrip().getTripId()))
                         .filter(o -> Order.OrderStatus.DELIVERED.equals(o.getOrderStatus()))
-                        .filter(o -> o.getDeliveryFee() != null)
-                        .map(Order::getDeliveryFee)
+                        .filter(o -> o.getShippingFee() != null)
+                        .map(Order::getShippingFee)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 
                 return DriverPerformanceDto.builder()
@@ -265,7 +265,7 @@ public class AdminReportsServiceImpl implements AdminReportsService {
                 // Calculate revenue from DELIVERED orders for this day
                 LocalDateTime dayStart = date.atStartOfDay();
                 LocalDateTime dayEnd = date.atTime(LocalTime.MAX);
-                BigDecimal revenue = orderRepository.sumDeliveryFeeByStatusAndDateRange(
+                BigDecimal revenue = orderRepository.sumShippingFeeByStatusAndDateRange(
                     Order.OrderStatus.DELIVERED, dayStart, dayEnd);
                 
                 double avgTime = dayTrips.stream()

@@ -5,6 +5,7 @@ import com.logiflow.server.dtos.maps.DistanceResultDto;
 import com.logiflow.server.dtos.maps.GeocodeResultDto;
 import com.logiflow.server.dtos.maps.OptimizeRequestDto;
 import com.logiflow.server.dtos.maps.OptimizedRouteDto;
+import java.util.List;
 
 /**
  * Service interface for map-related operations using OpenStreetMap services.
@@ -51,6 +52,16 @@ public interface MapsService {
         String originAddress,
         String destinationAddress
     );
+
+    /**
+     * Get basic address suggestions based on common Vietnamese locations
+     * Returns static suggestions to avoid Nominatim usage policy violations
+     *
+     * @param query Partial address string to search for (ignored for basic implementation)
+     * @param limit Maximum number of suggestions to return
+     * @return List of common address suggestions
+     */
+    List<String> getBasicAddressSuggestions(String query, int limit);
 
     /**
      * Optimizes a route for multiple waypoints (Traveling Salesperson Problem).

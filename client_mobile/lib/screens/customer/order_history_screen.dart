@@ -99,73 +99,135 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           final order = _orders[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Order #${order.orderId}',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'From: ${order.pickupAddress}',
-                                    style: TextStyle(color: Colors.grey[600]),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'To: ${order.deliveryAddress}',
-                                    style: TextStyle(color: Colors.grey[600]),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Ordered: ${_formatDate(order.createdAt)}',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[500],
+                                            'Order #${order.orderId}',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          if (order.deliveredAt != null)
-                                            Text(
-                                              'Delivered: ${_formatDate(order.deliveredAt!)}',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.green[600],
-                                                fontWeight: FontWeight.w500,
+                                          Icon(
+                                            _getStatusIcon(order.orderStatus),
+                                            color: _getStatusColor(order.orderStatus),
+                                            size: 20,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'From: ${order.pickupAddress}',
+                                        style: TextStyle(color: Colors.grey[600]),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'To: ${order.deliveryAddress}',
+                                        style: TextStyle(color: Colors.grey[600]),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      // Package Details
+                                      if (order.packageDetails != null && order.packageDetails!.isNotEmpty) ...[
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Package: ${order.packageDetails}',
+                                          style: TextStyle(color: Colors.grey[700]),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                      const SizedBox(height: 12),
+                                      // Specifications Row
+                                      Row(
+                                        children: [
+                                          if (order.weightKg != null)
+                                            Expanded(
+                                              child: Text(
+                                                'Weight: ${order.weightKg!.toStringAsFixed(1)}kg',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ),
+                                          if (order.distanceKm != null)
+                                            Expanded(
+                                              child: Text(
+                                                'Distance: ${order.distanceKm!.toStringAsFixed(1)}km',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ),
+                                          if (order.packageValue != null)
+                                            Expanded(
+                                              child: Text(
+                                                'Value: VND ${order.packageValue!.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
                                               ),
                                             ),
                                         ],
                                       ),
-                                      Text(
-                                        '\$${order.deliveryFee.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green,
-                                        ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Ordered: ${_formatDate(order.createdAt)}',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[500],
+                                                ),
+                                              ),
+                                              if (order.deliveredAt != null)
+                                                Text(
+                                                  'Delivered: ${_formatDate(order.deliveredAt!)}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.green[600],
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                'Shipping Fee',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey[500],
+                                                ),
+                                              ),
+                                              Text(
+                                                'VND ${order.deliveryFee.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
                                   if (order.driverName != null) ...[
                                     const SizedBox(height: 8),
                                     Row(
@@ -213,10 +275,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Status: Delivered',
-                                        style: const TextStyle(
+                                        'Status: ${_getStatusText(order.orderStatus)}',
+                                        style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.green,
+                                          color: _getStatusColor(order.orderStatus),
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -228,7 +290,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                           );
                                         },
                                         icon: const Icon(Icons.receipt, size: 16),
-                                        label: const Text('View Receipt'),
+                                        label: Text(_getActionText(order.orderStatus)),
                                       ),
                                     ],
                                   ),
@@ -263,5 +325,49 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final amPm = date.hour >= 12 ? 'PM' : 'AM';
     final minute = date.minute.toString().padLeft(2, '0');
     return '$hour:$minute $amPm';
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return Icons.check_circle;
+      case 'CANCELLED':
+        return Icons.cancel;
+      default:
+        return Icons.history;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return Colors.green;
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return 'Delivered';
+      case 'CANCELLED':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  }
+
+  String _getActionText(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return 'View Receipt';
+      case 'CANCELLED':
+        return 'View Details';
+      default:
+        return 'View Details';
+    }
   }
 }

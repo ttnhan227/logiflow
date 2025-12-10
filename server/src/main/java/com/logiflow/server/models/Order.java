@@ -37,8 +37,7 @@ public class Order {
     @Column(name = "package_details", length = 500, nullable = true)
     private String packageDetails;
 
-    @Column(name = "delivery_fee", precision = 10, scale = 2)
-    private java.math.BigDecimal deliveryFee;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")

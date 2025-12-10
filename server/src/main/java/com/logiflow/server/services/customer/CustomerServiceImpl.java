@@ -98,9 +98,13 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public List<OrderSummaryDto> getMyOrders(String customerUsername) {
         User customer = getCurrentCustomer(customerUsername);
+        // Get all orders and sort by creation date (newest first)
         List<Order> orders = orderRepository.findByCustomerId(customer.getUserId());
 
-        return orders.stream().map(this::mapToOrderSummaryDto).collect(Collectors.toList());
+        return orders.stream()
+            .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // Newest first
+            .map(this::mapToOrderSummaryDto)
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -112,12 +116,12 @@ public class CustomerServiceImpl implements CustomerService {
         TrackOrderResponse response = new TrackOrderResponse();
         response.setOrderId(order.getOrderId());
         response.setOrderStatus(order.getOrderStatus().name());
+        response.setTripStatus(null); // Will set if trip exists
 
-        // Get trip status if order is assigned to a trip
-        List<StatusUpdateDto> statusHistory = List.of(
-            new StatusUpdateDto(order.getOrderStatus().name(), order.getCreatedAt(), "Order created")
-        );
+        // Build proper status history based on actual order status and timeline
+        List<StatusUpdateDto> statusHistory = buildOrderStatusHistory(order);
 
+        // Only set trip-related info if order is assigned and trip exists
         if (order.getTrip() != null) {
             Trip trip = order.getTrip();
             response.setTripStatus(trip.getStatus());
@@ -126,11 +130,17 @@ public class CustomerServiceImpl implements CustomerService {
             response.setActualPickupTime(trip.getActualDeparture());
             response.setActualDeliveryTime(trip.getActualArrival());
 
-            // Get driver info if trip has assignments
+            // Get driver and vehicle info only if assignment is active
             if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
-                TripAssignment assignment = trip.getTripAssignments().get(0);
-                if (assignment.getDriver() != null) {
-                    Driver driver = assignment.getDriver();
+                // Find the first ACTIVE assignment (not completed/declined)
+                TripAssignment activeAssignment = trip.getTripAssignments().stream()
+                    .filter(ta -> !"completed".equalsIgnoreCase(ta.getStatus()) &&
+                                  !"declined".equalsIgnoreCase(ta.getStatus()))
+                    .findFirst()
+                    .orElse(null);
+
+                if (activeAssignment != null && activeAssignment.getDriver() != null) {
+                    Driver driver = activeAssignment.getDriver();
                     response.setDriverName(driver.getUser().getUsername());
                     response.setDriverPhone(driver.getUser().getPhone());
                     response.setVehiclePlate(trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null);
@@ -139,18 +149,73 @@ public class CustomerServiceImpl implements CustomerService {
                     response.setCurrentLng(driver.getCurrentLocationLng());
                 }
             }
-
-            // Add trip status updates
-            statusHistory = List.of(
-                new StatusUpdateDto("CREATED", order.getCreatedAt(), "Order created"),
-                new StatusUpdateDto("ASSIGNED", trip.getCreatedAt(), "Order assigned to driver"),
-                new StatusUpdateDto("IN_TRANSIT", trip.getActualDeparture(), "Driver picked up the order"),
-                new StatusUpdateDto("DELIVERED", trip.getActualArrival(), "Order delivered successfully")
-            );
         }
 
         response.setStatusHistory(statusHistory);
         return response;
+    }
+
+    /**
+     * Build proper status history based on order status and timeline
+     * Follows the same logic as driver service for consistency
+     */
+    private List<StatusUpdateDto> buildOrderStatusHistory(Order order) {
+        String status = order.getOrderStatus().name();
+        List<StatusUpdateDto> history = new java.util.ArrayList<>();
+
+        // Always start with creation
+        history.add(new StatusUpdateDto("CREATED", order.getCreatedAt(), "Order created"));
+
+        // Add progress statuses based on order status
+        switch (status) {
+            case "ASSIGNED":
+                if (order.getTrip() != null) {
+                    history.add(new StatusUpdateDto("ASSIGNED",
+                        order.getTrip().getCreatedAt() != null ? order.getTrip().getCreatedAt() : order.getCreatedAt(),
+                        "Order assigned to driver"));
+                }
+                break;
+
+            case "IN_TRANSIT":
+                if (order.getTrip() != null) {
+                    history.add(new StatusUpdateDto("ASSIGNED",
+                        order.getTrip().getCreatedAt() != null ? order.getTrip().getCreatedAt() : order.getCreatedAt(),
+                        "Order assigned to driver"));
+                    if (order.getTrip().getActualDeparture() != null) {
+                        history.add(new StatusUpdateDto("IN_TRANSIT",
+                            order.getTrip().getActualDeparture(), "Driver picked up the order"));
+                    }
+                }
+                break;
+
+            case "DELIVERED":
+                if (order.getTrip() != null) {
+                    history.add(new StatusUpdateDto("ASSIGNED",
+                        order.getTrip().getCreatedAt() != null ? order.getTrip().getCreatedAt() : order.getCreatedAt(),
+                        "Order assigned to driver"));
+                    if (order.getTrip().getActualDeparture() != null) {
+                        history.add(new StatusUpdateDto("IN_TRANSIT",
+                            order.getTrip().getActualDeparture(), "Driver picked up the order"));
+                    }
+                    if (order.getTrip().getActualArrival() != null) {
+                        history.add(new StatusUpdateDto("DELIVERED",
+                            order.getTrip().getActualArrival(), "Order delivered successfully"));
+                    }
+                }
+                break;
+
+            case "CANCELLED":
+                history.add(new StatusUpdateDto("CANCELLED",
+                    LocalDateTime.now(), "Order was cancelled"));
+                break;
+
+            case "PENDING":
+            default:
+                // No additional status updates for pending orders
+                break;
+        }
+
+        return history;
     }
 
     @Override
@@ -220,12 +285,16 @@ public class CustomerServiceImpl implements CustomerService {
                     history.setOrderId(order.getOrderId());
                     history.setPickupAddress(order.getPickupAddress());
                     history.setDeliveryAddress(order.getDeliveryAddress());
+                    history.setPackageDetails(order.getPackageDetails());
+                    history.setWeightKg(order.getWeightKg());
+                    history.setPackageValue(order.getPackageValue());
+                    history.setDistanceKm(order.getDistanceKm());
                     history.setOrderStatus(order.getOrderStatus().name());
                     history.setCreatedAt(order.getCreatedAt());
                     if (order.getTrip() != null && order.getTrip().getActualArrival() != null) {
                         history.setDeliveredAt(order.getTrip().getActualArrival());
                     }
-                    history.setDeliveryFee(BigDecimal.ZERO); // Fee calculation not implemented yet
+                    history.setDeliveryFee(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO); // Use shippingFee
 
                     // Get driver info
                     if (order.getTrip() != null && order.getTrip().getTripAssignments() != null
@@ -249,10 +318,13 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setPickupAddress(order.getPickupAddress());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
+        dto.setWeightKg(order.getWeightKg());
+        dto.setPackageValue(order.getPackageValue());
+        dto.setDistanceKm(order.getDistanceKm());
         dto.setPriorityLevel(order.getPriorityLevel().name());
         dto.setOrderStatus(order.getOrderStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
-        dto.setDeliveryFee(BigDecimal.ZERO); // Fee calculation not implemented
+        dto.setDeliveryFee(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO); // Use shippingFee
 
         if (order.getTrip() != null) {
             Trip trip = order.getTrip();
@@ -284,9 +356,13 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setOrderId(order.getOrderId());
         dto.setPickupAddress(order.getPickupAddress());
         dto.setDeliveryAddress(order.getDeliveryAddress());
+        dto.setPackageDetails(order.getPackageDetails());
+        dto.setWeightKg(order.getWeightKg());
+        dto.setPackageValue(order.getPackageValue());
+        dto.setDistanceKm(order.getDistanceKm());
         dto.setOrderStatus(order.getOrderStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
-        dto.setDeliveryFee(BigDecimal.ZERO); // Fee calculation not implemented
+        dto.setDeliveryFee(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO); // Use shippingFee
 
         if (order.getTrip() != null) {
             dto.setTripStatus(order.getTrip().getStatus());

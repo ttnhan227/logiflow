@@ -276,6 +276,9 @@ public class DriverServiceImpl implements DriverService {
                 brief.setPickupAddress(o.getPickupAddress());
                 brief.setDeliveryAddress(o.getDeliveryAddress());
                 brief.setPackageDetails(o.getPackageDetails());
+                brief.setWeightKg(o.getWeightKg());
+                brief.setPackageValue(o.getPackageValue());
+                brief.setDistanceKm(o.getDistanceKm());
                 brief.setStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);
                 brief.setOrderStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);
                 brief.setPriority(o.getPriorityLevel() != null ? o.getPriorityLevel().name() : null);
@@ -310,9 +313,20 @@ public class DriverServiceImpl implements DriverService {
 
         deliveryConfirmationRepository.save(confirmation);
 
+        // Update all orders in this trip to 'DELIVERED' status
+        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+            trip.getOrders().forEach(order -> {
+                order.setOrderStatus(Order.OrderStatus.DELIVERED);
+            });
+        }
+
         // Update trip status to completed
         trip.setStatus("completed");
         trip.setActualArrival(LocalDateTime.now());
+
+        // Update assignment status to completed
+        tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "completed");
+
         tripRepository.save(trip);
 
         // Send notification

@@ -97,7 +97,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             .collect(Collectors.toList());
         
         // Calculate total revenue from delivered orders
-        BigDecimal totalRevenue = orderRepository.sumDeliveryFeeByStatus(Order.OrderStatus.DELIVERED);
+        BigDecimal totalRevenue = orderRepository.sumShippingFeeByStatus(Order.OrderStatus.DELIVERED);
         
         // Get fleet overview data
         int totalVehicles = (int) vehicleRepository.count();

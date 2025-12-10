@@ -18,6 +18,24 @@ class DriverService {
     }
   }
 
+  // Check if driver has any active trip assignments (assigned, accepted, or in_progress)
+  // Excludes completed trips/assignments to allow accepting new trips
+  Future<bool> hasActiveTripAssignment() async {
+    try {
+      final trips = await getMyTrips();
+      return trips.any((trip) =>
+        // Must be actively committed to trips (exclude just-assigned-offers)
+        // "accepted" status means driver committed to this trip - BLOCKS other assignments
+        trip.assignmentStatus?.toLowerCase() == 'accepted' ||
+        // Also include trips that are in progress regardless of assignment status
+        trip.status?.toLowerCase() == 'in_progress'
+        // Note: "assigned" scheduled trips are offers that haven't been accepted yet - don't block
+      );
+    } catch (e) {
+      return false; // If unable to check, assume no active assignment
+    }
+  }
+
   Future<DriverTripDetail> getMyTripDetail(int tripId) async {
     final response = await apiClient.get('/driver/me/trips/$tripId');
     if (response.statusCode == 200) {
@@ -76,6 +94,16 @@ class DriverService {
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to update trip status: ${response.body}');
+    }
+  }
+
+  Future<void> updateAssignmentStatus(int tripId, String assignmentStatus) async {
+    final response = await apiClient.post(
+      '/driver/me/trips/$tripId/assignment-status',
+      body: {'assignmentStatus': assignmentStatus},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update assignment status: ${response.body}');
     }
   }
 

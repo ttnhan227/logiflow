@@ -8,6 +8,9 @@ class Order extends Equatable {
   final String? pickupAddress;
   final String? deliveryAddress;
   final String? packageDetails;
+  final double? weightKg;
+  final double? packageValue;
+  final double? distanceKm;
   final String? priorityLevel;
   final String? orderStatus;
   final String? tripStatus;
@@ -29,6 +32,9 @@ class Order extends Equatable {
     this.pickupAddress,
     this.deliveryAddress,
     this.packageDetails,
+    this.weightKg,
+    this.packageValue,
+    this.distanceKm,
     this.priorityLevel,
     this.orderStatus,
     this.tripStatus,
@@ -52,6 +58,9 @@ class Order extends Equatable {
       pickupAddress: json['pickupAddress'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
+      weightKg: json['weightKg']?.toDouble(),
+      packageValue: json['packageValue']?.toDouble(),
+      distanceKm: json['distanceKm']?.toDouble(),
       priorityLevel: json['priorityLevel'],
       orderStatus: json['orderStatus'],
       tripStatus: json['tripStatus'],
@@ -76,6 +85,9 @@ class Order extends Equatable {
       'pickupAddress': pickupAddress,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
+      'weightKg': weightKg,
+      'packageValue': packageValue,
+      'distanceKm': distanceKm,
       'priorityLevel': priorityLevel,
       'orderStatus': orderStatus,
       'tripStatus': tripStatus,
@@ -100,6 +112,9 @@ class Order extends Equatable {
     pickupAddress,
     deliveryAddress,
     packageDetails,
+    weightKg,
+    packageValue,
+    distanceKm,
     priorityLevel,
     orderStatus,
     tripStatus,
@@ -174,6 +189,10 @@ class OrderSummary extends Equatable {
   final int orderId;
   final String pickupAddress;
   final String deliveryAddress;
+  final String? packageDetails;
+  final double? weightKg;
+  final double? packageValue;
+  final double? distanceKm;
   final String orderStatus;
   final String? tripStatus;
   final DateTime createdAt;
@@ -184,6 +203,10 @@ class OrderSummary extends Equatable {
     required this.orderId,
     required this.pickupAddress,
     required this.deliveryAddress,
+    this.packageDetails,
+    this.weightKg,
+    this.packageValue,
+    this.distanceKm,
     required this.orderStatus,
     this.tripStatus,
     required this.createdAt,
@@ -196,6 +219,10 @@ class OrderSummary extends Equatable {
       orderId: json['orderId'],
       pickupAddress: json['pickupAddress'],
       deliveryAddress: json['deliveryAddress'],
+      packageDetails: json['packageDetails'],
+      weightKg: json['weightKg']?.toDouble(),
+      packageValue: json['packageValue']?.toDouble(),
+      distanceKm: json['distanceKm']?.toDouble(),
       orderStatus: json['orderStatus'],
       tripStatus: json['tripStatus'],
       createdAt: DateTime.parse(json['createdAt']),
@@ -209,6 +236,10 @@ class OrderSummary extends Equatable {
     orderId,
     pickupAddress,
     deliveryAddress,
+    packageDetails,
+    weightKg,
+    packageValue,
+    distanceKm,
     orderStatus,
     tripStatus,
     createdAt,

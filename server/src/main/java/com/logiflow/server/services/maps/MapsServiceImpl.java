@@ -14,6 +14,7 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 /**
@@ -249,8 +250,8 @@ public class MapsServiceImpl implements MapsService {
 
     /**
      * Calculate distance and duration between two addresses
-     * First geocodes both addresses, then calculates route distance/duration using OSRM
-     * 
+     * Uses coordinate mapping for known addresses to avoid Nominatim calls
+     *
      * @param originAddress Origin address
      * @param destinationAddress Destination address
      * @return DistanceResultDto or null if calculation fails
@@ -262,15 +263,15 @@ public class MapsServiceImpl implements MapsService {
             return null;
         }
 
-        // Step 1: Geocode both addresses
-        GeocodeResultDto origin = geocodeAddress(originAddress);
-        GeocodeResultDto destination = geocodeAddress(destinationAddress);
+        // Step 1: Try to resolve addresses using local coordinate mapping
+        GeocodeResultDto origin = resolveKnownAddress(originAddress);
+        GeocodeResultDto destination = resolveKnownAddress(destinationAddress);
 
         if (origin == null || destination == null) {
-            return null;
+            return null; // Unknown addresses - return null instead of failing
         }
 
-        // Step 2: Calculate distance using OSRM (no need for geometry, just distance/duration)
+        // Step 2: Calculate distance using OSRM with known coordinates
         DirectionsResultDto directions = getDirections(
             origin.getLatitude().toString(),
             origin.getLongitude().toString(),
@@ -290,6 +291,102 @@ public class MapsServiceImpl implements MapsService {
             directions.getTotalDuration(),
             directions.getDurationSeconds()
         );
+    }
+
+    /**
+     * Resolve known addresses to coordinates to avoid Nominatim dependency
+     * @param address The address to resolve
+     * @return GeocodeResultDto or null if not recognized
+     */
+    private GeocodeResultDto resolveKnownAddress(String address) {
+        if (address == null || address.trim().isEmpty()) {
+            return null;
+        }
+
+        String trimmed = address.trim().toLowerCase();
+
+        // Ho Chi Minh City coordinates (approximate center)
+        if (trimmed.contains("ho chi minh") || trimmed.contains("hcm") || trimmed.contains("sai gon")) {
+            // Districts with their rough coordinates
+            if (trimmed.contains("district 1")) {
+                return new GeocodeResultDto("Ho Chi Minh City, District 1", 10.7744, 106.6944);
+            } else if (trimmed.contains("district 7")) {
+                return new GeocodeResultDto("Ho Chi Minh City, District 7", 10.7306, 106.7216);
+            } else if (trimmed.contains("go vap")) {
+                return new GeocodeResultDto("Ho Chi Minh City, Go Vap District", 10.8333, 106.6667);
+            } else if (trimmed.contains("tan binh")) {
+                return new GeocodeResultDto("Ho Chi Minh City, Tan Binh District", 10.8000, 106.6500);
+            }
+            // Default to HCM center for district 1
+            return new GeocodeResultDto("Ho Chi Minh City", 10.7744, 106.6944);
+        }
+
+        // Ha Noi coordinates (approximate center)
+        if (trimmed.contains("ha noi") || trimmed.contains("hanoi")) {
+            if (trimmed.contains("hoan kiem")) {
+                return new GeocodeResultDto("Ha Noi, Hoan Kiem District", 21.0285, 105.8538);
+            } else if (trimmed.contains("dong da")) {
+                return new GeocodeResultDto("Ha Noi, Dong Da District", 21.0167, 105.8333);
+            }
+            return new GeocodeResultDto("Ha Noi", 21.0285, 105.8342);
+        }
+
+        // Da Nang coordinates (approximate center)
+        if (trimmed.contains("da nang") || trimmed.contains("danang")) {
+            if (trimmed.contains("hai chau")) {
+                return new GeocodeResultDto("Da Nang, Hai Chau District", 16.0678, 108.2208);
+            } else if (trimmed.contains("son tra")) {
+                return new GeocodeResultDto("Da Nang, Son Tra District", 16.0833, 108.2333);
+            }
+            return new GeocodeResultDto("Da Nang", 16.0678, 108.2208);
+        }
+
+        // Can Tho coordinates
+        if (trimmed.contains("can tho")) {
+            if (trimmed.contains("ninh kieu")) {
+                return new GeocodeResultDto("Can Tho City, Ninh Kieu District", 10.0333, 105.7833);
+            }
+            return new GeocodeResultDto("Can Tho City", 10.0333, 105.7833);
+        }
+
+        // Hai Phong coordinates
+        if (trimmed.contains("hai phong")) {
+            if (trimmed.contains("ngo quyen")) {
+                return new GeocodeResultDto("Hai Phong, Ngo Quyen District", 20.8500, 106.6833);
+            }
+            return new GeocodeResultDto("Hai Phong", 20.8447, 106.6881);
+        }
+
+        // Not recognized - return null
+        return null;
+    }
+
+    /**
+     * Get basic address suggestions based on common Vietnamese locations
+     * Returns static suggestions to avoid Nominatim usage policy violations
+     *
+     * @param query Partial address string to search for (ignored for basic implementation)
+     * @param limit Maximum number of suggestions to return
+     * @return List of common address suggestions
+     */
+    @Override
+    public List<String> getBasicAddressSuggestions(String query, int limit) {
+        List<String> suggestions = Arrays.asList(
+            "Ho Chi Minh City, District 1",
+            "Ho Chi Minh City, District 7",
+            "Ho Chi Minh City, Go Vap District",
+            "Ho Chi Minh City, Tan Binh District",
+            "Ha Noi, Hoan Kiem District",
+            "Ha Noi, Dong Da District",
+            "Da Nang, Hai Chau District",
+            "Da Nang, Son Tra District",
+            "Can Tho City, Ninh Kieu District",
+            "Hai Phong, Ngo Quyen District"
+        );
+
+        return suggestions.stream()
+            .limit(Math.min(limit, suggestions.size()))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -385,4 +482,3 @@ public class MapsServiceImpl implements MapsService {
         throw new IllegalArgumentException("Invalid location format: " + loc);
     }
 }
-

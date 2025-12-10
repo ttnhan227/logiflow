@@ -22,6 +22,23 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
     _loadOrders();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Follow driver screen pattern - refresh when returning to this screen
+    // Customers should see updated order status after navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isLoading) {
+        // Add a small delay to ensure navigation is fully complete
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            _loadOrders();
+          }
+        });
+      }
+    });
+  }
+
   Future<void> _loadOrders() async {
     try {
       setState(() {
@@ -31,10 +48,32 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
 
       final allOrders = await customerService.getMyOrders();
       // Filter to show only ACTIVE orders (PENDING, ASSIGNED, IN_TRANSIT)
+      // Follow driver screen pattern for status checking
       final activeOrders = allOrders.where((order) {
-        final status = order.orderStatus.toUpperCase();
-        return status == 'PENDING' || status == 'ASSIGNED' || status == 'IN_TRANSIT';
+        final orderStatus = order.orderStatus?.toUpperCase() ?? '';
+        return orderStatus == 'PENDING' || orderStatus == 'ASSIGNED' || orderStatus == 'IN_TRANSIT';
       }).toList();
+
+      // Sort: IN_TRANSIT first, then ASSIGNED, then PENDING
+      activeOrders.sort((a, b) {
+        final statusA = a.orderStatus?.toUpperCase() ?? '';
+        final statusB = b.orderStatus?.toUpperCase() ?? '';
+
+        int getStatusPriority(String status) {
+          switch (status) {
+            case 'IN_TRANSIT':
+              return 1; // Highest priority
+            case 'ASSIGNED':
+              return 2;
+            case 'PENDING':
+              return 3;
+            default:
+              return 4;
+          }
+        }
+
+        return getStatusPriority(statusA).compareTo(getStatusPriority(statusB));
+      });
 
       setState(() => _orders = activeOrders);
     } catch (e) {
@@ -171,6 +210,44 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 12),
+                                    // Specifications Row - Keep essential only
+                                    Row(
+                                      children: [
+                                        if (order.weightKg != null)
+                                          Expanded(
+                                            child: Text(
+                                              '${order.weightKg!.toStringAsFixed(1)}kg',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                        if (order.distanceKm != null)
+                                          Expanded(
+                                            child: Text(
+                                              '${order.distanceKm!.toStringAsFixed(0)}km',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                        if (order.packageValue != null)
+                                          Expanded(
+                                            child: Text(
+                                              'VND ${order.packageValue!.toStringAsFixed(0)}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Footer Row
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
@@ -182,9 +259,9 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                           ),
                                         ),
                                         Text(
-                                          '\$${order.deliveryFee.toStringAsFixed(2)}',
+                                          'Shipping Fee: VND ${order.deliveryFee.toStringAsFixed(2)}',
                                           style: const TextStyle(
-                                            fontSize: 16,
+                                            fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.green,
                                           ),
@@ -281,6 +358,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     _loadOrderData();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Follow driver screen pattern - refresh when returning to this screen
+    // Customers should see updated order tracking status
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Force refresh of order data when returning to screen
+        setState(() {
+          _loadOrderData();
+        });
+      }
+    });
+  }
+
   void _loadOrderData() {
     _orderFuture = Future.wait([
       customerService.getOrderById(widget.orderId),
@@ -371,7 +463,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               Text(order.packageDetails!),
             ],
             const SizedBox(height: 16),
-            _buildInfoRow('Delivery Fee', '\$${order.deliveryFee?.toStringAsFixed(2) ?? '0.00'}'),
+            if (order.weightKg != null)
+              _buildInfoRow('Weight', '${order.weightKg?.toStringAsFixed(1)} kg'),
+            if (order.packageValue != null)
+              _buildInfoRow('Package Value', 'VND ${order.packageValue?.toStringAsFixed(0)}'),
+            if (order.distanceKm != null)
+              _buildInfoRow('Distance', '${order.distanceKm?.toStringAsFixed(1)} km'),
+            _buildInfoRow('Delivery Fee', 'VND ${order.deliveryFee?.toStringAsFixed(2) ?? '0.00'}'),
           ],
         ),
       ),

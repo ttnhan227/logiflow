@@ -5,8 +5,9 @@ import '../../../services/maps/maps_service.dart';
 
 class TripMapView extends StatefulWidget {
   final Map<String, dynamic> tripDetail;
+  final bool compact;
 
-  const TripMapView({super.key, required this.tripDetail});
+  const TripMapView({super.key, required this.tripDetail, this.compact = false});
 
   @override
   State<TripMapView> createState() => _TripMapViewState();
@@ -117,6 +118,52 @@ class _TripMapViewState extends State<TripMapView> {
     final destLng = routeData['destinationLng'] is String 
         ? double.parse(routeData['destinationLng']) 
         : routeData['destinationLng'].toDouble();
+
+    if (widget.compact) {
+      return SizedBox(
+        height: 300,
+        child: _loadingRoute
+          ? const Center(child: CircularProgressIndicator())
+          : FlutterMap(
+              options: MapOptions(
+                initialCenter: LatLng((originLat + destLat) / 2, (originLng + destLng) / 2),
+                initialZoom: 11.0,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.logiflow.client_mobile',
+                ),
+                if (routePoints.isNotEmpty)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: routePoints,
+                        strokeWidth: 4.0,
+                        color: Colors.blue,
+                      ),
+                    ],
+                  ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: LatLng(originLat, originLng),
+                      width: 40,
+                      height: 40,
+                      child: const Icon(Icons.location_on, color: Colors.green, size: 40),
+                    ),
+                    Marker(
+                      point: LatLng(destLat, destLng),
+                      width: 40,
+                      height: 40,
+                      child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+      );
+    }
 
     return Card(
       child: Column(

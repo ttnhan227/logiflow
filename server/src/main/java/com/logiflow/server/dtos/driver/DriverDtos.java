@@ -75,6 +75,9 @@ public class DriverDtos {
         private String pickupAddress;
         private String deliveryAddress;
         private String packageDetails;
+        private BigDecimal weightKg;
+        private BigDecimal packageValue;
+        private BigDecimal distanceKm;
         private String status;
         private String orderStatus;
         private String priority;

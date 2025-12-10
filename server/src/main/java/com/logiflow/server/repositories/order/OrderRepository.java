@@ -24,11 +24,11 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = :status")
     int countByOrderStatus(@Param("status") Order.OrderStatus status);
     
-    @Query("SELECT COALESCE(SUM(o.deliveryFee), 0) FROM Order o WHERE o.orderStatus = :status")
-    java.math.BigDecimal sumDeliveryFeeByStatus(@Param("status") Order.OrderStatus status);
-    
-    @Query("SELECT COALESCE(SUM(o.deliveryFee), 0) FROM Order o WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
-    java.math.BigDecimal sumDeliveryFeeByStatusAndDateRange(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+    @Query("SELECT COALESCE(SUM(o.shippingFee), 0) FROM Order o WHERE o.orderStatus = :status")
+    java.math.BigDecimal sumShippingFeeByStatus(@Param("status") Order.OrderStatus status);
+
+    @Query("SELECT COALESCE(SUM(o.shippingFee), 0) FROM Order o WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
+    java.math.BigDecimal sumShippingFeeByStatusAndDateRange(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
     
     @Query("SELECT o FROM Order o WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
     List<Order> findByOrderStatusAndDateRange(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);

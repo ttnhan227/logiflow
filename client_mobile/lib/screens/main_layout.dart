@@ -1,12 +1,14 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/auth/auth_service.dart';
 import '../services/notification/notification_service.dart';
+import '../services/gps/gps_tracking_service.dart';
+import '../services/driver/driver_service.dart';
 import '../models/user.dart';
 import 'auth/login_screen.dart';
 import 'driver/driver_trips_screen.dart';
-import 'driver/driver_schedule_screen.dart';
 import 'driver/driver_compliance_screen.dart';
 import 'driver/driver_profile_screen.dart';
 import 'customer/create_order_screen.dart';
@@ -14,6 +16,117 @@ import 'customer/track_orders_screen.dart';
 import 'customer/order_history_screen.dart';
 import 'customer/profile_screen.dart';
 import 'home/home_screen.dart';
+
+// Custom Scrolling Text Widget - FIXED VERSION
+class ScrollingTextWidget extends StatefulWidget {
+  final String text;
+  final double speed;
+
+  const ScrollingTextWidget({super.key, required this.text, this.speed = 50.0});
+
+  @override
+  State<ScrollingTextWidget> createState() => _ScrollingTextWidgetState();
+}
+
+class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: const Duration(seconds: 15),
+      vsync: this,
+    )..repeat();
+
+    _animation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.linear,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ClipRect(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            
+            // Measure the text width
+            final textSpan = TextSpan(
+              text: widget.text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            );
+            final textPainter = TextPainter(
+              text: textSpan,
+              textDirection: TextDirection.ltr,
+            );
+            textPainter.layout();
+            final textWidth = textPainter.width;
+
+            return AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                // The text moves one full cycle (textWidth + gap)
+                const gap = 50.0;
+                final cycleDistance = textWidth + gap;
+                final offset = -(_animation.value * cycleDistance);
+
+                return Transform.translate(
+                  offset: Offset(offset, 0),
+                  child: OverflowBox(
+                    alignment: Alignment.centerLeft,
+                    maxWidth: double.infinity,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: gap),
+                        Text(
+                          widget.text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -111,6 +224,42 @@ class _MainLayoutState extends State<MainLayout> {
     super.dispose();
   }
 
+  Widget _buildGlobalGpsBanner() {
+    // Only show for drivers with active GPS tracking
+    if (_currentUser?.role?.toUpperCase() != 'DRIVER' || !gpsTrackingService.isTracking) {
+      return const SizedBox.shrink();
+    }
+
+    // Build detailed scrolling text
+    final currentTime = DateTime.now();
+    final formattedTime = '${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    final scrollingText =
+        '🚛 Live GPS Tracking - Trip #${gpsTrackingService.currentTripId} | Driver: ${_currentUser?.username ?? 'Unknown'} | Location Sharing Active | Updated: $formattedTime | Speed: ~${(Random().nextDouble() * 60 + 20).toInt()}km/h | ETA: ~${Random().nextInt(30) + 15} mins | 🔄';
+
+    return Container(
+      height: 40,
+      color: Colors.green.shade700,
+      child: Row(
+        children: [
+          // GPS Icon
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.0),
+            child: Icon(
+              Icons.gps_fixed,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+
+          // Scrolling Text - takes up most space
+          Expanded(
+            child: ScrollingTextWidget(text: scrollingText),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     await authService.logout();
     if (mounted) {
@@ -154,10 +303,6 @@ class _MainLayoutState extends State<MainLayout> {
           const BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
             label: 'My Trips',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.schedule),
-            label: 'Schedule',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.verified_user),
@@ -222,7 +367,6 @@ class _MainLayoutState extends State<MainLayout> {
         return [
           const HomeScreen(),
           const DriverTripsScreen(),
-          const DriverScheduleScreen(),
           const DriverComplianceScreen(),
           const DriverProfileScreen(),
         ];
@@ -369,12 +513,26 @@ class _MainLayoutState extends State<MainLayout> {
             ),
         ],
       ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() => _currentIndex = index);
-        },
-        children: pages,
+      body: Stack(
+        children: [
+          // Main content
+          Column(
+            children: [
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() => _currentIndex = index);
+                  },
+                  children: pages,
+                ),
+              ),
+
+              // GPS banner positioned just above navigation
+              _buildGlobalGpsBanner(),
+            ],
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

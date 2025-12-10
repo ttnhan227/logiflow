@@ -8,6 +8,7 @@ import com.logiflow.server.dtos.maps.OptimizedRouteDto;
 import com.logiflow.server.services.maps.MapsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 /**
  * Controller for map-related operations using OpenStreetMap services.
@@ -60,6 +61,25 @@ public class MapsController {
     }
 
     /**
+     * Get basic address suggestions based on common Vietnamese locations
+     * GET /api/maps/suggest-addresses?query=...&limit=10
+     *
+     * @param query Partial address string to search for (ignored in basic implementation)
+     * @param limit Optional maximum number of suggestions (default 10)
+     */
+    @GetMapping("/suggest-addresses")
+    public ResponseEntity<List<String>> suggestAddresses(
+            @RequestParam String query,
+            @RequestParam(required = false, defaultValue = "10") int limit) {
+        try {
+            List<String> suggestions = mapsService.getBasicAddressSuggestions(query, limit);
+            return ResponseEntity.ok(suggestions);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
      * Get route directions between two points
      * GET /api/maps/directions?originLat=...&originLng=...&destLat=...&destLng=...&includeGeometry=false
      * 
@@ -106,4 +126,3 @@ public class MapsController {
         }
     }
 }
-

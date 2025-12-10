@@ -152,6 +152,12 @@ public class TripServiceImpl implements TripService {
         if (driver.getStatus() != null && !driver.getStatus().equalsIgnoreCase("available")) {
             throw new RuntimeException("Driver is not available (status: " + driver.getStatus() + ")");
         }
+
+        // Check if driver already has an active trip assignment
+        Long activeAssignmentsCount = tripAssignmentRepository.countActiveAssignmentsByDriverId(request.getDriverId());
+        if (activeAssignmentsCount != null && activeAssignmentsCount > 0) {
+            throw new RuntimeException("Driver already has an active trip assignment. Drivers can only have one active trip at a time.");
+        }
         if (vehicle == null) {
             throw new RuntimeException("Vehicle is required for trip assignment");
         }
@@ -291,4 +297,3 @@ public class TripServiceImpl implements TripService {
         };
     }
 }
-

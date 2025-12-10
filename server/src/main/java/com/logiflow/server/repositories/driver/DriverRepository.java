@@ -19,4 +19,7 @@ public interface DriverRepository extends JpaRepository<Driver, Integer> {
     List<Driver> findAvailableDrivers();
 
     List<Driver> findByStatus(String status);
+
+    @Query("SELECT DISTINCT d FROM Driver d JOIN FETCH d.user ORDER BY d.driverId")
+    List<Driver> findAllDriversWithUser();
 }
