@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://192.168.1.22:8080/api';
+  static const String baseUrl = 'http://172.16.1.63:8080/api';
   static String get baseImageUrl => baseUrl.replaceFirst('/api', '');
   final http.Client _client = http.Client();
 

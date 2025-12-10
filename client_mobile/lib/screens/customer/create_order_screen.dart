@@ -235,6 +235,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         pickupAddress: _pickupAddressController.text.trim(),
         deliveryAddress: _deliveryAddressController.text.trim(),
         packageDetails: _packageDetailsController.text.trim(),
+        weightKg: double.tryParse(_weightController.text.trim()),
+        packageValue: double.tryParse(_packageValueController.text.trim()),
         priority: _priority,
       );
 

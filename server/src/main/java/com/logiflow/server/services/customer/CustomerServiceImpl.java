@@ -1,11 +1,13 @@
 package com.logiflow.server.services.customer;
 
 import com.logiflow.server.dtos.customer.CustomerDtos.*;
+import com.logiflow.server.dtos.maps.DistanceResultDto;
 import com.logiflow.server.models.*;
 import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.websocket.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -24,17 +26,20 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
     private final TripRepository tripRepository;
+    private final MapsService mapsService;
     private final NotificationService notificationService;
 
     public CustomerServiceImpl(UserRepository userRepository,
                              CustomerRepository customerRepository,
                              OrderRepository orderRepository,
                              TripRepository tripRepository,
+                             MapsService mapsService,
                              NotificationService notificationService) {
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.orderRepository = orderRepository;
         this.tripRepository = tripRepository;
+        this.mapsService = mapsService;
         this.notificationService = notificationService;
     }
 
@@ -60,7 +65,10 @@ public class CustomerServiceImpl implements CustomerService {
         order.setPickupAddress(request.getPickupAddress());
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setPackageDetails(request.getPackageDetails());
+        order.setWeightKg(request.getWeightKg());
+        order.setPackageValue(request.getPackageValue());
         order.setCreatedBy(customer);
+        order.setCustomer(customer);
 
         // Set priority level
         if ("URGENT".equalsIgnoreCase(request.getPriority())) {
@@ -71,6 +79,9 @@ public class CustomerServiceImpl implements CustomerService {
 
         // Set default status
         order.setOrderStatus(Order.OrderStatus.PENDING);
+
+        // Calculate distance and shipping fee
+        calculateOrderDistanceAndFee(order);
 
         Order savedOrder = orderRepository.save(order);
 
@@ -370,5 +381,67 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         return dto;
+    }
+
+    /**
+     * Calculate the distance and shipping fee for an order
+     */
+    private void calculateOrderDistanceAndFee(Order order) {
+        try {
+            // Try to calculate distance using MapsService
+            DistanceResultDto distanceResult = mapsService.calculateDistance(
+                order.getPickupAddress(),
+                order.getDeliveryAddress()
+            );
+
+            if (distanceResult != null) {
+                // Set distance in kilometers (convert from meters)
+                BigDecimal distanceKm = BigDecimal.valueOf(distanceResult.getDistanceMeters())
+                    .divide(BigDecimal.valueOf(1000), 2, BigDecimal.ROUND_HALF_UP);
+                order.setDistanceKm(distanceKm);
+
+                // Calculate shipping fee
+                BigDecimal fee = calculateShippingFee(
+                    distanceKm,
+                    order.getWeightKg() != null ? order.getWeightKg() : BigDecimal.ZERO,
+                    order.getPriorityLevel()
+                );
+                order.setShippingFee(fee);
+            } else {
+                System.err.println("Failed to calculate distance for order between: " +
+                    order.getPickupAddress() + " -> " + order.getDeliveryAddress());
+                // Set default values or leave null
+                order.setDistanceKm(null);
+                order.setShippingFee(null);
+            }
+        } catch (Exception e) {
+            System.err.println("Error calculating distance and fee: " + e.getMessage());
+            // Leave distance and fee as null if calculation fails
+        }
+    }
+
+    /**
+     * Calculate shipping fee based on distance, weight, and priority
+     */
+    private BigDecimal calculateShippingFee(BigDecimal distanceKm, BigDecimal weightKg, Order.PriorityLevel priority) {
+        // Rate constants (should match frontend calculations)
+        BigDecimal baseFee = BigDecimal.valueOf(50000); // VND base fee
+        BigDecimal distanceRate = BigDecimal.valueOf(2500); // VND per km
+        BigDecimal weightRate = BigDecimal.valueOf(2000); // VND per kg
+
+        // Calculate distance and weight components
+        BigDecimal distanceFee = distanceKm.multiply(distanceRate);
+        BigDecimal weightFee = weightKg.multiply(weightRate);
+
+        // Total fee before priority multiplier
+        BigDecimal totalFee = baseFee.add(distanceFee).add(weightFee);
+
+        // Apply urgent multiplier if needed
+        if (priority == Order.PriorityLevel.URGENT) {
+            totalFee = totalFee.multiply(BigDecimal.valueOf(1.3));
+        }
+
+        // Round to whole VND
+        return totalFee.setScale(0, BigDecimal.ROUND_HALF_UP);
     }
 }
