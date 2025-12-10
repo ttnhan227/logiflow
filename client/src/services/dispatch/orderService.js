@@ -29,11 +29,23 @@ const downloadTemplate = async (format = 'csv') => {
   return response.data; // blob
 };
 
+const getOrderById = async (orderId) => {
+  const response = await api.get(`${basePath}/orders/${orderId}`);
+  return response.data;
+};
+
+const updateOrder = async (orderId, payload) => {
+  const response = await api.put(`${basePath}/orders/${orderId}`, payload);
+  return response.data;
+};
+
 const orderService = {
   getOrders,
   createOrder,
   importOrders,
   downloadTemplate,
+  getOrderById,
+  updateOrder,
 };
 
 export default orderService;

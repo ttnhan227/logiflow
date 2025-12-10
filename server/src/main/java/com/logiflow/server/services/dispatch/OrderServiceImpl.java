@@ -14,6 +14,7 @@ import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.dispatch.ShippingFeeCalculator;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.utils.OrderFileParser;
+import com.logiflow.server.websocket.NotificationService;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 import org.apache.poi.ss.usermodel.*;
@@ -55,6 +56,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired(required = false)
     private MapsService mapsService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -179,6 +183,18 @@ public class OrderServiceImpl implements OrderService {
 
         Order orderWithRelations = orderRepository.findByIdWithRelations(savedOrder.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve saved order"));
+
+        // Send notification to dispatchers about new order
+        try {
+            notificationService.notifyNewOrder(
+                savedOrder.getOrderId(),
+                request.getCustomerName(),
+                request.getPriorityLevel().name()
+            );
+        } catch (Exception e) {
+            // Log error but don't fail the order creation
+            System.err.println("Failed to send notification for new order: " + e.getMessage());
+        }
 
         return OrderDto.fromOrder(orderWithRelations);
     }
@@ -466,4 +482,3 @@ public class OrderServiceImpl implements OrderService {
     }
 
 }
-

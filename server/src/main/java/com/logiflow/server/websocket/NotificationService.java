@@ -102,6 +102,21 @@ public class NotificationService {
         sendAdminNotification(notification);
     }
 
+    /**
+     * Send notification about new order to all dispatchers
+     */
+    public void notifyNewOrder(Integer orderId, String customerName, String priority) {
+        AdminNotificationDto notification = AdminNotificationDto.of(
+            "NEW_ORDER",
+            "URGENT".equalsIgnoreCase(priority) ? "WARNING" : "INFO",
+            "New Order Received",
+            "New " + priority + " order from " + customerName,
+            "/dispatch/orders/" + orderId,
+            "View Order"
+        );
+        sendAdminNotification(notification);
+    }
+
     public void sendCustomerNotification(Integer customerId, String type, String message) {
         String destination = "/topic/customer/" + customerId;
         TripNotificationDto notification = new TripNotificationDto();

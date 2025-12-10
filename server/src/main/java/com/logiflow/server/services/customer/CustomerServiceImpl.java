@@ -94,6 +94,17 @@ public class CustomerServiceImpl implements CustomerService {
             "PENDING"
         );
 
+        // Send notification to dispatcher about new order from customer
+        try {
+            notificationService.notifyNewOrder(
+                savedOrder.getOrderId(),
+                savedOrder.getCustomerName(),
+                savedOrder.getPriorityLevel().toString()
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send dispatcher notification for new order: " + e.getMessage());
+        }
+
         return mapToOrderDto(savedOrder);
     }
 

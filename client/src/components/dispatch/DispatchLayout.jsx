@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { authService } from '../../services';
+import NotificationBell from '../common/NotificationBell';
 import './dispatch.css';
 
 const DispatchLayout = () => {
@@ -36,6 +37,12 @@ const DispatchLayout = () => {
             <Link to="/dispatch/trips" className="dispatch-nav-link">🚐 Trips</Link>
             <Link to="/dispatch/drivers" className="dispatch-nav-link">👥 Drivers</Link>
           </nav>
+
+          {user && (
+            <div className="dispatch-notifications-section">
+              <NotificationBell />
+            </div>
+          )}
 
           {user && (
             <div className="dispatch-user-section">

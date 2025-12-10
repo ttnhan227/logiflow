@@ -38,6 +38,7 @@ import ProfilePage from "./components/profile/ProfilePage";
 import ProfileEditPage from "./components/profile/ProfileEditPage";
 import OrdersPage from "./components/dispatch/OrdersPage";
 import OrderImportPage from "./components/dispatch/OrderImportPage";
+import DispatchOrderDetailPage from "./components/dispatch/DispatchOrderDetailPage";
 import AvailableDriversPage from './components/dispatch/AvailableDriversPage';
 import TripsPage from "./components/dispatch/TripsPage";
 import TripCreatePage from "./components/dispatch/TripCreatePage";
@@ -114,6 +115,11 @@ function App() {
           <Route path="/dispatch/orders/import" element={
             <ProtectedRoute requiredRole="DISPATCHER">
               <OrderImportPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/orders/:orderId" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <DispatchOrderDetailPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/trips" element={

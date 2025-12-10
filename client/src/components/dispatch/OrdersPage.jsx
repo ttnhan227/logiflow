@@ -165,10 +165,15 @@ const OrdersPage = () => {
                     {order.distanceKm && <span>📏 {order.distanceKm} km</span>}
                     {order.weightKg && <span>⚖️ {order.weightKg} kg</span>}
                   </div>
-                  <div className="footer-price">
-                    {order.shippingFee 
-                      ? `${order.shippingFee.toLocaleString()} VND` 
-                      : 'TBD'}
+                  <div className="footer-actions">
+                    <Link to={`/dispatch/orders/${order.orderId}`} className="btn-details">
+                      View Details
+                    </Link>
+                    <div className="footer-price">
+                      {order.shippingFee
+                        ? `${order.shippingFee.toLocaleString()} VND`
+                        : 'TBD'}
+                    </div>
                   </div>
                 </div>
               </div>

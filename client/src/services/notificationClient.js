@@ -16,7 +16,12 @@ class NotificationClient {
     }
 
     return new Promise((resolve, reject) => {
-      const socket = new SockJS('http://localhost:8080/ws/notifications');
+      // Use the same backend URL as API, but for WebSocket
+      const backendUrl = 'http://localhost:8080'; // Match api.js baseURL
+      const socketUrl = `${backendUrl}/ws/notifications`;
+      
+      console.log('Connecting to SockJS:', socketUrl);
+      const socket = new SockJS(socketUrl);
       
       this.client = new Client({
         webSocketFactory: () => socket,
@@ -29,9 +34,16 @@ class NotificationClient {
           this.isConnected = true;
           
           // Subscribe to admin notifications topic
+          console.log('Subscribing to /topic/admin/notifications');
           const subscription = this.client.subscribe('/topic/admin/notifications', (message) => {
-            const notification = JSON.parse(message.body);
-            this.notifyListeners(notification);
+            console.log('Received message:', message.body);
+            try {
+              const notification = JSON.parse(message.body);
+              console.log('Parsed notification:', notification);
+              this.notifyListeners(notification);
+            } catch (e) {
+              console.error('Error parsing notification:', e);
+            }
           });
           
           this.subscriptions.push(subscription);
@@ -47,10 +59,24 @@ class NotificationClient {
         onDisconnect: () => {
           console.log('Disconnected from notification service');
           this.isConnected = false;
+        },
+        
+        onWebSocketError: (error) => {
+          console.error('WebSocket error:', error);
+          this.isConnected = false;
+          reject(error);
         }
       });
 
       this.client.activate();
+      
+      // Timeout after 5 seconds if connection not established
+      setTimeout(() => {
+        if (!this.isConnected) {
+          console.error('Connection timeout');
+          reject(new Error('WebSocket connection timeout'));
+        }
+      }, 5000);
     });
   }
 
@@ -73,7 +99,7 @@ class NotificationClient {
   }
 
   notifyListeners(notification) {
-    this.listeners.forEach(callback => {
+this.listeners.forEach(callback => {
       try {
         callback(notification);
       } catch (error) {
