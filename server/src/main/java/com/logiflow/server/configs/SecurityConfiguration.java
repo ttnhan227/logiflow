@@ -18,7 +18,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
     public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
@@ -27,8 +29,6 @@ public class SecurityConfiguration {
     public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -39,20 +39,24 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {})
-                .authorizeHttpRequests(
-                        (authorize) -> authorize
-                                .requestMatchers("/api/auth/**").permitAll()
-                                .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
-                                .requestMatchers("/uploads/**").permitAll()
-                                .requestMatchers("/api/uploads/**").authenticated()
-                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/api/dispatch/**").hasRole("DISPATCHER")
-                                .requestMatchers("/api/driver/**").hasRole("DRIVER")
-                                .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                                .requestMatchers("/api/user/**").authenticated()
-                                .anyRequest().authenticated()
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/uploads/**").authenticated()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/dispatch/**").hasRole("DISPATCHER")
+                        .requestMatchers("/api/driver/**").hasRole("DRIVER")
+
+                        // mở RIÊNG API driver performance cho dev
+                        .requestMatchers("/api/manager/operations/drivers/performance").permitAll()
+
+                        .requestMatchers("/api/manager/**").hasRole("MANAGER")
+                        .requestMatchers("/api/user/**").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

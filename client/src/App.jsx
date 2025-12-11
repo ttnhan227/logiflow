@@ -18,6 +18,12 @@ import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 import ProfilePage from "./components/profile/ProfilePage";
 import ProfileEditPage from "./components/profile/ProfileEditPage";
+import DriverManager from "./components/manager/DriverManager/DriverManager.jsx";
+import IssueReports from "./components/manager/IssueReports/IssueReports";
+import CompliancePage from "./components/manager/Compliance/CompliancePage";
+import RouteAnalyticsPage from "./components/manager/RouteAnalytics/RouteAnalyticsPage";
+import AlertsPage from "./components/manager/Alerts/AlertsPage";
+import ManagerActivitiesPage from "./components/manager/Activities/ManagerActivitiesPage";
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -63,7 +69,16 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+
+            {/* Manager routes dưới MainLayout */}
+            <Route path="/manager/drivers" element={<DriverManager />} />
+            <Route path="/manager/issues" element={<IssueReports />} />
+            <Route path="/manager/compliance" element={<CompliancePage />} />
+            <Route path="/manager/analytics/routes" element={<RouteAnalyticsPage />} />
+            <Route path="/manager/alerts" element={<AlertsPage />} />
+            <Route path="/manager/activities" element={<ManagerActivitiesPage />} />
+
+            <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Route>

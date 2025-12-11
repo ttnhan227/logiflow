@@ -1,32 +1,61 @@
 package com.logiflow.server.services.manager;
 
-import com.logiflow.server.dtos.manager.ManagerDtos.*;
+import com.logiflow.server.dtos.manager.ManagerDtos;
 
 import java.time.LocalDate;
 import java.util.List;
 
 public interface ManagerService {
 
-    // DASHBOARD
-    ManagerOverviewDto getDashboardOverview(LocalDate startDate, LocalDate endDate);
+    // API 1: Driver performance
+    List<ManagerDtos.DriverPerformanceDto> getDriverPerformance(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 
-    // OPERATIONS
-    PerformanceSummaryDto getOperationsPerformance(LocalDate startDate, LocalDate endDate);
-    List<DriverPerformanceDto> getDriverPerformance(LocalDate startDate, LocalDate endDate);
-    FleetStatusDto getFleetStatus();
+    // API 2: Overall operations performance
+    ManagerDtos.OperationsPerformanceDto getOperationsPerformance(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 
-    // COMPLIANCE
-    ComplianceCheckResultDto checkCompliance();
+    // API 3: Fleet status
+    ManagerDtos.FleetStatusDto getFleetStatus();
 
-    // ANALYTICS
-    RouteSummaryOverviewDto getRouteSummary(LocalDate startDate, LocalDate endDate);
+    // API 4: Deliveries report (summary by day)
+    List<ManagerDtos.DeliveryReportItemDto> getDeliveriesReport(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 
-    // ALERTS
-    List<AlertDto> getAlerts();
+    // API 5: Compliance / Issues Report
+    List<ManagerDtos.IssueReportItemDto> getIssueReports(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 
-    // AUDIT
-    List<ManagerActivityLogDto> getManagerActivities();
+    // API 6: Compliance check
+    ManagerDtos.ComplianceCheckDto getComplianceCheck(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 
-    // REPORTS
-    DeliveryReportDto getDeliveriesReport(LocalDate startDate, LocalDate endDate);
+    // API 7: Route analytics / summary
+    List<ManagerDtos.RouteSummaryItemDto> getRouteSummary(
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    // API 8: Alerts
+    List<ManagerDtos.AlertDto> getAlerts(
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    // API 9: Manager activities / audit log
+    List<ManagerDtos.ManagerActivityDto> getManagerActivities(
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
 }

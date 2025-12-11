@@ -24,6 +24,8 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+        // Vẫn nên trả về reject để chain biết là lỗi (tạm)
+        return Promise.reject(error);
     }
     
     // Handle error response

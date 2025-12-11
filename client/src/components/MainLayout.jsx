@@ -95,7 +95,56 @@ const MainLayout = () => {
             {user ? (
               <>
                 <Link to="/profile" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
-                <div className="nav-user">
+
+                  {/* Manager menu */}
+                  {user.role === "MANAGER" && (
+                      <>
+                          <Link
+                              to="/manager/drivers"
+                              className="nav-link"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                              Driver Management
+                          </Link>
+                          <Link
+                              to="/manager/issues"
+                              className="nav-link"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                              Issue Reports
+                          </Link>
+                          <Link
+                              to="/manager/compliance"
+                              className="nav-link"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                              Compliance
+                          </Link>
+                          <Link
+                              to="/manager/analytics/routes"
+                              className="nav-link"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                              Route Analytics
+                          </Link>
+                          <Link
+                              to="/manager/alerts"
+                              className="nav-link"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                              Alerts
+                          </Link>
+                          <Link
+                              to="/manager/activities"
+                              className="nav-link"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                              Activities
+                          </Link>
+                      </>
+                  )}
+
+                  <div className="nav-user">
                   {user.profilePictureUrl && getProfilePictureUrl(user) ? (
                     <img 
                       src={getProfilePictureUrl(user)} 

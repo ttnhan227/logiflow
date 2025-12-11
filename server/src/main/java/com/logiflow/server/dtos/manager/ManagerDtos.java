@@ -1,72 +1,20 @@
 package com.logiflow.server.dtos.manager;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-
 public class ManagerDtos {
 
-    // 1. DASHBOARD
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class ManagerOverviewDto {
-
-        private Integer totalTrips;
-        private Integer completedTrips;
-        private Integer cancelledTrips;
-
-        private Integer totalDrivers;
-        private Integer activeDrivers;
-
-        private Integer totalVehicles;
-        private Integer activeVehicles;
-
-        private Integer openIncidents;
-        private Integer unresolvedAlerts;
-
-        private Integer onTimeCompletedTrips;
-        private Double onTimeRatePercent;
-
-        private Double totalDistanceKm;
-        private Double averageVehicleUtilizationPercent;
-    }
-
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class ManagerKpiDto {
-
-        private Double onTimeRatePercent;
-        private Double averageDelayMinutes;
-        private Double averageDistancePerTripKm;
-        private Double averageLoadUtilizationPercent;
-    }
-
-    // 2. OPERATIONS
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class PerformanceSummaryDto {
-
-        private Integer totalTrips;
-        private Integer completedTrips;
-        private Integer cancelledTrips;
-        private Integer delayedTrips;
-
-        private Double onTimeRatePercent;
-        private Double averageDelayMinutes;
-
-        private Double totalDistanceKm;
-        private Double averageDistancePerTripKm;
-
-        private Double averageFuelConsumptionPerTripLiters;
-        private Double averageCostPerTrip;
-    }
-
-    @Data @NoArgsConstructor @AllArgsConstructor
+    // 1) DRIVER PERFORMANCE (API /operations/drivers/performance)
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class DriverPerformanceDto {
 
         private String driverId;
-        private String driverCode;
         private String driverName;
 
         private Integer totalTrips;
@@ -74,16 +22,33 @@ public class ManagerDtos {
         private Integer cancelledTrips;
         private Integer delayedTrips;
 
-        private Double onTimeRatePercent;
-        private Double averageDelayMinutes;
-
-        private Double totalDistanceKm;
-        private Double averageDistancePerTripKm;
-
-        private Double averageRating;
+        private Double onTimeRatePercent;    // 0–100
+        private Double averageDelayMinutes;  // phút
+        private Double totalDistanceKm;      // km
     }
 
-    @Data @NoArgsConstructor @AllArgsConstructor
+    // 2) OPERATIONS PERFORMANCE (API /operations/performance)
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class OperationsPerformanceDto {
+        private Integer totalTrips;
+        private Integer completedTrips;
+        private Integer cancelledTrips;
+        private Integer delayedTrips;
+
+        private Double onTimeRatePercent;
+        private Double averageDelayMinutes;
+        private Double totalDistanceKm;
+        private Double averageDistancePerTripKm;
+    }
+
+    // 3) FLEET STATUS (API /fleet/status)
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class FleetStatusDto {
 
         private Integer totalVehicles;
@@ -95,165 +60,118 @@ public class ManagerDtos {
         private Double averageUtilizationPercent;
     }
 
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class VehicleStatusDto {
+    // 4) DELIVERY REPORT (API /reports/deliveries)
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DeliveryReportItemDto {
 
-        private String vehicleId;
-        private String licensePlate;
-
-        private String status;        // ACTIVE, IDLE, MAINTENANCE, UNAVAILABLE, ...
-        private Integer activeTrips;
-        private Double utilizationPercent;
-    }
-
-    // 3. COMPLIANCE
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class ComplianceCheckResultDto {
-
-        private Integer totalDrivers;
-        private Integer compliantDrivers;
-        private Integer nonCompliantDrivers;
-
-        private Integer totalVehicles;
-        private Integer compliantVehicles;
-        private Integer nonCompliantVehicles;
-
-        private List<DriverComplianceDto> driverDetails;
-        private List<VehicleComplianceDto> vehicleDetails;
-    }
-
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class DriverComplianceDto {
-
-        private String driverId;
-        private String driverCode;
-        private String driverName;
-
-        private Boolean compliant;
-        private List<String> violations;
-    }
-
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class VehicleComplianceDto {
-
-        private String vehicleId;
-        private String licensePlate;
-
-        private Boolean compliant;
-        private List<String> violations;
-    }
-
-    // 4. ANALYTICS (ROUTE SUMMARY)
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class RouteSummaryDto {
-
-        private String routeId;
-        private String routeCode;
-        private String routeName;
-
+        private String date;                  // "2025-12-10"
         private Integer totalTrips;
         private Integer completedTrips;
         private Integer cancelledTrips;
-
+        private Integer delayedTrips;
         private Double onTimeRatePercent;
-
-        private Double averageDistanceKm;
-        private Double averageDurationMinutes;
-
-        private Double averageFuelConsumptionLiters;
-        private Double averageLoadUtilizationPercent;
+        private Double averageDelayMinutes;
+        private Double totalDistanceKm;
     }
 
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class RouteSummaryOverviewDto {
+    // API 5: Compliance / Issues Report
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IssueReportItemDto {
 
-        private Integer totalRoutes;
-        private Integer totalTrips;
-        private Integer completedTrips;
-
-        private Double overallOnTimeRatePercent;
-
-        private List<RouteSummaryDto> routes;
-    }
-
-    // 5. ALERTS
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class AlertDto {
-
-        private String id;
-
-        private String type;         // DELAY, INCIDENT, VEHICLE_BREAKDOWN, ...
-        private String severity;     // INFO, WARNING, CRITICAL
-        private String message;
-
-        private String source;       // SYSTEM, DRIVER_APP, DISPATCH, ...
-        private String status;       // OPEN, IN_PROGRESS, RESOLVED
-
-        private String relatedEntityType; // TRIP, VEHICLE, DRIVER, ...
-        private String relatedEntityId;
-
-        private LocalDateTime createdAt;
-        private LocalDateTime resolvedAt;
-    }
-
-    // 6. AUDIT (MANAGER ACTIVITIES)
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class ManagerActivityLogDto {
-
-        private String id;
-
-        private String actorId;
-        private String actorName;
-
-        private String action;       // "UPDATE_TRIP_STATUS", "APPROVE_ORDER", ...
-        private String entityType;   // TRIP, ORDER, VEHICLE, DRIVER, ...
-        private String entityId;
-
-        private String description;
-
-        private LocalDateTime timestamp;
-        private String ipAddress;
-    }
-
-    // 7. REPORTS (DELIVERIES)
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class DeliveryReportItemDto {
-
-        private String shipmentId;
-        private String orderCode;
-
-        private String routeId;
-        private String routeName;
-
+        private String tripId;          // ID chuyến
         private String driverId;
         private String driverName;
-
         private String vehicleId;
-        private String vehiclePlate;
-
-        private LocalDateTime pickupTime;
-        private LocalDateTime deliveryTime;
-
-        private String status;               // COMPLETED, CANCELLED, FAILED, ...
-
-        private Double distanceKm;
-        private Double totalWeightKg;
-
-        private BigDecimal codAmount;
+        private String date;            // yyyy-MM-dd
+        private String issueType;       // "Delayed", "Cancelled", "VehicleFailure", ...
+        private String description;     // mô tả ngắn
+        private Double delayMinutes;    // nếu có
     }
 
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class DeliveryReportDto {
+    // API 6: COMPLIANCE CHECK
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ComplianceCheckDto {
 
-        private Integer totalRecords;
-        private Integer completedDeliveries;
-        private Integer failedDeliveries;
+        private Integer totalTripsChecked;
+        private Integer compliantTrips;
+        private Integer tripsWithViolations;
 
+        private Integer totalViolations;
+        private Integer speedingViolations;
+        private Integer routeDeviationViolations;
+        private Integer lateDeliveryViolations;
+
+        private Integer driversWithViolations;
+        private Double complianceRatePercent;   // % chuyến tuân thủ
+    }
+
+    // API 7: ROUTE ANALYTICS / SUMMARY
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RouteSummaryItemDto {
+
+        private String routeId;                 // R001, R002...
+        private String origin;                  // "Warehouse A"
+        private String destination;             // "City Center"
+
+        private Integer totalTrips;
         private Double totalDistanceKm;
-        private Double averageDistancePerDeliveryKm;
+        private Double averageDistanceKm;
+        private Double averageDurationMinutes;
+        private Double onTimeRatePercent;
 
-        private BigDecimal totalCodAmount;
-
-        private List<DeliveryReportItemDto> items;
+        private String optimizationSuggestion;  // gợi ý tối ưu đơn giản
     }
+
+    // API 8: ALERTS
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AlertDto {
+
+        private String alertId;          // A001
+        private String type;             // "VEHICLE_MAINTENANCE", "DRIVER_BEHAVIOR", "DELAY_RISK", ...
+        private String severity;         // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+        private String title;            // "Vehicle V01 due for maintenance"
+        private String message;          // mô tả chi tiết
+
+        private String relatedDriverId;  // có thể null
+        private String relatedDriverName;
+        private String relatedVehicleId; // có thể null
+
+        private String createdAt;        // "2025-12-11T10:30:00"
+        private Boolean acknowledged;    // đã đọc/chấp nhận hay chưa
+    }
+
+    // API 9: MANAGER ACTIVITIES / AUDIT
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ManagerActivityDto {
+
+        private String activityId;       // "M001"
+        private String username;         // "sarah.manager"
+        private String action;           // "VIEW_DRIVER_PERFORMANCE"
+        private String description;      // mô tả ngắn
+        private String entityType;       // "TRIP", "DRIVER", "VEHICLE", "ROUTE", ...
+        private String entityId;         // "D001", "R003", ...
+
+        private String timestamp;        // "2025-12-11T10:30:00"
+        private String ipAddress;        // "192.168.1.10"
+    }
+
+
 }
