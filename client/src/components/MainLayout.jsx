@@ -2,16 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { authService } from '../services';
 import './layout.css';
+import FooterLayout from './FooterLayout';
 
 const MainLayout = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(null);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [showFooter, setShowFooter] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
+      setShowFooter(window.scrollY > 200);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -88,66 +93,101 @@ const MainLayout = () => {
           
           <nav className={`nav-links ${isMobileMenuOpen ? 'active' : ''}`}>
             <Link to="/" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+
+            {/* Services Dropdown */}
+            <div
+              className="nav-dropdown"
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setDropdownOpen('services')}
+              onMouseLeave={() => setDropdownOpen(null)}
+            >
+              <span className="nav-link" style={{ cursor: 'pointer', userSelect: 'none' }}>
+                Services ▾
+              </span>
+              <div
+                className="dropdown-menu"
+                style={{
+                  opacity: dropdownOpen === 'services' ? 1 : 0,
+                  visibility: dropdownOpen === 'services' ? 'visible' : 'hidden',
+                  transform: dropdownOpen === 'services' ? 'translateY(0)' : 'translateY(-10px)',
+                  transition: 'all 0.2s ease',
+                  zIndex: 1000,
+                }}
+              >
+                <Link
+                  to="/services"
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setDropdownOpen(null);
+                  }}
+                >
+                  📦 Delivery Services
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setDropdownOpen(null);
+                  }}
+                >
+                  💰 Pricing
+                </Link>
+                <Link
+                  to="/track"
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setDropdownOpen(null);
+                  }}
+                >
+                  🔍 Track Package
+                </Link>
+                <Link
+                  to="/coverage"
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setDropdownOpen(null);
+                  }}
+                >
+                  🗺️ Coverage Map
+                </Link>
+              </div>
+            </div>
+
+            <Link to="/fleet" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Fleet</Link>
             <Link to="/about" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+            <Link to="/contact" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Contact</Link>
+
+            {/* Business Solutions */}
+            <Link to="/business" className="nav-link" style={{
+              background: 'var(--accent)',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontWeight: '600'
+            }} onClick={() => setIsMobileMenuOpen(false)}>For Businesses</Link>
+
+            {user && user.role === 'DISPATCHER' && (
+              <Link to="/dispatch/orders" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Dispatch</Link>
+            )}
+
             {user && user.role === 'ADMIN' && (
-              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
+              <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link>
             )}
             {user ? (
               <>
-                <Link to="/profile" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
-
-                  {/* Manager menu */}
-                  {user.role === "MANAGER" && (
-                      <>
-                          <Link
-                              to="/manager/drivers"
-                              className="nav-link"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                              Driver Management
-                          </Link>
-                          <Link
-                              to="/manager/issues"
-                              className="nav-link"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                              Issue Reports
-                          </Link>
-                          <Link
-                              to="/manager/compliance"
-                              className="nav-link"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                              Compliance
-                          </Link>
-                          <Link
-                              to="/manager/analytics/routes"
-                              className="nav-link"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                              Route Analytics
-                          </Link>
-                          <Link
-                              to="/manager/alerts"
-                              className="nav-link"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                              Alerts
-                          </Link>
-                          <Link
-                              to="/manager/activities"
-                              className="nav-link"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                              Activities
-                          </Link>
-                      </>
-                  )}
-
-                  <div className="nav-user">
+                <div 
+                  className="nav-user"
+                  onMouseEnter={() => setUserDropdownOpen(true)}
+                  onMouseLeave={() => setUserDropdownOpen(false)}
+                  style={{ position: 'relative' }}
+                >
                   {user.profilePictureUrl && getProfilePictureUrl(user) ? (
-                    <img 
-                      src={getProfilePictureUrl(user)} 
+                    <img
+                      src={getProfilePictureUrl(user)}
                       alt={user.username}
                       className="avatar-image-small"
                       title={user.username}
@@ -156,15 +196,44 @@ const MainLayout = () => {
                     <div className="avatar">{getInitials(user)}</div>
                   )}
                   <span className="greeting">Hi, {user.username || user.email || 'User'}</span>
+                  
+                  <div
+                    className="user-dropdown-menu"
+                    style={{
+                      opacity: userDropdownOpen ? 1 : 0,
+                      visibility: userDropdownOpen ? 'visible' : 'hidden',
+                      transform: userDropdownOpen ? 'translateY(0)' : 'translateY(-10px)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <Link
+                      to="/profile"
+                      className="user-dropdown-item"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setUserDropdownOpen(false);
+                      }}
+                    >
+                      👤 My Profile
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="user-dropdown-item"
+                    >
+                      🚪 Logout
+                    </button>
+                  </div>
                 </div>
-                <button onClick={handleLogout} className="nav-link logout-button">
-                  Logout
-                </button>
               </>
             ) : (
-              <Link to="/login" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-                Login
-              </Link>
+              <>
+                <Link to="/drivers" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  Join as Driver
+                </Link>
+                <Link to="/login" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
+                  Login
+                </Link>
+              </>
             )}
           </nav>
         </div>
@@ -173,6 +242,9 @@ const MainLayout = () => {
       <main className="main-content">
         <Outlet />
       </main>
+
+      {/* Footer outside main-content for full width */}
+      <FooterLayout showFooter={showFooter} />
     </div>
   );
 };

@@ -24,6 +24,7 @@ import CompliancePage from "./components/manager/Compliance/CompliancePage";
 import RouteAnalyticsPage from "./components/manager/RouteAnalytics/RouteAnalyticsPage";
 import AlertsPage from "./components/manager/Alerts/AlertsPage";
 import ManagerActivitiesPage from "./components/manager/Activities/ManagerActivitiesPage";
+import ManagerLayout from './components/manager/ManagerLayout.jsx';
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -61,6 +62,8 @@ const AuthRedirect = () => {
     <Navigate to="/" replace />;
 };
 
+
+
 function App() {
   return (
     <Router>
@@ -69,16 +72,7 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
-
-            {/* Manager routes dưới MainLayout */}
-            <Route path="/manager/drivers" element={<DriverManager />} />
-            <Route path="/manager/issues" element={<IssueReports />} />
-            <Route path="/manager/compliance" element={<CompliancePage />} />
-            <Route path="/manager/analytics/routes" element={<RouteAnalyticsPage />} />
-            <Route path="/manager/alerts" element={<AlertsPage />} />
-            <Route path="/manager/activities" element={<ManagerActivitiesPage />} />
-
-            <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Route>
@@ -116,6 +110,44 @@ function App() {
             </ProtectedRoute>
           } />
         </Route>
+
+        
+        {/* Manager routes with ManagerLayout (sidebar) */}
+        <Route element={<ManagerLayout/>}>
+          <Route path="/manager/drivers" element={
+            <ProtectedRoute requiredRole="MANAGER">
+              <DriverManager/>
+            </ProtectedRoute>
+          } />
+          <Route path="/manager/issues" element={
+            <ProtectedRoute requiredRole="MANAGER">
+              <IssueReports/>
+            </ProtectedRoute>
+          } />
+          <Route path="/manager/compliance" element={
+            <ProtectedRoute requiredRole="MANAGER">
+              <CompliancePage/>
+            </ProtectedRoute>
+          } />
+          <Route path="/manager/analytics/routes" element={
+            <ProtectedRoute requiredRole="MANAGER">
+              <RouteAnalyticsPage/>
+            </ProtectedRoute>
+          } />
+          <Route path="/manager/alerts" element={
+            <ProtectedRoute requiredRole="MANAGER">
+              <AlertsPage/>
+            </ProtectedRoute>
+          } />
+          <Route path="/manager/activities" element={
+            <ProtectedRoute requiredRole="MANAGER">
+              <ManagerActivitiesPage/>
+            </ProtectedRoute>
+          } />
+        </Route>
+
+
+
         <Route path="/login" element={
           authService.getCurrentUser() ? 
           <AuthRedirect /> : 
