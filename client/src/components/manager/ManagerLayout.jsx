@@ -24,32 +24,34 @@ const ManagerLayout = () => {
   };
 
   return (
-    <div className="dispatch-app-container">
-      <header className="dispatch-header">
-        <div className="dispatch-header-container">
-          <div className="dispatch-logo">
-            <span className="dispatch-logo-text">🚛 Dispatch Center</span>
+    <div className="manager-app">
+      <header className="manager-header">
+        <div className="manager-header-inner">
+          <div className="manager-logo">
+            <span className="manager-logo-text">👔 Manager Center</span>
           </div>
 
-          <nav className="dispatch-nav-links">
-            <Link to="/manager/drivers" className="dispatch-nav-link">📦 Driver</Link>
-            <Link to="/manager/issues" className="dispatch-nav-link">🚐 Issues and Report</Link>
-            <Link to="/manager/compliance" className="dispatch-nav-link">👥 Compliance</Link>
-            <Link to="/manager/analytics/routes" className="dispatch-nav-link">👥 Route analytics</Link>
-            <Link to="/manager/alerts" className="dispatch-nav-link">👥 Alerts</Link>
-            <Link to="/manager/activities" className="dispatch-nav-link">📊 Activities</Link>
+          <nav className="manager-nav">
+            <Link to="/manager/drivers" className="manager-nav-link">📦 Driver</Link>
+            <Link to="/manager/issues" className="manager-nav-link">🚐 Issues & Report</Link>
+            <Link to="/manager/compliance" className="manager-nav-link">👥 Compliance</Link>
+            <Link to="/manager/analytics/routes" className="manager-nav-link">🗺️ Route Analytics</Link>
+            <Link to="/manager/alerts" className="manager-nav-link">🔔 Alerts</Link>
+            <Link to="/manager/activities" className="manager-nav-link">📊 Activities</Link>
           </nav>
 
           {user && (
-            <div className="dispatch-user-section">
-              <span className="dispatch-greeting">Hi, {user.username}</span>
-              <button onClick={handleLogout} className="dispatch-logout-btn">🚪 Logout</button>
+            <div className="manager-user">
+              <span className="manager-greeting">Hi, {user.username}</span>
+              <button onClick={handleLogout} className="manager-logout-btn">
+                🚪 Logout
+              </button>
             </div>
           )}
         </div>
       </header>
 
-      <main className="dispatch-main-content">
+      <main className="manager-content">
         <Outlet />
       </main>
     </div>

@@ -45,6 +45,13 @@ import TripCreatePage from "./components/dispatch/TripCreatePage";
 import TripDetailPage from "./components/dispatch/TripDetailPage";
 import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
+import DriverManager from "./components/manager/DriverManager/DriverManager.jsx";
+import IssueReports from "./components/manager/IssueReports/IssueReports";
+import CompliancePage from "./components/manager/Compliance/CompliancePage";
+import RouteAnalyticsPage from "./components/manager/RouteAnalytics/RouteAnalyticsPage";
+import AlertsPage from "./components/manager/Alerts/AlertsPage";
+import ManagerActivitiesPage from "./components/manager/Activities/ManagerActivitiesPage";
+import ManagerLayout from './components/manager/ManagerLayout.jsx';
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
