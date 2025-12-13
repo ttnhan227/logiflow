@@ -26,4 +26,7 @@ public class AuditLog {
 
     @Column(nullable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
+
+    @Column(nullable = false)
+    private Boolean success = true;
 }

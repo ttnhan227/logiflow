@@ -330,7 +330,8 @@ const UserModal = ({ user, onClose, onSave, roles }) => {
 // Main component
 const UserManagementPage = () => {
   const navigate = useNavigate();
-  const roles = ['ADMIN', 'MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
+  // Available roles for creating/editing users (ADMIN excluded)
+  const roles = ['MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -342,13 +343,26 @@ const UserManagementPage = () => {
   const [page, setPage] = useState(0);
   const [size] = useState(10);
 
+  // Role sort priority (DISPATCHER > MANAGER > DRIVER > CUSTOMER)
+  const ROLE_PRIORITY = { DISPATCHER: 1, MANAGER: 2, DRIVER: 3, CUSTOMER: 4, ADMIN: 99 };
+
+  const sortByRolePriority = (userList) => {
+    return [...userList].sort((a, b) => {
+      const priorityA = ROLE_PRIORITY[a.role] || 999;
+      const priorityB = ROLE_PRIORITY[b.role] || 999;
+      return priorityA - priorityB;
+    });
+  };
+
   const loadUsers = async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await userService.getUsers(0, 1000);
-      setUsers(data.content || []);
-      setFilteredUsers(data.content || []);
+      const list = (data.content || []).filter((u) => u.role !== 'ADMIN');
+      const sorted = sortByRolePriority(list);
+      setUsers(sorted);
+      setFilteredUsers(sorted);
     } catch (err) {
       setError(typeof err === 'string' ? err : 'Failed to load users');
     } finally {
@@ -362,6 +376,11 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     let result = users;
+    // Filter by role
+    if (roleFilter !== 'ALL') {
+      result = result.filter((u) => u.role === roleFilter);
+    }
+    // Filter by search
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -369,9 +388,8 @@ const UserManagementPage = () => {
           u.username?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term)
       );
     }
-    if (roleFilter !== 'ALL') {
-      result = result.filter((u) => u.role === roleFilter);
-    }
+    // Sort by role priority
+    result = sortByRolePriority(result);
     setFilteredUsers(result);
     setPage(0);
   }, [searchTerm, roleFilter, users]);
@@ -419,13 +437,19 @@ const UserManagementPage = () => {
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+            backgroundColor: 'white'
+          }}
         >
           <option value="ALL">All Roles</option>
-          {roles.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
+          <option value="DISPATCHER">Dispatcher</option>
+          <option value="MANAGER">Manager</option>
+          <option value="DRIVER">Driver</option>
+          <option value="CUSTOMER">Customer</option>
         </select>
         <button
           className="btn"
@@ -448,9 +472,7 @@ const UserManagementPage = () => {
           <div className="empty-state-icon">👥</div>
           <div className="empty-state-title">No users found</div>
           <div className="empty-state-description">
-            {searchTerm || roleFilter !== 'ALL'
-              ? 'Try adjusting your search or filters'
-              : 'Get started by adding your first user'}
+            {searchTerm ? 'Try adjusting your search' : 'Get started by adding your first user'}
           </div>
         </div>
       ) : (

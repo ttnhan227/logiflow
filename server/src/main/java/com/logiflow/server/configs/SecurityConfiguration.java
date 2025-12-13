@@ -12,8 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
 
 @Configuration
 @EnableWebSecurity
@@ -39,36 +38,26 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {})
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
-                        .requestMatchers("/uploads/**").permitAll()
-                        .requestMatchers("/api/uploads/**").authenticated()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/dispatch/**").hasRole("DISPATCHER")
-                        .requestMatchers("/api/driver/**").hasRole("DRIVER")
-
-                        // mở RIÊNG API driver performance cho dev
-                        .requestMatchers("/api/manager/operations/drivers/performance").permitAll()
-
-                        .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                        .requestMatchers("/api/user/**").authenticated()
-                        .anyRequest().authenticated()
+                .authorizeHttpRequests(
+                        (authorize) -> authorize
+                                .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
+                                .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()
+                                .requestMatchers("/api/test/**").permitAll()
+                                .requestMatchers("/api/uploads/license-image").permitAll()
+                                .requestMatchers("/api/uploads/cv").permitAll()
+                                .requestMatchers("/api/uploads/**").authenticated()
+                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/api/dispatch/**").hasRole("DISPATCHER")
+                                .requestMatchers("/api/driver/**").hasRole("DRIVER")
+                                .requestMatchers("/api/manager/**").hasRole("MANAGER")
+                                .requestMatchers("/api/user/**").authenticated()
+                                .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    @Bean
-    public WebMvcConfigurer webMvcConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("/uploads/**")
-                        .addResourceLocations("file:./uploads/")
-                        .setCachePeriod(3600);
-            }
-        };
-    }
+
 }

@@ -276,6 +276,9 @@ public class DriverServiceImpl implements DriverService {
                 brief.setPickupAddress(o.getPickupAddress());
                 brief.setDeliveryAddress(o.getDeliveryAddress());
                 brief.setPackageDetails(o.getPackageDetails());
+                brief.setWeightKg(o.getWeightKg());
+                brief.setPackageValue(o.getPackageValue());
+                brief.setDistanceKm(o.getDistanceKm());
                 brief.setStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);
                 brief.setOrderStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);
                 brief.setPriority(o.getPriorityLevel() != null ? o.getPriorityLevel().name() : null);
@@ -310,9 +313,20 @@ public class DriverServiceImpl implements DriverService {
 
         deliveryConfirmationRepository.save(confirmation);
 
+        // Update all orders in this trip to 'DELIVERED' status
+        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+            trip.getOrders().forEach(order -> {
+                order.setOrderStatus(Order.OrderStatus.DELIVERED);
+            });
+        }
+
         // Update trip status to completed
         trip.setStatus("completed");
         trip.setActualArrival(LocalDateTime.now());
+
+        // Update assignment status to completed
+        tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "completed");
+
         tripRepository.save(trip);
 
         // Send notification
@@ -323,5 +337,80 @@ public class DriverServiceImpl implements DriverService {
                 "Delivery for trip #" + tripId + " has been confirmed",
                 "completed"
         );
+    }
+
+    @Override
+    public DriverProfileDto getProfile(String driverUsername) {
+        Driver driver = getCurrentDriver(driverUsername);
+
+        // For now, calculate performance metrics dynamically based on completed trips
+        // Total deliveries, earnings, and average time will be computed from actual trip data
+        int totalDeliveries = countCompletedTrips(driver);
+        BigDecimal totalEarnings = calculateTotalEarnings(driver);
+        BigDecimal averageDeliveryTime = calculateAverageDeliveryTime(driver);
+
+        DriverProfileDto profile = new DriverProfileDto();
+        profile.setUserId(driver.getUser().getUserId());
+        profile.setUsername(driver.getUser().getUsername());
+        profile.setEmail(driver.getUser().getEmail());
+        profile.setFullName(driver.getUser().getFullName());
+        profile.setPhone(driver.getUser().getPhone());
+        profile.setProfilePictureUrl(driver.getUser().getProfilePictureUrl());
+        profile.setDriverLicenseNumber(driver.getLicenseNumber());
+        profile.setLicenseExpiryDate(driver.getLicenseExpiryDate());
+        profile.setVehicleType(null); // Company assigns vehicles - not personal
+        profile.setVehiclePlateNumber(null); // Company property - not in driver profile
+        profile.setCreatedAt(driver.getUser().getCreatedAt());
+        profile.setStatus(driver.getStatus() != null ? driver.getStatus() : "ACTIVE");
+        profile.setTotalDeliveries(totalDeliveries);
+        profile.setRating(driver.getRating());
+        profile.setTotalEarnings(totalEarnings);
+        profile.setAverageDeliveryTime(averageDeliveryTime);
+
+        return profile;
+    }
+
+    private int countCompletedTrips(Driver driver) {
+        // Count completed trips for this driver - this would be calculated from trip assignments
+        // For now, return 0 until proper trip counting logic is implemented
+        return 0;
+    }
+
+    private BigDecimal calculateTotalEarnings(Driver driver) {
+        // Calculate total earnings from completed orders/trips
+        // For now, return 0 until proper earnings calculation is implemented
+        return BigDecimal.ZERO;
+    }
+
+    private BigDecimal calculateAverageDeliveryTime(Driver driver) {
+        // Calculate average delivery time from completed trips
+        // For now, return 0 until proper calculation is implemented
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public DriverProfileDto updateProfile(String driverUsername, UpdateDriverProfileRequest request) {
+        Driver driver = getCurrentDriver(driverUsername);
+
+        // Update User entity fields
+        if (request.getFullName() != null) {
+            driver.getUser().setFullName(request.getFullName());
+        }
+        if (request.getPhone() != null) {
+            driver.getUser().setPhone(request.getPhone());
+        }
+        if (request.getProfilePictureUrl() != null) {
+            driver.getUser().setProfilePictureUrl(request.getProfilePictureUrl());
+        }
+
+        // Note: Driver-specific fields like driverLicenseNumber, vehicleType, vehiclePlateNumber
+        // are not implemented in the current Driver model, so we skip them for now
+        // They can be added later when the Driver entity is extended
+
+        // Save entities
+        userRepository.save(driver.getUser());
+        driverRepository.save(driver);
+
+        return getProfile(driverUsername);
     }
 }

@@ -61,9 +61,37 @@ public class OrderFileParser {
                     request.setPriorityLevel(Order.PriorityLevel.NORMAL);
                 }
                 
+                // Distance (km) - column 6
                 if (row.length > 6 && row[6] != null && !row[6].trim().isEmpty()) {
                     try {
-                        request.setTripId(Integer.parseInt(row[6].trim()));
+                        request.setDistanceKm(new java.math.BigDecimal(row[6].trim()));
+                    } catch (NumberFormatException e) {
+                        request.setDistanceKm(null);
+                    }
+                }
+                
+                // Weight (kg) - column 7
+                if (row.length > 7 && row[7] != null && !row[7].trim().isEmpty()) {
+                    try {
+                        request.setWeightKg(new java.math.BigDecimal(row[7].trim()));
+                    } catch (NumberFormatException e) {
+                        request.setWeightKg(null);
+                    }
+                }
+                
+                // Package Value - column 8
+                if (row.length > 8 && row[8] != null && !row[8].trim().isEmpty()) {
+                    try {
+                        request.setPackageValue(new java.math.BigDecimal(row[8].trim()));
+                    } catch (NumberFormatException e) {
+                        request.setPackageValue(null);
+                    }
+                }
+                
+                // Trip ID - column 9
+                if (row.length > 9 && row[9] != null && !row[9].trim().isEmpty()) {
+                    try {
+                        request.setTripId(Integer.parseInt(row[9].trim()));
                     } catch (NumberFormatException e) {
                         request.setTripId(null);
                     }
@@ -142,9 +170,49 @@ public class OrderFileParser {
                     request.setPriorityLevel(Order.PriorityLevel.NORMAL);
                 }
                 
+                // Distance (km) - column 6
                 Cell cell6 = row.getCell(6);
                 if (cell6 != null) {
                     String value = getCellValueAsString(cell6);
+                    if (value != null && !value.trim().isEmpty()) {
+                        try {
+                            request.setDistanceKm(new java.math.BigDecimal(value.trim()));
+                        } catch (NumberFormatException e) {
+                            request.setDistanceKm(null);
+                        }
+                    }
+                }
+                
+                // Weight (kg) - column 7
+                Cell cell7 = row.getCell(7);
+                if (cell7 != null) {
+                    String value = getCellValueAsString(cell7);
+                    if (value != null && !value.trim().isEmpty()) {
+                        try {
+                            request.setWeightKg(new java.math.BigDecimal(value.trim()));
+                        } catch (NumberFormatException e) {
+                            request.setWeightKg(null);
+                        }
+                    }
+                }
+                
+                // Package Value - column 8
+                Cell cell8 = row.getCell(8);
+                if (cell8 != null) {
+                    String value = getCellValueAsString(cell8);
+                    if (value != null && !value.trim().isEmpty()) {
+                        try {
+                            request.setPackageValue(new java.math.BigDecimal(value.trim()));
+                        } catch (NumberFormatException e) {
+                            request.setPackageValue(null);
+                        }
+                    }
+                }
+                
+                // Trip ID - column 9
+                Cell cell9 = row.getCell(9);
+                if (cell9 != null) {
+                    String value = getCellValueAsString(cell9);
                     if (value != null && !value.trim().isEmpty()) {
                         try {
                             request.setTripId((int) Double.parseDouble(value.trim()));

@@ -18,4 +18,5 @@ public class AuditLogDto {
     private String role;
     private String details;
     private LocalDateTime timestamp;
+    private Boolean success;
 }

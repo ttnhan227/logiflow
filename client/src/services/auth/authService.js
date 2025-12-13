@@ -15,10 +15,12 @@ const authService = {
     
     // Build full user object with profilePictureUrl
     const userObj = {
-      username: returnedUsername || username, 
+      username: returnedUsername || username,
       role,
-      profilePictureUrl: profilePictureUrl 
-        ? `${getBaseUrl()}${profilePictureUrl}`
+      profilePictureUrl: profilePictureUrl
+        ? (profilePictureUrl.startsWith('http://') || profilePictureUrl.startsWith('https://')
+            ? profilePictureUrl
+            : `${getBaseUrl()}${profilePictureUrl.startsWith('/') ? '' : '/'}${profilePictureUrl}`)
         : null,
     };
     

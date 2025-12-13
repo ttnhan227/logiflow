@@ -23,6 +23,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+        // Check if user account is disabled
+        if (!user.getIsActive()) {
+            throw new RuntimeException("Your account has been disabled by the administrator. Please contact support for assistance.");
+        }
+
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         if (user.getRole() != null) {
             authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().getRoleName()));
@@ -31,7 +36,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPasswordHash(),
-                user.getIsActive(),
+                true, // Always true here since we check above
                 true, // account non-expired
                 true, // credentials non-expired
                 true, // account non-locked

@@ -20,15 +20,22 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
-    if ([401, 403].includes(error.response?.status)) {
+    // Only logout on 401 (token invalid/expired), not on 403 (permission denied)
+    if (error.response?.status === 401) {
+      // Token is invalid or expired - logout user
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-        // Vẫn nên trả về reject để chain biết là lỗi (tạm)
-        return Promise.reject(error);
+      return Promise.reject({ error: 'Session expired. Please login again.' });
     }
     
-    // Handle error response
+    // For 403, let the component handle it (user is authenticated but lacks permission)
+    if (error.response?.status === 403) {
+      const errorData = error.response?.data;
+      return Promise.reject(errorData || { error: 'You do not have permission to access this resource' });
+    }
+    
+    // Handle other error responses
     const errorData = error.response?.data;
     const errorMessage = errorData?.message || error.message || 'An error occurred';
     

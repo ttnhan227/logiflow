@@ -149,4 +149,21 @@ public class DriverController {
         driverService.confirmDelivery(driver.getDriverId(), tripId, confirmationDto);
         return ResponseEntity.ok().build();
     }
+
+    // 10) GET /api/driver/me/profile - Get driver profile
+    @GetMapping("/profile")
+    public ResponseEntity<DriverProfileDto> getProfile(Authentication authentication) {
+        var result = driverService.getProfile(authentication.getName());
+        return ResponseEntity.ok(result);
+    }
+
+    // 11) PUT /api/driver/me/profile - Update driver profile
+    @PutMapping("/profile")
+    public ResponseEntity<DriverProfileDto> updateProfile(
+            @RequestBody UpdateDriverProfileRequest request,
+            Authentication authentication
+    ) {
+        var result = driverService.updateProfile(authentication.getName(), request);
+        return ResponseEntity.ok(result);
+    }
 }

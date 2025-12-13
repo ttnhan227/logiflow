@@ -20,6 +20,25 @@ public class DriverDtos {
         private LocalDateTime scheduledArrival;
         private String routeName;        // gợi ý hiển thị
         private String vehiclePlate;     // gợi ý hiển thị
+
+            public static TripSummaryDto fromTrip(com.logiflow.server.models.Trip trip) {
+                if (trip == null) return null;
+                TripSummaryDto dto = new TripSummaryDto();
+                dto.setTripId(trip.getTripId());
+                dto.setStatus(trip.getStatus());
+                // Assignment status: get from first assignment if available
+                String assignmentStatus = null;
+                if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
+                    assignmentStatus = trip.getTripAssignments().get(0).getStatus();
+                }
+                dto.setAssignmentStatus(assignmentStatus);
+                dto.setTripType(trip.getTripType());
+                dto.setScheduledDeparture(trip.getScheduledDeparture());
+                dto.setScheduledArrival(trip.getScheduledArrival());
+                dto.setRouteName(trip.getRoute() != null ? trip.getRoute().getRouteName() : null);
+                dto.setVehiclePlate(trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null);
+                return dto;
+            }
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
@@ -56,6 +75,9 @@ public class DriverDtos {
         private String pickupAddress;
         private String deliveryAddress;
         private String packageDetails;
+        private BigDecimal weightKg;
+        private BigDecimal packageValue;
+        private BigDecimal distanceKm;
         private String status;
         private String orderStatus;
         private String priority;
@@ -83,5 +105,35 @@ public class DriverDtos {
         private BigDecimal latitude;
         private BigDecimal longitude;
         private LocalDateTime timestamp;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class DriverProfileDto {
+        private Integer userId;
+        private String username;
+        private String email;
+        private String fullName;
+        private String phone;
+        private String profilePictureUrl;
+        private String driverLicenseNumber;
+        private java.time.LocalDate licenseExpiryDate;
+        private String vehicleType;
+        private String vehiclePlateNumber;
+        private LocalDateTime createdAt;
+        private String status;
+        private Integer totalDeliveries;
+        private BigDecimal rating;
+        private BigDecimal totalEarnings;
+        private BigDecimal averageDeliveryTime; // in minutes
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class UpdateDriverProfileRequest {
+        private String fullName;
+        private String phone;
+        private String driverLicenseNumber;
+        private String vehicleType;
+        private String vehiclePlateNumber;
+        private String profilePictureUrl;
     }
 }

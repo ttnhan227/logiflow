@@ -18,6 +18,10 @@ public class OrderDto {
     private String pickupAddress;
     private String deliveryAddress;
     private String packageDetails;
+    private java.math.BigDecimal distanceKm;
+    private java.math.BigDecimal weightKg;
+    private java.math.BigDecimal packageValue;
+    private java.math.BigDecimal shippingFee;
     private Integer createdByUserId;
     private String createdByUsername;
     private Order.PriorityLevel priorityLevel;
@@ -33,6 +37,10 @@ public class OrderDto {
         dto.setPickupAddress(order.getPickupAddress());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
+        dto.setDistanceKm(order.getDistanceKm());
+        dto.setWeightKg(order.getWeightKg());
+        dto.setPackageValue(order.getPackageValue());
+        dto.setShippingFee(order.getShippingFee());
         dto.setCreatedByUserId(order.getCreatedBy() != null ? order.getCreatedBy().getUserId() : null);
         dto.setCreatedByUsername(order.getCreatedBy() != null ? order.getCreatedBy().getUsername() : null);
         dto.setPriorityLevel(order.getPriorityLevel());
@@ -41,5 +49,4 @@ public class OrderDto {
         return dto;
     }
 }
-
 

@@ -2,6 +2,7 @@ package com.logiflow.server.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.EnumType;
@@ -36,6 +37,23 @@ public class Order {
     @Column(name = "package_details", length = 500, nullable = true)
     private String packageDetails;
 
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private User customer;
+    @Column(name = "distance_km", precision = 10, scale = 2, nullable = true)
+    private BigDecimal distanceKm;
+
+    @Column(name = "weight_kg", precision = 10, scale = 2, nullable = true)
+    private BigDecimal weightKg;
+
+    @Column(name = "package_value", precision = 15, scale = 2, nullable = true)
+    private BigDecimal packageValue;
+
+    @Column(name = "shipping_fee", precision = 15, scale = 2, nullable = true)
+    private BigDecimal shippingFee;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
@@ -50,6 +68,12 @@ public class Order {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "delay_reason", length = 500, nullable = true)
+    private String delayReason;
+
+    @Column(name = "sla_extension_minutes", nullable = true)
+    private Integer slaExtensionMinutes = 0;
 
     public static enum PriorityLevel {
         NORMAL, URGENT

@@ -1,6 +1,9 @@
 import api from '../api';
 
 const settingsService = {
+  getSystemOverview: () =>
+    api.get('/admin/system-settings/overview').then(res => res.data),
+
   getSettings: (page = 0, size = 10) =>
     api.get('/admin/system-settings', { params: { page, size } }).then(res => res.data),
 

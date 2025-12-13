@@ -4,27 +4,47 @@ import { authService } from './services';
 import './App.css';
 import './components/layout.css';
 import MainLayout from './components/MainLayout';
-import AdminLayout from './components/admin/AdminLayout';
+import AdminSideNav from './components/admin/AdminSideNav';
 import LoginPage from "./components/auth/LoginPage";
 import HomePage from "./components/home/HomePage";
 import AboutPage from "./components/home/AboutPage";
+import ServicesPage from "./components/home/ServicesPage";
+import FleetPage from "./components/home/FleetPage";
+import CoveragePage from "./components/home/CoveragePage";
+import PricingPage from "./components/home/PricingPage";
+import TrackPage from "./components/home/TrackPage";
+import ContactPage from "./components/home/ContactPage";
+import FaqPage from "./components/home/FaqPage";
+import BusinessPage from "./components/home/BusinessPage";
+import DriversPage from "./components/home/DriversPage";
+import MobileAppPage from "./components/home/MobileAppPage";
 import AdminDashboardPage from "./components/admin/AdminDashboardPage";
 import UserManagementPage from "./components/admin/AdminUserManagementPage";
 import AdminUserDetailsPage from "./components/admin/AdminUserDetailsPage";
 import AdminUserEditPage from "./components/admin/AdminUserEditPage";
 import AdminSettingsPage from "./components/admin/AdminSettingsPage";
+import AdminSystemOverviewPage from "./components/admin/AdminSystemOverviewPage";
 import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
+import AdminRegistrationRequestsPage from "./components/admin/AdminRegistrationRequestsPage";
+import AdminRegistrationRequestDetailsPage from "./components/admin/AdminRegistrationRequestDetailsPage";
+import AdminRoutesPage from "./components/admin/AdminRoutesPage";
+import AdminVehiclesPage from "./components/admin/AdminVehiclesPage";
+import AdminReportsPage from "./components/admin/AdminReportsPage";
+import AdminOrdersOversightPage from "./components/admin/AdminOrdersOversightPage";
+import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 import ProfilePage from "./components/profile/ProfilePage";
 import ProfileEditPage from "./components/profile/ProfileEditPage";
-import DriverManager from "./components/manager/DriverManager/DriverManager.jsx";
-import IssueReports from "./components/manager/IssueReports/IssueReports";
-import CompliancePage from "./components/manager/Compliance/CompliancePage";
-import RouteAnalyticsPage from "./components/manager/RouteAnalytics/RouteAnalyticsPage";
-import AlertsPage from "./components/manager/Alerts/AlertsPage";
-import ManagerActivitiesPage from "./components/manager/Activities/ManagerActivitiesPage";
-import ManagerLayout from './components/manager/ManagerLayout.jsx';
+import OrdersPage from "./components/dispatch/OrdersPage";
+import OrderImportPage from "./components/dispatch/OrderImportPage";
+import DispatchOrderDetailPage from "./components/dispatch/DispatchOrderDetailPage";
+import AvailableDriversPage from './components/dispatch/AvailableDriversPage';
+import TripsPage from "./components/dispatch/TripsPage";
+import TripCreatePage from "./components/dispatch/TripCreatePage";
+import TripDetailPage from "./components/dispatch/TripDetailPage";
+import TripAssignPage from "./components/dispatch/TripAssignPage";
+import DispatchLayout from "./components/dispatch/DispatchLayout";
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -72,47 +92,22 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/fleet" element={<FleetPage />} />
+          <Route path="/coverage" element={<CoveragePage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/track" element={<TrackPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/business" element={<BusinessPage />} />
+          <Route path="/mobile-app" element={<MobileAppPage />} />
+          <Route path="/drivers" element={<DriversPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Route>
 
-        {/* Admin routes with AdminLayout (sidebar) */}
-        <Route element={<AdminLayout />}>
-          <Route path="/admin/dashboard" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <UserManagementPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users/:userId" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminUserDetailsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users/:userId/edit" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminUserEditPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/settings" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminSettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/audit-logs" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminAuditLogPage />
-            </ProtectedRoute>
-          } />
-        </Route>
-
-        
-        {/* Manager routes with ManagerLayout (sidebar) */}
+          {/* Manager routes with ManagerLayout (sidebar) */}
         <Route element={<ManagerLayout/>}>
           <Route path="/manager/drivers" element={
             <ProtectedRoute requiredRole="MANAGER">
@@ -146,6 +141,124 @@ function App() {
           } />
         </Route>
 
+        {/* Dispatch routes with DispatchLayout */}
+        <Route element={<DispatchLayout />}>
+          <Route path="/dispatch/orders" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <OrdersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/orders/import" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <OrderImportPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/orders/:orderId" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <DispatchOrderDetailPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/create" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripCreatePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/:tripId" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripDetailPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/trips/:tripId/assign" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <TripAssignPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/drivers" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <AvailableDriversPage />
+            </ProtectedRoute>
+          } />
+        </Route>
+
+        {/* Admin routes with AdminLayout (sidebar) */}
+        <Route element={<AdminSideNav />}>
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/reports" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminReportsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <UserManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/:userId" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminUserDetailsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/:userId/edit" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminUserEditPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/system/configuration" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminSettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/system/overview" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminSystemOverviewPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/audit-logs" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminAuditLogPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/orders-oversight" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminOrdersOversightPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/registration-requests" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminRegistrationRequestsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/registration-requests/:requestId" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminRegistrationRequestDetailsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/routes" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminRoutesPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/vehicles" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminVehiclesPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/reports" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminReportsPage />
+            </ProtectedRoute>
+          } />
+        </Route>
+
 
 
         <Route path="/login" element={
@@ -153,6 +266,7 @@ function App() {
           <AuthRedirect /> : 
           <LoginPage />
         } />
+        <Route path="/register/driver" element={<DriverRegisterPage />} />
 
         {/* 404 - Not Found */}
         <Route path="*" element={<NotFoundPage />} />

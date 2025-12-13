@@ -14,6 +14,8 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 /**
@@ -33,12 +35,15 @@ public class MapsServiceImpl implements MapsService {
 
     public MapsServiceImpl() {
         this.restTemplate = new RestTemplate();
-        // Set user agent as required by Nominatim usage policy
+        // Set proper headers as required by Nominatim usage policy
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
         interceptors.add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             if (!headers.containsKey("User-Agent")) {
-                headers.add("User-Agent", "LogiFlow/1.0 (Contact: your-email@example.com)");
+                headers.add("User-Agent", "LogiFlow Logistics App (contact@logiflow.com)");
+            }
+            if (!headers.containsKey("Referer")) {
+                headers.add("Referer", "https://logiflow.example.com");
             }
             return execution.execute(request, body);
         });
@@ -249,8 +254,8 @@ public class MapsServiceImpl implements MapsService {
 
     /**
      * Calculate distance and duration between two addresses
-     * First geocodes both addresses, then calculates route distance/duration using OSRM
-     * 
+     * Uses Nominatim geocoding and OSRM routing only (no hardcoded fallbacks)
+     *
      * @param originAddress Origin address
      * @param destinationAddress Destination address
      * @return DistanceResultDto or null if calculation fails
@@ -262,15 +267,15 @@ public class MapsServiceImpl implements MapsService {
             return null;
         }
 
-        // Step 1: Geocode both addresses
+        // Step 1: Geocode both addresses using Nominatim only (no fallback)
         GeocodeResultDto origin = geocodeAddress(originAddress);
         GeocodeResultDto destination = geocodeAddress(destinationAddress);
 
         if (origin == null || destination == null) {
-            return null;
+            return null; // Geocoding failed for one or both addresses
         }
 
-        // Step 2: Calculate distance using OSRM (no need for geometry, just distance/duration)
+        // Step 2: Calculate distance using OSRM with geocoded coordinates
         DirectionsResultDto directions = getDirections(
             origin.getLatitude().toString(),
             origin.getLongitude().toString(),
@@ -290,6 +295,53 @@ public class MapsServiceImpl implements MapsService {
             directions.getTotalDuration(),
             directions.getDurationSeconds()
         );
+    }
+
+    // All hardcoded address methods removed - using real OpenStreetMap services only
+
+    /**
+     * Get address suggestions using Nominatim search API
+     * Returns real address suggestions from Nominatim only
+     *
+     * @param query Partial address string to search for
+     * @param limit Maximum number of suggestions to return
+     * @return List of address suggestions from Nominatim, or empty list if service fails
+     */
+    @Override
+    public List<String> getBasicAddressSuggestions(String query, int limit) {
+        if (query == null || query.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            enforceRateLimit();
+
+            String url = String.format(
+                "https://nominatim.openstreetmap.org/search?format=json&q=%s&limit=%d&addressdetails=1&accept-language=en",
+                java.net.URLEncoder.encode(query.trim(), "UTF-8"),
+                Math.min(limit, 5) // Reasonable limit for suggestions
+            );
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> results = restTemplate.getForObject(url, List.class);
+
+            List<String> suggestions = new ArrayList<>();
+            if (results != null) {
+                for (Map<String, Object> result : results) {
+                    String displayName = (String) result.get("display_name");
+                    if (displayName != null && !displayName.trim().isEmpty()) {
+                        suggestions.add(displayName);
+                    }
+                }
+            }
+
+            return suggestions.stream().limit(limit).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            System.err.println("Address suggestions failed: " + e.getMessage());
+            // Return empty list - no hardcoded fallback
+            return Collections.emptyList();
+        }
     }
 
     /**
@@ -385,4 +437,3 @@ public class MapsServiceImpl implements MapsService {
         throw new IllegalArgumentException("Invalid location format: " + loc);
     }
 }
-

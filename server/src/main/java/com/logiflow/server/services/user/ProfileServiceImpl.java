@@ -125,8 +125,8 @@ public class ProfileServiceImpl implements ProfileService {
             Driver driver = driverOpt.get();
             profileDto.setIsDriver(true);
             profileDto.setDriverId(driver.getDriverId());
-            profileDto.setFullName(driver.getFullName());
-            profileDto.setPhone(driver.getPhone());
+            profileDto.setFullName(user.getFullName());
+            profileDto.setPhone(user.getPhone());
             profileDto.setLicenseType(driver.getLicenseType());
             profileDto.setYearsExperience(driver.getYearsExperience());
             profileDto.setHealthStatus(driver.getHealthStatus().toString());
@@ -146,6 +146,8 @@ public class ProfileServiceImpl implements ProfileService {
             profileDto.setTotalHoursWorked(totalHoursWorked != null ? totalHoursWorked : BigDecimal.ZERO);
         } else {
             profileDto.setIsDriver(false);
+            profileDto.setFullName(user.getFullName());
+            profileDto.setPhone(user.getPhone());
             profileDto.setTotalTrips(0);
             profileDto.setCompletedTrips(0);
             profileDto.setTotalHoursWorked(BigDecimal.ZERO);

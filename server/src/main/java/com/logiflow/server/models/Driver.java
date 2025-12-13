@@ -20,14 +20,16 @@ public class Driver {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    @Column(name = "full_name", length = 100, nullable = false)
-    private String fullName;
-
-    @Column(name = "phone", length = 20, nullable = false, unique = true)
-    private String phone;
+    // Contact information (using User phone and fullName)
 
     @Column(name = "license_type", length = 10, nullable = false)
     private String licenseType;
+
+    @Column(name = "license_number", length = 50)
+    private String licenseNumber;
+
+    @Column(name = "license_expiry")
+    private java.time.LocalDate licenseExpiryDate;
 
     @Column(name = "years_experience", nullable = false)
     private Integer yearsExperience;
@@ -41,6 +43,9 @@ public class Driver {
 
     @Column(name = "current_location_lng", precision = 11, scale = 8)
     private BigDecimal currentLocationLng;
+
+    @Column(name = "rating", precision = 3, scale = 2)
+    private java.math.BigDecimal rating;
 
     @Column(name = "status", length = 20, nullable = false)
     private String status = "available";

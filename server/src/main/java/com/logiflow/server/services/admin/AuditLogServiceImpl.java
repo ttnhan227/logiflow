@@ -15,8 +15,11 @@ import java.util.stream.Stream;
 
 @Service
 public class AuditLogServiceImpl implements AuditLogService {
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+    private final AuditLogRepository auditLogRepository;
+
+    public AuditLogServiceImpl(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
 
     @Override
     @Transactional
@@ -27,6 +30,7 @@ public class AuditLogServiceImpl implements AuditLogService {
         log.setRole(role);
         log.setDetails(details);
         log.setTimestamp(LocalDateTime.now());
+        log.setSuccess(true);
         auditLogRepository.save(log);
     }
 
@@ -54,7 +58,13 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     @Transactional(readOnly = true)
     public List<String> getAvailableActions() {
-        return Arrays.asList("CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS", "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING");
+        return Arrays.asList(
+            "CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS",
+            "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING",
+            "CREATE_VEHICLE", "UPDATE_VEHICLE", "DELETE_VEHICLE",
+            "CREATE_ROUTE", "UPDATE_ROUTE", "DELETE_ROUTE",
+            "APPROVE_REGISTRATION", "REJECT_REGISTRATION"
+        );
     }
 
     private AuditLogDto toDto(AuditLog log) {
@@ -65,6 +75,7 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .role(log.getRole())
                 .details(log.getDetails())
                 .timestamp(log.getTimestamp())
+                .success(log.getSuccess())
                 .build();
     }
 }

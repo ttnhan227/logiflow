@@ -2,20 +2,24 @@ package com.logiflow.server.services.dispatch;
 
 import com.logiflow.server.dtos.dispatch.TripCreateRequest;
 import com.logiflow.server.dtos.dispatch.TripDto;
-import com.logiflow.server.models.Order;
-import com.logiflow.server.models.Route;
-import com.logiflow.server.models.Trip;
-import com.logiflow.server.models.Vehicle;
+import com.logiflow.server.dtos.dispatch.TripListResponse;
+import com.logiflow.server.dtos.dispatch.TripAssignRequest;
+import com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest;
+import com.logiflow.server.models.*;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.route.RouteRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
+import com.logiflow.server.repositories.driver.DriverRepository;
+import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class TripServiceImpl implements TripService {
@@ -31,6 +35,12 @@ public class TripServiceImpl implements TripService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private DriverRepository driverRepository;
+
+    @Autowired
+    private TripAssignmentRepository tripAssignmentRepository;
 
     @Override
     @Transactional
@@ -53,7 +63,6 @@ public class TripServiceImpl implements TripService {
             }
         }
 
-        //Create
         Trip trip = new Trip();
         trip.setVehicle(vehicle);
         trip.setRoute(route);
@@ -63,7 +72,6 @@ public class TripServiceImpl implements TripService {
         trip.setStatus("scheduled");
         trip.setCreatedAt(LocalDateTime.now());
 
-        //Save trip first
         Trip savedTrip = tripRepository.save(trip);
 
         for (Order order : orders) {
@@ -71,30 +79,221 @@ public class TripServiceImpl implements TripService {
             order.setOrderStatus(Order.OrderStatus.ASSIGNED);
         }
 
-        // Save and flush to ensure database is updated
         orderRepository.saveAll(orders);
         orderRepository.flush();
-        
-        // Refresh saved trip to ensure it's in sync with database
+
         tripRepository.flush();
 
-        // Reload trip with vehicle and route
         Trip tripWithOrders = tripRepository.findByIdWithRelations(savedTrip.getTripId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve created trip"));
 
-        // Query orders by the original orderIds (they now have trip set)
-        // This ensures we get the orders that were just saved
         List<Order> tripOrders = orderRepository.findByIdsWithRelations(request.getOrderIds());
         
-        // Verify all orders belong to this trip
         tripOrders = tripOrders.stream()
                 .filter(order -> order.getTrip() != null && order.getTrip().getTripId().equals(savedTrip.getTripId()))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         
-        // Manually set orders to trip for DTO conversion (always set, even if empty)
         tripWithOrders.setOrders(tripOrders != null ? tripOrders : new java.util.ArrayList<>());
 
         return TripDto.fromTrip(tripWithOrders);
     }
-}
 
+    @Override
+    @Transactional(readOnly = true)
+    public TripListResponse getTrips(String status) {
+        String normalizedStatus = normalizeStatus(status);
+
+        List<Trip> trips;
+        if (normalizedStatus != null && !normalizedStatus.isEmpty()) {
+            trips = tripRepository.findByStatusWithRelations(normalizedStatus.toLowerCase());
+        } else {
+            trips = tripRepository.findAllWithRelations();
+        }
+
+        List<TripDto> tripDtos = trips.stream()
+                .map(TripDto::fromTrip)
+                .collect(Collectors.toList());
+
+        Map<String, Long> statusSummary = trips.stream()
+                .collect(Collectors.groupingBy(Trip::getStatus, Collectors.counting()));
+
+        TripListResponse response = new TripListResponse();
+        response.setTrips(tripDtos);
+        response.setTotalTrips(tripDtos.size());
+        response.setStatusSummary(statusSummary);
+
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TripDto getTripById(Integer tripId) {
+        Trip trip = tripRepository.findByIdWithRelations(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+        return TripDto.fromTrip(trip);
+    }
+
+    @Override
+    @Transactional
+    public TripDto assignTrip(Integer tripId, TripAssignRequest request) {
+        Trip trip = tripRepository.findByIdWithRelations(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+
+        Vehicle vehicle = trip.getVehicle();
+        if (request.getVehicleId() != null) {
+            vehicle = vehicleRepository.findById(request.getVehicleId())
+                    .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + request.getVehicleId()));
+            trip.setVehicle(vehicle);
+        }
+
+        Driver driver = driverRepository.findById(request.getDriverId())
+                .orElseThrow(() -> new RuntimeException("Driver not found with id: " + request.getDriverId()));
+
+        if (driver.getStatus() != null && !driver.getStatus().equalsIgnoreCase("available")) {
+            throw new RuntimeException("Driver is not available (status: " + driver.getStatus() + ")");
+        }
+
+        // Check if driver already has an active trip assignment
+        Long activeAssignmentsCount = tripAssignmentRepository.countActiveAssignmentsByDriverId(request.getDriverId());
+        if (activeAssignmentsCount != null && activeAssignmentsCount > 0) {
+            throw new RuntimeException("Driver already has an active trip assignment. Drivers can only have one active trip at a time.");
+        }
+        if (vehicle == null) {
+            throw new RuntimeException("Vehicle is required for trip assignment");
+        }
+        if (vehicle.getRequiredLicense() != null && driver.getLicenseType() != null
+                && !vehicle.getRequiredLicense().equalsIgnoreCase(driver.getLicenseType())) {
+            throw new RuntimeException("Driver license (" + driver.getLicenseType() + ") does not match vehicle requirement (" + vehicle.getRequiredLicense() + ")");
+        }
+
+        TripAssignment assignment = new TripAssignment();
+        assignment.setTrip(trip);
+        assignment.setDriver(driver);
+        assignment.setRole("driver");
+        assignment.setAssignedAt(LocalDateTime.now());
+        assignment.setStatus("assigned");
+
+        tripAssignmentRepository.save(assignment);
+
+        // Update driver status to reflect assignment
+        driver.setStatus("assigned");
+        driverRepository.save(driver);
+
+        if (trip.getStatus() == null || trip.getStatus().equalsIgnoreCase("scheduled")) {
+            trip.setStatus("in_progress");
+        }
+        Trip saved = tripRepository.save(trip);
+
+        Trip tripWithRelations = tripRepository.findByIdWithRelations(saved.getTripId())
+                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+
+        return TripDto.fromTrip(tripWithRelations);
+    }
+
+    @Override
+    @Transactional
+    public TripDto updateTripStatus(Integer tripId, TripStatusUpdateRequest request) {
+        Trip trip = tripRepository.findByIdWithRelations(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+
+        String newStatus = normalizeStatus(request.getStatus());
+        String currentStatus = trip.getStatus();
+        if (currentStatus != null && currentStatus.equalsIgnoreCase(newStatus)) {
+            return TripDto.fromTrip(trip);
+        }
+
+        if (!isValidStatus(newStatus)) {
+            throw new RuntimeException("Invalid status: " + request.getStatus() + ". Valid statuses: assigned, in_progress, delayed, completed, cancelled");
+        }
+
+
+        trip.setStatus(newStatus);
+
+
+        LocalDateTime now = LocalDateTime.now();
+        if ("in_progress".equalsIgnoreCase(newStatus) && trip.getActualDeparture() == null) {
+            trip.setActualDeparture(now);
+        }
+        if ("completed".equalsIgnoreCase(newStatus) && trip.getActualArrival() == null) {
+            trip.setActualArrival(now);
+        }
+
+        if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
+            for (TripAssignment assignment : trip.getTripAssignments()) {
+                if ("in_progress".equalsIgnoreCase(newStatus)) {
+                    assignment.setStatus("in_progress");
+                } else if ("completed".equalsIgnoreCase(newStatus)) {
+                    assignment.setStatus("completed");
+                } else if ("cancelled".equalsIgnoreCase(newStatus)) {
+                    assignment.setStatus("cancelled");
+                }
+            }
+            tripAssignmentRepository.saveAll(trip.getTripAssignments());
+        }
+
+        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+            if ("completed".equalsIgnoreCase(newStatus)) {
+                for (Order order : trip.getOrders()) {
+                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED || 
+                        order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
+                        order.setOrderStatus(Order.OrderStatus.DELIVERED);
+                    }
+                }
+                orderRepository.saveAll(trip.getOrders());
+            } else if ("cancelled".equalsIgnoreCase(newStatus)) {
+                for (Order order : trip.getOrders()) {
+                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED || 
+                        order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
+                        order.setOrderStatus(Order.OrderStatus.CANCELLED);
+                    }
+                }
+                orderRepository.saveAll(trip.getOrders());
+            } else if ("in_progress".equalsIgnoreCase(newStatus)) {
+                for (Order order : trip.getOrders()) {
+                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED) {
+                        order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
+                    }
+                }
+                orderRepository.saveAll(trip.getOrders());
+            }
+        }
+
+        Trip savedTrip = tripRepository.save(trip);
+        tripRepository.flush();
+
+        Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
+                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+
+        return TripDto.fromTrip(tripWithRelations);
+    }
+
+    private boolean isValidStatus(String status) {
+        if (status == null) {
+            return false;
+        }
+        String lower = status.toLowerCase();
+        return lower.equals("assigned") || 
+               lower.equals("in_progress") || 
+               lower.equals("delayed") || 
+               lower.equals("completed") || 
+               lower.equals("cancelled") ||
+               lower.equals("scheduled");
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return null;
+        }
+
+        String lower = status.trim().toLowerCase();
+        return switch (lower) {
+            case "pending", "scheduled" -> "scheduled";
+            case "active", "in-progress", "in_progress", "inprogress" -> "in_progress";
+            case "completed", "complete", "finished" -> "completed";
+            case "cancelled", "canceled" -> "cancelled";
+            case "assigned" -> "assigned";
+            case "delayed" -> "delayed";
+            default -> status.trim();
+        };
+    }
+}

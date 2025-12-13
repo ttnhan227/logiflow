@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/api_client.dart';
+import '../../services/driver/driver_service.dart';
 
 class DeliveryConfirmationScreen extends StatefulWidget {
   final int tripId;
@@ -56,7 +56,7 @@ class _DeliveryConfirmationScreenState extends State<DeliveryConfirmationScreen>
 
     try {
       final apiClient = ApiClient();
-      
+
       Map<String, dynamic> confirmationData = {
         'tripId': widget.tripId,
         'confirmationType': _confirmationType,
@@ -92,6 +92,8 @@ class _DeliveryConfirmationScreenState extends State<DeliveryConfirmationScreen>
       );
 
       if (response.statusCode == 200) {
+        print('Delivery confirmation successful - response: ${response.body}');
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Delivery confirmed successfully')),
@@ -113,6 +115,8 @@ class _DeliveryConfirmationScreenState extends State<DeliveryConfirmationScreen>
       }
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {

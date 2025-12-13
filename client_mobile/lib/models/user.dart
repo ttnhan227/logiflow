@@ -3,12 +3,14 @@ class User {
   final String role;
   final String? token;  // Optional - only present after login
   final String? message; // Optional - only from login response
+  final String? profilePictureUrl;
 
   User({
     required this.username,
     required this.role,
     this.token,
     this.message,
+    this.profilePictureUrl,
   });
 
   // From login API response
@@ -18,6 +20,7 @@ class User {
       role: json['role'],
       token: json['token'],
       message: json['message'],
+      profilePictureUrl: json['profilePictureUrl'],
     );
   }
 
@@ -26,6 +29,7 @@ class User {
     return User(
       username: json['username'],
       role: json['role'],
+      profilePictureUrl: json['profilePictureUrl'],
     );
   }
 
@@ -34,6 +38,7 @@ class User {
     return {
       'username': username,
       'role': role,
+      'profilePictureUrl': profilePictureUrl,
     };
   }
 

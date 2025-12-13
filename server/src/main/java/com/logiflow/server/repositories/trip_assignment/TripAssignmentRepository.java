@@ -22,4 +22,7 @@ public interface TripAssignmentRepository extends JpaRepository<TripAssignment, 
     @Transactional
     @Query("UPDATE TripAssignment ta SET ta.status = :status WHERE ta.driver.driverId = :driverId AND ta.trip.tripId = :tripId")
     int updateStatusByDriverAndTrip(@Param("driverId") Integer driverId, @Param("tripId") Integer tripId, @Param("status") String status);
+
+    @Query("SELECT COUNT(ta) FROM TripAssignment ta WHERE ta.driver.driverId = :driverId AND ta.status IN ('assigned', 'accepted', 'in_progress')")
+    Long countActiveAssignmentsByDriverId(@Param("driverId") Integer driverId);
 }

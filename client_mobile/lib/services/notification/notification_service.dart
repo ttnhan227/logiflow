@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
@@ -8,11 +7,11 @@ class NotificationService {
 
   Future<void> connect(String driverId) async {
     _driverId = driverId;
-    
-    // Get JWT token from shared preferences
+
+    // Get JWT token from shared preferences (using correct key)
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    
+    final token = prefs.getString('token');
+
     if (token == null) {
       print('No JWT token found');
       return;
