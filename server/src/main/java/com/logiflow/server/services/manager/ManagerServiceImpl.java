@@ -79,7 +79,7 @@ public class ManagerServiceImpl implements ManagerService {
                 DriverAgg agg = map.computeIfAbsent(driverKey, id -> {
                     DriverAgg a = new DriverAgg();
                     a.driverId = "DRV-" + id;               // hiển thị đẹp
-                    a.driverName = driver.getFullName();
+                    a.driverName = driver.getUser().getFullName();
                     return a;
                 });
 
@@ -675,7 +675,7 @@ public class ManagerServiceImpl implements ManagerService {
                 DriverIssueAgg agg = driverMap.computeIfAbsent(driverKey, id -> {
                     DriverIssueAgg a = new DriverIssueAgg();
                     a.driverCode = "DRV-" + id;
-                    a.driverName = d.getFullName();
+                    a.driverName = d.getUser().getFullName();
                     return a;
                 });
 
