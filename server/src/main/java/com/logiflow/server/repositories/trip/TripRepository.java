@@ -63,6 +63,33 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             "AND t.actualArrival >= :fromDate " +
             "ORDER BY t.actualArrival DESC")
     List<Trip> findCompletedTripsForStats(@Param("fromDate") LocalDateTime fromDate);
+
+    // startDate
+    List<Trip> findByScheduledDepartureGreaterThanEqual(LocalDateTime from);
+
+    // endDate
+    List<Trip> findByScheduledDepartureLessThan(LocalDateTime to);
+
+    // thống kê delivery theo ngày
+    @Query("""
+        SELECT 
+            function('date', t.scheduledDeparture)        AS date,
+            COUNT(t)                                      AS totalTrips,
+            SUM(CASE WHEN lower(t.status) = 'completed' THEN 1 ELSE 0 END) AS completedTrips,
+            SUM(CASE WHEN lower(t.status) = 'cancelled' THEN 1 ELSE 0 END) AS cancelledTrips,
+            SUM(CASE WHEN lower(t.status) = 'delayed'   THEN 1 ELSE 0 END) AS delayedTrips,
+            COALESCE(SUM(r.distanceKm), 0)               AS totalDistanceKm
+        FROM Trip t
+        LEFT JOIN t.route r
+        WHERE (:from IS NULL OR t.scheduledDeparture >= :from)
+          AND (:to   IS NULL OR t.scheduledDeparture <  :to)
+        GROUP BY function('date', t.scheduledDeparture)
+        ORDER BY function('date', t.scheduledDeparture)
+        """)
+    List<DailyDeliveryStats> findDailyDeliveryStats(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
     
     // Count trips by vehicle and status for admin vehicle management
     long countByVehicleAndStatusIn(com.logiflow.server.models.Vehicle vehicle, List<String> statuses);
