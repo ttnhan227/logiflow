@@ -45,8 +45,9 @@ const ManagerLayout = () => {
       <div className="manager-body">
         {/* Sidebar */}
         <aside className="manager-sidebar">
-          <NavLink to="/manager/drivers" className="manager-menu-item">
-            Drivers
+            {/*theo dõi vận hành tổng thể (drivers + fleet + operations)*/}
+          <NavLink to="/manager/monitor-operations" className="manager-menu-item">
+              Monitor Operations
           </NavLink>
           <NavLink to="/manager/issues" className="manager-menu-item">
             Issues & Reports

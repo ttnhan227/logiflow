@@ -1,28 +1,39 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    getDriverPerformance,
     getOperationsPerformance,
     getFleetStatus,
+    getDeliveryReport,
 } from "../../../services/manager/managerService.js";
-import "../../../assets/manager/driverManager.css";
+import "../manager.css";
 
-const DriverManager = () => {
-    const [drivers, setDrivers] = useState([]);
+const MonitorOperations = () => {
+    const [deliveries, setDeliveries] = useState([]);
+
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // summary từ API 2
     const [summary, setSummary] = useState(null);
-
-    // fleet từ API 3
     const [fleet, setFleet] = useState(null);
 
-    // helper: format Date -> "YYYY-MM-DD"
     const toInputDate = (date) => date.toISOString().slice(0, 10);
 
-    // init default date range: last 7 days
+    const formatNumber = (v) => {
+        if (v === null || v === undefined) return "0";
+        const n = Number(v);
+        if (Number.isNaN(n)) return "0";
+        return n.toLocaleString();
+    };
+
+    const formatPercent = (v) => {
+        if (v === null || v === undefined) return "0%";
+        const n = Number(v);
+        if (Number.isNaN(n)) return "0%";
+        return `${Math.round(n * 10) / 10}%`;
+    };
+
     useEffect(() => {
         const today = new Date();
         const sevenDaysAgo = new Date();
@@ -34,7 +45,7 @@ const DriverManager = () => {
         setStartDate(defaultStart);
         setEndDate(defaultEnd);
 
-        loadData(defaultStart, defaultEnd);
+        void loadData(defaultStart, defaultEnd);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -45,68 +56,77 @@ const DriverManager = () => {
         const s = from ?? startDate;
         const e = to ?? endDate;
 
-        console.log("Loading manager data with:", s, e);
-
-        // tách riêng từng API để thằng nào lỗi thì lỗi, không kéo chết cả trang
-        let driverData = [];
         let operationsData = null;
         let fleetData = null;
+        let deliveryData = [];
 
-        // API 1 – driver performance
-        try {
-            driverData = await getDriverPerformance(s, e);
-            console.log("Driver performance:", driverData);
-        } catch (err) {
-            console.error("Error getDriverPerformance:", err);
-        }
-
-        // API 2 – tổng quan operations
         try {
             operationsData = await getOperationsPerformance(s, e);
-            console.log("Operations performance:", operationsData);
-        } catch (err) {
-            console.error("Error getOperationsPerformance:", err);
+        } catch {
+            setError("Failed to load manager data.");
         }
 
-        // API 3 – fleet status
         try {
             fleetData = await getFleetStatus();
-            console.log("Fleet status:", fleetData);
-        } catch (err) {
-            console.error("Error getFleetStatus:", err);
+        } catch {
+            setError("Failed to load manager data.");
         }
 
-        // cập nhật state
-        if (Array.isArray(driverData)) {
-            setDrivers(driverData);
-        } else {
-            setDrivers([]);
+        try {
+            deliveryData = await getDeliveryReport(s, e);
+        } catch {
+            setError("Failed to load manager data.");
         }
 
         setSummary(operationsData || null);
         setFleet(fleetData || null);
+        setDeliveries(Array.isArray(deliveryData) ? deliveryData : []);
 
-        // nếu cả 3 đều fail thì mới set error
-        if (
-            (!driverData || !Array.isArray(driverData) || driverData.length === 0) &&
-            !operationsData &&
-            !fleetData
-        ) {
-            setError("Failed to load driver performance.");
+        if (!operationsData && !fleetData) {
+            setError("Failed to load manager data.");
         } else {
             setError("");
         }
-
         setLoading(false);
     };
 
     const handleSearch = () => {
-        loadData(startDate, endDate);
+        void loadData(startDate, endDate);
     };
 
+    const deliveriesSummary = useMemo(() => {
+        if (!deliveries || deliveries.length === 0) {
+            return {
+                totalTrips: 0,
+                completedTrips: 0,
+                cancelledTrips: 0,
+                delayedTrips: 0,
+                onTimeRatePercent: 0,
+                totalDistanceKm: 0,
+            };
+        }
+
+        const totalTrips = deliveries.reduce((a, x) => a + (Number(x.totalTrips) || 0), 0);
+        const completedTrips = deliveries.reduce((a, x) => a + (Number(x.completedTrips) || 0), 0);
+        const cancelledTrips = deliveries.reduce((a, x) => a + (Number(x.cancelledTrips) || 0), 0);
+        const delayedTrips = deliveries.reduce((a, x) => a + (Number(x.delayedTrips) || 0), 0);
+        const totalDistanceKm = deliveries.reduce((a, x) => a + (Number(x.totalDistanceKm) || 0), 0);
+
+        const onTimeRatePercent = totalTrips === 0 ? 0 : (completedTrips * 100.0) / totalTrips;
+
+        return {
+            totalTrips,
+            completedTrips,
+            cancelledTrips,
+            delayedTrips,
+            onTimeRatePercent,
+            totalDistanceKm,
+        };
+    }, [deliveries]);
+
     return (
-        <div className="driver-manager-page">
-            <h1>🚚 Driver Performance</h1>
+        <div className="monitor-operations-page">
+            <h1>🚚 Monitor Operations</h1>
 
             <div className="filters">
                 <label>
@@ -132,13 +152,16 @@ const DriverManager = () => {
                 </button>
             </div>
 
-            {error && <div className="error-text">{error}</div>}
+            {error && <div className="error">{error}</div>}
 
-            {!error && !loading && drivers.length === 0 && (
-                <div>No data.</div>
-            )}
+            {!error &&
+                !loading &&
+                !summary &&
+                !fleet && (
+                    <div>No operational data available.</div>
+                )}
 
-            {/* API 2 – Overall operations performance */}
+            {/* SUMMARY CARDS */}
             {summary && (
                 <div className="summary-cards">
                     <div className="card">
@@ -169,12 +192,13 @@ const DriverManager = () => {
                     <div className="card">
                         <div className="card-label">Avg Delay</div>
                         <div className="card-value">
-                            {summary.averageDelayMinutes != null
+                            {summary?.averageDelayMinutes != null
                                 ? summary.averageDelayMinutes.toFixed(1)
                                 : "-"}{" "}
                             min
                         </div>
                     </div>
+
                     <div className="card">
                         <div className="card-label">Total Distance</div>
                         <div className="card-value">
@@ -187,7 +211,7 @@ const DriverManager = () => {
                     <div className="card">
                         <div className="card-label">Avg Distance / Trip</div>
                         <div className="card-value">
-                            {summary.averageDistancePerTripKm != null
+                            {summary?.averageDistancePerTripKm != null
                                 ? summary.averageDistancePerTripKm.toFixed(1)
                                 : "-"}{" "}
                             km
@@ -196,7 +220,6 @@ const DriverManager = () => {
                 </div>
             )}
 
-            {/* API 3 – Fleet status */}
             {fleet && (
                 <div className="summary-cards">
                     <div className="card">
@@ -213,15 +236,11 @@ const DriverManager = () => {
                     </div>
                     <div className="card">
                         <div className="card-label">In Maintenance</div>
-                        <div className="card-value">
-                            {fleet.inMaintenanceVehicles}
-                        </div>
+                        <div className="card-value">{fleet.inMaintenanceVehicles}</div>
                     </div>
                     <div className="card">
                         <div className="card-label">Unavailable</div>
-                        <div className="card-value">
-                            {fleet.unavailableVehicles}
-                        </div>
+                        <div className="card-value">{fleet.unavailableVehicles}</div>
                     </div>
                     <div className="card">
                         <div className="card-label">Utilization</div>
@@ -235,48 +254,61 @@ const DriverManager = () => {
                 </div>
             )}
 
-            {/* API 1 – Driver performance table */}
-            {!error && drivers.length > 0 && (
-                <table className="driver-table">
+            {/* DELIVERIES REPORT */}
+            <h2>📦 Deliveries Report</h2>
+
+            <div className="summary-cards">
+                <div className="card">
+                    <h3>Total Trips</h3>
+                    <p>{formatNumber(deliveriesSummary.totalTrips)}</p>
+                </div>
+                <div className="card">
+                    <h3>Completed</h3>
+                    <p>{formatNumber(deliveriesSummary.completedTrips)}</p>
+                </div>
+                <div className="card">
+                    <h3>Cancelled</h3>
+                    <p>{formatNumber(deliveriesSummary.cancelledTrips)}</p>
+                </div>
+                <div className="card">
+                    <h3>Delayed</h3>
+                    <p>{formatNumber(deliveriesSummary.delayedTrips)}</p>
+                </div>
+                <div className="card">
+                    <h3>On-time Rate</h3>
+                    <p>{formatPercent(deliveriesSummary.onTimeRatePercent)}</p>
+                </div>
+                <div className="card">
+                    <h3>Total Distance</h3>
+                    <p>{formatNumber(deliveriesSummary.totalDistanceKm)} km</p>
+                </div>
+            </div>
+
+            {deliveries.length === 0 ? (
+                <p>No delivery report data.</p>
+            ) : (
+                <table className="deliveries-table">
                     <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Driver ID</th>
-                        <th>Driver Name</th>
-                        <th>Total Trips</th>
+                        <th>Date</th>
+                        <th>Total</th>
                         <th>Completed</th>
                         <th>Cancelled</th>
                         <th>Delayed</th>
-                        <th>On-time Rate (%)</th>
-                        <th>Avg Delay (min)</th>
+                        <th>On-time</th>
                         <th>Total Distance (km)</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {drivers.map((d, idx) => (
-                        <tr key={d.driverId ?? idx}>
-                            <td>{idx + 1}</td>
-                            <td>{d.driverId}</td>
-                            <td>{d.driverName}</td>
-                            <td>{d.totalTrips}</td>
-                            <td>{d.completedTrips}</td>
-                            <td>{d.cancelledTrips}</td>
-                            <td>{d.delayedTrips}</td>
-                            <td>
-                                {d.onTimeRatePercent != null
-                                    ? d.onTimeRatePercent.toFixed(1)
-                                    : "-"}
-                            </td>
-                            <td>
-                                {d.averageDelayMinutes != null
-                                    ? d.averageDelayMinutes.toFixed(1)
-                                    : "-"}
-                            </td>
-                            <td>
-                                {d.totalDistanceKm != null
-                                    ? d.totalDistanceKm.toFixed(1)
-                                    : "-"}
-                            </td>
+                    {deliveries.map((x, idx) => (
+                        <tr key={idx}>
+                            <td>{x.date}</td>
+                            <td>{formatNumber(x.totalTrips)}</td>
+                            <td>{formatNumber(x.completedTrips)}</td>
+                            <td>{formatNumber(x.cancelledTrips)}</td>
+                            <td>{formatNumber(x.delayedTrips)}</td>
+                            <td>{formatPercent(x.onTimeRatePercent)}</td>
+                            <td>{formatNumber(x.totalDistanceKm)}</td>
                         </tr>
                     ))}
                     </tbody>
@@ -286,4 +318,4 @@ const DriverManager = () => {
     );
 };
 
-export default DriverManager;
+export default MonitorOperations;

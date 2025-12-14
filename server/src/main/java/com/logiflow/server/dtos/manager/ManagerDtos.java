@@ -8,24 +8,24 @@ import lombok.NoArgsConstructor;
 public class ManagerDtos {
 
     // 1) DRIVER PERFORMANCE (API /operations/drivers/performance)
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class DriverPerformanceDto {
-
-        private String driverId;
-        private String driverName;
-
-        private Integer totalTrips;
-        private Integer completedTrips;
-        private Integer cancelledTrips;
-        private Integer delayedTrips;
-
-        private Double onTimeRatePercent;    // 0–100
-        private Double averageDelayMinutes;  // phút
-        private Double totalDistanceKm;      // km
-    }
+//    @Data
+//    @NoArgsConstructor
+//    @AllArgsConstructor
+//    @Builder
+//    public static class DriverPerformanceDto {
+//
+//        private String driverId;
+//        private String driverName;
+//
+//        private Integer totalTrips;
+//        private Integer completedTrips;
+//        private Integer cancelledTrips;
+//        private Integer delayedTrips;
+//
+//        private Double onTimeRatePercent;    // 0–100
+//        private Double averageDelayMinutes;  // phút
+//        private Double totalDistanceKm;      // km
+//    }
 
     // 2) OPERATIONS PERFORMANCE (API /operations/performance)
     @Data

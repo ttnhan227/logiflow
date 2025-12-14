@@ -45,7 +45,7 @@ import TripCreatePage from "./components/dispatch/TripCreatePage";
 import TripDetailPage from "./components/dispatch/TripDetailPage";
 import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
-import DriverManager from "./components/manager/DriverManager/DriverManager.jsx";
+import MonitorOperations from "./components/manager/MonitorOperations/MonitorOperations.jsx";
 import IssueReports from "./components/manager/IssueReports/IssueReports";
 import CompliancePage from "./components/manager/Compliance/CompliancePage";
 import RouteAnalyticsPage from "./components/manager/RouteAnalytics/RouteAnalyticsPage";
@@ -115,40 +115,28 @@ function App() {
         </Route>
 
           {/* Manager routes with ManagerLayout (sidebar) */}
-        <Route element={<ManagerLayout/>}>
-          <Route path="/manager/drivers" element={
-            <ProtectedRoute requiredRole="MANAGER">
-              <DriverManager/>
-            </ProtectedRoute>
-          } />
-          <Route path="/manager/issues" element={
-            <ProtectedRoute requiredRole="MANAGER">
-              <IssueReports/>
-            </ProtectedRoute>
-          } />
-          <Route path="/manager/compliance" element={
-            <ProtectedRoute requiredRole="MANAGER">
-              <CompliancePage/>
-            </ProtectedRoute>
-          } />
-          <Route path="/manager/analytics/routes" element={
-            <ProtectedRoute requiredRole="MANAGER">
-              <RouteAnalyticsPage/>
-            </ProtectedRoute>
-          } />
-          <Route path="/manager/alerts" element={
-            <ProtectedRoute requiredRole="MANAGER">
-              <AlertsPage/>
-            </ProtectedRoute>
-          } />
-          <Route path="/manager/activities" element={
-            <ProtectedRoute requiredRole="MANAGER">
-              <ManagerActivitiesPage/>
-            </ProtectedRoute>
-          } />
-        </Route>
+          <Route
+              path="/manager"
+              element={
+                  <ProtectedRoute requiredRole="MANAGER">
+                      <ManagerLayout />
+                  </ProtectedRoute>
+              }
+          >
+              <Route index element={<MonitorOperations />} />
 
-        {/* Dispatch routes with DispatchLayout */}
+              <Route path="monitor-operations" element={<MonitorOperations />} />
+              <Route path="issues" element={<IssueReports />} />
+              <Route path="compliance" element={<CompliancePage />} />
+              <Route path="analytics/routes" element={<RouteAnalyticsPage />} />
+              <Route path="alerts" element={<AlertsPage />} />
+              <Route path="activities" element={<ManagerActivitiesPage />} />
+
+              {/* alias tạm để khỏi 404 nếu còn link cũ */}
+              <Route path="drivers" element={<MonitorOperations />} />
+          </Route>
+
+          {/* Dispatch routes with DispatchLayout */}
         <Route element={<DispatchLayout />}>
           <Route path="/dispatch/orders" element={
             <ProtectedRoute requiredRole="DISPATCHER">
