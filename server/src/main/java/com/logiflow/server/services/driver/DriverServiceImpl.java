@@ -83,6 +83,57 @@ public class DriverServiceImpl implements DriverService {
     }
 
     @Override
+    public void reportTripDelay(Integer driverId, Integer tripId, String delayReason, Integer estimatedDelayMinutes) {
+        Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
+
+        // Check if this trip already has SLA extensions (approved delays)
+        boolean hasSlaExtension = trip.getSlaExtensionMinutes() != null && trip.getSlaExtensionMinutes() > 0;
+
+        // BLOCK any new delay reports after admin approval - drivers cannot submit additional delays
+        // This includes updates - once approved, no more delay submissions possible
+        if (hasSlaExtension) {
+            throw new RuntimeException("Cannot submit delay report: This trip already has approved SLA extensions. Please contact admin directly if you need further assistance.");
+        }
+
+        // Allow updating pending delay reports (before admin approval)
+        boolean hasPreviousDelay = trip.getDelayReason() != null && !trip.getDelayReason().isEmpty();
+
+        // Store delay reason - timing information is now included in the text description, no hardcoded minutes needed
+        trip.setDelayReason(delayReason);
+
+        tripRepository.save(trip);
+
+        // Send notification to admins about the delay report
+        String notificationType = hasPreviousDelay ? "Driver updated delay report" : "Driver reported delay";
+        String notificationMessage = String.format(
+                "%s for trip #%d: %s",
+                notificationType, tripId, delayReason
+        );
+
+        // Send broadcast notification to all admin users with action link using TRIP ID
+        notificationService.broadcastToAdminsWithAction(
+                "DELAY_REPORT",
+                "WARNING",
+                "Driver Delay Report",
+                notificationMessage,
+                "/admin/trips-oversight/" + tripId,  // ✅ Use tripId, not orderId
+                "Review Delay",
+                tripId  // ✅ Use tripId as the reference ID
+        );
+
+        // Also send notification to driver confirming their delay report/update
+        String driverMessage = hasSlaExtension ?
+            "Delay report updated for trip #" + tripId + ". Since you had existing approval, admin will need to re-approve your updated delay." :
+            "Delay report submitted for trip #" + tripId + ". Admin will review.";
+        notificationService.sendDriverNotification(
+                driverId,
+                "DELAY_REPORTED",
+                driverMessage
+        );
+    }
+
+    @Override
     public void updateTripStatus(Integer driverId, Integer tripId, String status) {
         Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
@@ -267,6 +318,10 @@ public class DriverServiceImpl implements DriverService {
             dto.setVehiclePlate(t.getVehicle().getLicensePlate());
             dto.setVehicleCapacity(t.getVehicle().getCapacity());
         }
+
+        dto.setDelayReason(t.getDelayReason());
+        dto.setSlaExtensionMinutes(t.getSlaExtensionMinutes());
+
         if (t.getOrders() != null) {
             dto.setOrders(t.getOrders().stream().map(o -> {
                 OrderBrief brief = new OrderBrief();
@@ -283,6 +338,8 @@ public class DriverServiceImpl implements DriverService {
                 brief.setOrderStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);
                 brief.setPriority(o.getPriorityLevel() != null ? o.getPriorityLevel().name() : null);
                 brief.setPriorityLevel(o.getPriorityLevel() != null ? o.getPriorityLevel().name() : null);
+                // Delay reason now comes from the trip (applies to all orders)
+                brief.setDelayReason(t.getDelayReason());
                 return brief;
             }).toList());
         }

@@ -64,6 +64,9 @@ public class DriverDtos {
         private String vehiclePlate;
         private Integer vehicleCapacity;
 
+        private String delayReason;
+        private Integer slaExtensionMinutes;
+
         private List<OrderBrief> orders;
     }
 
@@ -82,6 +85,7 @@ public class DriverDtos {
         private String orderStatus;
         private String priority;
         private String priorityLevel;
+        private String delayReason;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor

@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/auth/auth_service.dart';
 import '../services/notification/notification_service.dart';
+import '../widgets/notification_bell.dart';
 import '../services/gps/gps_tracking_service.dart';
 import '../services/driver/driver_service.dart';
 import '../models/user.dart';
 import 'auth/login_screen.dart';
 import 'driver/driver_trips_screen.dart';
+import 'driver/driver_trip_detail_screen.dart';
 import 'driver/driver_compliance_screen.dart';
 import 'driver/driver_profile_screen.dart';
 import 'customer/create_order_screen.dart';
@@ -176,12 +178,12 @@ class _MainLayoutState extends State<MainLayout> {
       if (mounted) {
         final type = notification['type'] ?? 'INFO';
         final message = notification['message'] ?? 'New notification';
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
             backgroundColor: _getNotificationColor(type),
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 10),
             action: SnackBarAction(
               label: 'View',
               textColor: Colors.white,
@@ -195,8 +197,11 @@ class _MainLayoutState extends State<MainLayout> {
         );
       }
     };
-    
+
     await _notificationService.connect(driverId);
+
+    // Note: Real notifications will come from the admin backend via WebSocket
+    // Test notifications disabled to improve performance
   }
 
   Color _getNotificationColor(String type) {
@@ -258,6 +263,45 @@ class _MainLayoutState extends State<MainLayout> {
         ],
       ),
     );
+  }
+
+  void _handleNavigation(int tabIndex, {Map<String, dynamic>? params}) {
+    setState(() => _currentIndex = tabIndex);
+    _pageController.jumpToPage(tabIndex);
+
+    // If navigation includes trip parameters, we could pass them to the trips screen
+    // This would require the DriverTripsScreen to accept parameters
+    if (params != null && params.containsKey('tripId')) {
+      print('Navigating to trips screen with tripId: ${params['tripId']}');
+      // In the future, you could add logic to highlight or scroll to the specific trip
+    }
+  }
+
+  Future<void> _navigateToTripDetail({String? tripId}) async {
+    if (tripId != null) {
+      // Check token validity before navigation
+      try {
+        final token = await authService.getToken();
+        if (token == null || token.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Authentication session expired. Please login again.')),
+          );
+          // Navigate to login
+          authService.logout();
+          return;
+        }
+
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => DriverTripDetailScreen(tripId: int.parse(tripId)),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error validating authentication: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _logout() async {
@@ -435,6 +479,12 @@ class _MainLayoutState extends State<MainLayout> {
           ],
         ),
         actions: [
+          // Show notification bell for drivers only
+          if (_currentUser != null && _currentUser!.role.toUpperCase() == 'DRIVER')
+            NotificationBell(
+              notificationService: _notificationService,
+              onNavigateToTripDetail: _navigateToTripDetail,
+            ),
           if (_currentUser != null)
             PopupMenuButton<String>(
               icon: CircleAvatar(

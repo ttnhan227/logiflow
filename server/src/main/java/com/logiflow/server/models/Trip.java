@@ -52,4 +52,10 @@ public class Trip {
 
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Order> orders;
+
+    @Column(name = "delay_reason", length = 500, nullable = true)
+    private String delayReason;
+
+    @Column(name = "sla_extension_minutes", nullable = true)
+    private Integer slaExtensionMinutes = 0;
 }

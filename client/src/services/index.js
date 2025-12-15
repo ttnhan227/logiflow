@@ -9,7 +9,7 @@ import dashboardService from './admin/dashboardService';
 import routeService from './admin/routeService';
 import vehicleService from './admin/vehicleService';
 import reportsService from './admin/reportsService';
-import ordersOversightService from './admin/ordersOversightService';
+import tripsOversightService from './admin/tripsOversightService';
 import orderService from './dispatch/orderService';
 import dispatchDriverService from './dispatch/driverService';
 import tripService from './dispatch/tripService';
@@ -28,7 +28,7 @@ export {
   routeService,
   vehicleService,
   reportsService,
-  ordersOversightService,
+  tripsOversightService,
   orderService,
   dispatchDriverService,
   tripService,

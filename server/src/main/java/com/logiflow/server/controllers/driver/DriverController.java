@@ -166,4 +166,38 @@ public class DriverController {
         var result = driverService.updateProfile(authentication.getName(), request);
         return ResponseEntity.ok(result);
     }
+
+  // 12) POST /api/driver/me/trips/{tripId}/delay - Report trip delay
+    @PostMapping("/trips/{tripId}/delay")
+    public ResponseEntity<Void> reportTripDelay(
+            @PathVariable Integer tripId,
+            @RequestBody DelayReportRequest request,
+            Authentication authentication
+    ) {
+        if (request == null || request.getDelayReason() == null || request.getDelayReason().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        var driver = driverService.getCurrentDriver(authentication.getName());
+        // Delay minutes are now included in the text description, no hardcoded minutes needed
+        driverService.reportTripDelay(driver.getDriverId(), tripId, request.getDelayReason(), null);
+        return ResponseEntity.ok().build();
+    }
+
+    // Inner DTO for delay reports
+    public static class DelayReportRequest {
+        private String delayReason;
+        private Integer estimatedDelayMinutes;
+
+        public DelayReportRequest() {}
+        public DelayReportRequest(String delayReason, Integer estimatedDelayMinutes) {
+            this.delayReason = delayReason;
+            this.estimatedDelayMinutes = estimatedDelayMinutes;
+        }
+
+        public String getDelayReason() { return delayReason; }
+        public void setDelayReason(String delayReason) { this.delayReason = delayReason; }
+
+        public Integer getEstimatedDelayMinutes() { return estimatedDelayMinutes; }
+        public void setEstimatedDelayMinutes(Integer estimatedDelayMinutes) { this.estimatedDelayMinutes = estimatedDelayMinutes; }
+    }
 }

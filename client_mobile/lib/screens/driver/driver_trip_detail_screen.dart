@@ -17,10 +17,15 @@ class DriverTripDetailScreen extends StatefulWidget {
 class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
   bool _isLoading = true;
   bool _isOrderSectionExpanded = true;
+  bool _isDelayDialogOpen = false;
+  bool _isSubmittingDelay = false;
   Map<String, dynamic>? _tripDetail;
   String? _error;
   String? _previousTripStatus;
   bool? _hasActiveAssignment;
+  final TextEditingController _delayReasonController = TextEditingController();
+  String? _currentDelayReason;
+  bool _delayReportExist = false;
 
   @override
   void initState() {
@@ -86,6 +91,9 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
       _error = null;
     });
     try {
+      // Add a small delay when coming from navigation to ensure auth context is ready
+      await Future.delayed(const Duration(milliseconds: 100));
+
       final response = await apiClient.get('/driver/me/trips/${widget.tripId}');
       if (response.statusCode == 200) {
         final newTripDetail = jsonDecode(response.body);
@@ -98,25 +106,52 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           await _handleGpsTrackingForTripStatus(newStatus, newTripDetail['tripId'].toString());
         }
 
+        // Check for existing delay reports in orders
+        final orders = newTripDetail['orders'] as List?;
+        bool hasDelayReport = false;
+        String? existingDelayReason;
+        if (orders != null) {
+          for (var order in orders) {
+            if (order['delayReason'] != null && order['delayReason'].toString().isNotEmpty) {
+              hasDelayReport = true;
+              existingDelayReason = order['delayReason'];
+              break; // Use the first delay reason found
+            }
+          }
+        }
+
         setState(() {
           _tripDetail = newTripDetail;
           _previousTripStatus = newStatus;
-          // Debug: Print orders data
-          print('Trip Detail Response: ${response.body}');
-          print('Orders data: ${_tripDetail!['orders']}');
+          _delayReportExist = hasDelayReport;
+          _currentDelayReason = existingDelayReason;
           _isLoading = false;
         });
       } else {
         setState(() {
-          _error = 'Failed to load trip: ${response.body}';
+          _error = 'Failed to load trip (status ${response.statusCode}): ${response.body}';
           _isLoading = false;
         });
       }
     } catch (e) {
-      setState(() {
-        _error = 'Error: $e';
-        _isLoading = false;
-      });
+      // Check if it's an authentication error
+      if (e.toString().contains('Authentication failed')) {
+        setState(() {
+          _error = 'Authentication failed. Please try again.';
+          _isLoading = false;
+        });
+        // Optionally show a dialog and navigate back to login
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/login');
+          }
+        });
+      } else {
+        setState(() {
+          _error = 'Error: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -187,6 +222,144 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
         ),
       ],
     );
+  }
+
+  void _showDelayReportDialog() {
+    setState(() {
+      _isDelayDialogOpen = true;
+      // Initialize with existing delay info or default values
+      if (_delayReportExist && _currentDelayReason != null) {
+        _delayReasonController.text = _currentDelayReason!;
+      } else {
+        _delayReasonController.clear();
+      }
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Report Trip Delay'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Please provide details about the delay so admin can assist appropriately.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _delayReasonController,
+                      decoration: const InputDecoration(
+                        labelText: 'Delay Reason',
+                        hintText: 'e.g., Traffic congestion expected for about 60 mins, vehicle breakdown, customer unavailable...',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.description),
+                      ),
+                      maxLines: 3,
+                      maxLength: 500,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Include timing information in your description so admin understands the expected delay duration.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    setState(() {
+                      _isDelayDialogOpen = false;
+                    });
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: _isSubmittingDelay
+                      ? null
+                      : () async {
+                          if (_delayReasonController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please provide a delay reason.')),
+                            );
+                            return;
+                          }
+
+                          setStateDialog(() => _isSubmittingDelay = true);
+                          setState(() => _isSubmittingDelay = true);
+
+                          try {
+                            await driverService.reportTripDelay(
+                              _tripDetail!['tripId'],
+                              _delayReasonController.text.trim(),
+                            ); // No hardcoded minutes - info is in text
+
+                            setStateDialog(() => _isSubmittingDelay = false);
+                            setState(() => _isSubmittingDelay = false);
+
+                            Navigator.of(context).pop();
+                            setState(() {
+                              _isDelayDialogOpen = false;
+                            });
+
+                            Navigator.of(context).pop();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              !_delayReportExist ?
+                                const SnackBar(content: Text('Delay reported successfully. Admin will review.')) :
+                                const SnackBar(content: Text('Delay report updated successfully. Admin will review.')),
+                            );
+
+                            // Refresh trip detail to get updated status from server
+                            _fetchTripDetail();
+                          } catch (e) {
+                            setStateDialog(() => _isSubmittingDelay = false);
+                            setState(() => _isSubmittingDelay = false);
+
+                            String errorMessage = e.toString();
+                            if (errorMessage.contains('already has approved SLA extensions')) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Delay report blocked: This trip already has admin-approved extensions. Please contact admin directly.'),
+                                  duration: Duration(seconds: 5),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to report delay: $e')),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: _isSubmittingDelay
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Report Delay'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) {
+      setState(() {
+        _isDelayDialogOpen = false;
+      });
+    });
   }
 
   Widget _buildFab() {
@@ -485,6 +658,185 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                     ),
 
                   const SizedBox(height: 16),
+
+                  // Delay Report Section - Enable during initialization and whenever trip details loaded
+                  Container(),
+                  // Delay Report Section
+                  if ((_tripDetail!['status'] == 'in_progress' ||
+                       _tripDetail!['status'] == 'scheduled' ||
+                       _tripDetail!['status'] == 'arrived') &&
+                      _tripDetail!['assignmentStatus'] == 'accepted') ...[
+                    Card(
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.warning_amber, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Text(
+                                  'DELAY REPORTING',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Show current delay report if it exists
+                            if (_delayReportExist && _currentDelayReason != null) ...[
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.amber.shade200),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.access_time, color: Colors.amber, size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'SUBMITTED DELAY REPORT',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _currentDelayReason!,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    // Show SLA extension if admin has approved
+                                    if (_tripDetail!['slaExtensionMinutes'] != null &&
+                                        _tripDetail!['slaExtensionMinutes'] > 0)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.shade50,
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: Colors.green.shade200),
+                                          ),
+                                          child: Text(
+                                            '✅ APPROVED: SLA extended by ${_tripDetail!['slaExtensionMinutes']} minutes',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: const Color(0xFF00701A), // Dark green instead of Colors.green.shade700
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: Text(
+                                        _tripDetail!['slaExtensionMinutes'] != null &&
+                                        _tripDetail!['slaExtensionMinutes'] > 0
+                                          ? 'Status: Delay approved - SLA extended'
+                                          : 'Status: Submitted to admin for review',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _tripDetail!['slaExtensionMinutes'] != null &&
+                                          _tripDetail!['slaExtensionMinutes'] > 0
+                                            ? Colors.green.shade600
+                                            : Colors.orange,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              // Update button (only if not approved - no more delays after approval)
+                              if (_tripDetail!['slaExtensionMinutes'] == null ||
+                                  _tripDetail!['slaExtensionMinutes'] == 0)
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _showDelayReportDialog,
+                                    icon: const Icon(Icons.edit),
+                                    label: const Text('UPDATE PENDING APPROVAL'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
+                                ),
+                              // Notify about re-approval requirement
+                              if (_tripDetail!['slaExtensionMinutes'] == null ||
+                                  _tripDetail!['slaExtensionMinutes'] == 0)
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  margin: const EdgeInsets.only(top: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.shade50,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: Colors.orange.shade200),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.info, color: Colors.orange, size: 16),
+                                      SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Your delay update requires admin re-approval',
+                                          style: TextStyle(
+                                            color: Colors.orange,
+                                            fontSize: 12,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ] else ...[
+                              const Text(
+                                'If you\'re experiencing delays, please report them to the admin team.',
+                                style: TextStyle(fontSize: 14, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 12),
+                              // Report button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _showDelayReportDialog,
+                                  icon: const Icon(Icons.report_problem),
+                                  label: const Text('REPORT DELAY'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Expandable Orders Section
                   if (_tripDetail!['orders'] != null && _tripDetail!['orders'] is List && _tripDetail!['orders'].isNotEmpty)

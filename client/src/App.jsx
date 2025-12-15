@@ -30,7 +30,9 @@ import AdminRegistrationRequestDetailsPage from "./components/admin/AdminRegistr
 import AdminRoutesPage from "./components/admin/AdminRoutesPage";
 import AdminVehiclesPage from "./components/admin/AdminVehiclesPage";
 import AdminReportsPage from "./components/admin/AdminReportsPage";
-import AdminOrdersOversightPage from "./components/admin/AdminOrdersOversightPage";
+import AdminTripsOversightPage from "./components/admin/AdminTripsOversightPage";
+import AdminTripsOversightDetailsPage from "./components/admin/AdminTripsOversightDetailsPage";
+import AdminNotificationsPage from "./components/admin/AdminNotificationsPage";
 import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
@@ -204,6 +206,11 @@ function App() {
               <AdminReportsPage />
             </ProtectedRoute>
           } />
+          <Route path="/admin/notifications" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminNotificationsPage />
+            </ProtectedRoute>
+          } />
           <Route path="/admin/users" element={
             <ProtectedRoute requiredRole="ADMIN">
               <UserManagementPage />
@@ -234,9 +241,14 @@ function App() {
               <AdminAuditLogPage />
             </ProtectedRoute>
           } />
-          <Route path="/admin/orders-oversight" element={
+          <Route path="/admin/trips-oversight" element={
             <ProtectedRoute requiredRole="ADMIN">
-              <AdminOrdersOversightPage />
+              <AdminTripsOversightPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/trips-oversight/:tripId" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminTripsOversightDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/registration-requests" element={

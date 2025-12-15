@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import notificationClient from '../../services/notificationClient';
+import { notificationService } from '../../services/admin/notificationService';
 import './NotificationBell.css';
 
 const NotificationBell = () => {
+  const [realTimeNotifications, setRealTimeNotifications] = useState([]);
+  const [dbNotifications, setDbNotifications] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +14,49 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  // Load database notifications on mount
+  const loadDbNotifications = useCallback(async () => {
+    try {
+      const [allNotifications, count] = await Promise.all([
+        notificationService.getAllNotifications(0, 10),
+        notificationService.getUnreadCount()
+      ]);
+
+      setDbNotifications(allNotifications.map(n => ({
+        ...n,
+        id: `db-${n.notificationId}`,
+        timestamp: n.createdAt,
+        actionLabel: n.actionText,
+        source: 'database'
+      })));
+
+      return count.unreadCount;
+    } catch (error) {
+      console.error('Failed to load database notifications:', error);
+      return 0;
+    }
+  }, []);
+
+  // Merge notifications selectively (show recent ones)
   useEffect(() => {
+    const recentDb = dbNotifications.slice(0, 5); // Show only 5 most recent DB notifications
+    const combined = [...realTimeNotifications, ...recentDb];
+
+    // Sort by timestamp (newest first)
+    combined.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    setNotifications(combined);
+
+    // Calculate unread count from both sources
+    const unreadRealTime = realTimeNotifications.filter(n => !n.isRead).length;
+    const unreadDb = dbNotifications.filter(n => !n.isRead).length;
+    setUnreadCount(unreadRealTime + unreadDb);
+  }, [realTimeNotifications, dbNotifications]);
+
+  useEffect(() => {
+    // Load database notifications on mount
+    loadDbNotifications();
+
     // Connect to notification service
     notificationClient.connect()
       .then(() => {
@@ -22,12 +67,18 @@ const NotificationBell = () => {
         console.error('Failed to connect to notification service:', error);
       });
 
-    // Add notification listener
+    // Add notification listener for real-time notifications
     const handleNotification = (notification) => {
-      console.log('Received notification:', notification);
-      setNotifications(prev => [notification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-      
+      console.log('Received real-time notification:', notification);
+      const enhancedNotification = {
+        ...notification,
+        id: `rt-${Date.now()}`, // Add unique ID for real-time notifications
+        timestamp: new Date().toISOString(),
+        source: 'websocket'
+      };
+
+      setRealTimeNotifications(prev => [enhancedNotification, ...prev]);
+
       // Show browser notification if permission granted
       if (Notification.permission === 'granted') {
         new Notification(notification.title, {
@@ -57,14 +108,28 @@ const NotificationBell = () => {
       notificationClient.removeListener(handleNotification);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [loadDbNotifications]);
 
-  const handleNotificationClick = (notification) => {
-    // Mark as read
-    setNotifications(prev =>
-      prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+  const handleNotificationClick = async (notification) => {
+    try {
+      // Mark database notifications as read via API
+      if (notification.source === 'database' && !notification.isRead) {
+        await notificationService.markAsRead(notification.notificationId);
+      }
+
+      // Update local state for all notifications
+      if (notification.source === 'database') {
+        setDbNotifications(prev =>
+          prev.map(n => n.notificationId === notification.notificationId ? { ...n, isRead: true } : n)
+        );
+      } else {
+        setRealTimeNotifications(prev =>
+          prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
+        );
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
 
     // Navigate to action URL if available
     if (notification.actionUrl) {
@@ -73,12 +138,28 @@ const NotificationBell = () => {
     }
   };
 
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    setUnreadCount(0);
+  const handleMarkAllRead = async () => {
+    try {
+      // Mark all database notifications as read via API
+      const dbNotificationIds = dbNotifications
+        .filter(n => !n.isRead)
+        .map(n => n.notificationId);
+
+      if (dbNotificationIds.length > 0) {
+        await notificationService.markMultipleAsRead(dbNotificationIds);
+      }
+
+      // Mark all read locally
+      setDbNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setRealTimeNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
   };
 
   const handleClearAll = () => {
+    setRealTimeNotifications([]);
+    setDbNotifications([]);
     setNotifications([]);
     setUnreadCount(0);
   };
@@ -135,6 +216,18 @@ const NotificationBell = () => {
           <div className="notification-header">
             <h3>Notifications</h3>
             <div className="notification-actions">
+              {notifications.length > 0 && (
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate('/admin/notifications');
+                  }}
+                  className="action-btn"
+                  title="View all"
+                >
+                  🔍
+                </button>
+              )}
               {unreadCount > 0 && (
                 <button onClick={handleMarkAllRead} className="action-btn" title="Mark all read">
                   ✓

@@ -18,17 +18,25 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     
     // Count trips by status for statistics
     long countByStatus(String status);
+
+    // Paginated methods for admin oversight
+    @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route LEFT JOIN FETCH t.orders o LEFT JOIN FETCH o.createdBy WHERE LOWER(t.status) = LOWER(:status)")
+    org.springframework.data.domain.Page<Trip> findByStatus(@Param("status") String status, org.springframework.data.domain.Pageable pageable);
     // Lấy các trip của tài xế (lọc theo status nếu có)
     @Query("SELECT DISTINCT t FROM Trip t " +
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.route " +
-           "LEFT JOIN FETCH t.orders o " +
-           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH t.tripAssignments ta " +
+           "LEFT JOIN FETCH ta.driver d " +
+           "LEFT JOIN FETCH d.user " +
            "WHERE t.tripId = :id")
     Optional<Trip> findByIdWithRelations(@Param("id") Integer id);
 
     @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route LEFT JOIN FETCH t.orders o LEFT JOIN FETCH o.createdBy")
     List<Trip> findAllWithRelations();
+
+    @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route LEFT JOIN FETCH t.orders o LEFT JOIN FETCH o.createdBy")
+    org.springframework.data.domain.Page<Trip> findAllWithRelations(org.springframework.data.domain.Pageable pageable);
 
     @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route LEFT JOIN FETCH t.orders o LEFT JOIN FETCH o.createdBy WHERE LOWER(t.status) = LOWER(:status)")
     List<Trip> findByStatusWithRelations(@Param("status") String status);

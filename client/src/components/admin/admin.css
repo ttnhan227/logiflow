@@ -21,15 +21,15 @@
 }
 
 /* Orders oversight */
-.orders-oversight h1 {
+.trips-oversight h1 {
 	margin: 0 0 4px;
 }
 
-.orders-oversight .muted {
+.trips-oversight .muted {
 	color: #6b7280;
 }
 
-.orders-oversight .small {
+.trips-oversight .small {
 	font-size: 13px;
 }
 

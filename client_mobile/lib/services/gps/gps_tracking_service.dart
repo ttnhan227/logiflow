@@ -63,7 +63,7 @@ class GpsTrackingService {
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // Update every 10 meters
+        distanceFilter: 25, // Update every 25 meters (increased for better performance)
       ),
     );
 
@@ -79,7 +79,7 @@ class GpsTrackingService {
     );
 
     // Also send periodic updates (backup, in case position doesn't change much)
-    _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+    _locationTimer = Timer.periodic(const Duration(seconds: 60), (timer) async {
       if (!_isTracking) return;
 
       try {
@@ -96,10 +96,10 @@ class GpsTrackingService {
   Future<void> _sendLocation(double latitude, double longitude) async {
     if (!_isTracking) return;
 
-    // Throttle updates - don't send more than once per 5 seconds
+    // Throttle updates - don't send more than once per 10 seconds
     final now = DateTime.now();
     if (_lastLocationUpdate != null &&
-        now.difference(_lastLocationUpdate!).inSeconds < 5) return;
+        now.difference(_lastLocationUpdate!).inSeconds < 10) return;
 
     try {
       final location = {

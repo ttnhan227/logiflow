@@ -2,6 +2,10 @@ package com.logiflow.server.websocket;
 
 import com.logiflow.server.dtos.notification.AdminNotificationDto;
 import com.logiflow.server.dtos.notification.TripNotificationDto;
+import com.logiflow.server.models.Notification;
+import com.logiflow.server.models.User;
+import com.logiflow.server.repositories.notification.NotificationRepository;
+import com.logiflow.server.repositories.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -10,6 +14,12 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // ===== Driver Notifications =====
     public void sendDriverNotification(Integer driverId, String type, String message) {
@@ -24,6 +34,36 @@ public class NotificationService {
         String destination = "/topic/driver/" + driverId;
         TripNotificationDto notification = new TripNotificationDto(type, message, tripId, tripStatus);
         messagingTemplate.convertAndSend(destination, notification);
+    }
+
+    // Send to username-based topic (used by mobile app) and store in DB for persistence
+    public void sendTripNotificationByUsername(String username, Integer tripId, String type, String message, String tripStatus) {
+        String destination = "/topic/driver/" + username;
+        TripNotificationDto notification = new TripNotificationDto(type, message, tripId, tripStatus);
+        messagingTemplate.convertAndSend(destination, notification);
+
+        // Persist notification for this user so it survives app restarts
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user != null) {
+            String title = switch (type) {
+                case "DELAY_RESPONSE" -> "Delay response for Trip #" + tripId;
+                case "TRIP_ASSIGNED" -> "New trip assigned";
+                case "TRIP_STATUS_UPDATE" -> "Trip status updated";
+                default -> "Trip notification";
+            };
+
+            Notification dbNotification = new Notification(
+                Notification.NotificationType.DRIVER_TRIP_EVENT,
+                "INFO",
+                title,
+                message,
+                null,                // actionUrl (mobile uses tripId directly)
+                null,                // actionText
+                tripId,              // relatedEntityId = tripId
+                user                 // target user (driver)
+            );
+            notificationRepository.save(dbNotification);
+        }
     }
 
     public void sendTripNotificationWithData(Integer driverId, TripNotificationDto notification) {
@@ -48,13 +88,58 @@ public class NotificationService {
     }
 
     /**
-     * Broadcast system-wide notification to all admins
+     * Broadcast system-wide notification to all admins (both websocket + database)
      */
     public void broadcastToAdmins(String type, String severity, String title, String message) {
         AdminNotificationDto notification = AdminNotificationDto.of(
             type, severity, title, message, null, null
         );
         sendAdminNotification(notification);
+
+        // Also store in database for persistence
+        Notification delayNotification = new Notification(
+            Notification.NotificationType.valueOf(type),
+            severity,
+            title,
+            message,
+            null,  // actionUrl
+            null,  // actionText
+            null,  // relatedEntityId (set later)
+            null   // targetAdminUser (broadcast to all)
+        );
+        notificationRepository.save(delayNotification);
+    }
+
+    /**
+     * Broadcast with action details and store in database
+     */
+    public void broadcastToAdminsWithAction(String type, String severity, String title, String message,
+                                          String actionUrl, String actionText, Integer relatedEntityId) {
+        // Determine NotificationType enum value
+        Notification.NotificationType notificationType;
+        try {
+            notificationType = Notification.NotificationType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            notificationType = Notification.NotificationType.SYSTEM_EVENT; // Default fallback
+        }
+
+        AdminNotificationDto websocketNotification = AdminNotificationDto.of(
+            type, severity, title, message, actionUrl, actionText
+        );
+        sendAdminNotification(websocketNotification);
+
+        // Store in database for persistence
+        Notification dbNotification = new Notification(
+            notificationType,
+            severity,
+            title,
+            message,
+            actionUrl,
+            actionText,
+            relatedEntityId,
+            null // targetAdminUser (broadcast to all)
+        );
+        notificationRepository.save(dbNotification);
     }
 
     /**

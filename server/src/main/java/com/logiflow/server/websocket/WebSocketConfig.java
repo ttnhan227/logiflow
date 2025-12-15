@@ -23,9 +23,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
         
-        // Admin notifications endpoint
+        // Admin notifications endpoint - Allow direct WebSocket for mobile first
         registry.addEndpoint("/ws/notifications")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+                .setAllowedOriginPatterns("*");
     }
 }

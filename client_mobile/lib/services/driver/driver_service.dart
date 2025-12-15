@@ -107,6 +107,19 @@ class DriverService {
     }
   }
 
+  // Report delay for a trip with reason and estimated delay minutes
+  Future<void> reportTripDelay(int tripId, String reason) async {
+    final response = await apiClient.post(
+      '/driver/me/trips/${tripId}/delay',
+      body: {
+        'delayReason': reason,
+      },
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to report delay: ${response.body}');
+    }
+  }
+
   // Get driver profile
   Future<DriverProfile> getProfile() async {
     final response = await apiClient.get('/driver/me/profile');

@@ -37,7 +37,7 @@ const AdminSideNav = () => {
   const menuItems = [
     { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
     { path: '/admin/reports', icon: '📈', label: 'Reports & Analytics' },
-    { path: '/admin/orders-oversight', icon: '📦', label: 'Orders Oversight' },
+    { path: '/admin/trips-oversight', icon: '📦', label: 'Trips Oversight' },
     { path: '/admin/users', icon: '👥', label: 'User Management' },
     { path: '/admin/registration-requests', icon: '📋', label: 'Registration Requests' },
     { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
