@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { tripService } from '../../services';
+import { tripService, trackingClient } from '../../services';
+import dispatchRouteService from '../../services/dispatch/routeService';
 import RouteMapCard from './RouteMapCard';
+import ChatPopup from '../common/ChatPopup';
+import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import './dispatch.css';
 import './modern-dispatch.css';
 
@@ -14,6 +19,23 @@ const formatMoney = (amount) => {
   }
 };
 
+// Fix default Leaflet icons in bundlers
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+const driverIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 const TripDetailPage = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
@@ -24,9 +46,58 @@ const TripDetailPage = () => {
   const [distanceEstimate, setDistanceEstimate] = useState(null);
   const [feeEstimate, setFeeEstimate] = useState(null);
 
+  const [liveLocation, setLiveLocation] = useState(null); // {latitude, longitude, driverId, tripId}
+  const [actionError, setActionError] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [rerouting, setRerouting] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [newRouteId, setNewRouteId] = useState('');
+  const [routeWaypoints, setRouteWaypoints] = useState([]);
+  const [routes, setRoutes] = useState([]);
+
   useEffect(() => {
     loadTrip();
   }, [tripId, location.state]);
+
+  // Fetch all routes for the reroute dropdown
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        const routeList = await dispatchRouteService.getAllRoutes();
+        setRoutes(routeList || []);
+      } catch (err) {
+        console.error('Failed to load routes', err);
+      }
+    };
+    fetchRoutes();
+  }, []);
+
+  // Connect + subscribe to trip-scoped live location topic
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      try {
+        await trackingClient.connect();
+        trackingClient.subscribeToTripLocation(tripId, (msg) => {
+          if (!mounted || !msg) return;
+          setLiveLocation(msg);
+        });
+      } catch (e) {
+        console.warn('Tracking WS not connected', e);
+      }
+    };
+
+    if (tripId) run();
+
+    return () => {
+      mounted = false;
+      try {
+        trackingClient.unsubscribeTripLocation(tripId);
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, [tripId]);
 
   // Reload trip when returning from assign page
   useEffect(() => {
@@ -41,16 +112,23 @@ const TripDetailPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const tripsResp = await tripService.getTrips();
-      const t = (tripsResp.trips || []).find(x => Number(x.tripId) === Number(tripId));
-      if (!t) {
-        setError('Trip not found');
-        return;
-      }
+      const t = await tripService.getTripById(Number(tripId));
       setTrip(t);
-    } catch (ex) {
-      console.error('Failed to load trip', ex);
-      setError('Failed to load trip details');
+      if (t?.currentLat != null && t?.currentLng != null) {
+        setLiveLocation({ latitude: t.currentLat, longitude: t.currentLng, driverId: t.driverId, tripId: String(t.tripId) });
+      }
+      
+      // Try to load route waypoints if route data is available
+      if (t?.route?.waypoints) {
+        setRouteWaypoints(t.route.waypoints);
+      } else if (t?.routeId) {
+        // If waypoints aren't in the trip data, they might be loaded separately in RouteMapCard
+        // For now, we'll set an empty array and let the user see the route in RouteMapCard
+        setRouteWaypoints([]);
+      }
+    } catch (err) {
+      console.error('Failed to load trip', err);
+      setError('Trip not found or you do not have permission to access it');
     } finally {
       setLoading(false);
     }
@@ -80,6 +158,16 @@ const TripDetailPage = () => {
     });
   };
 
+  const timeline = useMemo(() => {
+    const events = trip?.progressEvents || [];
+    return [...events].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }, [trip]);
+
+  const mapCenter = useMemo(() => {
+    if (liveLocation?.latitude && liveLocation?.longitude) return [Number(liveLocation.latitude), Number(liveLocation.longitude)];
+    return [16.0471, 108.2068];
+  }, [liveLocation]);
+
   if (loading) {
     return (
       <div className="modern-container">
@@ -90,6 +178,43 @@ const TripDetailPage = () => {
       </div>
     );
   }
+
+  const handleCancel = async () => {
+    setActionError(null);
+    if (!cancelReason.trim()) {
+      setActionError('Please enter a cancellation reason');
+      return;
+    }
+    setCancelling(true);
+    try {
+      await tripService.cancelTrip(Number(tripId), { reason: cancelReason });
+      setCancelReason('');
+      await loadTrip();
+    } catch (e) {
+      setActionError(e?.response?.data?.error || 'Failed to cancel trip');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleReroute = async () => {
+    setActionError(null);
+    const rid = Number(newRouteId);
+    if (!rid) {
+      setActionError('Please enter a valid routeId');
+      return;
+    }
+    setRerouting(true);
+    try {
+      await tripService.rerouteTrip(Number(tripId), { routeId: rid });
+      setNewRouteId('');
+      await loadTrip();
+    } catch (e) {
+      setActionError(e?.response?.data?.error || 'Failed to reroute trip');
+    } finally {
+      setRerouting(false);
+    }
+  };
 
   if (error || !trip) {
     return (
@@ -111,7 +236,18 @@ const TripDetailPage = () => {
           <p className="page-subtitle">{trip.routeName}</p>
         </div>
         <div className="header-actions">
-          {!trip.driverName && trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' && (
+          {trip.status?.toUpperCase() !== 'COMPLETED' && trip.status?.toUpperCase() !== 'CANCELLED' && trip.status?.toUpperCase() !== 'ARRIVED' && (
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button className="btn-secondary" onClick={handleCancel} disabled={cancelling}>
+                {cancelling ? 'Cancelling...' : '✖ Cancel'}
+              </button>
+              <button className="btn-secondary" onClick={handleReroute} disabled={rerouting}>
+                {rerouting ? 'Rerouting...' : '↪ Reroute'}
+              </button>
+            </div>
+          )}
+
+          {!trip.driverName && trip.status?.toUpperCase() !== 'COMPLETED' && trip.status?.toUpperCase() !== 'CANCELLED' && trip.status?.toUpperCase() !== 'ARRIVED' && (
             <Link 
               to={`/dispatch/trips/${trip.tripId}/assign`} 
               className="btn-primary"
@@ -124,6 +260,45 @@ const TripDetailPage = () => {
           </Link>
         </div>
       </div>
+
+      {actionError && (
+        <div className="error" style={{ marginBottom: '1rem' }}>{actionError}</div>
+      )}
+
+      {(trip.status?.toUpperCase() !== 'COMPLETED' && trip.status?.toUpperCase() !== 'CANCELLED' && trip.status?.toUpperCase() !== 'ARRIVED') && (
+        <div className="detail-card full-width" style={{ marginBottom: '1rem' }}>
+          <div className="card-header">
+            <h2 className="card-title">Actions</h2>
+          </div>
+          <div className="card-body" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 260px' }}>
+              <div className="detail-label">Cancel reason</div>
+              <input
+                className="input"
+                style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="e.g. Customer request / vehicle issue"
+              />
+            </div>
+            <div style={{ flex: '1 1 260px' }}>
+              <div className="detail-label">New Route</div>
+              <select
+                style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                value={newRouteId}
+                onChange={(e) => setNewRouteId(e.target.value)}
+              >
+                <option value="">-- Select Route --</option>
+                {routes.map(route => (
+                  <option key={route.routeId} value={route.routeId}>
+                    {route.routeName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="detail-grid">
         <div className="detail-card main-card">
@@ -246,6 +421,44 @@ const TripDetailPage = () => {
           </div>
         </div>
 
+        {trip.status?.toUpperCase() === 'IN_PROGRESS' && (
+          <div className="detail-card" style={{ marginTop: '1rem' }}>
+            <div className="card-header" style={{ alignItems: 'center' }}>
+              <div>
+                <h2 className="card-title">Live Location</h2>
+                <p className="page-subtitle" style={{ margin: 0 }}>Real-time driver marker with current route</p>
+              </div>
+              {liveLocation && (
+                <div className="badge" style={{ backgroundColor: '#8b5cf6' }}>
+                  {Number(liveLocation.latitude).toFixed(5)},{Number(liveLocation.longitude).toFixed(5)}
+                </div>
+              )}
+            </div>
+            <div style={{ height: '320px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              <MapContainer center={mapCenter} zoom={12} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {routeWaypoints.length > 0 && (
+                  <Polyline
+                    positions={routeWaypoints.map(wp => [wp.latitude, wp.longitude])}
+                    color="#3b82f6"
+                    weight={3}
+                    opacity={0.7}
+                  />
+                )}
+                {liveLocation && (
+                  <Marker
+                    position={[Number(liveLocation.latitude), Number(liveLocation.longitude)]}
+                    icon={driverIcon}
+                  />
+                )}
+              </MapContainer>
+            </div>
+          </div>
+        )}
+
         {trip.routeId && (
           <RouteMapCard 
             routeId={trip.routeId} 
@@ -253,6 +466,31 @@ const TripDetailPage = () => {
             onDistanceChange={(km, fee) => { setDistanceEstimate(km); setFeeEstimate(fee); }}
           />
         )}
+
+        <div className="detail-card full-width">
+          <div className="card-header">
+            <h2 className="card-title">Progress Timeline</h2>
+          </div>
+          <div className="card-body">
+            {timeline.length === 0 ? (
+              <div className="page-subtitle">No events yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {timeline.map((e) => (
+                  <div key={e.eventId || `${e.eventType}-${e.createdAt}`} className="order-item-compact">
+                    <div className="order-number">{e.eventType}</div>
+                    <div className="order-info">
+                      <div className="order-customer">{e.message || '—'}</div>
+                      <div className="order-route-compact">
+                        <span className="pickup-compact">🕒 {formatDateTime(e.createdAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {trip.orders && trip.orders.length > 0 && (
           <div className="detail-card full-width">
@@ -280,6 +518,9 @@ const TripDetailPage = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Chat Popup */}
+      <ChatPopup tripId={tripId} driverId={trip?.driverId} trip={trip} />
     </div>
   );
 };

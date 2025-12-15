@@ -108,9 +108,9 @@ const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
       console.error('Failed to load route', err);
       const status = err?.response?.status;
       if (status === 403) {
-        setError('Không có quyền lấy route này (403).');
+        setError('You dont have performance to select this route (403).');
       } else if (status === 404) {
-        setError('Route không tồn tại (404).');
+        setError('Invalid route (404).');
       } else {
         setError('Không tải được route. Kiểm tra Route ID hoặc quyền truy cập.');
       }
@@ -176,8 +176,8 @@ const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
     <div className="detail-card" style={{ marginTop: '1rem' }}>
       <div className="card-header" style={{ alignItems: 'center' }}>
         <div>
-          <h2 className="card-title">Đường đi & ước tính</h2>
-          <p className="page-subtitle" style={{ margin: 0 }}>Chọn Route ID để xem tuyến.</p>
+          <h2 className="card-title">Route & Estimate</h2>
+          <p className="page-subtitle" style={{ margin: 0 }}>Select Route to see on map</p>
         </div>
         {distanceKm != null && (
           <div className="badge" style={{ backgroundColor: '#0ea5e9' }}>
@@ -187,7 +187,7 @@ const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
       </div>
 
       {error && <div className="error" style={{ marginBottom: '0.5rem' }}>{error}</div>}
-      {loading && <div>Đang tải route...</div>}
+      {loading && <div>loading route...</div>}
 
       <div style={{ height: '320px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
         <MapContainer center={mapCenter} zoom={6} style={{ height: '100%', width: '100%' }}>

@@ -107,6 +107,27 @@ this.listeners.forEach(callback => {
       }
     });
   }
+
+  /**
+   * Allow other parts of the app to push a notification
+   * (e.g., chat popup raising a bell badge for driver messages)
+   */
+  push(notification) {
+    // Ensure required fields exist
+    const enriched = {
+      id: notification.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      type: notification.type || 'TRIP_CHAT',
+      severity: notification.severity || 'INFO',
+      title: notification.title || 'New chat message',
+      message: notification.message || '',
+      actionUrl: notification.actionUrl || null,
+      actionLabel: notification.actionLabel || null,
+      timestamp: notification.timestamp || new Date().toISOString(),
+      isRead: false,
+      metadata: notification.metadata || null,
+    };
+    this.notifyListeners(enriched);
+  }
 }
 
 export default new NotificationClient();

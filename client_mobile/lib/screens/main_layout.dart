@@ -9,6 +9,7 @@ import '../services/driver/driver_service.dart';
 import '../models/user.dart';
 import 'auth/login_screen.dart';
 import 'driver/driver_trips_screen.dart';
+import 'driver/driver_chat_list_screen.dart';
 import 'driver/driver_compliance_screen.dart';
 import 'driver/driver_profile_screen.dart';
 import 'customer/create_order_screen.dart';
@@ -174,19 +175,23 @@ class _MainLayoutState extends State<MainLayout> {
     _notificationService.onNotificationReceived = (notification) {
       // Show notification as SnackBar
       if (mounted) {
-        final type = notification['type'] ?? 'INFO';
+        final type = (notification['type'] ?? 'INFO').toString().toUpperCase();
         final message = notification['message'] ?? 'New notification';
-        
+
+        // Special highlight for dispatcher-driver chat
+        final bool isChat = type == 'CHAT_MESSAGE';
+        final snackColor = isChat ? Colors.deepPurple : _getNotificationColor(type);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: _getNotificationColor(type),
+            backgroundColor: snackColor,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
-              label: 'View',
+              label: isChat ? 'Open Chat' : 'View',
               textColor: Colors.white,
               onPressed: () {
-                // Navigate to trips screen
+                // Navigate to trips screen or chat screen when available
                 setState(() => _currentIndex = 1);
                 _pageController.jumpToPage(1);
               },
@@ -305,6 +310,10 @@ class _MainLayoutState extends State<MainLayout> {
             label: 'My Trips',
           ),
           const BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Messages',
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.verified_user),
             label: 'Compliance',
           ),
@@ -367,6 +376,7 @@ class _MainLayoutState extends State<MainLayout> {
         return [
           const HomeScreen(),
           const DriverTripsScreen(),
+          const DriverChatListScreen(),
           const DriverComplianceScreen(),
           const DriverProfileScreen(),
         ];

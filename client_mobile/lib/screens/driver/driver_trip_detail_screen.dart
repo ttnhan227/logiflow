@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../services/api_client.dart';
 import '../../services/driver/driver_service.dart';
 import '../../services/gps/gps_tracking_service.dart';
 import 'dart:convert';
 import 'widgets/trip_map_view.dart';
 import 'delivery_confirmation_screen.dart';
+import 'driver_chat_screen.dart';
 
 class DriverTripDetailScreen extends StatefulWidget {
   final int tripId;
@@ -21,6 +23,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
   String? _error;
   String? _previousTripStatus;
   bool? _hasActiveAssignment;
+  int? _driverId;
 
   @override
   void initState() {
@@ -80,6 +83,22 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
     }
   }
 
+  int? _extractDriverId(Map<String, dynamic> trip) {
+    // Common shapes: driverId at root, or nested under driver/assignment
+    if (trip['driverId'] != null) return trip['driverId'] as int?;
+    if (trip['driver'] != null && trip['driver']['driverId'] != null) {
+      return trip['driver']['driverId'] as int?;
+    }
+    if (trip['tripAssignments'] != null && trip['tripAssignments'] is List &&
+        (trip['tripAssignments'] as List).isNotEmpty) {
+      final first = (trip['tripAssignments'] as List).first;
+      if (first is Map && first['driver'] != null && first['driver']['driverId'] != null) {
+        return first['driver']['driverId'] as int?;
+      }
+    }
+    return null;
+  }
+
   Future<void> _fetchTripDetail() async {
     setState(() {
       _isLoading = true;
@@ -101,6 +120,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
         setState(() {
           _tripDetail = newTripDetail;
           _previousTripStatus = newStatus;
+          _driverId = _extractDriverId(newTripDetail);
           // Debug: Print orders data
           print('Trip Detail Response: ${response.body}');
           print('Orders data: ${_tripDetail!['orders']}');
@@ -273,15 +293,15 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: _tripDetail != null ? _buildFab() : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(child: Text(_error!))
           : _tripDetail == null
           ? const Center(child: Text('No trip detail'))
-          : CustomScrollView(
+          : Stack(
+        children: [
+          CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
@@ -566,7 +586,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          '${order['customerName'] ?? 'N/A'} • ${order['customerPhone'] ?? 'No phone'}',
+                                          '${order['customerName'] ?? 'N/A'} �?${order['customerPhone'] ?? 'No phone'}',
                                           style: const TextStyle(fontSize: 14),
                                         ),
                                       ),
@@ -637,7 +657,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                         ),
                                       ],
                                       if (order['packageValue'] != null && order['weightKg'] != null)
-                                        Text(' • ', style: TextStyle(color: Colors.grey)),
+                                        Text(' �?', style: TextStyle(color: Colors.grey)),
                                       if (order['weightKg'] != null) ...[
                                         Icon(Icons.monitor_weight, size: 14, color: Colors.blue),
                                         const SizedBox(width: 4),
@@ -693,6 +713,33 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           ),
         ],
       ),
+        ],
+      ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'chat',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => DriverChatScreen(
+                    tripId: widget.tripId,
+                    driverId: _driverId,
+                  ),
+                ),
+              );
+            },
+            backgroundColor: Colors.deepPurple,
+            child: const Icon(Icons.chat_bubble_outline),
+          ),
+          if (_tripDetail != null && _buildFab() != const SizedBox.shrink()) ...[
+            const SizedBox(width: 16),
+            _buildFab(),
+          ],
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

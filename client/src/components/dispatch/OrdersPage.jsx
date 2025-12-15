@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { orderService } from '../../services';
+import Pagination from '../common/Pagination';
 import './dispatch.css';
 import './modern-dispatch.css';
 
@@ -9,11 +10,17 @@ const OrdersPage = () => {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
 
   const fetch = async () => {
     setLoading(true);
     try {
-      const data = await orderService.getOrders({ status: statusFilter || undefined });
+      const data = await orderService.getOrders({
+        status: statusFilter || undefined,
+        page,
+        size,
+      });
       setOrdersResp(data);
     } catch (err) {
       console.error('Failed to load orders', err);
@@ -22,7 +29,20 @@ const OrdersPage = () => {
     }
   };
 
-  useEffect(() => { fetch(); }, [statusFilter]);
+  useEffect(() => {
+    // reset page when filter changes
+    setPage(0);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, page, size]);
+
+  useEffect(() => {
+    // reset page when searching
+    setPage(0);
+  }, [searchTerm]);
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -39,12 +59,23 @@ const OrdersPage = () => {
     return priority === 'URGENT' ? '#ef4444' : '#6b7280';
   };
 
-  const filteredOrders = ordersResp?.orders?.filter(o => 
-    !searchTerm || 
-    o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    o.customerPhone?.includes(searchTerm) ||
-    o.orderId?.toString().includes(searchTerm)
-  ) || [];
+  const filteredOrders = (ordersResp?.orders || [])
+    .filter(o => 
+      !searchTerm || 
+      o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.customerPhone?.includes(searchTerm) ||
+      o.orderId?.toString().includes(searchTerm)
+    )
+    // Hard-coded rule: urgent hauls on top, then newest first
+    .sort((a, b) => {
+      const aUrgent = a.priorityLevel === 'URGENT' ? 1 : 0;
+      const bUrgent = b.priorityLevel === 'URGENT' ? 1 : 0;
+      if (aUrgent !== bUrgent) return bUrgent - aUrgent;
+
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
 
   return (
     <div className="modern-container">
@@ -82,7 +113,9 @@ const OrdersPage = () => {
         </select>
         <button className="btn-refresh" onClick={fetch}>↻ Refresh</button>
         <div className="results-count">
-          {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
+          {typeof ordersResp?.totalItems === 'number'
+            ? `${ordersResp.totalItems} order${ordersResp.totalItems !== 1 ? 's' : ''}`
+            : `${filteredOrders.length} order${filteredOrders.length !== 1 ? 's' : ''}`}
         </div>
       </div>
 
@@ -93,7 +126,7 @@ const OrdersPage = () => {
         </div>
       )}
 
-      {!loading && filteredOrders.length === 0 && (
+      {!loading && (ordersResp?.orders?.length ?? filteredOrders.length) === 0 && (
         <div className="empty-state">
           <div className="empty-icon">📦</div>
           <h3>No orders found</h3>
@@ -103,83 +136,73 @@ const OrdersPage = () => {
       )}
 
       {!loading && filteredOrders.length > 0 && (
-        <div className="cards-grid">
-          {filteredOrders.map(order => (
-            <div key={order.orderId} className="order-card">
-              <div className="card-header">
-                <div className="card-id">Order #{order.orderId}</div>
-                <div className="card-badges">
-                  <span 
-                    className="badge" 
-                    style={{ backgroundColor: getStatusColor(order.orderStatus) }}
-                  >
-                    {order.orderStatus}
-                  </span>
-                  {order.priorityLevel === 'URGENT' && (
-                    <span 
-                      className="badge badge-priority" 
-                      style={{ backgroundColor: getPriorityColor(order.priorityLevel) }}
-                    >
-                      ⚡ URGENT
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="card-body">
-                <div className="card-section">
-                  <div className="section-label">Customer</div>
-                  <div className="section-value">
-                    <strong>{order.customerName}</strong>
-                    <span className="phone">{order.customerPhone}</span>
-                  </div>
-                </div>
+        <>
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Pickup</th>
+                  <th>Delivery</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Fee</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map(order => (
+                  <tr key={order.orderId} className="table-row">
+                    <td className="cell-id">#{order.orderId}</td>
+                    <td className="cell-text">{order.customerName}</td>
+                    <td className="cell-text">{order.customerPhone}</td>
+                    <td className="cell-text cell-address">{order.pickupAddress}</td>
+                    <td className="cell-text cell-address">{order.deliveryAddress}</td>
+                    <td className="cell-status">
+                      <span 
+                        className="status-badge" 
+                        style={{ backgroundColor: getStatusColor(order.orderStatus) }}
+                      >
+                        {order.orderStatus}
+                      </span>
+                    </td>
+                    <td className="cell-priority">
+                      {order.priorityLevel === 'URGENT' ? (
+                        <span 
+                          className="priority-badge" 
+                          style={{ backgroundColor: getPriorityColor(order.priorityLevel) }}
+                        >
+                          ⚡ URGENT
+                        </span>
+                      ) : (
+                        <span className="priority-normal">Normal</span>
+                      )}
+                    </td>
+                    <td className="cell-price">
+                      {order.shippingFee ? `${order.shippingFee.toLocaleString()} VND` : 'TBD'}
+                    </td>
+                    <td className="cell-action">
+                      <Link to={`/dispatch/orders/${order.orderId}`} className="btn-view">
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                <div className="card-section route-section">
-                  <div className="route-point">
-                    <div className="route-icon pickup">📍</div>
-                    <div>
-                      <div className="section-label">Pickup</div>
-                      <div className="section-value">{order.pickupAddress}</div>
-                    </div>
-                  </div>
-                  <div className="route-line"></div>
-                  <div className="route-point">
-                    <div className="route-icon delivery">🎯</div>
-                    <div>
-                      <div className="section-label">Delivery</div>
-                      <div className="section-value">{order.deliveryAddress}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {order.packageDetails && (
-                  <div className="card-section">
-                    <div className="section-label">Package</div>
-                    <div className="section-value">{order.packageDetails}</div>
-                  </div>
-                )}
-
-                <div className="card-footer">
-                  <div className="footer-info">
-                    {order.distanceKm && <span>📏 {order.distanceKm} km</span>}
-                    {order.weightKg && <span>⚖️ {order.weightKg} kg</span>}
-                  </div>
-                  <div className="footer-actions">
-                    <Link to={`/dispatch/orders/${order.orderId}`} className="btn-details">
-                      View Details
-                    </Link>
-                    <div className="footer-price">
-                      {order.shippingFee
-                        ? `${order.shippingFee.toLocaleString()} VND`
-                        : 'TBD'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+          <Pagination
+            page={ordersResp?.currentPage ?? page}
+            totalPages={ordersResp?.totalPages ?? 0}
+            totalItems={ordersResp?.totalItems}
+            pageSize={ordersResp?.pageSize ?? size}
+            disabled={loading}
+            onPageChange={(p) => setPage(p)}
+          />
+        </>
       )}
     </div>
   );

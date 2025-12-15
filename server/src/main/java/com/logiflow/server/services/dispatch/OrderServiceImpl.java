@@ -191,6 +191,16 @@ public class OrderServiceImpl implements OrderService {
                 request.getCustomerName(),
                 request.getPriorityLevel().name()
             );
+
+            // Extra urgent haul alert (hard-coded rule)
+            if (request.getPriorityLevel() == Order.PriorityLevel.URGENT) {
+                notificationService.broadcastToAdmins(
+                    "URGENT_HAUL",
+                    "CRITICAL",
+                    "URGENT haul needs attention",
+                    "Order #" + savedOrder.getOrderId() + " (" + request.getCustomerName() + ") is URGENT. Please dispatch ASAP."
+                );
+            }
         } catch (Exception e) {
             // Log error but don't fail the order creation
             System.err.println("Failed to send notification for new order: " + e.getMessage());

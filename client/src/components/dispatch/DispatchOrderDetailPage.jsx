@@ -66,13 +66,11 @@ const DispatchOrderDetailPage = () => {
   const handleEdit = () => {
     setEditMode(true);
     setFormData({
+      customerName: order.customerName || '',
       pickupAddress: order.pickupAddress || '',
       deliveryAddress: order.deliveryAddress || '',
       packageDetails: order.packageDetails || '',
-      priorityLevel: order.priorityLevel || 'NORMAL',
-      distanceKm: order.distanceKm || '',
-      weightKg: order.weightKg || '',
-      packageValue: order.packageValue || ''
+      priorityLevel: order.priorityLevel || 'NORMAL'
     });
   };
 
@@ -193,9 +191,21 @@ const DispatchOrderDetailPage = () => {
                   <div>
                     <div className="detail-label">Customer</div>
                     <div className="detail-value">
-                      <strong>{order.customerName}</strong>
-                      {order.customerPhone && (
-                        <div className="detail-subvalue">📞 {order.customerPhone}</div>
+                      {editMode ? (
+                        <input
+                          type="text"
+                          value={formData.customerName}
+                          onChange={(e) => handleInputChange('customerName', e.target.value)}
+                          className="edit-input"
+                          placeholder="Customer name"
+                        />
+                      ) : (
+                        <>
+                          <strong>{order.customerName}</strong>
+                          {order.customerPhone && (
+                            <div className="detail-subvalue">📞 {order.customerPhone}</div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -271,38 +281,6 @@ const DispatchOrderDetailPage = () => {
                 </div>
               </div>
 
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">📏</div>
-                  <div>
-                    <div className="detail-label">Distance</div>
-                    <div className="detail-value">
-                      {order.distanceKm ? `${order.distanceKm} km` : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-icon">⚖️</div>
-                  <div>
-                    <div className="detail-label">Weight</div>
-                    <div className="detail-value">
-                      {order.weightKg ? `${order.weightKg} kg` : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-icon">💰</div>
-                  <div>
-                    <div className="detail-label">Package Value</div>
-                    <div className="detail-value">
-                      {order.packageValue ? `${order.packageValue.toLocaleString()} VND` : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {editMode && (
                 <div className="detail-row">
                   <div className="detail-item">
@@ -321,67 +299,6 @@ const DispatchOrderDetailPage = () => {
                   </div>
                 </div>
               )}
-
-              {editMode && (
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">📏</div>
-                    <div>
-                      <div className="detail-label">Distance (km)</div>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.distanceKm}
-                        onChange={(e) => handleInputChange('distanceKm', e.target.value)}
-                        className="edit-input-small"
-                        placeholder="Distance in km"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="detail-item">
-                    <div className="detail-icon">⚖️</div>
-                    <div>
-                      <div className="detail-label">Weight (kg)</div>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.weightKg}
-                        onChange={(e) => handleInputChange('weightKg', e.target.value)}
-                        className="edit-input-small"
-                        placeholder="Weight in kg"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="detail-item">
-                    <div className="detail-icon">💰</div>
-                    <div>
-                      <div className="detail-label">Package Value (VND)</div>
-                      <input
-                        type="number"
-                        step="1000"
-                        value={formData.packageValue}
-                        onChange={(e) => handleInputChange('packageValue', e.target.value)}
-                        className="edit-input-small"
-                        placeholder="Package value"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">💵</div>
-                  <div>
-                    <div className="detail-label">Shipping Fee</div>
-                    <div className="detail-value fee-highlight">
-                      {order.deliveryFee ? `${order.deliveryFee.toLocaleString()} VND` : 'Calculating...'}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -402,26 +319,6 @@ const DispatchOrderDetailPage = () => {
                       <Link to={`/dispatch/trips/${order.tripId}`} className="link-primary">
                         #{order.tripId}
                       </Link>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="assignment-item">
-                  <div className="assignment-icon driver-icon">👤</div>
-                  <div>
-                    <div className="detail-label">Driver</div>
-                    <div className="detail-value">
-                      {order.driverName || <span className="not-assigned">Not assigned</span>}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="assignment-item">
-                  <div className="assignment-icon vehicle-icon">🚗</div>
-                  <div>
-                    <div className="detail-label">Vehicle</div>
-                    <div className="detail-value">
-                      {order.vehiclePlate || <span className="not-assigned">Not assigned</span>}
                     </div>
                   </div>
                 </div>

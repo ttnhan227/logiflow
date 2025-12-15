@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.logiflow.server.controllers.maps.GpsTrackingController;
+import com.logiflow.server.dtos.dispatch.TripProgressEventDto;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -31,6 +34,13 @@ public class TripDto {
     private String status;
     private LocalDateTime createdAt;
     private List<OrderDto> orders;
+
+    // Live tracking (from in-memory GPS storage)
+    private Double currentLat;
+    private Double currentLng;
+
+    // Progress timeline
+    private List<TripProgressEventDto> progressEvents;
 
     public static TripDto fromTrip(Trip trip) {
         TripDto dto = new TripDto();
@@ -66,10 +76,30 @@ public class TripDto {
                     .map(OrderDto::fromOrder)
                     .collect(Collectors.toList()));
         } else {
-
             dto.setOrders(new java.util.ArrayList<>());
         }
-        
+
+        // Progress timeline
+        if (trip.getProgressEvents() != null && !trip.getProgressEvents().isEmpty()) {
+            dto.setProgressEvents(trip.getProgressEvents().stream()
+                    .map(TripProgressEventDto::fromEntity)
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setProgressEvents(new java.util.ArrayList<>());
+        }
+
+        // Live location (latest) - only if we have a driver assignment
+        if (dto.getDriverId() != null) {
+            GpsTrackingController.LocationMessage latest = GpsTrackingController.getLatestLocation(
+                    String.valueOf(dto.getDriverId()),
+                    String.valueOf(dto.getTripId())
+            );
+            if (latest != null) {
+                dto.setCurrentLat(latest.getLatitude());
+                dto.setCurrentLng(latest.getLongitude());
+            }
+        }
+
         return dto;
     }
 }

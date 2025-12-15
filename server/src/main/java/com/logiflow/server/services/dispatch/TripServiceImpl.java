@@ -6,13 +6,18 @@ import com.logiflow.server.dtos.dispatch.TripListResponse;
 import com.logiflow.server.dtos.dispatch.TripAssignRequest;
 import com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest;
 import com.logiflow.server.models.*;
+import com.logiflow.server.models.TripProgressEvent;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.route.RouteRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
+import com.logiflow.server.repositories.trip.TripProgressEventRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +25,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.logiflow.server.dtos.dispatch.TripCancelRequest;
+import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
 
 @Service
 public class TripServiceImpl implements TripService {
@@ -41,6 +49,9 @@ public class TripServiceImpl implements TripService {
 
     @Autowired
     private TripAssignmentRepository tripAssignmentRepository;
+
+    @Autowired
+    private TripProgressEventRepository tripProgressEventRepository;
 
     @Override
     @Transactional
@@ -74,6 +85,9 @@ public class TripServiceImpl implements TripService {
 
         Trip savedTrip = tripRepository.save(trip);
 
+        // Progress event
+        addProgressEvent(savedTrip, TripProgressEvent.EventType.CREATED, "Trip created", "{\"tripType\":\"" + request.getTripType() + "\"}");
+
         for (Order order : orders) {
             order.setTrip(savedTrip);
             order.setOrderStatus(Order.OrderStatus.ASSIGNED);
@@ -83,6 +97,7 @@ public class TripServiceImpl implements TripService {
         orderRepository.flush();
 
         tripRepository.flush();
+        tripProgressEventRepository.flush();
 
         Trip tripWithOrders = tripRepository.findByIdWithRelations(savedTrip.getTripId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve created trip"));
@@ -100,26 +115,46 @@ public class TripServiceImpl implements TripService {
 
     @Override
     @Transactional(readOnly = true)
-    public TripListResponse getTrips(String status) {
+    public TripListResponse getTrips(String status, int page, int size) {
+        if (page < 0) page = 0;
+        if (size < 1) size = 10;
+        if (size > 100) size = 100;
+
         String normalizedStatus = normalizeStatus(status);
 
-        List<Trip> trips;
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Trip> tripPage;
         if (normalizedStatus != null && !normalizedStatus.isEmpty()) {
-            trips = tripRepository.findByStatusWithRelations(normalizedStatus.toLowerCase());
+            tripPage = tripRepository.findByStatusPage(normalizedStatus.toLowerCase(), pageable);
         } else {
-            trips = tripRepository.findAllWithRelations();
+            tripPage = tripRepository.findAllPage(pageable);
         }
 
-        List<TripDto> tripDtos = trips.stream()
+        // Load relations for the trips in this page
+        List<TripDto> tripDtos = tripPage.getContent().stream()
+                .map(t -> tripRepository.findByIdWithRelations(t.getTripId()).orElse(t))
                 .map(TripDto::fromTrip)
                 .collect(Collectors.toList());
 
-        Map<String, Long> statusSummary = trips.stream()
+        // Summary: keep same behavior as before (counts from ALL trips with/without status filter)
+        List<Trip> summaryTrips;
+        if (normalizedStatus != null && !normalizedStatus.isEmpty()) {
+            summaryTrips = tripRepository.findByStatusWithRelations(normalizedStatus.toLowerCase());
+        } else {
+            summaryTrips = tripRepository.findAllWithRelations();
+        }
+
+        Map<String, Long> statusSummary = summaryTrips.stream()
                 .collect(Collectors.groupingBy(Trip::getStatus, Collectors.counting()));
 
         TripListResponse response = new TripListResponse();
         response.setTrips(tripDtos);
-        response.setTotalTrips(tripDtos.size());
+        response.setCurrentPage(tripPage.getNumber());
+        response.setPageSize(tripPage.getSize());
+        response.setTotalItems(tripPage.getTotalElements());
+        response.setTotalPages(tripPage.getTotalPages());
+        response.setHasNext(tripPage.hasNext());
+        response.setHasPrevious(tripPage.hasPrevious());
         response.setStatusSummary(statusSummary);
 
         return response;
@@ -175,6 +210,11 @@ public class TripServiceImpl implements TripService {
 
         tripAssignmentRepository.save(assignment);
 
+        addProgressEvent(trip, TripProgressEvent.EventType.ASSIGNED,
+                "Driver assigned (driverId=" + driver.getDriverId() + ")",
+                "{\"driverId\":" + driver.getDriverId() + ",\"vehicleId\":" + (vehicle != null ? vehicle.getVehicleId() : null) + "}");
+        tripProgressEventRepository.flush();
+
         // Update driver status to reflect assignment
         driver.setStatus("assigned");
         driverRepository.save(driver);
@@ -208,6 +248,9 @@ public class TripServiceImpl implements TripService {
 
 
         trip.setStatus(newStatus);
+        addProgressEvent(trip, TripProgressEvent.EventType.STATUS_CHANGED,
+                "Trip status changed to " + newStatus,
+                "{\"from\":\"" + (currentStatus != null ? currentStatus : "") + "\",\"to\":\"" + newStatus + "\"}");
 
 
         LocalDateTime now = LocalDateTime.now();
@@ -241,10 +284,12 @@ public class TripServiceImpl implements TripService {
                 }
                 orderRepository.saveAll(trip.getOrders());
             } else if ("cancelled".equalsIgnoreCase(newStatus)) {
+                // Business rule: cancelling a trip should unassign orders so they can be re-dispatched
                 for (Order order : trip.getOrders()) {
-                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED || 
+                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED ||
                         order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
-                        order.setOrderStatus(Order.OrderStatus.CANCELLED);
+                        order.setOrderStatus(Order.OrderStatus.PENDING);
+                        order.setTrip(null);
                     }
                 }
                 orderRepository.saveAll(trip.getOrders());
@@ -260,11 +305,114 @@ public class TripServiceImpl implements TripService {
 
         Trip savedTrip = tripRepository.save(trip);
         tripRepository.flush();
+        tripProgressEventRepository.flush();
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
 
         return TripDto.fromTrip(tripWithRelations);
+    }
+
+    @Override
+    @Transactional
+    public TripDto rerouteTrip(Integer tripId, TripRerouteRequest request) {
+        Trip trip = tripRepository.findByIdWithRelations(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("completed")) {
+            throw new RuntimeException("Cannot reroute a completed trip");
+        }
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("cancelled")) {
+            throw new RuntimeException("Cannot reroute a cancelled trip");
+        }
+
+        Route newRoute = routeRepository.findById(request.getRouteId())
+                .orElseThrow(() -> new RuntimeException("Route not found with id: " + request.getRouteId()));
+
+        Integer oldRouteId = trip.getRoute() != null ? trip.getRoute().getRouteId() : null;
+        trip.setRoute(newRoute);
+
+        addProgressEvent(trip, TripProgressEvent.EventType.REROUTED,
+                "Trip rerouted",
+                "{\"fromRouteId\":" + oldRouteId + ",\"toRouteId\":" + newRoute.getRouteId() + "}");
+
+        Trip saved = tripRepository.save(trip);
+        tripRepository.flush();
+        tripProgressEventRepository.flush();
+
+        Trip tripWithRelations = tripRepository.findByIdWithRelations(saved.getTripId())
+                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+
+        return TripDto.fromTrip(tripWithRelations);
+    }
+
+    @Override
+    @Transactional
+    public TripDto cancelTrip(Integer tripId, TripCancelRequest request) {
+        Trip trip = tripRepository.findByIdWithRelations(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("completed")) {
+            throw new RuntimeException("Cannot cancel a completed trip");
+        }
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("cancelled")) {
+            return TripDto.fromTrip(trip);
+        }
+
+        trip.setStatus("cancelled");
+
+        // Cancel assignments and release driver
+        if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
+            for (TripAssignment assignment : trip.getTripAssignments()) {
+                assignment.setStatus("cancelled");
+                if (assignment.getDriver() != null) {
+                    assignment.getDriver().setStatus("available");
+                    driverRepository.save(assignment.getDriver());
+                }
+            }
+            tripAssignmentRepository.saveAll(trip.getTripAssignments());
+        }
+
+        // Unassign orders back to PENDING
+        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+            for (Order order : trip.getOrders()) {
+                if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED ||
+                    order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
+                    order.setOrderStatus(Order.OrderStatus.PENDING);
+                }
+                order.setTrip(null);
+            }
+            orderRepository.saveAll(trip.getOrders());
+        }
+
+        addProgressEvent(trip, TripProgressEvent.EventType.CANCELLED,
+                "Trip cancelled",
+                "{\"reason\":\"" + escapeJson(request.getReason()) + "\"}");
+
+        Trip savedTrip = tripRepository.save(trip);
+        tripRepository.flush();
+        tripProgressEventRepository.flush();
+
+        Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
+                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+
+        return TripDto.fromTrip(tripWithRelations);
+    }
+
+    private void addProgressEvent(Trip trip, TripProgressEvent.EventType type, String message, String metadata) {
+        if (trip == null) return;
+        TripProgressEvent e = new TripProgressEvent();
+        e.setTrip(trip);
+        e.setEventType(type);
+        e.setMessage(message);
+        e.setMetadata(metadata);
+        e.setCreatedAt(LocalDateTime.now());
+        tripProgressEventRepository.save(e);
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     private boolean isValidStatus(String status) {

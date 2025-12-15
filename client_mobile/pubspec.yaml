@@ -48,6 +48,13 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
 
+  # Local notifications for in-app push
+  flutter_local_notifications: ^17.2.2
+
+  # STOMP over WebSocket for realtime chat
+  stomp_dart_client: ^1.0.0
+  web_socket_channel: ^2.0.0
+
   # For signature capture
   signature: ^5.5.0
 

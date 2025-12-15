@@ -15,6 +15,9 @@ import dispatchDriverService from './dispatch/driverService';
 import tripService from './dispatch/tripService';
 import dispatchRouteService from './dispatch/routeService';
 import dispatchVehicleService from './dispatch/vehicleService';
+import trackingClient from './trackingClient';
+import chatService from './chatService';
+import chatClient from './chatClient';
 
 export {
   api,
@@ -34,6 +37,9 @@ export {
   tripService,
   dispatchRouteService,
   dispatchVehicleService,
+  trackingClient,
+  chatService,
+  chatClient,
 };
 
 // Example usage:
