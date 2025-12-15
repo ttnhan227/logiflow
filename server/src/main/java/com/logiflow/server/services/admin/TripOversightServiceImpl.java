@@ -172,25 +172,35 @@ public class TripOversightServiceImpl implements TripOversightService {
         }
 
         String notificationMessage;
+        String adminComment = null;
         switch (responseType.toUpperCase()) {
             case "APPROVED":
                 // Extend SLA by custom minutes entered by admin
                 Integer currentExtension = trip.getSlaExtensionMinutes() != null ? trip.getSlaExtensionMinutes() : 0;
                 Integer approvedExtension = extensionMinutes != null && extensionMinutes > 0 ? extensionMinutes : 30;
                 trip.setSlaExtensionMinutes(currentExtension + approvedExtension);
-                notificationMessage = "Your delay report for trip #" + trip.getTripId() + " has been approved. SLA extended by " + approvedExtension + " minutes.";
+                trip.setDelayStatus("APPROVED");
+                adminComment = "Delay approved. SLA extended by " + approvedExtension + " minutes.";
+                notificationMessage = "Your delay report for trip #" + trip.getTripId() +
+                        " has been approved. SLA extended by " + approvedExtension + " minutes.";
                 break;
 
             case "REJECTED":
-                // Keep original SLA - could clear delay reason for rejection, but keeping it for audit
-                trip.setDelayReason("[REJECTED] " + trip.getDelayReason()); // Mark as rejected but keep record
-                notificationMessage = "Your delay report for trip #" + trip.getTripId() + " could not be approved. Please contact admin for details.";
+                // Keep original SLA; record explicit rejection state and comment
+                trip.setDelayStatus("REJECTED");
+                adminComment = "Delay report rejected. SLA not extended.";
+                notificationMessage = "Your delay report for trip #" + trip.getTripId() +
+                        " could not be approved. Please contact admin for more details.";
                 break;
 
             default:
                 throw new RuntimeException("Invalid response type: " + responseType);
         }
 
+        // Persist admin decision and optional comment
+        if (adminComment != null && !adminComment.isEmpty()) {
+            trip.setDelayAdminComment(adminComment);
+        }
         Trip savedTrip = tripRepository.save(trip);
 
         // Send notification to driver about the admin response

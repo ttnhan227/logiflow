@@ -53,9 +53,35 @@ public class Trip {
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Order> orders;
 
+    // ================= Delay / SLA handling =================
+
+    /**
+     * Free-text reason provided by the driver describing the delay.
+     * This should remain unchanged by admin decisions (for audit purposes).
+     */
     @Column(name = "delay_reason", length = 500, nullable = true)
     private String delayReason;
 
+    /**
+     * Overall SLA extension minutes that have been granted by admin(s).
+     */
     @Column(name = "sla_extension_minutes", nullable = true)
     private Integer slaExtensionMinutes = 0;
+
+    /**
+     * Status of the delay report from the driver's perspective:
+     * - PENDING  : driver submitted, waiting for admin review
+     * - APPROVED : admin approved and possibly extended SLA
+     * - REJECTED : admin rejected (SLA unchanged)
+     * - null     : no delay report has been submitted
+     */
+    @Column(name = "delay_status", length = 20, nullable = true)
+    private String delayStatus;
+
+    /**
+     * Optional comment from admin when responding to a delay report
+     * (e.g. explanation for approval/rejection, guidance to driver).
+     */
+    @Column(name = "delay_admin_comment", length = 500, nullable = true)
+    private String delayAdminComment;
 }

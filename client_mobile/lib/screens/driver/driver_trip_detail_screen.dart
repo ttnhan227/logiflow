@@ -26,6 +26,8 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
   final TextEditingController _delayReasonController = TextEditingController();
   String? _currentDelayReason;
   bool _delayReportExist = false;
+  String? _delayStatus;
+  String? _delayAdminComment;
 
   @override
   void initState() {
@@ -106,25 +108,21 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           await _handleGpsTrackingForTripStatus(newStatus, newTripDetail['tripId'].toString());
         }
 
-        // Check for existing delay reports in orders
-        final orders = newTripDetail['orders'] as List?;
-        bool hasDelayReport = false;
-        String? existingDelayReason;
-        if (orders != null) {
-          for (var order in orders) {
-            if (order['delayReason'] != null && order['delayReason'].toString().isNotEmpty) {
-              hasDelayReport = true;
-              existingDelayReason = order['delayReason'];
-              break; // Use the first delay reason found
-            }
-          }
-        }
+        // Check for existing delay report on trip itself
+        final String? tripDelayReason = newTripDetail['delayReason'];
+        final String? tripDelayStatus = newTripDetail['delayStatus'];
+        final String? tripDelayAdminComment = newTripDetail['delayAdminComment'];
+
+        final bool hasDelayReport =
+            tripDelayReason != null && tripDelayReason.toString().isNotEmpty;
 
         setState(() {
           _tripDetail = newTripDetail;
           _previousTripStatus = newStatus;
           _delayReportExist = hasDelayReport;
-          _currentDelayReason = existingDelayReason;
+          _currentDelayReason = tripDelayReason;
+          _delayStatus = tripDelayStatus;
+          _delayAdminComment = tripDelayAdminComment;
           _isLoading = false;
         });
       } else {
@@ -659,8 +657,6 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Delay Report Section - Enable during initialization and whenever trip details loaded
-                  Container(),
                   // Delay Report Section
                   if ((_tripDetail!['status'] == 'in_progress' ||
                        _tripDetail!['status'] == 'scheduled' ||
@@ -701,16 +697,31 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Row(
+                                    Row(
                                       children: [
-                                        Icon(Icons.access_time, color: Colors.amber, size: 20),
-                                        SizedBox(width: 8),
+                                        const Icon(Icons.access_time, color: Colors.amber, size: 20),
+                                        const SizedBox(width: 8),
                                         Text(
                                           'SUBMITTED DELAY REPORT',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.orange,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.shade100,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            (_delayStatus ?? 'PENDING').toUpperCase(),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -723,6 +734,31 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                         color: Colors.black87,
                                       ),
                                     ),
+                                    if (_delayAdminComment != null &&
+                                        _delayAdminComment!.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Icon(Icons.info_outline,
+                                                size: 16, color: Colors.blueGrey),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                _delayAdminComment!,
+                                                style: const TextStyle(fontSize: 12),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                     // Show SLA extension if admin has approved
                                     if (_tripDetail!['slaExtensionMinutes'] != null &&
                                         _tripDetail!['slaExtensionMinutes'] > 0)
@@ -772,7 +808,9 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
-                                    onPressed: _showDelayReportDialog,
+                                    onPressed: _delayStatus == 'APPROVED'
+                                        ? null
+                                        : _showDelayReportDialog,
                                     icon: const Icon(Icons.edit),
                                     label: const Text('UPDATE PENDING APPROVAL'),
                                     style: ElevatedButton.styleFrom(

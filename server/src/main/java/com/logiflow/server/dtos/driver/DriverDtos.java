@@ -66,6 +66,8 @@ public class DriverDtos {
 
         private String delayReason;
         private Integer slaExtensionMinutes;
+        private String delayStatus;
+        private String delayAdminComment;
 
         private List<OrderBrief> orders;
     }

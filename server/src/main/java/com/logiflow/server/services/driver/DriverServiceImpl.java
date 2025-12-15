@@ -87,20 +87,24 @@ public class DriverServiceImpl implements DriverService {
         Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
 
-        // Check if this trip already has SLA extensions (approved delays)
+        // Check delay status and SLA extensions
         boolean hasSlaExtension = trip.getSlaExtensionMinutes() != null && trip.getSlaExtensionMinutes() > 0;
 
         // BLOCK any new delay reports after admin approval - drivers cannot submit additional delays
         // This includes updates - once approved, no more delay submissions possible
-        if (hasSlaExtension) {
-            throw new RuntimeException("Cannot submit delay report: This trip already has approved SLA extensions. Please contact admin directly if you need further assistance.");
+        if (hasSlaExtension || "APPROVED".equalsIgnoreCase(trip.getDelayStatus())) {
+            throw new RuntimeException("Cannot submit delay report: This trip already has admin-approved extensions. Please contact admin directly if you need further assistance.");
         }
 
-        // Allow updating pending delay reports (before admin approval)
+        // Allow updating pending or rejected delay reports (before approval)
         boolean hasPreviousDelay = trip.getDelayReason() != null && !trip.getDelayReason().isEmpty();
 
-        // Store delay reason - timing information is now included in the text description, no hardcoded minutes needed
+        // Store delay reason - timing information is included in the text description
         trip.setDelayReason(delayReason);
+        // Whenever driver submits or updates, reset status back to PENDING
+        trip.setDelayStatus("PENDING");
+        // Clear previous admin comment so the next response is explicit
+        trip.setDelayAdminComment(null);
 
         tripRepository.save(trip);
 
@@ -123,9 +127,9 @@ public class DriverServiceImpl implements DriverService {
         );
 
         // Also send notification to driver confirming their delay report/update
-        String driverMessage = hasSlaExtension ?
-            "Delay report updated for trip #" + tripId + ". Since you had existing approval, admin will need to re-approve your updated delay." :
-            "Delay report submitted for trip #" + tripId + ". Admin will review.";
+        String driverMessage = hasPreviousDelay
+                ? "Delay report updated for trip #" + tripId + ". Admin will review your latest information."
+                : "Delay report submitted for trip #" + tripId + ". Admin will review.";
         notificationService.sendDriverNotification(
                 driverId,
                 "DELAY_REPORTED",
@@ -321,6 +325,8 @@ public class DriverServiceImpl implements DriverService {
 
         dto.setDelayReason(t.getDelayReason());
         dto.setSlaExtensionMinutes(t.getSlaExtensionMinutes());
+        dto.setDelayStatus(t.getDelayStatus());
+        dto.setDelayAdminComment(t.getDelayAdminComment());
 
         if (t.getOrders() != null) {
             dto.setOrders(t.getOrders().stream().map(o -> {

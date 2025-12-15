@@ -155,7 +155,35 @@ const AdminTripsOversightDetailsPage = () => {
         {(trip.delayReason) && (
           <div className="details-card">
             <div className="card-header">
-              <h2>⏰ Delay Report Review</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <h2 style={{ margin: 0 }}>⏰ Delay Report Review</h2>
+                {trip.delayStatus && (
+                  <span
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '999px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      letterSpacing: '0.02em',
+                      textTransform: 'uppercase',
+                      backgroundColor:
+                        trip.delayStatus === 'APPROVED'
+                          ? '#dcfce7'
+                          : trip.delayStatus === 'REJECTED'
+                          ? '#fee2e2'
+                          : '#e0f2fe',
+                      color:
+                        trip.delayStatus === 'APPROVED'
+                          ? '#166534'
+                          : trip.delayStatus === 'REJECTED'
+                          ? '#991b1b'
+                          : '#1d4ed8',
+                    }}
+                  >
+                    {trip.delayStatus}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="card-content">
               <div style={{ marginBottom: '16px' }}>
@@ -206,6 +234,25 @@ const AdminTripsOversightDetailsPage = () => {
                 </div>
               )}
 
+              {/* Admin comment, if any */}
+              {trip.delayAdminComment && (
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '8px', color: '#374151' }}>🧾 Admin Decision</h3>
+                  <div
+                    style={{
+                      padding: '12px',
+                      backgroundColor: '#eff6ff',
+                      borderRadius: '6px',
+                      borderLeft: '4px solid #3b82f6',
+                      fontSize: '13px',
+                      color: '#1f2937',
+                    }}
+                  >
+                    {trip.delayAdminComment}
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginBottom: '24px' }}>
                 <h3 style={{ marginTop: 0, marginBottom: '12px', color: '#374151' }}>
                   ⚡ Admin Response Actions
@@ -215,21 +262,23 @@ const AdminTripsOversightDetailsPage = () => {
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   {!showApprovalInput && !showUpdateSlaInput ? (
                     <>
+                      {/* Only allow first approval when no SLA extension yet */}
                       {!trip.slaExtensionMinutes && (
                         <button
                           className="btn btn-success"
                           onClick={() => setShowApprovalInput(true)}
-                          disabled={actingId === trip.tripId}
+                          disabled={actingId === trip.tripId || trip.delayStatus === 'APPROVED'}
                           style={{ flex: '1 1 150px' }}
                         >
                           ✅ APPROVE
                         </button>
                       )}
+                      {/* Allow updating SLA only when already approved */}
                       {trip.slaExtensionMinutes && trip.slaExtensionMinutes > 0 && (
                         <button
                           className="btn btn-warning"
                           onClick={() => setShowUpdateSlaInput(true)}
-                          disabled={actingId === trip.tripId}
+                          disabled={actingId === trip.tripId || trip.delayStatus !== 'APPROVED'}
                           style={{ flex: '1 1 150px' }}
                         >
                           🟡 UPDATE SLA
@@ -238,7 +287,7 @@ const AdminTripsOversightDetailsPage = () => {
                       <button
                         className="btn btn-danger"
                         onClick={() => handleDelayResponse('REJECTED')}
-                        disabled={actingId === trip.tripId}
+                        disabled={actingId === trip.tripId || trip.delayStatus === 'REJECTED'}
                         style={{ flex: '1 1 150px' }}
                       >
                         ❌ REJECT
