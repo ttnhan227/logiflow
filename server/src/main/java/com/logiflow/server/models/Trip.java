@@ -5,9 +5,12 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Data
 @Entity
 @Table(name = "trips")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Trip {
 
     @Id
@@ -52,6 +55,10 @@ public class Trip {
 
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Order> orders;
+
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("createdAt ASC")
+    private List<TripProgressEvent> progressEvents;
 
     // ================= Delay / SLA handling =================
 

@@ -176,7 +176,7 @@ class _MainLayoutState extends State<MainLayout> {
     _notificationService.onNotificationReceived = (notification) {
       // Show notification as SnackBar
       if (mounted) {
-        final type = notification['type'] ?? 'INFO';
+        final type = (notification['type'] ?? 'INFO').toString().toUpperCase();
         final message = notification['message'] ?? 'New notification';
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -185,10 +185,10 @@ class _MainLayoutState extends State<MainLayout> {
             backgroundColor: _getNotificationColor(type),
             duration: const Duration(seconds: 10),
             action: SnackBarAction(
-              label: 'View',
+              label: isChat ? 'Open Chat' : 'View',
               textColor: Colors.white,
               onPressed: () {
-                // Navigate to trips screen
+                // Navigate to trips screen or chat screen when available
                 setState(() => _currentIndex = 1);
                 _pageController.jumpToPage(1);
               },
@@ -349,6 +349,10 @@ class _MainLayoutState extends State<MainLayout> {
             label: 'My Trips',
           ),
           const BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Messages',
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.verified_user),
             label: 'Compliance',
           ),
@@ -411,6 +415,7 @@ class _MainLayoutState extends State<MainLayout> {
         return [
           const HomeScreen(),
           const DriverTripsScreen(),
+          const DriverChatListScreen(),
           const DriverComplianceScreen(),
           const DriverProfileScreen(),
         ];

@@ -5,6 +5,8 @@ import com.logiflow.server.dtos.dispatch.TripDto;
 import com.logiflow.server.dtos.dispatch.TripListResponse;
 import com.logiflow.server.dtos.dispatch.TripAssignRequest;
 import com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest;
+import com.logiflow.server.dtos.dispatch.TripCancelRequest;
+import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
 import com.logiflow.server.services.dispatch.TripService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +23,12 @@ public class TripController {
     private TripService tripService;
 
     @GetMapping("/trips")
-    public ResponseEntity<?> getTrips(@RequestParam(required = false) String status) {
+    public ResponseEntity<?> getTrips(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            TripListResponse response = tripService.getTrips(status);
+            TripListResponse response = tripService.getTrips(status, page, size);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -84,8 +89,32 @@ public class TripController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PutMapping("/trips/{tripId}/reroute")
+    public ResponseEntity<?> rerouteTrip(
+            @PathVariable Integer tripId,
+            @Valid @RequestBody TripRerouteRequest request) {
+        try {
+            TripDto updated = tripService.rerouteTrip(tripId, request);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/trips/{tripId}/cancel")
+    public ResponseEntity<?> cancelTrip(
+            @PathVariable Integer tripId,
+            @Valid @RequestBody TripCancelRequest request) {
+        try {
+            TripDto updated = tripService.cancelTrip(tripId, request);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
 }
-
-
-
-

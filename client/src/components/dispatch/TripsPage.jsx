@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tripService } from '../../services';
+import Pagination from '../common/Pagination';
 import './dispatch.css';
 import './modern-dispatch.css';
 
@@ -9,20 +10,40 @@ const TripsPage = () => {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [error, setError] = useState(null);
 
   const fetch = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await tripService.getTrips({ status: statusFilter || undefined });
+      const data = await tripService.getTrips({
+        status: statusFilter || undefined,
+        page,
+        size,
+      });
       setTripsResp(data);
     } catch (err) {
       console.error('Failed to load trips', err);
+      setError(err.response?.data?.message || 'Failed to load trips. You may not have permission to access this resource.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetch(); }, [statusFilter]);
+  useEffect(() => {
+    setPage(0);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, page, size]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm]);
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -90,7 +111,9 @@ const TripsPage = () => {
         </select>
         <button className="btn-refresh" onClick={fetch}>↻ Refresh</button>
         <div className="results-count">
-          {filteredTrips.length} trip{filteredTrips.length !== 1 ? 's' : ''}
+          {typeof tripsResp?.totalItems === 'number'
+            ? `${tripsResp.totalItems} trip${tripsResp.totalItems !== 1 ? 's' : ''}`
+            : `${filteredTrips.length} trip${filteredTrips.length !== 1 ? 's' : ''}`}
         </div>
       </div>
 
@@ -101,7 +124,19 @@ const TripsPage = () => {
         </div>
       )}
 
-      {!loading && filteredTrips.length === 0 && (
+      {error && (
+        <div className="error-state">
+          <div className="error-icon">❌</div>
+          <h3>Access Denied</h3>
+          <p>{error}</p>
+          <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '1rem' }}>
+            You need DISPATCHER role to access this resource. Please contact your administrator.
+          </p>
+          <Link to="/dispatch/orders" className="btn-primary">Back to Orders</Link>
+        </div>
+      )}
+
+      {!loading && !error && (tripsResp?.trips?.length ?? filteredTrips.length) === 0 && (
         <div className="empty-state">
           <div className="empty-icon">🚚</div>
           <h3>No trips found</h3>
@@ -110,103 +145,62 @@ const TripsPage = () => {
         </div>
       )}
 
-      {!loading && filteredTrips.length > 0 && (
-        <div className="cards-grid">
-          {filteredTrips.map(trip => (
-            <div key={trip.tripId} className="trip-card">
-              <div className="card-header">
-                <div className="card-id">Trip #{trip.tripId}</div>
-                <span 
-                  className="badge" 
-                  style={{ backgroundColor: getStatusColor(trip.status) }}
-                >
-                  {trip.status}
-                </span>
-              </div>
-              
-              <div className="card-body">
-                <div className="trip-route">
-                  <div className="route-icon-large">🗺️</div>
-                  <div className="route-details">
-                    <div className="section-label">Route</div>
-                    <div className="section-value route-name">{trip.routeName}</div>
-                  </div>
-                </div>
+      {!loading && !error && filteredTrips.length > 0 && (
+        <>
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Trip ID</th>
+                  <th>Route</th>
+                  <th>Vehicle</th>
+                  <th>Driver</th>
+                  <th>Scheduled Departure</th>
+                  <th>Actual Departure</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTrips.map(trip => (
+                  <tr key={trip.tripId} className="table-row">
+                    <td className="cell-id">#{trip.tripId}</td>
+                    <td className="cell-text">{trip.routeName}</td>
+                    <td className="cell-text">{trip.vehicleLicensePlate || 'Not assigned'}</td>
+                    <td className="cell-text">{trip.driverName || 'Not assigned'}</td>
+                    <td className="cell-datetime">{formatDateTime(trip.scheduledDeparture)}</td>
+                    <td className="cell-datetime">{trip.actualDeparture ? formatDateTime(trip.actualDeparture) : '-'}</td>
+                    <td className="cell-status">
+                      <span 
+                        className="status-badge" 
+                        style={{ backgroundColor: getStatusColor(trip.status) }}
+                      >
+                        {trip.status}
+                      </span>
+                    </td>
+                    <td className="cell-action">
+                      <Link 
+                        to={`/dispatch/trips/${trip.tripId}`} 
+                        className="btn-view"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                <div className="trip-info-grid">
-                  <div className="info-item">
-                    <div className="info-icon">🚗</div>
-                    <div>
-                      <div className="section-label">Vehicle</div>
-                      <div className="section-value">
-                        {trip.vehicleLicensePlate || 'Not assigned'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="info-item">
-                    <div className="info-icon">👤</div>
-                    <div>
-                      <div className="section-label">Driver</div>
-                      <div className="section-value">
-                        {trip.driverName || 'Not assigned'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="info-item">
-                    <div className="info-icon">📅</div>
-                    <div>
-                      <div className="section-label">Scheduled Departure</div>
-                      <div className="section-value">
-                        {formatDateTime(trip.scheduledDeparture)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {trip.actualDeparture && (
-                    <div className="info-item">
-                      <div className="info-icon">🕐</div>
-                      <div>
-                        <div className="section-label">Actual Departure</div>
-                        <div className="section-value">
-                          {formatDateTime(trip.actualDeparture)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="card-actions">
-                  {trip.status === 'PENDING' && (
-                    <Link 
-                      to={`/dispatch/trips/${trip.tripId}/assign`} 
-                      className="btn-action primary"
-                    >
-                      👥 Assign Driver
-                    </Link>
-                  )}
-                  {trip.status === 'ASSIGNED' && (
-                    <button className="btn-action success">
-                      ✓ Ready to Start
-                    </button>
-                  )}
-                  {trip.status === 'IN_PROGRESS' && (
-                    <button className="btn-action info">
-                      🚚 In Progress
-                    </button>
-                  )}
-                  <Link 
-                    to={`/dispatch/trips/${trip.tripId}`} 
-                    className="btn-action secondary"
-                  >
-                    📋 View Details
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+          <Pagination
+            page={tripsResp?.currentPage ?? page}
+            totalPages={tripsResp?.totalPages ?? 0}
+            totalItems={tripsResp?.totalItems}
+            pageSize={tripsResp?.pageSize ?? size}
+            disabled={loading}
+            onPageChange={(p) => setPage(p)}
+          />
+        </>
       )}
     </div>
   );

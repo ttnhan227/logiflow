@@ -12,6 +12,10 @@ const assignTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/ass
 
 const updateTripStatus = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/status`, payload).then(r => r.data);
 
+const rerouteTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/reroute`, payload).then(r => r.data);
+
+const cancelTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/cancel`, payload).then(r => r.data);
+
 const getAvailableDrivers = (datetime) => api.get(`${basePath}/drivers/available`, { params: datetime ? { datetime } : {} }).then(r => r.data);
 
 const tripService = {
@@ -20,6 +24,8 @@ const tripService = {
   createTrip,
   assignTrip,
   updateTripStatus,
+  rerouteTrip,
+  cancelTrip,
   getAvailableDrivers,
 };
 

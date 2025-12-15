@@ -18,12 +18,18 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 public class GpsTrackingController {
+    private final SimpMessagingTemplate messagingTemplate;
+
+    public GpsTrackingController(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
+    }
     // In-memory storage for latest driver/trip locations: driverId_tripId -> LocationMessage
     private static final Map<String, LocationMessage> latestLocations = new ConcurrentHashMap<>();
     // In-memory storage for location history: driverId_tripId -> List<LocationMessage>
@@ -42,7 +48,14 @@ public class GpsTrackingController {
             latestLocations.put(key, serverMessage);
             // Add to location history
             locationHistory.computeIfAbsent(key, k -> new java.util.ArrayList<>()).add(serverMessage);
-            return serverMessage; // Broadcast to all subscribers
+
+            // Broadcast to global topic (existing)
+            // return serverMessage; // still sent to /topic/locations via @SendTo
+
+            // Also publish to trip-scoped topic so dispatch can subscribe by trip
+            messagingTemplate.convertAndSend("/topic/trips/" + message.getTripId() + "/location", serverMessage);
+
+            return serverMessage; // Broadcast to /topic/locations
         }
         return null;
     }

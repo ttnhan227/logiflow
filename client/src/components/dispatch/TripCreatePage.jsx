@@ -164,8 +164,8 @@ const TripCreatePage = () => {
         {selectedRoute && <RouteMapCard routeId={selectedRoute.routeId} feePerKm={12} onDistanceChange={handleDistanceChange} />}
 
         <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <div className="info-pill">Ước tính quãng đường: {distanceEstimate != null ? `${distanceEstimate} km` : '—'}</div>
-          <div className="info-pill">Ước tính phí: {formatMoney(feeEstimate)}</div>
+          <div className="info-pill">Estimated Distance: {distanceEstimate != null ? `${distanceEstimate} km` : '—'}</div>
+          <div className="info-pill">Estimated Fee: {formatMoney(feeEstimate)}</div>
         </div>
 
         <div className="detail-card" style={{ marginTop: '1rem', padding: '1rem' }}>

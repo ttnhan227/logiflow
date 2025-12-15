@@ -11,6 +11,21 @@ const TripAssignPage = () => {
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [driversLoading, setDriversLoading] = useState(false);
+
+  const loadDrivers = async () => {
+    setDriversLoading(true);
+    try {
+      const drv = await tripService.getAvailableDrivers();
+      console.log('Drivers loaded:', drv);
+      setDrivers(drv || []);
+    } catch (ex) {
+      console.error('Failed to load drivers', ex?.response?.data || ex);
+      setError(`Failed to load drivers: ${ex?.response?.data?.error || ex?.message || 'Unknown error'}`);
+    } finally {
+      setDriversLoading(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -30,15 +45,8 @@ const TripAssignPage = () => {
         return;
       }
 
-      try {
-        // Load available drivers
-        const drv = await tripService.getAvailableDrivers();
-        console.log('Drivers loaded:', drv);
-        setDrivers(drv || []);
-      } catch (ex) {
-        console.error('Failed to load drivers', ex?.response?.data || ex);
-        setError(`Failed to load drivers: ${ex?.response?.data?.error || ex?.message || 'Unknown error'}`);
-      }
+      // Load drivers
+      loadDrivers();
     };
     load();
   }, [tripId]);
@@ -59,7 +67,8 @@ const TripAssignPage = () => {
       navigate(`/dispatch/trips/${trip.tripId}`, { state: { reload: true } });
     } catch (ex) {
       console.error(ex);
-      setError(ex?.error || ex?.message || 'Assignment failed');
+      const errorMsg = ex?.response?.data?.message || ex?.response?.data?.error || ex?.error || ex?.message || 'Assignment failed';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -68,7 +77,19 @@ const TripAssignPage = () => {
   return (
     <div className="container">
       <h2>Assign Trip #{tripId}</h2>
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div style={{
+          padding: '1rem',
+          marginBottom: '1.5rem',
+          background: '#fee2e2',
+          border: '1px solid #fecaca',
+          borderRadius: '0.5rem',
+          color: '#dc2626',
+          fontWeight: '500'
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
       {!trip && <div>Loading trip...</div>}
       {trip && (
         <div>
@@ -93,7 +114,14 @@ const TripAssignPage = () => {
 
           <div style={{ marginTop: 12 }}>
             <label><strong>Available Drivers</strong></label>
-            <div style={{ maxHeight: 300, overflow: 'auto' }}>
+            <button 
+              style={{ marginLeft: '1rem', padding: '0.5rem 1rem' }} 
+              onClick={loadDrivers}
+              disabled={driversLoading}
+            >
+              {driversLoading ? '🔄 Refreshing...' : '🔄 Refresh Drivers'}
+            </button>
+            <div style={{ maxHeight: 300, overflow: 'auto', marginTop: '0.5rem' }}>
               <table className="table">
                 <thead>
                   <tr><th></th><th>Name</th><th>Phone</th><th>License</th><th>Status</th><th>Rest Hrs</th><th>Next Available</th></tr>

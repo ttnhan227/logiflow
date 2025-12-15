@@ -104,70 +104,40 @@ const AvailableDriversPage = () => {
       )}
 
       {!loading && filteredDrivers.length > 0 && (
-        <div className="cards-grid">
-          {filteredDrivers.map(driver => (
-            <div key={driver.driverId} className="driver-card detail-card">
-              <div className="card-header">
-                <div className="card-id">Driver #{driver.driverId}</div>
-                <span 
-                  className="badge" 
-                  style={{ backgroundColor: getStatusColor(driver.status) }}
-                >
-                  {driver.status?.toUpperCase() || 'UNKNOWN'}
-                </span>
-              </div>
-              
-              <div className="card-body">
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">👤</div>
-                    <div>
-                      <div className="detail-label">Name</div>
-                      <div className="detail-value">{driver.fullName || 'N/A'}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">📱</div>
-                    <div>
-                      <div className="detail-label">Phone</div>
-                      <div className="detail-value">{driver.phone || 'N/A'}</div>
-                    </div>
-                  </div>
-
-                  <div className="detail-item">
-                    <div className="detail-icon">📧</div>
-                    <div>
-                      <div className="detail-label">Email</div>
-                      <div className="detail-value" style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>
-                        {driver.email || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">🎖️</div>
-                    <div>
-                      <div className="detail-label">License</div>
-                      <div className="detail-value">{driver.licenseType || 'N/A'}</div>
-                    </div>
-                  </div>
-
-                  <div className="detail-item">
-                    <div className="detail-icon">🚗</div>
-                    <div>
-                      <div className="detail-label">Total Trips</div>
-                      <div className="detail-value">{driver.totalTrips || 0}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Driver ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>License Type</th>
+                <th>Total Trips</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDrivers.map(driver => (
+                <tr key={driver.driverId} className="table-row">
+                  <td className="cell-id">#{driver.driverId}</td>
+                  <td className="cell-text">{driver.fullName || 'N/A'}</td>
+                  <td className="cell-text">{driver.phone || 'N/A'}</td>
+                  <td className="cell-text" style={{ maxWidth: '200px' }}>{driver.email || 'N/A'}</td>
+                  <td className="cell-text">{driver.licenseType || 'N/A'}</td>
+                  <td className="cell-text">{driver.totalTrips || 0}</td>
+                  <td className="cell-status">
+                    <span 
+                      className="status-badge" 
+                      style={{ backgroundColor: getStatusColor(driver.status) }}
+                    >
+                      {driver.status?.toUpperCase() || 'UNKNOWN'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
