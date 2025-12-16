@@ -25,6 +25,12 @@ const authService = {
     };
     
     localStorage.setItem('user', JSON.stringify(userObj));
+
+    try {
+      window.dispatchEvent(new CustomEvent('userUpdated', { detail: userObj }));
+    } catch (e) {
+      window.dispatchEvent(new Event('userUpdated'));
+    }
     
     return response.data;
   },

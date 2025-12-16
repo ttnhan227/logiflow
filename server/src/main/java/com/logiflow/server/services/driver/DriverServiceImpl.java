@@ -51,6 +51,26 @@ public class DriverServiceImpl implements DriverService {
         this.notificationService = notificationService;
         this.deliveryConfirmationRepository = deliveryConfirmationRepository;
     }
+
+    private String resolveDriverUsername(Integer driverId) {
+        if (driverId == null) return null;
+        try {
+            return driverRepository.findById(driverId)
+                    .map(d -> d.getUser() != null ? d.getUser().getUsername() : null)
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void notifyDriver(Integer driverId, String type, String message) {
+        String username = resolveDriverUsername(driverId);
+        if (username != null && !username.isBlank()) {
+            notificationService.sendDriverNotificationByUsername(username, type, message);
+        } else {
+            notificationService.sendDriverNotification(driverId, type, message);
+        }
+    }
     @Override
     public void acceptTripAssignment(Integer driverId, Integer tripId) {
         int updated = tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "accepted");
@@ -58,7 +78,7 @@ public class DriverServiceImpl implements DriverService {
             throw new RuntimeException("Trip assignment not found or not assigned to you");
         }
         // Send notification to driver
-        notificationService.sendDriverNotification(driverId, "TRIP_ACCEPTED", "You have accepted trip #" + tripId);
+        notifyDriver(driverId, "TRIP_ACCEPTED", "You have accepted trip #" + tripId);
     }
 
     @Override
@@ -68,7 +88,7 @@ public class DriverServiceImpl implements DriverService {
             throw new RuntimeException("Trip assignment not found or not assigned to you");
         }
         // Send notification to driver
-        notificationService.sendDriverNotification(driverId, "TRIP_DECLINED", "You have declined trip #" + tripId);
+        notifyDriver(driverId, "TRIP_DECLINED", "You have declined trip #" + tripId);
     }
 
     @Override
@@ -79,7 +99,7 @@ public class DriverServiceImpl implements DriverService {
             throw new RuntimeException("Trip assignment not found or not assigned to you");
         }
         // Send notification to driver
-        notificationService.sendDriverNotification(driverId, "TRIP_CANCELLED", "Trip #" + tripId + " has been cancelled");
+        notifyDriver(driverId, "TRIP_CANCELLED", "Trip #" + tripId + " has been cancelled");
     }
 
     @Override
@@ -130,11 +150,7 @@ public class DriverServiceImpl implements DriverService {
         String driverMessage = hasPreviousDelay
                 ? "Delay report updated for trip #" + tripId + ". Admin will review your latest information."
                 : "Delay report submitted for trip #" + tripId + ". Admin will review.";
-        notificationService.sendDriverNotification(
-                driverId,
-                "DELAY_REPORTED",
-                driverMessage
-        );
+        notifyDriver(driverId, "DELAY_REPORTED", driverMessage);
     }
 
     @Override
@@ -175,7 +191,12 @@ public class DriverServiceImpl implements DriverService {
         
         // Send notification to driver about status change
         String notificationMessage = "Trip #" + tripId + " status updated to " + status;
-        notificationService.sendTripNotification(driverId, tripId, "TRIP_STATUS_UPDATE", notificationMessage, status);
+        String username = resolveDriverUsername(driverId);
+        if (username != null && !username.isBlank()) {
+            notificationService.sendTripNotificationByUsername(username, tripId, "TRIP_STATUS_UPDATE", notificationMessage, status);
+        } else {
+            notificationService.sendTripNotification(driverId, tripId, "TRIP_STATUS_UPDATE", notificationMessage, status);
+        }
     }
 
     /** Lấy driver từ Authentication.getName() — có thể là số (userId) hoặc username */

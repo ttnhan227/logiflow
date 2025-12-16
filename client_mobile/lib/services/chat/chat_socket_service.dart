@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:stomp_dart_client/stomp.dart';
-import 'package:stomp_dart_client/stomp_config.dart';
-import 'package:stomp_dart_client/stomp_frame.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,38 +12,57 @@ class ChatSocketService {
     return _chatStreamController!.stream;
   }
 
-  Future<void> connect(int driverId) async {
+  Future<void> connect(String driverUsername) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null) {
       return;
     }
 
-    // Reuse apiClient base host (without /api)
-    final wsBase = ApiClient.baseImageUrl; // e.g., http://host:8080
-    final url = '$wsBase/ws/notifications?token=${token.replaceAll('"', '')}';
+    // Use same URL pattern as notification service
+    final baseUrl = ApiClient.baseUrl.replaceFirst('/api', '');
+    String wsUrl;
+    if (baseUrl.startsWith('https://')) {
+      wsUrl = baseUrl.replaceFirst('https://', 'wss://') + '/ws/notifications-native';
+    } else if (baseUrl.startsWith('http://')) {
+      wsUrl = baseUrl.replaceFirst('http://', 'ws://') + '/ws/notifications-native';
+    } else {
+      wsUrl = 'ws://$baseUrl/ws/notifications-native';
+    }
 
     _client = StompClient(
-      config: StompConfig.sockJS(
-        url: url,
-        onConnect: (_) => _onConnect(driverId),
+      config: StompConfig(
+        url: wsUrl,
+        onConnect: (_) => _onConnect(driverUsername),
         onWebSocketError: (dynamic err) {
-          _chatStreamController?.add({'type': 'ERROR', 'message': err.toString()});
+          _chatStreamController?.add({
+            'type': 'ERROR',
+            'message': err.toString(),
+          });
         },
         onStompError: (StompFrame frame) {
-          _chatStreamController?.add({'type': 'ERROR', 'message': frame.body ?? 'STOMP error'});
+          _chatStreamController?.add({
+            'type': 'ERROR',
+            'message': frame.body ?? 'STOMP error',
+          });
         },
+        onDisconnect: (StompFrame frame) {
+          print('Chat STOMP disconnected');
+        },
+        connectionTimeout: const Duration(seconds: 10),
+        heartbeatOutgoing: const Duration(seconds: 0),
+        heartbeatIncoming: const Duration(seconds: 0),
       ),
     );
 
     _client?.activate();
   }
 
-  void _onConnect(int driverId) {
+  void _onConnect(String driverUsername) {
     _chatStreamController ??= StreamController.broadcast();
     _client?.subscribe(
       // Backend currently pushes chat via general driver topic
-      destination: '/topic/driver/$driverId',
+      destination: '/topic/driver/$driverUsername',
       callback: (frame) {
         final body = frame.body;
         if (body != null) {

@@ -7,6 +7,7 @@ import com.logiflow.server.dtos.dispatch.OrderDto;
 import com.logiflow.server.dtos.dispatch.OrderImportResponse;
 import com.logiflow.server.dtos.dispatch.OrderListResponse;
 import com.logiflow.server.dtos.dispatch.OrderUpdateRequest;
+import com.logiflow.server.dtos.notification.AdminNotificationDto;
 import com.logiflow.server.models.Order;
 import com.logiflow.server.models.Trip;
 import com.logiflow.server.models.User;
@@ -178,11 +179,20 @@ public class TripOversightServiceImpl implements TripOversightService {
                 // Extend SLA by custom minutes entered by admin
                 Integer currentExtension = trip.getSlaExtensionMinutes() != null ? trip.getSlaExtensionMinutes() : 0;
                 Integer approvedExtension = extensionMinutes != null && extensionMinutes > 0 ? extensionMinutes : 30;
-                trip.setSlaExtensionMinutes(currentExtension + approvedExtension);
+                boolean wasAlreadyApproved = "APPROVED".equalsIgnoreCase(trip.getDelayStatus()) && currentExtension > 0;
+                int newTotalExtension = currentExtension + approvedExtension;
+
+                trip.setSlaExtensionMinutes(newTotalExtension);
                 trip.setDelayStatus("APPROVED");
-                adminComment = "Delay approved. SLA extended by " + approvedExtension + " minutes.";
-                notificationMessage = "Your delay report for trip #" + trip.getTripId() +
-                        " has been approved. SLA extended by " + approvedExtension + " minutes.";
+                if (wasAlreadyApproved) {
+                    adminComment = "Delay SLA updated. Added " + approvedExtension + " minutes (total " + newTotalExtension + ").";
+                    notificationMessage = "Update for trip #" + trip.getTripId() +
+                            ": SLA was updated. Added " + approvedExtension + " minutes (total " + newTotalExtension + ").";
+                } else {
+                    adminComment = "Delay approved. SLA extended by " + approvedExtension + " minutes.";
+                    notificationMessage = "Your delay report for trip #" + trip.getTripId() +
+                            " has been approved. SLA extended by " + approvedExtension + " minutes.";
+                }
                 break;
 
             case "REJECTED":
@@ -203,7 +213,7 @@ public class TripOversightServiceImpl implements TripOversightService {
         }
         Trip savedTrip = tripRepository.save(trip);
 
-        // Send notification to driver about the admin response
+        // Send delay response only to driver (not admin broadcast)
         if (driverUsername != null && !driverUsername.isEmpty()) {
             System.out.println("DEBUG: Admin approving delay for trip " + tripId + ", sending notification to driver " + driverUsername);
             System.out.println("DEBUG: Notification message: " + notificationMessage);

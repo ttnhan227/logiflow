@@ -1,7 +1,9 @@
 package com.logiflow.server.websocket;
 
 import com.logiflow.server.dtos.notification.AdminNotificationDto;
+import com.logiflow.server.dtos.notification.DispatcherNotificationDto;
 import com.logiflow.server.dtos.notification.TripNotificationDto;
+import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.models.Notification;
 import com.logiflow.server.models.User;
 import com.logiflow.server.repositories.notification.NotificationRepository;
@@ -21,9 +23,32 @@ public class NotificationService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private DriverRepository driverRepository;
+
+    private String resolveDriverUsername(Integer driverId) {
+        if (driverId == null) return null;
+        try {
+            return driverRepository.findById(driverId)
+                    .map(d -> d.getUser() != null ? d.getUser().getUsername() : null)
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // ===== Driver Notifications =====
     public void sendDriverNotification(Integer driverId, String type, String message) {
-        String destination = "/topic/driver/" + driverId;
+        String username = resolveDriverUsername(driverId);
+        if (username == null || username.isBlank()) {
+            return;
+        }
+
+        sendDriverNotificationByUsername(username, type, message);
+    }
+
+    public void sendDriverNotificationByUsername(String username, String type, String message) {
+        String destination = "/topic/driver/" + username;
         TripNotificationDto notification = new TripNotificationDto();
         notification.setType(type);
         notification.setMessage(message);
@@ -31,9 +56,12 @@ public class NotificationService {
     }
 
     public void sendTripNotification(Integer driverId, Integer tripId, String type, String message, String tripStatus) {
-        String destination = "/topic/driver/" + driverId;
-        TripNotificationDto notification = new TripNotificationDto(type, message, tripId, tripStatus);
-        messagingTemplate.convertAndSend(destination, notification);
+        String username = resolveDriverUsername(driverId);
+        if (username == null || username.isBlank()) {
+            return;
+        }
+
+        sendTripNotificationByUsername(username, tripId, type, message, tripStatus);
     }
 
     // Send to username-based topic (used by mobile app) and store in DB for persistence
@@ -67,8 +95,58 @@ public class NotificationService {
     }
 
     public void sendTripNotificationWithData(Integer driverId, TripNotificationDto notification) {
-        String destination = "/topic/driver/" + driverId;
+        String username = resolveDriverUsername(driverId);
+        if (username == null || username.isBlank()) {
+            return;
+        }
+
+        sendTripNotificationWithDataByUsername(username, notification);
+    }
+
+    public void sendTripNotificationWithDataByUsername(String username, TripNotificationDto notification) {
+        String destination = "/topic/driver/" + username;
         messagingTemplate.convertAndSend(destination, notification);
+    }
+
+    // ===== Dispatcher Notifications =====
+    
+    /**
+     * Send notification to all dispatcher users
+     */
+    public void sendDispatcherNotification(DispatcherNotificationDto notification) {
+        messagingTemplate.convertAndSend("/topic/dispatcher/notifications", notification);
+    }
+
+    /**
+     * Broadcast with action details to dispatchers and store in database
+     */
+    public void broadcastToDispatchers(String type, String severity, String title, String message,
+                                       String actionUrl, String actionText, Integer relatedEntityId) {
+        // Determine NotificationType enum value
+        Notification.NotificationType notificationType;
+        try {
+            notificationType = Notification.NotificationType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            notificationType = Notification.NotificationType.SYSTEM_EVENT; // Default fallback
+        }
+
+        DispatcherNotificationDto websocketNotification = DispatcherNotificationDto.of(
+            type, severity, title, message, actionUrl, actionText
+        );
+        sendDispatcherNotification(websocketNotification);
+
+        // Store in database for persistence
+        Notification dbNotification = new Notification(
+            notificationType,
+            severity,
+            title,
+            message,
+            actionUrl,
+            actionText,
+            relatedEntityId,
+            null // targetAdminUser (broadcast to all)
+        );
+        notificationRepository.save(dbNotification);
     }
 
     // ===== Admin Notifications =====
@@ -78,13 +156,6 @@ public class NotificationService {
      */
     public void sendAdminNotification(AdminNotificationDto notification) {
         messagingTemplate.convertAndSend("/topic/admin/notifications", notification);
-    }
-
-    /**
-     * Send notification to a specific admin user
-     */
-    public void sendAdminNotificationToUser(String username, AdminNotificationDto notification) {
-        messagingTemplate.convertAndSendToUser(username, "/queue/notifications", notification);
     }
 
     /**
@@ -191,7 +262,7 @@ public class NotificationService {
      * Send notification about new order to all dispatchers
      */
     public void notifyNewOrder(Integer orderId, String customerName, String priority) {
-        AdminNotificationDto notification = AdminNotificationDto.of(
+        DispatcherNotificationDto notification = DispatcherNotificationDto.of(
             "NEW_ORDER",
             "URGENT".equalsIgnoreCase(priority) ? "WARNING" : "INFO",
             "New Order Received",
@@ -199,15 +270,20 @@ public class NotificationService {
             "/dispatch/orders/" + orderId,
             "View Order"
         );
-        sendAdminNotification(notification);
-    }
+        sendDispatcherNotification(notification);
 
-    public void sendCustomerNotification(Integer customerId, String type, String message) {
-        String destination = "/topic/customer/" + customerId;
-        TripNotificationDto notification = new TripNotificationDto();
-        notification.setType(type);
-        notification.setMessage(message);
-        messagingTemplate.convertAndSend(destination, notification);
+        // Store in database for persistence
+        Notification dbNotification = new Notification(
+            Notification.NotificationType.NEW_ORDER,
+            "URGENT".equalsIgnoreCase(priority) ? "WARNING" : "INFO",
+            "New Order Received",
+            "New " + priority + " order from " + customerName,
+            "/dispatch/orders/" + orderId,
+            "View Order",
+            orderId,
+            null // targetAdminUser (broadcast to all)
+        );
+        notificationRepository.save(dbNotification);
     }
 
     public void sendOrderNotification(Integer customerId, Integer orderId, String type, String message, String orderStatus) {

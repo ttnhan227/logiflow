@@ -3,17 +3,14 @@ import 'dart:async';
 import 'dart:convert';
 import '../../services/chat/chat_service.dart';
 import '../../services/chat/chat_socket_service.dart';
+import '../../services/auth/auth_service.dart';
 import '../../models/chat/chat_message.dart';
 
 class DriverChatScreen extends StatefulWidget {
   final int tripId;
   final int? driverId;
 
-  const DriverChatScreen({
-    super.key,
-    required this.tripId,
-    this.driverId,
-  });
+  const DriverChatScreen({super.key, required this.tripId, this.driverId});
 
   @override
   State<DriverChatScreen> createState() => _DriverChatScreenState();
@@ -30,9 +27,7 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
-    if (widget.driverId != null) {
-      _initSocket(widget.driverId!);
-    }
+    _initSocket();
   }
 
   @override
@@ -56,9 +51,9 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load messages: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load messages: $e')));
       }
     }
   }
@@ -75,14 +70,14 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
     });
   }
 
-  Future<void> _initSocket(int driverId) async {
+  Future<void> _initSocket() async {
     _chatSubscription = chatSocketService.chatStream.listen((event) async {
       final raw = event['raw'];
       if (raw is String) {
         try {
           final decoded = jsonDecode(raw) as Map<String, dynamic>;
           final type = (decoded['type'] ?? '').toString().toUpperCase();
-          
+
           if (type == 'CHAT' || type == 'TRIP_CHAT') {
             await _loadMessages();
           }
@@ -90,7 +85,15 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
       }
     });
 
-    await chatSocketService.connect(driverId);
+    final user = await authService.getCurrentUser();
+    if (user == null) {
+      return;
+    }
+    final driverUsername = user.username;
+    if (driverUsername.isEmpty) {
+      return;
+    }
+    await chatSocketService.connect(driverUsername);
   }
 
   Future<void> _sendMessage() async {
@@ -100,14 +103,14 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
     try {
       await chatService.sendMessage(tripId: widget.tripId, content: text);
       _chatController.clear();
-      
+
       // Reload messages from server to get accurate data
       await _loadMessages();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
       }
     }
   }
@@ -126,75 +129,79 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No messages yet\nStart chatting with dispatcher',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey),
+                ? const Center(
+                    child: Text(
+                      'No messages yet\nStart chatting with dispatcher',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = _messages[index];
+                      final isMe =
+                          msg.senderRole != null &&
+                          msg.senderRole!.toUpperCase().contains('DRIVER');
+
+                      return Align(
+                        alignment: isMe
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.7,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                msg.senderUsername,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isMe
+                                      ? Colors.blue.shade100
+                                      : Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  msg.content,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _messages[index];
-                          final isMe = msg.senderRole != null &&
-                              msg.senderRole!.toUpperCase().contains('DRIVER');
-                          
-                          return Align(
-                            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.7,
-                              ),
-                              child: Column(
-                                crossAxisAlignment:
-                                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    msg.senderUsername,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isMe
-                                          ? Colors.blue.shade100
-                                          : Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Text(
-                                      msg.content,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey.shade500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                      );
+                    },
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(12),

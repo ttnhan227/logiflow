@@ -42,12 +42,18 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
 
         Integer driverId = null;
+        String driverUsername = null;
         if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
-            driverId = trip.getTripAssignments().stream()
+            var assignment = trip.getTripAssignments().stream()
                     .filter(ta -> ta.getDriver() != null)
                     .findFirst()
-                    .map(ta -> ta.getDriver().getDriverId())
                     .orElse(null);
+            if (assignment != null) {
+                driverId = assignment.getDriver().getDriverId();
+                if (assignment.getDriver().getUser() != null) {
+                    driverUsername = assignment.getDriver().getUser().getUsername();
+                }
+            }
         }
 
         if (driverId == null) {
@@ -68,7 +74,11 @@ public class ChatServiceImpl implements ChatService {
         // Driver listens: /topic/driver/{driverId}/chat
         // Dispatch listens: /topic/dispatch/trips/{tripId}/chat
         try {
-            notificationService.sendDriverNotification(driverId, "CHAT", content);
+            if (driverUsername != null && !driverUsername.isEmpty()) {
+                notificationService.sendDriverNotificationByUsername(driverUsername, "CHAT", content);
+            } else {
+                notificationService.sendDriverNotification(driverId, "CHAT", content);
+            }
         } catch (Exception ignored) {
         }
 

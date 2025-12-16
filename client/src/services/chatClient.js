@@ -56,11 +56,11 @@ class ChatClient {
     }
   }
 
-  subscribeToDriverChat(driverId, onMessage) {
+  subscribeToDriverChat(driverUsername, onMessage) {
     if (!this.client || !this.isConnected) throw new Error('ChatClient not connected');
 
     // We piggyback on driver notification topic; CHAT messages have type=CHAT
-    const topic = `/topic/driver/${driverId}`;
+    const topic = `/topic/driver/${driverUsername}`;
     if (this.subscriptions.has(topic)) return;
 
     const sub = this.client.subscribe(topic, (msg) => {
@@ -75,8 +75,8 @@ class ChatClient {
     this.subscriptions.set(topic, sub);
   }
 
-  unsubscribeToDriverChat(driverId) {
-    const topic = `/topic/driver/${driverId}`;
+  unsubscribeToDriverChat(driverUsername) {
+    const topic = `/topic/driver/${driverUsername}`;
     const sub = this.subscriptions.get(topic);
     if (sub) sub.unsubscribe();
     this.subscriptions.delete(topic);

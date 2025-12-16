@@ -6,9 +6,9 @@ import '../services/auth/auth_service.dart';
 import '../services/notification/notification_service.dart';
 import '../widgets/notification_bell.dart';
 import '../services/gps/gps_tracking_service.dart';
-import '../services/driver/driver_service.dart';
 import '../models/user.dart';
 import 'auth/login_screen.dart';
+import 'driver/driver_chat_list_screen.dart';
 import 'driver/driver_trips_screen.dart';
 import 'driver/driver_trip_detail_screen.dart';
 import 'driver/driver_compliance_screen.dart';
@@ -47,10 +47,7 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
     _animation = Tween<double>(
       begin: 0,
       end: 1,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.linear,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
   }
 
   @override
@@ -67,7 +64,7 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
         child: LayoutBuilder(
           builder: (context, constraints) {
             final screenWidth = constraints.maxWidth;
-            
+
             // Measure the text width
             final textSpan = TextSpan(
               text: widget.text,
@@ -164,7 +161,7 @@ class _MainLayoutState extends State<MainLayout> {
         _currentUser = user;
         _isLoading = false;
       });
-      
+
       // Connect to notification service if user is a driver
       if (user != null && user.role.toUpperCase() == 'DRIVER') {
         await _connectNotifications(user.username);
@@ -178,6 +175,7 @@ class _MainLayoutState extends State<MainLayout> {
       if (mounted) {
         final type = (notification['type'] ?? 'INFO').toString().toUpperCase();
         final message = notification['message'] ?? 'New notification';
+        final isChat = type == 'CHAT';
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -231,13 +229,15 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildGlobalGpsBanner() {
     // Only show for drivers with active GPS tracking
-    if (_currentUser?.role?.toUpperCase() != 'DRIVER' || !gpsTrackingService.isTracking) {
+    if (_currentUser?.role?.toUpperCase() != 'DRIVER' ||
+        !gpsTrackingService.isTracking) {
       return const SizedBox.shrink();
     }
 
     // Build detailed scrolling text
     final currentTime = DateTime.now();
-    final formattedTime = '${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    final formattedTime =
+        '${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
     final scrollingText =
         '🚛 Live GPS Tracking - Trip #${gpsTrackingService.currentTripId} | Driver: ${_currentUser?.username ?? 'Unknown'} | Location Sharing Active | Updated: $formattedTime | Speed: ~${(Random().nextDouble() * 60 + 20).toInt()}km/h | ETA: ~${Random().nextInt(30) + 15} mins | 🔄';
 
@@ -249,17 +249,11 @@ class _MainLayoutState extends State<MainLayout> {
           // GPS Icon
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.0),
-            child: Icon(
-              Icons.gps_fixed,
-              color: Colors.white,
-              size: 18,
-            ),
+            child: Icon(Icons.gps_fixed, color: Colors.white, size: 18),
           ),
 
           // Scrolling Text - takes up most space
-          Expanded(
-            child: ScrollingTextWidget(text: scrollingText),
-          ),
+          Expanded(child: ScrollingTextWidget(text: scrollingText)),
         ],
       ),
     );
@@ -284,7 +278,11 @@ class _MainLayoutState extends State<MainLayout> {
         final token = await authService.getToken();
         if (token == null || token.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Authentication session expired. Please login again.')),
+            const SnackBar(
+              content: Text(
+                'Authentication session expired. Please login again.',
+              ),
+            ),
           );
           // Navigate to login
           authService.logout();
@@ -293,7 +291,8 @@ class _MainLayoutState extends State<MainLayout> {
 
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => DriverTripDetailScreen(tripId: int.parse(tripId)),
+            builder: (context) =>
+                DriverTripDetailScreen(tripId: int.parse(tripId)),
           ),
         );
       } catch (e) {
@@ -316,9 +315,7 @@ class _MainLayoutState extends State<MainLayout> {
   String _getInitials(User? user) {
     if (user == null) return '';
     final name = user.username;
-    return name.isNotEmpty
-        ? name.substring(0, 1).toUpperCase()
-        : '';
+    return name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '';
   }
 
   String _getImageUrl(String? imagePath) {
@@ -336,14 +333,11 @@ class _MainLayoutState extends State<MainLayout> {
     if (_currentUser == null) return [];
 
     final role = _currentUser!.role.toUpperCase();
-    
+
     switch (role) {
       case 'DRIVER':
         return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           const BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
             label: 'My Trips',
@@ -363,10 +357,7 @@ class _MainLayoutState extends State<MainLayout> {
         ];
       case 'CUSTOMER':
         return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           const BottomNavigationBarItem(
             icon: Icon(Icons.add_shopping_cart),
             label: 'Create Order',
@@ -386,10 +377,7 @@ class _MainLayoutState extends State<MainLayout> {
         ];
       case 'ADMIN':
         return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           const BottomNavigationBarItem(
             icon: Icon(Icons.admin_panel_settings),
             label: 'Admin',
@@ -397,10 +385,7 @@ class _MainLayoutState extends State<MainLayout> {
         ];
       default:
         return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         ];
     }
   }
@@ -409,7 +394,7 @@ class _MainLayoutState extends State<MainLayout> {
     if (_currentUser == null) return [const HomeScreen()];
 
     final role = _currentUser!.role.toUpperCase();
-    
+
     switch (role) {
       case 'DRIVER':
         return [
@@ -428,10 +413,7 @@ class _MainLayoutState extends State<MainLayout> {
           const CustomerProfileScreen(),
         ];
       case 'ADMIN':
-        return [
-          const HomeScreen(),
-          AdminDashboardScreen(),
-        ];
+        return [const HomeScreen(), AdminDashboardScreen()];
       default:
         return [const HomeScreen()];
     }
@@ -461,9 +443,7 @@ class _MainLayoutState extends State<MainLayout> {
 
     // If user is null, show loading or redirect to login
     if (_currentUser == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final pages = _getPages();
@@ -485,7 +465,8 @@ class _MainLayoutState extends State<MainLayout> {
         ),
         actions: [
           // Show notification bell for drivers only
-          if (_currentUser != null && _currentUser!.role.toUpperCase() == 'DRIVER')
+          if (_currentUser != null &&
+              _currentUser!.role.toUpperCase() == 'DRIVER')
             NotificationBell(
               notificationService: _notificationService,
               onNavigateToTripDetail: _navigateToTripDetail,
@@ -494,18 +475,30 @@ class _MainLayoutState extends State<MainLayout> {
             PopupMenuButton<String>(
               icon: CircleAvatar(
                 radius: 16,
-                backgroundImage: _currentUser!.profilePictureUrl != null && _getImageUrl(_currentUser!.profilePictureUrl).isNotEmpty
-                  ? NetworkImage(_getImageUrl(_currentUser!.profilePictureUrl))
-                  : null,
-                backgroundColor: _currentUser!.profilePictureUrl != null ? null : Theme.of(context).primaryColor,
-                child: _currentUser!.profilePictureUrl != null ? null : Text(
-                  _currentUser!.username.isNotEmpty ? _currentUser!.username.substring(0, 1).toUpperCase() : '',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
+                backgroundImage:
+                    _currentUser!.profilePictureUrl != null &&
+                        _getImageUrl(_currentUser!.profilePictureUrl).isNotEmpty
+                    ? NetworkImage(
+                        _getImageUrl(_currentUser!.profilePictureUrl),
+                      )
+                    : null,
+                backgroundColor: _currentUser!.profilePictureUrl != null
+                    ? null
+                    : Theme.of(context).primaryColor,
+                child: _currentUser!.profilePictureUrl != null
+                    ? null
+                    : Text(
+                        _currentUser!.username.isNotEmpty
+                            ? _currentUser!.username
+                                  .substring(0, 1)
+                                  .toUpperCase()
+                            : '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
               ),
               itemBuilder: (context) => [
                 PopupMenuItem(
@@ -514,18 +507,32 @@ class _MainLayoutState extends State<MainLayout> {
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundImage: _currentUser!.profilePictureUrl != null && _getImageUrl(_currentUser!.profilePictureUrl).isNotEmpty
-                          ? NetworkImage(_getImageUrl(_currentUser!.profilePictureUrl))
-                          : null,
-                        backgroundColor: _currentUser!.profilePictureUrl != null ? null : Theme.of(context).primaryColor,
-                        child: _currentUser!.profilePictureUrl != null ? null : Text(
-                          _currentUser!.username.isNotEmpty ? _currentUser!.username.substring(0, 1).toUpperCase() : '',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
+                        backgroundImage:
+                            _currentUser!.profilePictureUrl != null &&
+                                _getImageUrl(
+                                  _currentUser!.profilePictureUrl,
+                                ).isNotEmpty
+                            ? NetworkImage(
+                                _getImageUrl(_currentUser!.profilePictureUrl),
+                              )
+                            : null,
+                        backgroundColor: _currentUser!.profilePictureUrl != null
+                            ? null
+                            : Theme.of(context).primaryColor,
+                        child: _currentUser!.profilePictureUrl != null
+                            ? null
+                            : Text(
+                                _currentUser!.username.isNotEmpty
+                                    ? _currentUser!.username
+                                          .substring(0, 1)
+                                          .toUpperCase()
+                                    : '',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
                       ),
                       const SizedBox(width: 8),
                       Column(

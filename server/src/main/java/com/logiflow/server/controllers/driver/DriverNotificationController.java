@@ -64,8 +64,8 @@ public class DriverNotificationController {
         }
 
         Notification notification = notificationRepository.findById(id).orElse(null);
-        if (notification == null || notification.getTargetAdminUser() == null ||
-            !notification.getTargetAdminUser().getUserId().equals(userOpt.get().getUserId())) {
+        if (notification == null || notification.getTargetUser() == null ||
+            !notification.getTargetUser().getUserId().equals(userOpt.get().getUserId())) {
             return ResponseEntity.notFound().build();
         }
 

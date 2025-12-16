@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 
 
 @Configuration
@@ -40,9 +41,11 @@ public class SecurityConfiguration {
                 .cors(cors -> {})
                 .authorizeHttpRequests(
                         (authorize) -> authorize
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()
+                                .requestMatchers("/ws/notifications-native", "/ws/notifications-native/**").permitAll()
                                 .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/api/uploads/license-image").permitAll()
                                 .requestMatchers("/api/uploads/cv").permitAll()

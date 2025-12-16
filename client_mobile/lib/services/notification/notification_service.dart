@@ -44,7 +44,9 @@ class NotificationService {
 
   Future<void> connect(String driverId) async {
     if (_isConnected && _driverId == driverId) {
-      print('Already connected to STOMP notification service for driver: $driverId');
+      print(
+        'Already connected to STOMP notification service for driver: $driverId',
+      );
       return;
     }
 
@@ -60,15 +62,18 @@ class NotificationService {
 
     final baseUrl = ApiClient.baseUrl.replaceFirst('/api', '');
 
-    // Normalize to ws://host:port/ws/notifications (Spring STOMP endpoint)
+    // Normalize to ws://host:port/ws/notifications-native (Spring STOMP endpoint)
     String wsUrl;
     if (baseUrl.startsWith('https://')) {
-      wsUrl = baseUrl.replaceFirst('https://', 'wss://') + '/ws/notifications';
+      wsUrl =
+          baseUrl.replaceFirst('https://', 'wss://') +
+          '/ws/notifications-native';
     } else if (baseUrl.startsWith('http://')) {
-      wsUrl = baseUrl.replaceFirst('http://', 'ws://') + '/ws/notifications';
+      wsUrl =
+          baseUrl.replaceFirst('http://', 'ws://') + '/ws/notifications-native';
     } else {
       // Fallback (e.g., localhost:8080/api)
-      wsUrl = 'ws://$baseUrl/ws/notifications';
+      wsUrl = 'ws://$baseUrl/ws/notifications-native';
     }
 
     print('DEBUG - ApiClient.baseUrl: ${ApiClient.baseUrl}');
@@ -115,9 +120,9 @@ class NotificationService {
       return;
     }
 
+    // Subscribe to driver-specific topic for all notifications
     final topic = '/topic/driver/$_driverId';
     print('Subscribing to STOMP topic: $topic');
-
     _stompClient?.subscribe(
       destination: topic,
       callback: (StompFrame frame) {
@@ -131,11 +136,9 @@ class NotificationService {
           final decoded = jsonDecode(body);
           if (decoded is Map<String, dynamic>) {
             _handleNotification(decoded);
-          } else {
-            print('Unexpected STOMP payload type: ${decoded.runtimeType}');
           }
         } catch (e) {
-          print('Error parsing STOMP notification: $e');
+          print('Failed to decode STOMP message: $e');
         }
       },
     );
@@ -148,9 +151,11 @@ class NotificationService {
     final message = notification['message'] ?? '';
     final timestamp = notification['timestamp']?.toString() ?? '';
 
-    final isDuplicate = _notifications.any((existing) =>
-        existing['message'] == message &&
-        existing['timestamp']?.toString() == timestamp);
+    final isDuplicate = _notifications.any(
+      (existing) =>
+          existing['message'] == message &&
+          existing['timestamp']?.toString() == timestamp,
+    );
 
     if (!isDuplicate) {
       // If server did not send timestamp, add one to keep UI logic working
@@ -185,9 +190,7 @@ class NotificationService {
 
   // Get unread notifications only
   List<Map<String, dynamic>> getUnreadNotifications() {
-    return List.unmodifiable(
-      _notifications.where((n) => n['isRead'] != true),
-    );
+    return List.unmodifiable(_notifications.where((n) => n['isRead'] != true));
   }
 
   // Mark all notifications as read (both on backend and locally)

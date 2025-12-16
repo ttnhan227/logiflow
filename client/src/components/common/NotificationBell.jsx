@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import notificationClient from '../../services/notificationClient';
 import { notificationService } from '../../services/admin/notificationService';
+import { dispatchNotificationService } from '../../services/dispatch/dispatchNotificationService';
+import { authService } from '../../services';
 import './NotificationBell.css';
 
 const NotificationBell = () => {
@@ -11,22 +13,42 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  // Determine user role and appropriate service
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUserRole(currentUser.role);
+    }
+  }, []);
+
+  const getNotificationServiceForRole = (role) => {
+    return role === 'DISPATCHER' ? dispatchNotificationService : notificationService;
+  };
+
   // Load database notifications on mount
-  const loadDbNotifications = useCallback(async () => {
+  const loadDbNotifications = useCallback(async (roleOverride) => {
+    const roleToUse = roleOverride || userRole;
+    if (!roleToUse) return; // Wait for role to be determined
+    
     try {
+      console.log('[NotificationBell] loading DB notifications for role:', roleToUse);
+      const service = getNotificationServiceForRole(roleToUse);
       const [allNotifications, count] = await Promise.all([
-        notificationService.getAllNotifications(0, 10),
-        notificationService.getUnreadCount()
+        service.getAllNotifications(0, 10),
+        service.getUnreadCount()
       ]);
+
+      console.log('[NotificationBell] DB notifications loaded:', allNotifications?.length || 0);
 
       setDbNotifications(allNotifications.map(n => ({
         ...n,
         id: `db-${n.notificationId}`,
         timestamp: n.createdAt,
-        actionLabel: n.actionText,
+        actionText: n.actionText,
         source: 'database'
       })));
 
@@ -35,7 +57,41 @@ const NotificationBell = () => {
       console.error('Failed to load database notifications:', error);
       return 0;
     }
-  }, []);
+  }, [userRole]);
+
+  useEffect(() => {
+    const onUserUpdated = (e) => {
+      const nextUser = e?.detail || authService.getCurrentUser();
+      const nextRole = nextUser?.role || null;
+      setUserRole(nextRole);
+      setRealTimeNotifications([]);
+      setDbNotifications([]);
+      setNotifications([]);
+      setUnreadCount(0);
+
+      if (nextRole) {
+        loadDbNotifications(nextRole);
+      }
+    };
+
+    window.addEventListener('userUpdated', onUserUpdated);
+    return () => window.removeEventListener('userUpdated', onUserUpdated);
+  }, [loadDbNotifications]);
+
+  // Get appropriate notification service based on role
+  const getNotificationService = useCallback(() => {
+    return userRole === 'DISPATCHER' ? dispatchNotificationService : notificationService;
+  }, [userRole]);
+
+  // Get appropriate WebSocket topic based on role
+  const getWebSocketTopic = useCallback(() => {
+    return userRole === 'DISPATCHER' ? '/topic/dispatcher/notifications' : '/topic/admin/notifications';
+  }, [userRole]);
+
+  // Get appropriate navigation path based on role
+  const getNotificationsPath = useCallback(() => {
+    return userRole === 'DISPATCHER' ? '/dispatch/notifications' : '/admin/notifications';
+  }, [userRole]);
 
   // Merge notifications selectively (show recent ones)
   useEffect(() => {
@@ -54,10 +110,7 @@ const NotificationBell = () => {
   }, [realTimeNotifications, dbNotifications]);
 
   useEffect(() => {
-    // Load database notifications on mount
-    loadDbNotifications();
-
-    // Connect to notification service
+    // Connect to notification service ONCE (do not re-run on role changes)
     notificationClient.connect()
       .then(() => {
         setIsConnected(true);
@@ -74,7 +127,9 @@ const NotificationBell = () => {
         ...notification,
         id: `rt-${Date.now()}`, // Add unique ID for real-time notifications
         timestamp: new Date().toISOString(),
-        source: 'websocket'
+        source: 'websocket',
+        // Map actionLabel from WebSocket to actionText for consistency
+        actionText: notification.actionLabel
       };
 
       setRealTimeNotifications(prev => [enhancedNotification, ...prev]);
@@ -108,13 +163,19 @@ const NotificationBell = () => {
       notificationClient.removeListener(handleNotification);
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  useEffect(() => {
+    // Load DB notifications whenever role becomes available/changes (covers relogin)
+    loadDbNotifications();
   }, [loadDbNotifications]);
 
   const handleNotificationClick = async (notification) => {
     try {
       // Mark database notifications as read via API
       if (notification.source === 'database' && !notification.isRead) {
-        await notificationService.markAsRead(notification.notificationId);
+        const service = getNotificationService();
+        await service.markAsRead(notification.notificationId);
       }
 
       // Update local state for all notifications
@@ -146,7 +207,8 @@ const NotificationBell = () => {
         .map(n => n.notificationId);
 
       if (dbNotificationIds.length > 0) {
-        await notificationService.markMultipleAsRead(dbNotificationIds);
+        const service = getNotificationService();
+        await service.markMultipleAsRead(dbNotificationIds);
       }
 
       // Mark all read locally
@@ -220,7 +282,7 @@ const NotificationBell = () => {
                 <button
                   onClick={() => {
                     setIsOpen(false);
-                    navigate('/admin/notifications');
+                    navigate(getNotificationsPath());
                   }}
                   className="action-btn"
                   title="View all"
@@ -266,8 +328,8 @@ const NotificationBell = () => {
                     <div className="notification-message">{notification.message}</div>
                     <div className="notification-footer">
                       <span className="notification-time">{formatTimestamp(notification.timestamp)}</span>
-                      {notification.actionLabel && (
-                        <span className="notification-action">{notification.actionLabel} →</span>
+                      {notification.actionText && (
+                        <span className="notification-action">{notification.actionText} →</span>
                       )}
                     </div>
                   </div>

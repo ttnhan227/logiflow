@@ -40,15 +40,15 @@ public class Notification {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    // Optional: Link to specific admin user if not broadcast
+    // Optional: Link to specific user if not broadcast
     @ManyToOne
-    @JoinColumn(name = "target_admin_user_id")
-    private User targetAdminUser;
+    @JoinColumn(name = "target_user_id")
+    private User targetUser;
 
     public Notification() {}
 
     public Notification(NotificationType notificationType, String severity, String title, String message,
-                       String actionUrl, String actionText, Integer relatedEntityId, User targetAdminUser) {
+                       String actionUrl, String actionText, Integer relatedEntityId, User targetUser) {
         this.notificationType = notificationType;
         this.severity = severity;
         this.title = title;
@@ -56,7 +56,7 @@ public class Notification {
         this.actionUrl = actionUrl;
         this.actionText = actionText;
         this.relatedEntityId = relatedEntityId;
-        this.targetAdminUser = targetAdminUser;
+        this.targetUser = targetUser;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -114,6 +114,6 @@ public class Notification {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public User getTargetAdminUser() { return targetAdminUser; }
-    public void setTargetAdminUser(User targetAdminUser) { this.targetAdminUser = targetAdminUser; }
+    public User getTargetUser() { return targetUser; }
+    public void setTargetUser(User targetUser) { this.targetUser = targetUser; }
 }
