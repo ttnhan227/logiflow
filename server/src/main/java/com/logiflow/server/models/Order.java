@@ -31,6 +31,22 @@ public class Order {
     @Column(name = "pickup_address", length = 255, nullable = false)
     private String pickupAddress;
 
+    @Column(name = "pickup_type", length = 20, nullable = true)
+    @Enumerated(EnumType.STRING)
+    private PickupType pickupType;
+
+    @Column(name = "container_number", length = 50, nullable = true)
+    private String containerNumber;
+
+    @Column(name = "terminal_name", length = 100, nullable = true)
+    private String terminalName;
+
+    @Column(name = "warehouse_name", length = 100, nullable = true)
+    private String warehouseName;
+
+    @Column(name = "dock_number", length = 50, nullable = true)
+    private String dockNumber;
+
     @Column(name = "delivery_address", length = 255, nullable = false)
     private String deliveryAddress;
 
@@ -71,6 +87,10 @@ public class Order {
 
     public static enum PriorityLevel {
         NORMAL, URGENT
+    }
+
+    public static enum PickupType {
+        PORT, WAREHOUSE
     }
 
     public static enum OrderStatus {

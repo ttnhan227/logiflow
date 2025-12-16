@@ -12,10 +12,10 @@ const AdminVehiclesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('view'); // 'view', 'create', 'edit'
   const [formData, setFormData] = useState({
-    vehicleType: 'motorbike',
+    vehicleType: 'truck',
     licensePlate: '',
     capacity: '',
-    requiredLicense: 'A1',
+    requiredLicense: 'C',
     currentLocationLat: '',
     currentLocationLng: '',
     status: 'available'
@@ -46,10 +46,10 @@ const AdminVehiclesPage = () => {
     setModalMode('create');
     setSelectedVehicle(null);
     setFormData({
-      vehicleType: 'motorbike',
+      vehicleType: 'truck',
       licensePlate: '',
       capacity: '',
-      requiredLicense: 'A1',
+      requiredLicense: 'C',
       currentLocationLat: '',
       currentLocationLng: '',
       status: 'available'
@@ -136,7 +136,6 @@ const AdminVehiclesPage = () => {
 
   const getVehicleTypeLabel = (type) => {
     switch (type?.toLowerCase()) {
-      case 'motorbike': return '🏍️ Motorbike';
       case 'van': return '🚐 Van';
       case 'truck': return '🚚 Truck';
       case 'container': return '📦 Container';
@@ -146,7 +145,6 @@ const AdminVehiclesPage = () => {
 
   const getVehicleTypeColor = (type) => {
     switch (type?.toLowerCase()) {
-      case 'motorbike': return '#f59e0b';
       case 'van': return '#3b82f6';
       case 'truck': return '#8b5cf6';
       case 'container': return '#10b981';
@@ -192,7 +190,6 @@ const AdminVehiclesPage = () => {
   ].filter(item => item.value > 0) : [];
 
   const typeChartData = statistics ? [
-    { type: 'Motorbike', count: statistics.motorbikes },
     { type: 'Van', count: statistics.vans },
     { type: 'Truck', count: statistics.trucks },
     { type: 'Container', count: statistics.containers }
@@ -603,7 +600,6 @@ const AdminVehiclesPage = () => {
                       fontSize: '14px'
                     }}
                   >
-                    <option value="motorbike">🏍️ Motorbike</option>
                     <option value="van">🚐 Van</option>
                     <option value="truck">🚚 Truck</option>
                     <option value="container">📦 Container</option>
@@ -649,8 +645,6 @@ const AdminVehiclesPage = () => {
                       fontSize: '14px'
                     }}
                   >
-                    <option value="A1">A1 (Motorbike)</option>
-                    <option value="A2">A2 (Motorbike)</option>
                     <option value="B1">B1 (Car/Van)</option>
                     <option value="B2">B2 (Car/Van)</option>
                     <option value="C">C (Truck)</option>

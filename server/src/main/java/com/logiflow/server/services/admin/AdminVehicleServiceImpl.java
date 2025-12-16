@@ -42,9 +42,6 @@ public class AdminVehicleServiceImpl implements AdminVehicleService {
                 .count());
         
         // Count by type
-        stats.setMotorbikes((int) allVehicles.stream()
-                .filter(v -> "motorbike".equalsIgnoreCase(v.getVehicleType()))
-                .count());
         stats.setVans((int) allVehicles.stream()
                 .filter(v -> "van".equalsIgnoreCase(v.getVehicleType()))
                 .count());

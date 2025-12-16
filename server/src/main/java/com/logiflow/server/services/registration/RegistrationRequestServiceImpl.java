@@ -7,7 +7,6 @@ import com.logiflow.server.repositories.registration.RegistrationRequestReposito
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.websocket.NotificationService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -19,37 +18,30 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
     private final RegistrationRequestRepository registrationRequestRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
     public RegistrationRequestServiceImpl(
             RegistrationRequestRepository registrationRequestRepository,
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder,
             NotificationService notificationService) {
         this.registrationRequestRepository = registrationRequestRepository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
     }
 
     @Override
     public void createDriverRequest(DriverRegistrationRequest req) {
         // Uniqueness checks across users and pending requests
-        userRepository.findByUsername(req.getUsername()).ifPresent(u -> { throw new RuntimeException("Username already exists"); });
         userRepository.findByEmail(req.getEmail()).ifPresent(u -> { throw new RuntimeException("Email already exists"); });
-        registrationRequestRepository.findByUsername(req.getUsername()).ifPresent(r -> { throw new RuntimeException("Username is already pending approval"); });
         registrationRequestRepository.findByEmail(req.getEmail()).ifPresent(r -> { throw new RuntimeException("Email is already pending approval"); });
 
         Role driverRole = roleRepository.findByRoleName("DRIVER")
                 .orElseThrow(() -> new RuntimeException("Driver role not found"));
 
         RegistrationRequest entity = new RegistrationRequest();
-        entity.setUsername(req.getUsername());
         entity.setEmail(req.getEmail());
-        entity.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         entity.setFullName(req.getFullName());
         entity.setPhone(req.getPhone());
         entity.setRole(driverRole);
@@ -75,7 +67,7 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
         
         // Send notification to admins about new registration request
         notificationService.notifyNewRegistrationRequest(
-            saved.getUsername(), 
+            saved.getEmail(), 
             driverRole.getRoleName(), 
             saved.getRequestId()
         );

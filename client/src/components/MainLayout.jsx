@@ -125,16 +125,6 @@ const MainLayout = () => {
                   📦 Delivery Services
                 </Link>
                 <Link
-                  to="/pricing"
-                  className="dropdown-item"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    setDropdownOpen(null);
-                  }}
-                >
-                  💰 Pricing
-                </Link>
-                <Link
                   to="/track"
                   className="dropdown-item"
                   onClick={() => {

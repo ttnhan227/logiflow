@@ -132,27 +132,6 @@ const DriversPage = () => {
           }}>
             <div style={{
               padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏍️</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Motorbike Courier</h3>
-              <p style={{ color: '#666', lineHeight: '1.6', marginBottom: '1rem' }}>
-                Perfect for navigating busy city traffic. Deliver documents and small packages
-                quickly and efficiently across urban areas.
-              </p>
-              <div style={{ color: 'var(--primary-color)', fontWeight: '600' }}>
-                Earnings: 150,000 - 400,000 VND/day
-              </div>
-              <div style={{ color: '#666', fontSize: '0.9rem' }}>
-                Requires: Vietnamese motorcycle license (A1/A2)
-              </div>
-            </div>
-
-            <div style={{
-              padding: '2rem',
               border: '2px solid var(--primary-color)',
               borderRadius: '12px',
               background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))'
@@ -268,8 +247,8 @@ const DriversPage = () => {
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚗</div>
               <h4 style={{ marginBottom: '1rem' }}>Minh from Hanoi</h4>
               <p style={{ lineHeight: '1.6', fontSize: '0.95rem' }}>
-                "Started with a 50cc motorbike in 2023. Now driving a van and earn
-                400,000 VND daily. Technology makes everything so much easier!"
+                "Moved from local delivery work to professional hauling. Now driving larger vehicles and earning
+                consistent income daily. Technology makes everything so much easier!"
               </p>
               <div style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.8 }}>
                 ⭐⭐⭐⭐⭐ Top 10% Performer
@@ -281,7 +260,7 @@ const DriversPage = () => {
               background: 'rgba(255,255,255,0.1)',
               borderRadius: '12px'
             }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏍️</div>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚚</div>
               <h4 style={{ marginBottom: '1rem' }}>Lan from Ho Chi Minh City</h4>
               <p style={{ lineHeight: '1.6', fontSize: '0.95rem' }}>
                 "Perfect flexibility for my university schedule. Part-time driving gives

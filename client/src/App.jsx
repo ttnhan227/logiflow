@@ -11,7 +11,6 @@ import AboutPage from "./components/home/AboutPage";
 import ServicesPage from "./components/home/ServicesPage";
 import FleetPage from "./components/home/FleetPage";
 import CoveragePage from "./components/home/CoveragePage";
-import PricingPage from "./components/home/PricingPage";
 import TrackPage from "./components/home/TrackPage";
 import ContactPage from "./components/home/ContactPage";
 import FaqPage from "./components/home/FaqPage";
@@ -105,7 +104,7 @@ function App() {
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/fleet" element={<FleetPage />} />
           <Route path="/coverage" element={<CoveragePage />} />
-          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/pricing" element={<Navigate to="/business" replace />} />
           <Route path="/track" element={<TrackPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/faq" element={<FaqPage />} />

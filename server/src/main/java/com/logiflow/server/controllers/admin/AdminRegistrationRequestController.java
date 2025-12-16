@@ -13,9 +13,11 @@ import com.logiflow.server.websocket.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/registration-requests")
@@ -32,6 +34,43 @@ public class AdminRegistrationRequestController {
     private AuditLogService auditLogService;
     @Autowired
     private NotificationService notificationService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private String generateUniqueUsername(RegistrationRequest req) {
+        String base;
+        if (req.getEmail() != null && req.getEmail().contains("@")) {
+            base = req.getEmail().substring(0, req.getEmail().indexOf('@'));
+        } else if (req.getFullName() != null && !req.getFullName().isBlank()) {
+            base = req.getFullName().trim().toLowerCase().replaceAll("[^a-z0-9]+", ".");
+        } else {
+            base = "driver";
+        }
+
+        base = base.toLowerCase();
+        if (base.length() > 30) {
+            base = base.substring(0, 30);
+        }
+        if (base.isBlank()) {
+            base = "driver";
+        }
+
+        String candidate = base;
+        int attempt = 0;
+        while (userRepository.findByUsername(candidate).isPresent()) {
+            attempt++;
+            candidate = base + "." + (1000 + (int) (Math.random() * 9000));
+            if (attempt > 20) {
+                candidate = "driver." + UUID.randomUUID().toString().substring(0, 8);
+                break;
+            }
+        }
+        return candidate;
+    }
+
+    private String generateTempPassword() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
 
     @GetMapping
     public ResponseEntity<List<RegistrationRequest>> getAllRequests() {
@@ -58,10 +97,15 @@ public class AdminRegistrationRequestController {
         if (req.getStatus() != RegistrationRequest.RequestStatus.PENDING) {
             return ResponseEntity.badRequest().body("Request already processed");
         }
+
+        // Admin creates credentials upon approval (driver does NOT set username/password)
+        String generatedUsername = generateUniqueUsername(req);
+        String tempPassword = generateTempPassword();
+
         // Create user
         User user = new User();
-        user.setUsername(req.getUsername());
-        user.setPasswordHash(req.getPasswordHash());
+        user.setUsername(generatedUsername);
+        user.setPasswordHash(passwordEncoder.encode(tempPassword));
         user.setEmail(req.getEmail());
         user.setPhone(req.getPhone());
         user.setFullName(req.getFullName());
@@ -84,16 +128,20 @@ public class AdminRegistrationRequestController {
 
         // Update request status
         req.setStatus(RegistrationRequest.RequestStatus.APPROVED);
+        req.setUsername(generatedUsername);
         registrationRequestRepository.save(req);
         
         auditLogService.log(
             "APPROVE_REGISTRATION",
             "admin", // TODO: replace with actual username from context
             "ADMIN", // TODO: replace with actual role from context
-            "Approved registration for: " + req.getUsername() + " (Role: " + req.getRole().getRoleName() + ")"
+            "Approved registration for: " + user.getUsername() + " (Role: " + req.getRole().getRoleName() + ")"
         );
         
-        return ResponseEntity.ok("Request approved successfully");
+        return ResponseEntity.ok(
+            "Request approved successfully. Created driver account username='" + user.getUsername() +
+            "' with temporary password='" + tempPassword + "'."
+        );
     }
 
     @PostMapping("/{id}/reject")

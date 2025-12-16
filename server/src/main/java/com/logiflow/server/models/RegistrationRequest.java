@@ -14,10 +14,10 @@ public class RegistrationRequest {
     @Column(name = "request_id")
     private Integer requestId;
 
-    @Column(name = "username", length = 50, nullable = false, unique = true)
+    @Column(name = "username", length = 50, nullable = true)
     private String username;
 
-    @Column(name = "password_hash", length = 255, nullable = false)
+    @Column(name = "password_hash", length = 255, nullable = true)
     private String passwordHash;
 
     @Column(name = "email", length = 100, nullable = false, unique = true)

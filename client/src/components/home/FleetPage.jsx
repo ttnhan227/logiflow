@@ -41,25 +41,6 @@ const FleetPage = () => {
         }}>
           <div style={{
             padding: '2rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            background: 'white',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏍️</div>
-            <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Motorbikes</h3>
-            <p style={{ color: '#666', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-              Ideal for quick urban deliveries and small packages in city centers.
-              Perfect for same-day deliveries across metro areas.
-            </p>
-            <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-              Capacity: Up to 30kg
-            </div>
-          </div>
-
-          <div style={{
-            padding: '2rem',
             border: '2px solid var(--primary-color)',
             borderRadius: '12px',
             background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))',
@@ -158,16 +139,6 @@ const FleetPage = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '2rem'
           }}>
-            <div style={{
-              padding: '2rem',
-              textAlign: 'center',
-              background: '#f8fafc',
-              borderRadius: '12px'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏍️</div>
-              <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary-color)', marginBottom: '0.5rem' }}>200+</div>
-              <div style={{ color: '#666' }}>Motorbikes</div>
-            </div>
             <div style={{
               padding: '2rem',
               textAlign: 'center',

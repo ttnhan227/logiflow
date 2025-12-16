@@ -213,9 +213,6 @@ const ContactPage = () => {
             <a href="/track" className="support-link">
               🔍 Track Package
             </a>
-            <a href="/pricing" className="support-link">
-              💰 Pricing
-            </a>
           </div>
         </div>
       </div>

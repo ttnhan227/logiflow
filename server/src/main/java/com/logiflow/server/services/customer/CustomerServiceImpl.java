@@ -5,7 +5,6 @@ import com.logiflow.server.dtos.maps.DistanceResultDto;
 import com.logiflow.server.models.*;
 import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
-import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.websocket.NotificationService;
@@ -13,6 +12,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -25,20 +25,17 @@ public class CustomerServiceImpl implements CustomerService {
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
-    private final TripRepository tripRepository;
     private final MapsService mapsService;
     private final NotificationService notificationService;
 
     public CustomerServiceImpl(UserRepository userRepository,
                              CustomerRepository customerRepository,
                              OrderRepository orderRepository,
-                             TripRepository tripRepository,
                              MapsService mapsService,
                              NotificationService notificationService) {
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.orderRepository = orderRepository;
-        this.tripRepository = tripRepository;
         this.mapsService = mapsService;
         this.notificationService = notificationService;
     }
@@ -63,6 +60,11 @@ public class CustomerServiceImpl implements CustomerService {
         order.setCustomerName(request.getCustomerName());
         order.setCustomerPhone(request.getCustomerPhone());
         order.setPickupAddress(request.getPickupAddress());
+        order.setPickupType(request.getPickupType());
+        order.setContainerNumber(request.getContainerNumber());
+        order.setTerminalName(request.getTerminalName());
+        order.setWarehouseName(request.getWarehouseName());
+        order.setDockNumber(request.getDockNumber());
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setPackageDetails(request.getPackageDetails());
         order.setWeightKg(request.getWeightKg());
@@ -306,6 +308,11 @@ public class CustomerServiceImpl implements CustomerService {
                     OrderHistoryDto history = new OrderHistoryDto();
                     history.setOrderId(order.getOrderId());
                     history.setPickupAddress(order.getPickupAddress());
+                    history.setPickupType(order.getPickupType() != null ? order.getPickupType().name() : null);
+                    history.setContainerNumber(order.getContainerNumber());
+                    history.setTerminalName(order.getTerminalName());
+                    history.setWarehouseName(order.getWarehouseName());
+                    history.setDockNumber(order.getDockNumber());
                     history.setDeliveryAddress(order.getDeliveryAddress());
                     history.setPackageDetails(order.getPackageDetails());
                     history.setWeightKg(order.getWeightKg());
@@ -316,7 +323,6 @@ public class CustomerServiceImpl implements CustomerService {
                     if (order.getTrip() != null && order.getTrip().getActualArrival() != null) {
                         history.setDeliveredAt(order.getTrip().getActualArrival());
                     }
-                    history.setDeliveryFee(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO); // Use shippingFee
 
                     // Get driver info
                     if (order.getTrip() != null && order.getTrip().getTripAssignments() != null
@@ -338,6 +344,11 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setCustomerName(order.getCustomerName());
         dto.setCustomerPhone(order.getCustomerPhone());
         dto.setPickupAddress(order.getPickupAddress());
+        dto.setPickupType(order.getPickupType() != null ? order.getPickupType().name() : null);
+        dto.setContainerNumber(order.getContainerNumber());
+        dto.setTerminalName(order.getTerminalName());
+        dto.setWarehouseName(order.getWarehouseName());
+        dto.setDockNumber(order.getDockNumber());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
         dto.setWeightKg(order.getWeightKg());
@@ -346,7 +357,6 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setPriorityLevel(order.getPriorityLevel().name());
         dto.setOrderStatus(order.getOrderStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
-        dto.setDeliveryFee(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO); // Use shippingFee
 
         if (order.getTrip() != null) {
             Trip trip = order.getTrip();
@@ -377,6 +387,11 @@ public class CustomerServiceImpl implements CustomerService {
         OrderSummaryDto dto = new OrderSummaryDto();
         dto.setOrderId(order.getOrderId());
         dto.setPickupAddress(order.getPickupAddress());
+        dto.setPickupType(order.getPickupType() != null ? order.getPickupType().name() : null);
+        dto.setContainerNumber(order.getContainerNumber());
+        dto.setTerminalName(order.getTerminalName());
+        dto.setWarehouseName(order.getWarehouseName());
+        dto.setDockNumber(order.getDockNumber());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
         dto.setWeightKg(order.getWeightKg());
@@ -384,7 +399,6 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setDistanceKm(order.getDistanceKm());
         dto.setOrderStatus(order.getOrderStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
-        dto.setDeliveryFee(order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO); // Use shippingFee
 
         if (order.getTrip() != null) {
             dto.setTripStatus(order.getTrip().getStatus());
@@ -408,7 +422,7 @@ public class CustomerServiceImpl implements CustomerService {
             if (distanceResult != null) {
                 // Set distance in kilometers (convert from meters)
                 BigDecimal distanceKm = BigDecimal.valueOf(distanceResult.getDistanceMeters())
-                    .divide(BigDecimal.valueOf(1000), 2, BigDecimal.ROUND_HALF_UP);
+                    .divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP);
                 order.setDistanceKm(distanceKm);
 
                 // Calculate shipping fee
@@ -453,6 +467,6 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         // Round to whole VND
-        return totalFee.setScale(0, BigDecimal.ROUND_HALF_UP);
+        return totalFee.setScale(0, RoundingMode.HALF_UP);
     }
 }

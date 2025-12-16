@@ -12,7 +12,6 @@ public class VehicleStatisticsDto {
     private Integer availableVehicles;
     private Integer inUseVehicles;
     private Integer maintenanceVehicles;
-    private Integer motorbikes;
     private Integer vans;
     private Integer trucks;
     private Integer containers;

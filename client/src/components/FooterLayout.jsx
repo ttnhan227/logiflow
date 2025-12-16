@@ -15,7 +15,6 @@ const FooterLayout = ({ showFooter }) => {
           <h3 className="footer-heading">Services</h3>
           <ul className="footer-links">
             <li><a href="/services">Delivery Services</a></li>
-            <li><a href="/pricing">Pricing</a></li>
             <li><a href="/track">Track Package</a></li>
             <li><a href="/coverage">Coverage Map</a></li>
           </ul>

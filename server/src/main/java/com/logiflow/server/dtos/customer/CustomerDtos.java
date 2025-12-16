@@ -1,5 +1,6 @@
 package com.logiflow.server.dtos.customer;
 
+import com.logiflow.server.models.Order;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,11 @@ public class CustomerDtos {
         private String customerName;
         private String customerPhone;
         private String pickupAddress;
+        private Order.PickupType pickupType;
+        private String containerNumber;
+        private String terminalName;
+        private String warehouseName;
+        private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
         private BigDecimal pickupLat;
@@ -33,6 +39,11 @@ public class CustomerDtos {
         private String customerName;
         private String customerPhone;
         private String pickupAddress;
+        private String pickupType;
+        private String containerNumber;
+        private String terminalName;
+        private String warehouseName;
+        private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
         private BigDecimal weightKg;
@@ -49,13 +60,17 @@ public class CustomerDtos {
         private String driverName;
         private String driverPhone;
         private String vehiclePlate;
-        private BigDecimal deliveryFee;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class OrderSummaryDto {
         private Integer orderId;
         private String pickupAddress;
+        private String pickupType;
+        private String containerNumber;
+        private String terminalName;
+        private String warehouseName;
+        private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
         private BigDecimal weightKg;
@@ -65,7 +80,6 @@ public class CustomerDtos {
         private String tripStatus;
         private LocalDateTime createdAt;
         private LocalDateTime estimatedDeliveryTime;
-        private BigDecimal deliveryFee;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
@@ -97,6 +111,11 @@ public class CustomerDtos {
     public static class OrderHistoryDto {
         private Integer orderId;
         private String pickupAddress;
+        private String pickupType;
+        private String containerNumber;
+        private String terminalName;
+        private String warehouseName;
+        private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
         private BigDecimal weightKg;
@@ -105,7 +124,6 @@ public class CustomerDtos {
         private String orderStatus;
         private LocalDateTime createdAt;
         private LocalDateTime deliveredAt;
-        private BigDecimal deliveryFee;
         private String driverName;
         private Integer driverRating; // if we add rating system
     }

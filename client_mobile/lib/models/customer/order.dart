@@ -6,6 +6,11 @@ class Order extends Equatable {
   final String? customerName;
   final String? customerPhone;
   final String? pickupAddress;
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
   final String? deliveryAddress;
   final String? packageDetails;
   final double? weightKg;
@@ -22,7 +27,6 @@ class Order extends Equatable {
   final String? driverName;
   final String? driverPhone;
   final String? vehiclePlate;
-  final double? deliveryFee;
 
   const Order({
     this.orderId,
@@ -30,6 +34,11 @@ class Order extends Equatable {
     this.customerName,
     this.customerPhone,
     this.pickupAddress,
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
     this.deliveryAddress,
     this.packageDetails,
     this.weightKg,
@@ -46,7 +55,6 @@ class Order extends Equatable {
     this.driverName,
     this.driverPhone,
     this.vehiclePlate,
-    this.deliveryFee,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -56,6 +64,11 @@ class Order extends Equatable {
       customerName: json['customerName'],
       customerPhone: json['customerPhone'],
       pickupAddress: json['pickupAddress'],
+      pickupType: json['pickupType'],
+      containerNumber: json['containerNumber'],
+      terminalName: json['terminalName'],
+      warehouseName: json['warehouseName'],
+      dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
       weightKg: json['weightKg']?.toDouble(),
@@ -64,15 +77,24 @@ class Order extends Equatable {
       priorityLevel: json['priorityLevel'],
       orderStatus: json['orderStatus'],
       tripStatus: json['tripStatus'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      estimatedPickupTime: json['estimatedPickupTime'] != null ? DateTime.parse(json['estimatedPickupTime']) : null,
-      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null ? DateTime.parse(json['estimatedDeliveryTime']) : null,
-      actualPickupTime: json['actualPickupTime'] != null ? DateTime.parse(json['actualPickupTime']) : null,
-      actualDeliveryTime: json['actualDeliveryTime'] != null ? DateTime.parse(json['actualDeliveryTime']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      estimatedPickupTime: json['estimatedPickupTime'] != null
+          ? DateTime.parse(json['estimatedPickupTime'])
+          : null,
+      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null
+          ? DateTime.parse(json['estimatedDeliveryTime'])
+          : null,
+      actualPickupTime: json['actualPickupTime'] != null
+          ? DateTime.parse(json['actualPickupTime'])
+          : null,
+      actualDeliveryTime: json['actualDeliveryTime'] != null
+          ? DateTime.parse(json['actualDeliveryTime'])
+          : null,
       driverName: json['driverName'],
       driverPhone: json['driverPhone'],
       vehiclePlate: json['vehiclePlate'],
-      deliveryFee: json['deliveryFee']?.toDouble(),
     );
   }
 
@@ -83,6 +105,11 @@ class Order extends Equatable {
       'customerName': customerName,
       'customerPhone': customerPhone,
       'pickupAddress': pickupAddress,
+      'pickupType': pickupType,
+      'containerNumber': containerNumber,
+      'terminalName': terminalName,
+      'warehouseName': warehouseName,
+      'dockNumber': dockNumber,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
       'weightKg': weightKg,
@@ -99,7 +126,6 @@ class Order extends Equatable {
       'driverName': driverName,
       'driverPhone': driverPhone,
       'vehiclePlate': vehiclePlate,
-      'deliveryFee': deliveryFee,
     };
   }
 
@@ -110,6 +136,11 @@ class Order extends Equatable {
     customerName,
     customerPhone,
     pickupAddress,
+    pickupType,
+    containerNumber,
+    terminalName,
+    warehouseName,
+    dockNumber,
     deliveryAddress,
     packageDetails,
     weightKg,
@@ -126,7 +157,6 @@ class Order extends Equatable {
     driverName,
     driverPhone,
     vehiclePlate,
-    deliveryFee,
   ];
 }
 
@@ -134,6 +164,11 @@ class CreateOrderRequest extends Equatable {
   final String customerName;
   final String? customerPhone;
   final String pickupAddress;
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
   final String deliveryAddress;
   final String? packageDetails;
   final double? pickupLat;
@@ -148,6 +183,11 @@ class CreateOrderRequest extends Equatable {
     required this.customerName,
     this.customerPhone,
     required this.pickupAddress,
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
     required this.deliveryAddress,
     this.packageDetails,
     this.pickupLat,
@@ -164,6 +204,11 @@ class CreateOrderRequest extends Equatable {
       'customerName': customerName,
       'customerPhone': customerPhone,
       'pickupAddress': pickupAddress,
+      'pickupType': pickupType,
+      'containerNumber': containerNumber,
+      'terminalName': terminalName,
+      'warehouseName': warehouseName,
+      'dockNumber': dockNumber,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
       'pickupLat': pickupLat,
@@ -181,6 +226,11 @@ class CreateOrderRequest extends Equatable {
     customerName,
     customerPhone,
     pickupAddress,
+    pickupType,
+    containerNumber,
+    terminalName,
+    warehouseName,
+    dockNumber,
     deliveryAddress,
     packageDetails,
     pickupLat,
@@ -196,6 +246,11 @@ class CreateOrderRequest extends Equatable {
 class OrderSummary extends Equatable {
   final int orderId;
   final String pickupAddress;
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
   final String deliveryAddress;
   final String? packageDetails;
   final double? weightKg;
@@ -205,11 +260,15 @@ class OrderSummary extends Equatable {
   final String? tripStatus;
   final DateTime createdAt;
   final DateTime? estimatedDeliveryTime;
-  final double deliveryFee;
 
   const OrderSummary({
     required this.orderId,
     required this.pickupAddress,
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
     required this.deliveryAddress,
     this.packageDetails,
     this.weightKg,
@@ -219,13 +278,17 @@ class OrderSummary extends Equatable {
     this.tripStatus,
     required this.createdAt,
     this.estimatedDeliveryTime,
-    required this.deliveryFee,
   });
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     return OrderSummary(
       orderId: json['orderId'],
       pickupAddress: json['pickupAddress'],
+      pickupType: json['pickupType'],
+      containerNumber: json['containerNumber'],
+      terminalName: json['terminalName'],
+      warehouseName: json['warehouseName'],
+      dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
       weightKg: json['weightKg']?.toDouble(),
@@ -234,8 +297,9 @@ class OrderSummary extends Equatable {
       orderStatus: json['orderStatus'],
       tripStatus: json['tripStatus'],
       createdAt: DateTime.parse(json['createdAt']),
-      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null ? DateTime.parse(json['estimatedDeliveryTime']) : null,
-      deliveryFee: json['deliveryFee']?.toDouble() ?? 0.0,
+      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null
+          ? DateTime.parse(json['estimatedDeliveryTime'])
+          : null,
     );
   }
 
@@ -243,6 +307,11 @@ class OrderSummary extends Equatable {
   List<Object?> get props => [
     orderId,
     pickupAddress,
+    pickupType,
+    containerNumber,
+    terminalName,
+    warehouseName,
+    dockNumber,
     deliveryAddress,
     packageDetails,
     weightKg,
@@ -252,6 +321,5 @@ class OrderSummary extends Equatable {
     tripStatus,
     createdAt,
     estimatedDeliveryTime,
-    deliveryFee,
   ];
 }

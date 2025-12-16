@@ -33,11 +33,6 @@ const DriverRegisterPage = () => {
     email: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
-    
-    // Step 4: Account Credentials
-    username: '',
-    password: '',
-    confirmPassword: '',
   });
 
   const handleInputChange = (e) => {
@@ -165,15 +160,6 @@ const DriverRegisterPage = () => {
     return null;
   };
 
-  const validateStep4 = () => {
-    if (!formData.username.trim()) return 'Username is required';
-    if (formData.username.length < 3) return 'Username must be at least 3 characters';
-    if (!formData.password) return 'Password is required';
-    if (formData.password.length < 6) return 'Password must be at least 6 characters';
-    if (formData.password !== formData.confirmPassword) return 'Passwords do not match';
-    return null;
-  };
-
   const handleNext = async () => {
     setError('');
 
@@ -200,13 +186,6 @@ const DriverRegisterPage = () => {
         setError(error);
         return;
       }
-      setCurrentStep(4);
-    } else if (currentStep === 4) {
-      const error = validateStep4();
-      if (error) {
-        setError(error);
-        return;
-      }
       await handleSubmit();
     }
   };
@@ -221,19 +200,8 @@ const DriverRegisterPage = () => {
     setError('');
 
     try {
-      const registrationData = {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        fullName: formData.fullName,
-        roleId: 4 // DRIVER role
-      };
-
       const data = await driverRegistrationService.registerDriver({
-        username: formData.username,
         email: formData.email,
-        password: formData.password,
         phone: formData.phone,
         fullName: formData.fullName,
         licenseNumber: formData.licenseNumber,
@@ -313,10 +281,6 @@ const DriverRegisterPage = () => {
           <div className={`step ${currentStep >= 3 ? 'active' : ''} ${currentStep > 3 ? 'completed' : ''}`}>
             <div className="step-number">3</div>
             <div className="step-label">Contact</div>
-          </div>
-          <div className={`step ${currentStep >= 4 ? 'active' : ''} ${currentStep > 4 ? 'completed' : ''}`}>
-            <div className="step-number">4</div>
-            <div className="step-label">Account</div>
           </div>
         </div>
 
@@ -581,64 +545,6 @@ const DriverRegisterPage = () => {
             </div>
           )}
 
-          {/* Step 4: Account Credentials */}
-          {currentStep === 4 && (
-            <div className="form-step">
-              <h3>Create Account</h3>
-              <p className="step-description">
-                Choose your login credentials. You'll use these to access the mobile app.
-              </p>
-
-              <div className="form-group">
-                <label>Username *</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  placeholder="Choose a unique username"
-                  required
-                />
-                <small>At least 3 characters, letters and numbers only</small>
-              </div>
-
-              <div className="form-group">
-                <label>Password *</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Create a strong password"
-                  required
-                />
-                <small>At least 6 characters</small>
-              </div>
-
-              <div className="form-group">
-                <label>Confirm Password *</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="Re-enter your password"
-                  required
-                />
-              </div>
-
-              <div className="terms-box">
-                <label className="checkbox-label">
-                  <input type="checkbox" required />
-                  <span>
-                    I agree to the Terms of Service and Privacy Policy. I confirm that all
-                    information provided is accurate and truthful.
-                  </span>
-                </label>
-              </div>
-            </div>
-          )}
-
           {/* Navigation Buttons */}
           <div className="form-actions">
             {currentStep > 1 && (
@@ -660,11 +566,10 @@ const DriverRegisterPage = () => {
               {loading ? (
                 <>
                   <span className="spinner"></span>
-                  {currentStep === 1 ? 'Processing...' : 
-                   currentStep === 4 ? 'Submitting...' : 'Loading...'}
+                  {currentStep === 1 ? 'Processing...' : 'Submitting...'}
                 </>
               ) : (
-                currentStep === 4 ? 'Submit Registration' : 'Next'
+                currentStep === 3 ? 'Submit Application' : 'Next'
               )}
             </button>
           </div>

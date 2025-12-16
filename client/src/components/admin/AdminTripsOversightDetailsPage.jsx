@@ -656,7 +656,6 @@ const AdminTripsOversightDetailsPage = () => {
                     <h3 style={{ marginTop: 0, marginBottom: '12px', color: '#374151' }}>
                       {(() => {
                         switch (trip.vehicle.type?.toLowerCase()) {
-                          case 'motorbike': return '🏍️';
                           case 'van': return '🚐';
                           case 'truck': return '🚚';
                           case 'container': return '📦';
@@ -694,7 +693,6 @@ const AdminTripsOversightDetailsPage = () => {
                             fontWeight: '600',
                             backgroundColor: (() => {
                               switch (trip.vehicle.type?.toLowerCase()) {
-                                case 'motorbike': return '#fef3c7';
                                 case 'van': return '#dbeafe';
                                 case 'truck': return '#ede9fe';
                                 case 'container': return '#d1fae5';
@@ -703,7 +701,6 @@ const AdminTripsOversightDetailsPage = () => {
                             })(),
                             color: (() => {
                               switch (trip.vehicle.type?.toLowerCase()) {
-                                case 'motorbike': return '#f59e0b';
                                 case 'van': return '#3b82f6';
                                 case 'truck': return '#8b5cf6';
                                 case 'container': return '#10b981';
@@ -713,7 +710,6 @@ const AdminTripsOversightDetailsPage = () => {
                           }}>
                             {(() => {
                               switch (trip.vehicle.type?.toLowerCase()) {
-                                case 'motorbike': return '🏍️ Motorbike';
                                 case 'van': return '🚐 Van';
                                 case 'truck': return '🚚 Truck';
                                 case 'container': return '📦 Container';

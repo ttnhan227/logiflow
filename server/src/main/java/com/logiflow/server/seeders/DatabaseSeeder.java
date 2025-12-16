@@ -244,6 +244,9 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         // Addresses come from Trip Route
         order.setPickupAddress(trip.getRoute().getOriginAddress());
+        order.setPickupType(Order.PickupType.WAREHOUSE);
+        order.setWarehouseName("Seed Warehouse");
+        order.setDockNumber("D-01");
         order.setDeliveryAddress(trip.getRoute().getDestinationAddress());
 
         // Synch Order status with Trip status
@@ -520,15 +523,15 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createVehicle("van", "51B-23456", 800, "B2", new BigDecimal("16.0471"), new BigDecimal("108.2068"), "available", now.minusDays(145)),
                 createVehicle("container", "51C-34567", 25000, "FC", new BigDecimal("21.5867"), new BigDecimal("105.3819"), "maintenance", now.minusDays(140)),
                 createVehicle("truck", "51A-45678", 5000, "C", new BigDecimal("21.0313"), new BigDecimal("105.8518"), "available", now.minusDays(135)),
-                createVehicle("motorbike", "51F-56789", 30, "A2", new BigDecimal("16.0628"), new BigDecimal("108.2328"), "available", now.minusDays(130)),
+                createVehicle("truck", "51D-56789", 12000, "E", new BigDecimal("16.0628"), new BigDecimal("108.2328"), "available", now.minusDays(130)),
                 createVehicle("truck", "51A-67890", 3000, "D", new BigDecimal("21.0282"), new BigDecimal("105.8542"), "in_use", now.minusDays(125)),
                 createVehicle("container", "51C-78901", 20000, "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282"), "available", now.minusDays(120)),
                 createVehicle("van", "51B-89012", 1000, "C", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "maintenance", now.minusDays(115)),
                 createVehicle("truck", "51A-90123", 4000, "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "available", now.minusDays(110)),
-                createVehicle("motorbike", "51F-01234", 25, "A2", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use", now.minusDays(105))
+                createVehicle("container", "51C-01234", 30000, "FC", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use", now.minusDays(105))
         );
         vehicleRepository.saveAll(vehicles);
-        System.out.println("Seeded 10 vehicles");
+        System.out.println("Seeded " + vehicles.size() + " vehicles");
     }
 
     private Vehicle createVehicle(String vehicleType, String licensePlate, int capacity, String requiredLicense, BigDecimal lat, BigDecimal lng, String status, LocalDateTime createdAt) {
