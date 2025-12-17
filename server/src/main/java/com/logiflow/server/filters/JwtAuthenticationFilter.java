@@ -25,8 +25,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        // Skip JWT authentication for WebSocket endpoints
-        return path.startsWith("/ws/");
+        // Skip JWT authentication for WebSocket endpoints and registration endpoints
+        return path.startsWith("/ws/") || path.startsWith("/api/registration/");
     }
 
     @Override

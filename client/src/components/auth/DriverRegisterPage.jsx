@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { driverRegistrationService, uploadService } from '../../services';
+import { driverRegistrationService, uploadService, api } from '../../services';
 import './auth.css';
 
 const DriverRegisterPage = () => {
@@ -9,6 +9,7 @@ const DriverRegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [ocrError, setOcrError] = useState('');
 
   // Form data
   const [formData, setFormData] = useState({
@@ -101,12 +102,41 @@ const DriverRegisterPage = () => {
   const processLicenseImage = async () => {
     setLoading(true);
     setError('');
+    setOcrError('');
     
     try {
       // First, upload the license image to get a public URL
       if (formData.licenseImage) {
         const { path } = await uploadService.uploadLicenseImage(formData.licenseImage);
         setFormData(prev => ({ ...prev, licenseImageUrl: path }));
+        
+        // Call OCR API to extract license information
+        try {
+          const response = await api.post('/registration/extract-license', {
+            imageUrl: path
+          });
+          
+          const result = response.data;
+          
+          if (result.success && result.data) {
+            // Pre-populate form fields with extracted data
+            setFormData(prev => ({
+              ...prev,
+              fullName: result.data.fullName || prev.fullName,
+              licenseNumber: result.data.licenseNumber || prev.licenseNumber,
+              licenseType: result.data.licenseType || prev.licenseType,
+              licenseExpiry: result.data.licenseExpiry || prev.licenseExpiry,
+              dateOfBirth: result.data.dateOfBirth || prev.dateOfBirth,
+              address: result.data.address || prev.address,
+            }));
+          } else {
+            // OCR failed but allow manual entry
+            setOcrError(result.error || 'OCR extraction failed. Please enter information manually.');
+          }
+        } catch (ocrError) {
+          console.error('OCR Error:', ocrError);
+          setOcrError('Unable to extract information automatically. Please enter information manually.');
+        }
       }
       
       // Upload CV if provided
@@ -114,20 +144,6 @@ const DriverRegisterPage = () => {
         const { path } = await uploadService.uploadCV(formData.cvFile);
         setFormData(prev => ({ ...prev, cvUrl: path }));
       }
-      
-      // TODO: Implement OCR API call here
-      // For now, simulate OCR processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulated extracted data - replace with actual OCR results
-      setFormData(prev => ({
-        ...prev,
-        fullName: 'John Doe', // From OCR
-        licenseNumber: 'DL123456789', // From OCR
-        licenseType: 'Class B', // From OCR
-        licenseExpiry: '2026-12-31', // From OCR
-        address: '123 Main St, City, State' // From OCR
-      }));
       
       setCurrentStep(2);
     } catch (err) {
@@ -285,6 +301,7 @@ const DriverRegisterPage = () => {
         </div>
 
         {error && <div className="error-message">{error}</div>}
+        {ocrError && <div className="ocr-error-message">{ocrError}</div>}
 
         <form onSubmit={(e) => e.preventDefault()}>
           {/* Step 1: License & CV Upload */}

@@ -10,6 +10,7 @@ const AdminRegistrationRequestDetailsPage = () => {
   const [error, setError] = useState(null);
   const [request, setRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
 
   useEffect(() => {
     const loadRequestDetails = async () => {
@@ -59,6 +60,26 @@ const AdminRegistrationRequestDetailsPage = () => {
       alert(`Failed to ${actionLabel} request. Please try again.`);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleRetryOCR = async () => {
+    setOcrLoading(true);
+    try {
+      // Reset OCR status to PENDING to trigger re-processing
+      await api.patch(`/admin/registration-requests/${requestId}`, {
+        ocrExtractionStatus: 'PENDING',
+        ocrErrorMessage: null
+      });
+      
+      // Reload to trigger OCR processing
+      const res = await api.get(`/admin/registration-requests/${requestId}`);
+      setRequest(res.data);
+    } catch (err) {
+      console.error('Error retrying OCR:', err);
+      alert('Failed to retry OCR. Please try again.');
+    } finally {
+      setOcrLoading(false);
     }
   };
 
@@ -246,22 +267,89 @@ const AdminRegistrationRequestDetailsPage = () => {
         <div className="details-card">
           <div className="card-header">
             <h2>Driver's License Information</h2>
+            {request.ocrExtractionStatus && (
+              <div style={{
+                fontSize: '12px',
+                color: request.ocrExtractionStatus === 'SUCCESS' ? '#10b981' : '#ef4444',
+                marginLeft: 'auto'
+              }}>
+                OCR: {request.ocrExtractionStatus}
+              </div>
+            )}
           </div>
           <div className="card-content">
             <div className="details-grid">
               <div className="detail-item">
                 <label>License Number</label>
-                <div className="detail-value">{request.licenseNumber || '—'}</div>
+                <div className="detail-value">
+                  {request.licenseNumber || '—'}
+                  {request.extractedLicenseNumber && (
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280',
+                      marginTop: '4px',
+                      padding: '4px 8px',
+                      backgroundColor: '#f9fafb',
+                      borderRadius: '4px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <strong>OCR Extracted:</strong> {request.extractedLicenseNumber}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="detail-item">
                 <label>License Type</label>
-                <div className="detail-value">{request.licenseType || '—'}</div>
+                <div className="detail-value">
+                  {request.licenseType || '—'}
+                  {request.extractedLicenseType && (
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280',
+                      marginTop: '4px',
+                      padding: '4px 8px',
+                      backgroundColor: '#f9fafb',
+                      borderRadius: '4px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <strong>OCR Extracted:</strong> {request.extractedLicenseType}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="detail-item">
                 <label>Expiry Date</label>
-                <div className="detail-value">{request.licenseExpiry || '—'}</div>
+                <div className="detail-value">
+                  {request.licenseExpiry || '—'}
+                  {request.extractedLicenseExpiry && (
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280',
+                      marginTop: '4px',
+                      padding: '4px 8px',
+                      backgroundColor: '#f9fafb',
+                      borderRadius: '4px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <strong>OCR Extracted:</strong> {request.extractedLicenseExpiry}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+            {request.ocrErrorMessage && (
+              <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '6px',
+                color: '#dc2626',
+                fontSize: '14px'
+              }}>
+                <strong>OCR Processing Note:</strong> {request.ocrErrorMessage}
+              </div>
+            )}
           </div>
         </div>
 

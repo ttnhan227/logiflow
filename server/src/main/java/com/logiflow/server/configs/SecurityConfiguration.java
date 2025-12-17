@@ -43,6 +43,7 @@ public class SecurityConfiguration {
                         (authorize) -> authorize
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/registration/**").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()
                                 .requestMatchers("/ws/notifications-native", "/ws/notifications-native/**").permitAll()

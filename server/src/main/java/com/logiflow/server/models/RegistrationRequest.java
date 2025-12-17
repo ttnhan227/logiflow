@@ -68,6 +68,22 @@ public class RegistrationRequest {
     @Column(name = "cv_url", length = 500)
     private String cvUrl;
 
+    // OCR-extracted fields (auto-populated, can be edited by admin)
+    @Column(name = "extracted_license_number", length = 50)
+    private String extractedLicenseNumber;
+
+    @Column(name = "extracted_license_type", length = 20)
+    private String extractedLicenseType;
+
+    @Column(name = "extracted_license_expiry")
+    private LocalDate extractedLicenseExpiry;
+
+    @Column(name = "ocr_extraction_status", length = 20)
+    private String ocrExtractionStatus; // SUCCESS, FAILED, PENDING, MANUAL
+
+    @Column(name = "ocr_error_message", length = 255)
+    private String ocrErrorMessage;
+
     public enum RequestStatus {
         PENDING,
         APPROVED,

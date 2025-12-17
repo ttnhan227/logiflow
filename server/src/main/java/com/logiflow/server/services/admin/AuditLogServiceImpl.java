@@ -63,7 +63,10 @@ public class AuditLogServiceImpl implements AuditLogService {
             "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING",
             "CREATE_VEHICLE", "UPDATE_VEHICLE", "DELETE_VEHICLE",
             "CREATE_ROUTE", "UPDATE_ROUTE", "DELETE_ROUTE",
-            "APPROVE_REGISTRATION", "REJECT_REGISTRATION"
+            "APPROVE_REGISTRATION", "REJECT_REGISTRATION",
+            // Critical override actions
+            "FORCE_DISPATCH_REST_VIOLATION", "MANUAL_SLA_EXTENSION",
+            "OVERRIDE_TRIP_ASSIGNMENT", "BYPASS_COMPLIANCE_CHECK"
         );
     }
 

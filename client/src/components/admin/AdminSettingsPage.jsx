@@ -35,9 +35,14 @@ const AdminSettingsPage = () => {
     const fetchCategories = async () => {
       try {
         const data = await settingsService.getAvailableCategories();
-        setCategories(data || []);
+        // Add default logistics categories if not present
+        const logisticsCategories = ['compliance', 'routing', 'work-rest', 'notifications'];
+        const allCategories = [...new Set([...(data || []), ...logisticsCategories])];
+        setCategories(allCategories);
       } catch (err) {
         console.error('Failed to load categories:', err);
+        // Fallback to logistics categories
+        setCategories(['compliance', 'routing', 'work-rest', 'notifications', 'integration', 'security']);
       }
     };
     fetchCategories();

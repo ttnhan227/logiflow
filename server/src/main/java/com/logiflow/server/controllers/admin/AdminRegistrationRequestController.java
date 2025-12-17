@@ -9,19 +9,26 @@ import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.services.admin.AuditLogService;
+import com.logiflow.server.services.registration.RegistrationRequestServiceImpl;
 import com.logiflow.server.websocket.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/admin/registration-requests")
 public class AdminRegistrationRequestController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminRegistrationRequestController.class);
+
     @Autowired
     private RegistrationRequestRepository registrationRequestRepository;
     @Autowired
@@ -32,6 +39,8 @@ public class AdminRegistrationRequestController {
     private DriverRepository driverRepository;
     @Autowired
     private AuditLogService auditLogService;
+    @Autowired
+    private RegistrationRequestServiceImpl registrationRequestService;
     @Autowired
     private NotificationService notificationService;
     @Autowired
@@ -84,7 +93,48 @@ public class AdminRegistrationRequestController {
         if (reqOpt.isEmpty()) {
             return ResponseEntity.status(404).build();
         }
-        return ResponseEntity.ok(reqOpt.get());
+
+        RegistrationRequest req = reqOpt.get();
+
+        // Trigger OCR extraction if license image exists and OCR hasn't been attempted
+        if (req.getLicenseImageUrl() != null && !req.getLicenseImageUrl().trim().isEmpty()) {
+            if (req.getOcrExtractionStatus() == null || "PENDING".equals(req.getOcrExtractionStatus())) {
+                logger.info("Starting OCR extraction for registration request ID: {}", id);
+                try {
+                    RegistrationRequestServiceImpl.LicenseInfo licenseInfo = registrationRequestService.extractLicenseInfo(req.getLicenseImageUrl());
+
+                    if (licenseInfo.isExtractionSuccessful()) {
+                        req.setExtractedLicenseNumber(licenseInfo.getLicenseNumber());
+                        req.setExtractedLicenseType(licenseInfo.getLicenseType());
+                        if (licenseInfo.getExpiryDate() != null) {
+                            req.setExtractedLicenseExpiry(LocalDate.parse(licenseInfo.getExpiryDate()));
+                        }
+                        req.setOcrExtractionStatus("SUCCESS");
+                        req.setOcrErrorMessage(null);
+                        logger.info("OCR extraction successful for request ID: {} - License: {}, Type: {}",
+                            id, licenseInfo.getLicenseNumber(), licenseInfo.getLicenseType());
+                    } else {
+                        req.setOcrExtractionStatus("FAILED");
+                        req.setOcrErrorMessage(licenseInfo.getErrorMessage());
+                        logger.warn("OCR extraction failed for request ID: {} - Reason: {}", id, licenseInfo.getErrorMessage());
+                    }
+
+                    // Save the updated request with OCR results
+                    registrationRequestRepository.save(req);
+                } catch (Exception e) {
+                    logger.error("OCR processing error for request ID: {} - Error: {}", id, e.getMessage(), e);
+                    req.setOcrExtractionStatus("FAILED");
+                    req.setOcrErrorMessage("OCR processing error: " + e.getMessage());
+                    registrationRequestRepository.save(req);
+                }
+            } else {
+                logger.debug("OCR already processed for request ID: {} - Status: {}", id, req.getOcrExtractionStatus());
+            }
+        } else {
+            logger.debug("No license image found for request ID: {}", id);
+        }
+
+        return ResponseEntity.ok(req);
     }
 
     @PostMapping("/{id}/approve")
