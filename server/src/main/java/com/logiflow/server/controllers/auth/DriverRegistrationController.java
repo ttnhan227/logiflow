@@ -7,7 +7,9 @@ import com.logiflow.server.services.registration.RegistrationRequestServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,8 +55,11 @@ public class DriverRegistrationController {
                 Map<String, String> extractedData = new HashMap<>();
                 extractedData.put("licenseNumber", licenseInfo.getLicenseNumber());
                 extractedData.put("licenseType", licenseInfo.getLicenseType());
-                extractedData.put("licenseExpiry", licenseInfo.getExpiryDate());
-                
+                extractedData.put("licenseExpiry", formatDateForFrontend(licenseInfo.getExpiryDate()));
+                extractedData.put("fullName", licenseInfo.getFullName());
+                extractedData.put("dateOfBirth", formatDateForFrontend(licenseInfo.getDateOfBirth()));
+                extractedData.put("address", licenseInfo.getAddress());
+
                 response.put("success", true);
                 response.put("data", extractedData);
                 response.put("message", "License information extracted successfully");
@@ -71,6 +76,36 @@ public class DriverRegistrationController {
             response.put("error", "OCR processing failed: " + e.getMessage());
             response.put("message", "Unable to process license image - please enter information manually");
             return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    private String formatDateForFrontend(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+
+        // Try to parse and format to ISO (yyyy-MM-dd)
+        String[] formats = {
+            "dd/MM/yyyy", "MM/dd/yyyy", "dd-MM-yyyy", "MM-dd-yyyy",
+            "dd/MM/yy", "MM/dd/yy", "dd-MM-yy", "MM-dd-yy"
+        };
+
+        for (String format : formats) {
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+                LocalDate date = LocalDate.parse(dateStr.trim(), formatter);
+                return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            } catch (DateTimeParseException e) {
+                continue;
+            }
+        }
+
+        // If already in ISO format or parsing fails, return as-is
+        try {
+            LocalDate.parse(dateStr.trim());
+            return dateStr.trim();
+        } catch (DateTimeParseException e) {
+            return dateStr.trim(); // Return original if can't parse
         }
     }
 }

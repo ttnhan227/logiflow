@@ -10,18 +10,16 @@ const DriverRegisterPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [ocrError, setOcrError] = useState('');
+  const [editMode, setEditMode] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState({
-    // Step 1: License & CV Upload
+    // Step 1: License Upload & OCR
     licenseImage: null,
     licenseImagePreview: null,
     licenseImageUrl: null,
-    cvFile: null,
-    cvFileName: null,
-    cvUrl: null,
     
-    // Step 2: Personal Info (auto-filled from license or manual)
+    // Step 2: Confirm Extracted Info (read-only)
     fullName: '',
     licenseNumber: '',
     licenseType: '',
@@ -29,11 +27,16 @@ const DriverRegisterPage = () => {
     dateOfBirth: '',
     address: '',
     
-    // Step 3: Contact Info
+    // Step 3: Contact Information
     phone: '',
     email: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
+    
+    // Step 4: CV Upload & Review
+    cvFile: null,
+    cvFileName: null,
+    cvUrl: null,
   });
 
   const handleInputChange = (e) => {
@@ -154,16 +157,13 @@ const DriverRegisterPage = () => {
     }
   };
 
+  const validateStep1 = () => {
+    if (!formData.licenseImage) return 'Please upload your driver\'s license';
+    return null;
+  };
+
   const validateStep2 = () => {
-    if (!formData.fullName.trim()) return 'Full name is required';
-    if (!formData.licenseNumber.trim()) return 'License number is required';
-    if (!formData.licenseType.trim()) return 'License type is required';
-    if (!formData.licenseExpiry) return 'License expiry date is required';
-    
-    // Check if license is expired
-    const expiryDate = new Date(formData.licenseExpiry);
-    if (expiryDate < new Date()) return 'License has expired';
-    
+    // Step 2 is confirmation only - no validation needed, just proceed
     return null;
   };
 
@@ -176,16 +176,18 @@ const DriverRegisterPage = () => {
     return null;
   };
 
+  const validateStep4 = () => {
+    if (!formData.cvFile) return 'Please upload your CV/Resume';
+    return null;
+  };
+
   const handleNext = async () => {
     setError('');
 
     if (currentStep === 1) {
-      if (!formData.licenseImage) {
-        setError('Please upload your driver\'s license');
-        return;
-      }
-      if (!formData.cvFile) {
-        setError('Please upload your CV/Resume');
+      const error = validateStep1();
+      if (error) {
+        setError(error);
         return;
       }
       await processLicenseImage();
@@ -202,6 +204,14 @@ const DriverRegisterPage = () => {
         setError(error);
         return;
       }
+      setCurrentStep(4);
+    } else if (currentStep === 4) {
+      const error = validateStep4();
+      if (error) {
+        setError(error);
+        return;
+      }
+
       await handleSubmit();
     }
   };
@@ -216,6 +226,15 @@ const DriverRegisterPage = () => {
     setError('');
 
     try {
+      let finalCvUrl = formData.cvUrl;
+
+      // Upload CV before submitting if not already uploaded
+      if (formData.cvFile && !finalCvUrl) {
+        const { path } = await uploadService.uploadCV(formData.cvFile);
+        finalCvUrl = path;
+        setFormData(prev => ({ ...prev, cvUrl: path }));
+      }
+
       const data = await driverRegistrationService.registerDriver({
         email: formData.email,
         phone: formData.phone,
@@ -228,7 +247,7 @@ const DriverRegisterPage = () => {
         emergencyContactName: formData.emergencyContactName,
         emergencyContactPhone: formData.emergencyContactPhone,
         licenseImageUrl: formData.licenseImageUrl,
-        cvUrl: formData.cvUrl,
+        cvUrl: finalCvUrl,
       });
       const msg = data?.message || '';
       if (msg.toLowerCase().includes('approval')) {
@@ -268,8 +287,8 @@ const DriverRegisterPage = () => {
             This process typically takes 1-2 business days. If you have any questions, please contact
             our support team.
           </p>
-          <Link to="/login" className="btn btn-primary">
-            Return to Login
+          <Link to="/" className="btn btn-primary">
+            Return to Home
           </Link>
         </div>
       </div>
@@ -288,15 +307,19 @@ const DriverRegisterPage = () => {
         <div className="progress-steps">
           <div className={`step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
             <div className="step-number">1</div>
-            <div className="step-label">Documents</div>
+            <div className="step-label">Upload License</div>
           </div>
           <div className={`step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
             <div className="step-number">2</div>
-            <div className="step-label">Personal Info</div>
+            <div className="step-label">Confirm Info</div>
           </div>
           <div className={`step ${currentStep >= 3 ? 'active' : ''} ${currentStep > 3 ? 'completed' : ''}`}>
             <div className="step-number">3</div>
-            <div className="step-label">Contact</div>
+            <div className="step-label">Contact Info</div>
+          </div>
+          <div className={`step ${currentStep >= 4 ? 'active' : ''} ${currentStep > 4 ? 'completed' : ''}`}>
+            <div className="step-number">4</div>
+            <div className="step-label">Review</div>
           </div>
         </div>
 
@@ -304,12 +327,12 @@ const DriverRegisterPage = () => {
         {ocrError && <div className="ocr-error-message">{ocrError}</div>}
 
         <form onSubmit={(e) => e.preventDefault()}>
-          {/* Step 1: License & CV Upload */}
+          {/* Step 1: License Upload & OCR */}
           {currentStep === 1 && (
             <div className="form-step">
-              <h3>Upload Driver's License & CV</h3>
+              <h3>Upload Driver's License</h3>
               <p className="step-description">
-                Upload a clear photo of your driver's license and your CV/Resume.
+                Upload a clear photo of your driver's license for verification.
               </p>
 
               <div className="license-upload-area">
@@ -348,58 +371,6 @@ const DriverRegisterPage = () => {
                 )}
               </div>
 
-              <div className="license-upload-area" style={{ marginTop: '20px' }}>
-                <label style={{ fontWeight: '600', marginBottom: '8px', display: 'block' }}>
-                  CV / Resume *
-                </label>
-                {formData.cvFileName ? (
-                  <div className="cv-preview" style={{ 
-                    padding: '20px', 
-                    border: '2px solid #10b981', 
-                    borderRadius: '8px',
-                    backgroundColor: '#f0fdf4',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ fontSize: '32px' }}>📋</div>
-                      <div>
-                        <div style={{ fontWeight: '600', color: '#065f46' }}>{formData.cvFileName}</div>
-                        <div style={{ fontSize: '13px', color: '#059669' }}>
-                          {(formData.cvFile.size / 1024).toFixed(2)} KB
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-remove"
-                      onClick={() => setFormData(prev => ({
-                        ...prev,
-                        cvFile: null,
-                        cvFileName: null
-                      }))}
-                    >
-                      ✕ Remove
-                    </button>
-                  </div>
-                ) : (
-                  <label className="upload-label">
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      onChange={handleCVUpload}
-                      style={{ display: 'none' }}
-                    />
-                    <div className="upload-placeholder">
-                      <div className="upload-icon">📋</div>
-                      <p>Click to upload or drag and drop</p>
-                      <p className="upload-hint">PDF or Word document (max 5MB)</p>
-                    </div>
-                  </label>
-                )}
-              </div>
-
               <div className="tips-box">
                 <h4>📸 Tips for a good photo:</h4>
                 <ul>
@@ -412,92 +383,145 @@ const DriverRegisterPage = () => {
             </div>
           )}
 
-          {/* Step 2: Personal Information */}
+          {/* Step 2: Confirm Extracted Information */}
           {currentStep === 2 && (
             <div className="form-step">
-              <h3>Personal Information</h3>
+              <h3>Confirm Extracted Information</h3>
               <p className="step-description">
-                {formData.licenseImage ? 
-                  'Review and correct the extracted information if needed.' :
-                  'Please enter your personal information manually.'
-                }
+                Please review the information extracted from your driver's license. You can proceed to the next step or go back to upload a different image.
               </p>
 
-              <div className="form-group">
-                <label>Full Name *</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  placeholder="As shown on license"
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>License Number *</label>
-                  <input
-                    type="text"
-                    name="licenseNumber"
-                    value={formData.licenseNumber}
-                    onChange={handleInputChange}
-                    placeholder="DL123456789"
-                    required
-                  />
+              {/* License Image Display */}
+              {formData.licenseImagePreview && (
+                <div className="license-confirmation" style={{ marginBottom: '30px' }}>
+                  <h4>📄 Uploaded License Image</h4>
+                  <div className="license-preview-confirm">
+                    <img src={formData.licenseImagePreview} alt="License" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
+                  </div>
                 </div>
+              )}
 
-                <div className="form-group">
-                  <label>License Type *</label>
-                  <select
-                    name="licenseType"
-                    value={formData.licenseType}
-                    onChange={handleInputChange}
-                    required
+              {/* Extracted Information Display */}
+              <div className="extracted-info-section">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h4>📋 Extracted Information</h4>
+                  <button
+                    type="button"
+                    className={`btn ${editMode ? 'btn-secondary' : 'btn-outline'}`}
+                    onClick={() => setEditMode(!editMode)}
+                    style={{ fontSize: '14px', padding: '8px 16px' }}
                   >
-                    <option value="">Select type</option>
-                    <option value="Class A">Class A - Heavy vehicles</option>
-                    <option value="Class B">Class B - Medium vehicles</option>
-                    <option value="Class C">Class C - Light vehicles</option>
-                    <option value="Motorcycle">Motorcycle</option>
-                  </select>
+                    {editMode ? '✏️ Cancel Edit' : '✏️ Edit Fields'}
+                  </button>
+                </div>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <label>Full Name:</label>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        className="form-input"
+                        placeholder="Enter full name"
+                      />
+                    ) : (
+                      <div className="info-value">{formData.fullName || 'Not extracted'}</div>
+                    )}
+                  </div>
+                  <div className="info-item">
+                    <label>License Number:</label>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        name="licenseNumber"
+                        value={formData.licenseNumber}
+                        onChange={handleInputChange}
+                        className="form-input"
+                        placeholder="Enter license number"
+                      />
+                    ) : (
+                      <div className="info-value">{formData.licenseNumber || 'Not extracted'}</div>
+                    )}
+                  </div>
+                  <div className="info-item">
+                    <label>License Type:</label>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        name="licenseType"
+                        value={formData.licenseType}
+                        onChange={handleInputChange}
+                        className="form-input"
+                        placeholder="Enter license type"
+                      />
+                    ) : (
+                      <div className="info-value">{formData.licenseType || 'Not extracted'}</div>
+                    )}
+                  </div>
+                  <div className="info-item">
+                    <label>License Expiry:</label>
+                    {editMode ? (
+                      <input
+                        type="date"
+                        name="licenseExpiry"
+                        value={formData.licenseExpiry}
+                        onChange={handleInputChange}
+                        className="form-input"
+                      />
+                    ) : (
+                      <div className="info-value">{formData.licenseExpiry || 'Not extracted'}</div>
+                    )}
+                  </div>
+                  <div className="info-item">
+                    <label>Date of Birth:</label>
+                    {editMode ? (
+                      <input
+                        type="date"
+                        name="dateOfBirth"
+                        value={formData.dateOfBirth}
+                        onChange={handleInputChange}
+                        className="form-input"
+                      />
+                    ) : (
+                      <div className="info-value">{formData.dateOfBirth || 'Not extracted'}</div>
+                    )}
+                  </div>
+                  <div className="info-item full-width">
+                    <label>Address:</label>
+                    {editMode ? (
+                      <textarea
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        className="form-input"
+                        placeholder="Enter address"
+                        rows="3"
+                      />
+                    ) : (
+                      <div className="info-value">{formData.address || 'Not extracted'}</div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Date of Birth</label>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                  />
+              {ocrError && (
+                <div className="ocr-warning" style={{ 
+                  backgroundColor: '#fef3c7', 
+                  border: '1px solid #f59e0b', 
+                  borderRadius: '8px', 
+                  padding: '16px', 
+                  marginTop: '20px' 
+                }}>
+                  <div style={{ fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
+                    ⚠️ OCR Extraction Note
+                  </div>
+                  <div style={{ color: '#78350f' }}>
+                    {ocrError}
+                  </div>
                 </div>
-
-                <div className="form-group">
-                  <label>License Expiry *</label>
-                  <input
-                    type="date"
-                    name="licenseExpiry"
-                    value={formData.licenseExpiry}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Address</label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  rows="2"
-                  placeholder="Current residential address"
-                />
-              </div>
+              )}
             </div>
           )}
 
@@ -506,7 +530,7 @@ const DriverRegisterPage = () => {
             <div className="form-step">
               <h3>Contact Information</h3>
               <p className="step-description">
-                Provide your contact details and emergency contact.
+                Please provide your contact details and emergency contact information.
               </p>
 
               <div className="form-group">
@@ -543,7 +567,7 @@ const DriverRegisterPage = () => {
                   name="emergencyContactName"
                   value={formData.emergencyContactName}
                   onChange={handleInputChange}
-                  placeholder="Full name"
+                  placeholder="Full name of emergency contact"
                   required
                 />
               </div>
@@ -558,6 +582,126 @@ const DriverRegisterPage = () => {
                   placeholder="+1234567890"
                   required
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Review & CV Upload */}
+          {currentStep === 4 && (
+            <div className="form-step">
+              <h3>Review & Upload CV</h3>
+              <p className="step-description">
+                Review your information and upload your CV/Resume.
+              </p>
+
+              {/* Review Section */}
+              <div className="review-section">
+                <h4>📋 Review Your Information</h4>
+                <div className="review-grid">
+                  <div className="review-item">
+                    <strong>Full Name:</strong> {formData.fullName || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>License Number:</strong> {formData.licenseNumber || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>License Type:</strong> {formData.licenseType || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>License Expiry:</strong> {formData.licenseExpiry || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>Date of Birth:</strong> {formData.dateOfBirth || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>Phone:</strong> {formData.phone || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>Email:</strong> {formData.email || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>Address:</strong> {formData.address || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>Emergency Contact:</strong> {formData.emergencyContactName || 'Not provided'}
+                  </div>
+                  <div className="review-item">
+                    <strong>Emergency Phone:</strong> {formData.emergencyContactPhone || 'Not provided'}
+                  </div>
+                </div>
+              </div>
+
+              {/* CV Upload Section */}
+              <div className="cv-upload-section" style={{ marginTop: '30px' }}>
+                <h4>📄 Upload Your CV/Resume</h4>
+                <p className="cv-description">
+                  Upload your CV or resume to complete your application. This helps us understand your experience and qualifications.
+                </p>
+
+                {formData.cvFileName ? (
+                  <div className="cv-preview" style={{ 
+                    padding: '20px', 
+                    border: '2px solid #10b981', 
+                    borderRadius: '8px',
+                    backgroundColor: '#f0fdf4',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ fontSize: '32px' }}>📋</div>
+                      <div>
+                        <div style={{ fontWeight: '600', color: '#065f46' }}>{formData.cvFileName}</div>
+                        <div style={{ fontSize: '13px', color: '#059669' }}>
+                          {(formData.cvFile.size / 1024).toFixed(2)} KB
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-remove"
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        cvFile: null,
+                        cvFileName: null
+                      }))}
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+                ) : (
+                  <label className="upload-label" style={{ 
+                    border: '2px dashed #d1d5db',
+                    borderRadius: '8px',
+                    padding: '40px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    display: 'block',
+                    transition: 'border-color 0.2s'
+                  }}>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={handleCVUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <div className="upload-placeholder">
+                      <div className="upload-icon" style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                      <p style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>Click to upload or drag and drop</p>
+                      <p className="upload-hint" style={{ color: '#6b7280' }}>PDF or Word document (max 5MB)</p>
+                    </div>
+                  </label>
+                )}
+              </div>
+
+              <div className="tips-box" style={{ marginTop: '20px' }}>
+                <h4>💡 Tips for your CV:</h4>
+                <ul>
+                  <li>Include your driving experience and qualifications</li>
+                  <li>Mention any relevant certifications or training</li>
+                  <li>Keep it updated with your most recent experience</li>
+                  <li>Ensure the file is not password-protected</li>
+                </ul>
               </div>
             </div>
           )}
@@ -586,7 +730,7 @@ const DriverRegisterPage = () => {
                   {currentStep === 1 ? 'Processing...' : 'Submitting...'}
                 </>
               ) : (
-                currentStep === 3 ? 'Submit Application' : 'Next'
+                currentStep === 4 ? 'Submit Application' : 'Next'
               )}
             </button>
           </div>

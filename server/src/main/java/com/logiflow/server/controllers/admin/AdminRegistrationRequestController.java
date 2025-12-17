@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.LocalDate;
@@ -96,43 +97,8 @@ public class AdminRegistrationRequestController {
 
         RegistrationRequest req = reqOpt.get();
 
-        // Trigger OCR extraction if license image exists and OCR hasn't been attempted
-        if (req.getLicenseImageUrl() != null && !req.getLicenseImageUrl().trim().isEmpty()) {
-            if (req.getOcrExtractionStatus() == null || "PENDING".equals(req.getOcrExtractionStatus())) {
-                logger.info("Starting OCR extraction for registration request ID: {}", id);
-                try {
-                    RegistrationRequestServiceImpl.LicenseInfo licenseInfo = registrationRequestService.extractLicenseInfo(req.getLicenseImageUrl());
-
-                    if (licenseInfo.isExtractionSuccessful()) {
-                        req.setExtractedLicenseNumber(licenseInfo.getLicenseNumber());
-                        req.setExtractedLicenseType(licenseInfo.getLicenseType());
-                        if (licenseInfo.getExpiryDate() != null) {
-                            req.setExtractedLicenseExpiry(LocalDate.parse(licenseInfo.getExpiryDate()));
-                        }
-                        req.setOcrExtractionStatus("SUCCESS");
-                        req.setOcrErrorMessage(null);
-                        logger.info("OCR extraction successful for request ID: {} - License: {}, Type: {}",
-                            id, licenseInfo.getLicenseNumber(), licenseInfo.getLicenseType());
-                    } else {
-                        req.setOcrExtractionStatus("FAILED");
-                        req.setOcrErrorMessage(licenseInfo.getErrorMessage());
-                        logger.warn("OCR extraction failed for request ID: {} - Reason: {}", id, licenseInfo.getErrorMessage());
-                    }
-
-                    // Save the updated request with OCR results
-                    registrationRequestRepository.save(req);
-                } catch (Exception e) {
-                    logger.error("OCR processing error for request ID: {} - Error: {}", id, e.getMessage(), e);
-                    req.setOcrExtractionStatus("FAILED");
-                    req.setOcrErrorMessage("OCR processing error: " + e.getMessage());
-                    registrationRequestRepository.save(req);
-                }
-            } else {
-                logger.debug("OCR already processed for request ID: {} - Status: {}", id, req.getOcrExtractionStatus());
-            }
-        } else {
-            logger.debug("No license image found for request ID: {}", id);
-        }
+        // Note: OCR extraction is performed during initial registration, not here
+        // This keeps the controller simple and avoids complex OCR logic in admin views
 
         return ResponseEntity.ok(req);
     }
@@ -159,6 +125,8 @@ public class AdminRegistrationRequestController {
         user.setEmail(req.getEmail());
         user.setPhone(req.getPhone());
         user.setFullName(req.getFullName());
+        user.setDateOfBirth(req.getDateOfBirth());
+        user.setAddress(req.getAddress());
         user.setRole(req.getRole());
         user.setIsActive(true);
         userRepository.save(user);
@@ -167,8 +135,14 @@ public class AdminRegistrationRequestController {
             Driver driver = new Driver();
             driver.setUser(user);
 
-            // Map licenseType if available
+            // Map license fields from registration request
             driver.setLicenseType(req.getLicenseType() != null ? req.getLicenseType() : "");
+            driver.setLicenseNumber(req.getLicenseNumber());
+            if (req.getLicenseExpiry() != null) {
+                driver.setLicenseExpiryDate(req.getLicenseExpiry());
+            }
+            driver.setLicenseIssueDate(req.getLicenseIssueDate());
+
             // Default yearsExperience to 0
             driver.setYearsExperience(0);
             // healthStatus default is FIT from entity
@@ -178,7 +152,6 @@ public class AdminRegistrationRequestController {
 
         // Update request status
         req.setStatus(RegistrationRequest.RequestStatus.APPROVED);
-        req.setUsername(generatedUsername);
         registrationRequestRepository.save(req);
         
         auditLogService.log(
@@ -206,14 +179,78 @@ public class AdminRegistrationRequestController {
         }
         req.setStatus(RegistrationRequest.RequestStatus.REJECTED);
         registrationRequestRepository.save(req);
-        
+
         auditLogService.log(
             "REJECT_REGISTRATION",
             "admin", // TODO: replace with actual username from context
             "ADMIN", // TODO: replace with actual role from context
-            "Rejected registration for: " + req.getUsername() + " (Role: " + req.getRole().getRoleName() + ")"
+            "Rejected registration for: " + req.getEmail() + " (Role: " + req.getRole().getRoleName() + ")"
         );
-        
+
         return ResponseEntity.ok("Request rejected successfully");
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<RegistrationRequest> updateRequest(@PathVariable Integer id,
+                                                            @RequestBody Map<String, Object> updates) {
+        Optional<RegistrationRequest> reqOpt = registrationRequestRepository.findById(id);
+        if (reqOpt.isEmpty()) {
+            return ResponseEntity.status(404).build();
+        }
+
+        RegistrationRequest req = reqOpt.get();
+        if (req.getStatus() != RegistrationRequest.RequestStatus.PENDING) {
+            return ResponseEntity.badRequest().build(); // Can't edit processed requests
+        }
+
+        // Update editable fields
+        if (updates.containsKey("fullName")) {
+            req.setFullName((String) updates.get("fullName"));
+        }
+        if (updates.containsKey("phone")) {
+            req.setPhone((String) updates.get("phone"));
+        }
+        if (updates.containsKey("dateOfBirth")) {
+            String dateStr = (String) updates.get("dateOfBirth");
+            if (dateStr != null && !dateStr.trim().isEmpty()) {
+                req.setDateOfBirth(java.time.LocalDate.parse(dateStr));
+            } else {
+                req.setDateOfBirth(null);
+            }
+        }
+        if (updates.containsKey("address")) {
+            req.setAddress((String) updates.get("address"));
+        }
+        if (updates.containsKey("licenseNumber")) {
+            req.setLicenseNumber((String) updates.get("licenseNumber"));
+        }
+        if (updates.containsKey("licenseType")) {
+            req.setLicenseType((String) updates.get("licenseType"));
+        }
+        if (updates.containsKey("licenseExpiry")) {
+            String dateStr = (String) updates.get("licenseExpiry");
+            if (dateStr != null && !dateStr.trim().isEmpty()) {
+                req.setLicenseExpiry(java.time.LocalDate.parse(dateStr));
+            } else {
+                req.setLicenseExpiry(null);
+            }
+        }
+        if (updates.containsKey("emergencyContactName")) {
+            req.setEmergencyContactName((String) updates.get("emergencyContactName"));
+        }
+        if (updates.containsKey("emergencyContactPhone")) {
+            req.setEmergencyContactPhone((String) updates.get("emergencyContactPhone"));
+        }
+
+        RegistrationRequest saved = registrationRequestRepository.save(req);
+
+        auditLogService.log(
+            "UPDATE_REGISTRATION_REQUEST",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            "Updated registration request for: " + req.getEmail()
+        );
+
+        return ResponseEntity.ok(saved);
     }
 }

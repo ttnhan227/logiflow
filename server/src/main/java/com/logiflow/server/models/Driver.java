@@ -31,6 +31,9 @@ public class Driver {
     @Column(name = "license_expiry")
     private java.time.LocalDate licenseExpiryDate;
 
+    @Column(name = "license_issue_date")
+    private java.time.LocalDate licenseIssueDate;
+
     @Column(name = "years_experience", nullable = false)
     private Integer yearsExperience;
 

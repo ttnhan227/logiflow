@@ -88,8 +88,8 @@ const AdminRegistrationRequestsPage = () => {
       result = result.filter(
         (r) =>
           r.fullName?.toLowerCase().includes(term) ||
-          r.username?.toLowerCase().includes(term) ||
-          r.email?.toLowerCase().includes(term)
+          r.email?.toLowerCase().includes(term) ||
+          r.phone?.toLowerCase().includes(term)
       );
     }
     setFilteredRequests(result);
@@ -142,7 +142,7 @@ const AdminRegistrationRequestsPage = () => {
       <div className="admin-page-toolbar">
         <input
           type="text"
-          placeholder="🔍 Search by name, username, or email..."
+          placeholder="🔍 Search by name, email, or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -181,7 +181,7 @@ const AdminRegistrationRequestsPage = () => {
                     <td>
                       <div className="user-row">
                         <div className="avatar">
-                          {(req.fullName || req.username || '?')
+                          {(req.fullName || req.email || '?')
                             .split(' ')
                             .map((n) => n[0])
                             .join('')
@@ -189,8 +189,8 @@ const AdminRegistrationRequestsPage = () => {
                             .slice(0, 2)}
                         </div>
                         <div className="user-info">
-                          <div className="user-name">{req.fullName || req.username}</div>
-                          <div className="user-id">@{req.username}</div>
+                          <div className="user-name">{req.fullName || 'Unknown'}</div>
+                          <div className="user-id">{req.email}</div>
                         </div>
                       </div>
                     </td>

@@ -502,6 +502,17 @@
   background: #d0d0d0;
 }
 
+.btn-outline {
+  background: transparent;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+}
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -579,6 +590,55 @@
   text-decoration: underline;
 }
 
+/* Review Section */
+.review-section {
+  background: #f8f9ff;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.review-section h4 {
+  margin: 0 0 16px 0;
+  color: #667eea;
+  font-size: 16px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.review-item {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid #e0e7ff;
+  font-size: 14px;
+}
+
+.review-item strong {
+  color: #333;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* CV Upload Section */
+.cv-upload-section h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.cv-description {
+  margin: 0 0 16px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* Responsive for Driver Registration */
 @media (max-width: 768px) {
   .driver-register-card {
@@ -611,4 +671,67 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Driver Registration Enhancements */
+
+.license-preview-confirm {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.extracted-info-section h4 {
+  color: var(--text-color);
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.info-item {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.info-item label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.info-value {
+  color: #1f2937;
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.ocr-warning {
+  background-color: #fef3c7 !important;
+  border: 1px solid #f59e0b !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin-top: 20px !important;
+}
+
+.ocr-warning div:first-child {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+
+.ocr-warning div:last-child {
+  color: #78350f;
 }

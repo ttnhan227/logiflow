@@ -2,6 +2,7 @@ package com.logiflow.server.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -28,6 +29,12 @@ public class User {
 
     @Column(name = "full_name", length = 100)
     private String fullName;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "address", length = 255)
+    private String address;
 
     @Column(name = "profile_picture_url", length = 500)
     private String profilePictureUrl;

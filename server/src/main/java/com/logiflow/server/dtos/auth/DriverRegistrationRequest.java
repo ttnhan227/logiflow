@@ -22,6 +22,7 @@ public class DriverRegistrationRequest {
     private String licenseType;
     @NotBlank
     private String licenseExpiry; // ISO date string, validated in service
+    private String licenseIssueDate; // optional ISO date
     private String dateOfBirth; // optional ISO date
 
     private String address;

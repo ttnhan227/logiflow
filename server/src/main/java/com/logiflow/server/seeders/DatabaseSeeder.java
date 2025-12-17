@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -472,6 +473,17 @@ public class DatabaseSeeder implements CommandLineRunner {
         user.setIsActive(true);
         user.setLastLogin(lastLogin);
         user.setCreatedAt(createdAt);
+
+        // Generate random date of birth (18-70 years old)
+        int age = 18 + random.nextInt(53);
+        user.setDateOfBirth(LocalDate.now().minusYears(age).minusDays(random.nextInt(365)));
+
+        // Generate address using the same method as customers
+        String[] neighborhoods = {"District 1", "District 7", "Thu Duc", "Go Vap", "Tan Binh"};
+        String[] wards = {"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11"};
+        String[] streets = {"Nguyen Trai", "Le Hong Phong", "Tran Hung Dao", "Vo Van Tan", "Pham Ngoc Thach", "Tong Huu Dinh"};
+        user.setAddress(generateAddress(neighborhoods, wards, streets, Math.abs(username.hashCode())));
+
         return user;
     }
 
@@ -506,6 +518,11 @@ public class DatabaseSeeder implements CommandLineRunner {
         driver.setLicenseType(licenseType);
         driver.setLicenseNumber(licenseNumber);
         driver.setLicenseExpiryDate(licenseExpiry.toLocalDate());
+
+        // Calculate license issue date (typically 5-10 years before expiry)
+        int yearsBeforeExpiry = 5 + random.nextInt(6); // 5-10 years
+        driver.setLicenseIssueDate(licenseExpiry.toLocalDate().minusYears(yearsBeforeExpiry));
+
         driver.setRating(BigDecimal.valueOf(ratingValue));
         driver.setYearsExperience(experience);
         driver.setHealthStatus(Driver.HealthStatus.FIT);
@@ -607,19 +624,17 @@ public class DatabaseSeeder implements CommandLineRunner {
         LocalDateTime now = LocalDateTime.now();
 
         List<RegistrationRequest> requests = Arrays.asList(
-                createRegistrationRequest("mike.driver", "mike.d@logiflow.com", "Mike Driver", "+84-901-234-503", "DL123456", "B2", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(90)),
-                createRegistrationRequest("carl.driver2", "carl.d@logiflow.com", "Carl Driver", "+84-901-234-505", "DL234567", "C", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(85)),
-                createRegistrationRequest("david.driver3", "david.d@logiflow.com", "David Driver", "+84-901-234-507", "DL345678", "D", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(80)),
-                createRegistrationRequest("rejected.user", "rejected@example.com", "Rejected User", "+84-999-000-001", "DL999999", "B2", now.plusYears(1), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(10))
+                createRegistrationRequest("mike.d@logiflow.com", "Mike Driver", "+84-901-234-503", "DL123456", "B2", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(90)),
+                createRegistrationRequest("carl.d@logiflow.com", "Carl Driver", "+84-901-234-505", "DL234567", "C", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(85)),
+                createRegistrationRequest("david.d@logiflow.com", "David Driver", "+84-901-234-507", "DL345678", "D", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(80)),
+                createRegistrationRequest("rejected@example.com", "Rejected User", "+84-999-000-001", "DL999999", "B2", now.plusYears(1), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(10))
         );
         registrationRequestRepository.saveAll(requests);
         System.out.println("Seeded registration requests");
     }
 
-    private RegistrationRequest createRegistrationRequest(String username, String email, String fullName, String phone, String licenseNumber, String licenseType, LocalDateTime licenseExpiry, Role role, RegistrationRequest.RequestStatus status, LocalDateTime createdAt) {
+    private RegistrationRequest createRegistrationRequest(String email, String fullName, String phone, String licenseNumber, String licenseType, LocalDateTime licenseExpiry, Role role, RegistrationRequest.RequestStatus status, LocalDateTime createdAt) {
         RegistrationRequest request = new RegistrationRequest();
-        request.setUsername(username);
-        request.setPasswordHash(passwordEncoder.encode("123"));
         request.setEmail(email);
         request.setFullName(fullName);
         request.setPhone(phone);

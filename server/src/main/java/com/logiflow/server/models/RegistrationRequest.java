@@ -14,12 +14,6 @@ public class RegistrationRequest {
     @Column(name = "request_id")
     private Integer requestId;
 
-    @Column(name = "username", length = 50, nullable = true)
-    private String username;
-
-    @Column(name = "password_hash", length = 255, nullable = true)
-    private String passwordHash;
-
     @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
@@ -50,6 +44,9 @@ public class RegistrationRequest {
     @Column(name = "license_expiry")
     private LocalDate licenseExpiry;
 
+    @Column(name = "license_issue_date")
+    private LocalDate licenseIssueDate;
+
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
@@ -67,22 +64,6 @@ public class RegistrationRequest {
 
     @Column(name = "cv_url", length = 500)
     private String cvUrl;
-
-    // OCR-extracted fields (auto-populated, can be edited by admin)
-    @Column(name = "extracted_license_number", length = 50)
-    private String extractedLicenseNumber;
-
-    @Column(name = "extracted_license_type", length = 20)
-    private String extractedLicenseType;
-
-    @Column(name = "extracted_license_expiry")
-    private LocalDate extractedLicenseExpiry;
-
-    @Column(name = "ocr_extraction_status", length = 20)
-    private String ocrExtractionStatus; // SUCCESS, FAILED, PENDING, MANUAL
-
-    @Column(name = "ocr_error_message", length = 255)
-    private String ocrErrorMessage;
 
     public enum RequestStatus {
         PENDING,

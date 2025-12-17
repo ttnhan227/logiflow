@@ -10,6 +10,5 @@ import java.util.Optional;
 @Repository
 public interface RegistrationRequestRepository extends JpaRepository<RegistrationRequest, Integer> {
     List<RegistrationRequest> findByStatus(RegistrationRequest.RequestStatus status);
-    Optional<RegistrationRequest> findByUsername(String username);
     Optional<RegistrationRequest> findByEmail(String email);
 }
