@@ -87,7 +87,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     // endDate
     List<Trip> findByScheduledDepartureLessThan(LocalDateTime to);
 
-    // thống kê delivery theo ngày
+    // thống kê delivery theo ngày (manager view, bucketed by scheduledDeparture)
     @Query("""
         SELECT 
             function('date', t.scheduledDeparture)        AS date,
@@ -98,12 +98,71 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             COALESCE(SUM(r.distanceKm), 0)               AS totalDistanceKm
         FROM Trip t
         LEFT JOIN t.route r
-        WHERE (:from IS NULL OR t.scheduledDeparture >= :from)
-          AND (:to   IS NULL OR t.scheduledDeparture <  :to)
+                                WHERE t.scheduledDeparture >= :from
+                                        AND t.scheduledDeparture <  :to
         GROUP BY function('date', t.scheduledDeparture)
         ORDER BY function('date', t.scheduledDeparture)
         """)
     List<DailyDeliveryStats> findDailyDeliveryStats(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
+    /**
+     * Dispatcher daily counts of ALL trips bucketed by scheduledDeparture date.
+     */
+    @Query("""
+        SELECT
+            function('date', t.scheduledDeparture) AS date,
+            COUNT(t) AS totalTrips,
+            SUM(CASE WHEN lower(t.status) = 'scheduled'   THEN 1 ELSE 0 END) AS scheduledTrips,
+            SUM(CASE WHEN lower(t.status) = 'in_progress' THEN 1 ELSE 0 END) AS inProgressTrips,
+            SUM(CASE WHEN lower(t.status) = 'delayed'     THEN 1 ELSE 0 END) AS delayedStatusTrips,
+            SUM(CASE WHEN lower(t.status) = 'cancelled'   THEN 1 ELSE 0 END) AS cancelledTrips,
+            SUM(CASE WHEN lower(t.status) = 'completed'   THEN 1 ELSE 0 END) AS completedTrips
+        FROM Trip t
+                                WHERE t.scheduledDeparture >= :from
+                                        AND t.scheduledDeparture <  :to
+        GROUP BY function('date', t.scheduledDeparture)
+        ORDER BY function('date', t.scheduledDeparture)
+        """)
+    List<DailyTripStatusCounts> findDailyTripStatusCounts(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
+    /**
+     * Dispatcher daily count of completed trips with actualArrival bucketed by actualArrival date.
+     * Delay minutes are computed in service layer for DB portability.
+     */
+    @Query("""
+        SELECT
+            function('date', t.actualArrival) AS date,
+            COUNT(t) AS completedTripsWithActualArrival
+        FROM Trip t
+                                WHERE lower(t.status) = 'completed'
+                                        AND t.actualArrival IS NOT NULL
+                                        AND t.actualArrival >= :from
+                                        AND t.actualArrival <  :to
+        GROUP BY function('date', t.actualArrival)
+        ORDER BY function('date', t.actualArrival)
+        """)
+    List<DailyCompletedDelayAgg> findDailyCompletedTripsByActualArrival(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
+    /**
+     * Dispatcher: get completed trips in range by actualArrival for delay calculations & delay reasons.
+     */
+    @Query("""
+        SELECT t FROM Trip t
+                                WHERE lower(t.status) = 'completed'
+                                        AND t.actualArrival IS NOT NULL
+                                        AND t.actualArrival >= :from
+                                        AND t.actualArrival <  :to
+        """)
+    List<Trip> findCompletedTripsByActualArrivalRange(
             @Param("from") LocalDateTime from,
             @Param("to")   LocalDateTime to
     );

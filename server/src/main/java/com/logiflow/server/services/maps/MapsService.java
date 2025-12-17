@@ -41,6 +41,22 @@ public interface MapsService {
     );
 
     /**
+     * Get route directions between two points with a routing profile.
+     *
+     * Supported profiles:
+     * - driving (default)
+     * - truck (best-effort; falls back to driving if not supported)
+     */
+    DirectionsResultDto getDirections(
+        String originLat,
+        String originLng,
+        String destLat,
+        String destLng,
+        boolean includeGeometry,
+        String profile
+    );
+
+    /**
      * Calculate distance and duration between two addresses
      * Uses Nominatim for geocoding and OSRM for distance calculation
      *

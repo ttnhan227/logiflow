@@ -16,6 +16,7 @@ const TripCreatePage = () => {
   const [scheduledArrival, setScheduledArrival] = useState('');
   const [pendingOrders, setPendingOrders] = useState([]);
   const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+  const [orderTypeFilter, setOrderTypeFilter] = useState(''); // '', 'PORT_TERMINAL', 'WAREHOUSE'
   const [distanceEstimate, setDistanceEstimate] = useState(null);
   const [feeEstimate, setFeeEstimate] = useState(null);
   const [error, setError] = useState(null);
@@ -74,6 +75,26 @@ const TripCreatePage = () => {
 
     if (!selectedVehicle || !selectedRoute || !scheduledDeparture || !scheduledArrival || selectedOrderIds.length === 0) {
       setError('Please fill all fields and select at least one order');
+      return;
+    }
+
+    // Validate selected orders have pickupType and required dependent fields
+    const selectedOrders = pendingOrders.filter(o => selectedOrderIds.includes(o.orderId));
+    const invalids = [];
+    for (const o of selectedOrders) {
+      if (!o.pickupType) {
+        invalids.push(`#${o.orderId} missing pickup type`);
+        continue;
+      }
+      if (o.pickupType === 'PORT_TERMINAL' && (!o.containerNumber || !String(o.containerNumber).trim())) {
+        invalids.push(`#${o.orderId} requires container number for port pickup`);
+      }
+      if (o.pickupType === 'WAREHOUSE' && (!o.dockInfo || !String(o.dockInfo).trim())) {
+        invalids.push(`#${o.orderId} requires dock info for warehouse pickup`);
+      }
+    }
+    if (invalids.length > 0) {
+      setError(`Some orders are incomplete: ${invalids.join('; ')}`);
       return;
     }
 
@@ -170,13 +191,23 @@ const TripCreatePage = () => {
 
         <div className="detail-card" style={{ marginTop: '1rem', padding: '1rem' }}>
           <h3 style={{ marginBottom: '0.75rem' }}>Select Pending Orders</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <label style={{ fontSize: 14, color: '#475569' }}>Filter by pickup type:</label>
+            <select value={orderTypeFilter} onChange={e => setOrderTypeFilter(e.target.value)}>
+              <option value="">All</option>
+              <option value="PORT_TERMINAL">PORT_TERMINAL</option>
+              <option value="WAREHOUSE">WAREHOUSE</option>
+            </select>
+          </div>
           {loadingOrders && <div>Loading pending orders...</div>}
           {!loadingOrders && pendingOrders.length === 0 && (
             <div>No pending orders available.</div>
           )}
           {!loadingOrders && pendingOrders.length > 0 && (
             <div className="orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {pendingOrders.map((o) => (
+              {pendingOrders
+                .filter(o => !orderTypeFilter || o.pickupType === orderTypeFilter)
+                .map((o) => (
                 <label key={o.orderId} className="order-item-compact" style={{ cursor: 'pointer' }}>
                   <input
                     type="checkbox"
@@ -191,8 +222,29 @@ const TripCreatePage = () => {
                       <span className="arrow">→</span>
                       <span className="delivery-compact">🎯 {o.deliveryAddress}</span>
                     </div>
-                    <div style={{ color: '#475569', fontSize: '0.85rem' }}>
-                      {o.weightKg ? `⚖️ ${o.weightKg} kg` : ''} {o.packageDetails ? ` • ${o.packageDetails}` : ''}
+                    <div style={{ color: '#475569', fontSize: '0.85rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span>
+                        {o.weightTons ? `⚖️ ${o.weightTons} t` : (o.weightKg ? `⚖️ ${o.weightKg} kg` : '')}
+                        {o.packageDetails ? ` • ${o.packageDetails}` : ''}
+                      </span>
+                      {o.pickupType && (
+                        <span style={{
+                          backgroundColor: o.pickupType === 'PORT_TERMINAL' ? '#fef3c7' : '#dbeafe',
+                          color: o.pickupType === 'PORT_TERMINAL' ? '#92400e' : '#0c4a6e',
+                          padding: '0.1rem 0.5rem',
+                          borderRadius: 6,
+                          fontWeight: 600,
+                          fontSize: 12
+                        }}>
+                          {o.pickupType}
+                        </span>
+                      )}
+                      {o.pickupType === 'PORT_TERMINAL' && o.containerNumber && (
+                        <span style={{ fontSize: 12, color: '#334155' }}>🧾 {o.containerNumber}</span>
+                      )}
+                      {o.pickupType === 'WAREHOUSE' && o.dockInfo && (
+                        <span style={{ fontSize: 12, color: '#334155' }}>🏭 {o.dockInfo}</span>
+                      )}
                     </div>
                   </div>
                 </label>

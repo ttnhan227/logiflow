@@ -30,11 +30,21 @@ public class OrderUpdateRequest {
     private Order.PriorityLevel priorityLevel;
     
     private BigDecimal distanceKm;
-    
+
+    // Backward compatibility
     private BigDecimal weightKg;
-    
+
+    // Bulk cargo
+    private BigDecimal weightTons;
+
+    @NotNull(message = "Pickup type is required")
+    private Order.PickupType pickupType;
+
+    // Conditional: required if pickupType == PORT_TERMINAL
+    private String containerNumber;
+
+    // Conditional: required if pickupType == WAREHOUSE
+    private String dockInfo;
+
     private BigDecimal packageValue;
 }
-
-
-

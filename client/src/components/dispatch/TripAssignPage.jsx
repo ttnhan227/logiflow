@@ -8,10 +8,12 @@ const TripAssignPage = () => {
   const navigate = useNavigate();
   const [trip, setTrip] = useState(null);
   const [drivers, setDrivers] = useState([]);
+  const [recommended, setRecommended] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [driversLoading, setDriversLoading] = useState(false);
+  const [showEligibleOnly, setShowEligibleOnly] = useState(false);
 
   const loadDrivers = async () => {
     setDriversLoading(true);
@@ -24,6 +26,16 @@ const TripAssignPage = () => {
       setError(`Failed to load drivers: ${ex?.response?.data?.error || ex?.message || 'Unknown error'}`);
     } finally {
       setDriversLoading(false);
+    }
+  };
+
+  const loadRecommendations = async () => {
+    try {
+      const rec = await tripService.getRecommendedDrivers(tripId, 20);
+      setRecommended(rec || []);
+    } catch (ex) {
+      console.error('Failed to load recommendations', ex?.response?.data || ex);
+      // keep non-blocking; dispatcher can still use old list
     }
   };
 
@@ -45,8 +57,9 @@ const TripAssignPage = () => {
         return;
       }
 
-      // Load drivers
+      // Load drivers + recommendations
       loadDrivers();
+      loadRecommendations();
     };
     load();
   }, [tripId]);
@@ -59,6 +72,10 @@ const TripAssignPage = () => {
 
   const onAssign = async () => {
     if (!selectedDriver) return setError('Select a driver');
+    const rec = (recommended || []).find(r => Number(r.driverId) === Number(selectedDriver));
+    if (rec && rec.eligible === false) {
+      return setError('Selected driver is not eligible (see reasons). Please choose an eligible driver.');
+    }
     setLoading(true);
     setError(null);
     try {
@@ -112,42 +129,117 @@ const TripAssignPage = () => {
           <div><strong>Vehicle:</strong> {trip.vehicleLicensePlate} ({trip.vehicleType})</div>
           <div><strong>Required License:</strong> {trip.vehicleRequiredLicense || 'N/A'}</div>
 
-          <div style={{ marginTop: 12 }}>
-            <label><strong>Available Drivers</strong></label>
-            <button 
-              style={{ marginLeft: '1rem', padding: '0.5rem 1rem' }} 
-              onClick={loadDrivers}
-              disabled={driversLoading}
-            >
-              {driversLoading ? '🔄 Refreshing...' : '🔄 Refresh Drivers'}
-            </button>
-            <div style={{ maxHeight: 300, overflow: 'auto', marginTop: '0.5rem' }}>
-              <table className="table">
+          {/* Display Orders with Pickup Types */}
+          {trip.orders && trip.orders.length > 0 && (
+            <div style={{ marginTop: 12, padding: '1rem', backgroundColor: '#f3f4f6', borderRadius: '0.5rem' }}>
+              <strong>Orders in this Trip:</strong>
+              <table className="table" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
                 <thead>
-                  <tr><th></th><th>Name</th><th>Phone</th><th>License</th><th>Status</th><th>Rest Hrs</th><th>Next Available</th></tr>
+                  <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Pickup Address</th>
+                    <th>Pickup Type</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {drivers.map(d => {
-                    const requiredLicense = trip.vehicleRequiredLicense;
-                    const driverLicense = d.licenseType || d.license_type;
-                    const compatible = isLicenseCompatible(driverLicense, requiredLicense);
-                    return (
-                      <tr key={d.driverId}>
-                        <td><input type="radio" name="driver" value={d.driverId} onChange={e => setSelectedDriver(e.target.value)} /></td>
-                        <td>{d.fullName}</td>
-                        <td>{d.phone}</td>
-                        <td>{driverLicense || 'N/A'}</td>
-                        <td style={{ color: compatible ? 'green' : 'red', fontWeight: 'bold' }}>
-                          {compatible ? '✓ Compatible' : '✗ Incompatible'}
-                        </td>
-                        <td>{d.restRequiredHours ? d.restRequiredHours.toString() : '0'}</td>
-                        <td>{d.nextAvailableTime ? d.nextAvailableTime : 'now'}</td>
-                      </tr>
-                    );
-                  })}
+                  {trip.orders.map((order, idx) => (
+                    <tr key={order.orderId || idx}>
+                      <td>{order.orderId}</td>
+                      <td>{order.customerName}</td>
+                      <td>{order.pickupAddress}</td>
+                      <td>
+                        <span style={{
+                          backgroundColor: order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' : '#dbeafe',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '0.25rem',
+                          fontWeight: '600',
+                          color: order.pickupType === 'PORT_TERMINAL' ? '#92400e' : '#0c4a6e'
+                        }}>
+                          {order.pickupType || 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
+          )}
+
+          <div style={{ marginTop: 12 }}>
+            <label><strong>Recommended Drivers</strong></label>
+            <button 
+              style={{ marginLeft: '1rem', padding: '0.5rem 1rem' }} 
+              onClick={() => { loadDrivers(); loadRecommendations(); }}
+              disabled={driversLoading}
+            >
+              {driversLoading ? '🔄 Refreshing...' : '🔄 Refresh'}
+            </button>
+            <label style={{ marginLeft: '1rem', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={showEligibleOnly}
+                onChange={e => setShowEligibleOnly(e.target.checked)}
+                style={{ marginRight: 6 }}
+              />
+              Show eligible only
+            </label>
+            {recommended && recommended.length > 0 && (
+              <div style={{ maxHeight: 240, overflow: 'auto', marginTop: '0.5rem', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+                <table className="table">
+                  <thead>
+                    <tr><th></th><th>Name</th><th>Score</th><th>Eligible</th><th>Proximity</th><th>Reasons</th></tr>
+                  </thead>
+                  <tbody>
+                    {(showEligibleOnly ? (recommended || []).filter(r => r.eligible) : recommended).map(r => {
+                      const reasons = Array.isArray(r.reasons) ? r.reasons : [];
+                      const gatingPrefixes = [
+                        'Not available',
+                        'Not fit',
+                        'Rest required',
+                        'License mismatch',
+                        'Over capacity',
+                        'Already has active assignment'
+                      ];
+                      const gating = reasons.filter(x => gatingPrefixes.some(p => (x || '').startsWith(p)));
+                      const nonGating = reasons.filter(x => !gating.includes(x));
+                      const ordered = [...gating, ...nonGating];
+                      const firstGating = gating.length > 0 ? gating[0] : null;
+                      return (
+                      <tr key={r.driverId} style={{ opacity: r.eligible ? 1 : 0.6 }}>
+                        <td>
+                          <input
+                            type="radio"
+                            name="driver"
+                            value={r.driverId}
+                            onChange={e => setSelectedDriver(e.target.value)}
+                          />
+                        </td>
+                        <td>{r.fullName || `Driver #${r.driverId}`}</td>
+                        <td>{typeof r.score === 'number' ? r.score.toFixed(1) : r.score}</td>
+                        <td style={{ color: r.eligible ? 'green' : 'red', fontWeight: 'bold' }}>
+                          {r.eligible ? '✓ Eligible' : `✗ Ineligible${firstGating ? ' — ' + firstGating : ''}`}
+                        </td>
+                        <td>
+                          {typeof r.distanceToPickupKm === 'number' ? `${r.distanceToPickupKm.toFixed(1)} km` : 'N/A'}
+                        </td>
+                        <td style={{ maxWidth: 420 }}>
+                          <ul style={{ margin: 0, paddingLeft: 18 }}>
+                            {ordered.slice(0, 4).map((x, idx) => <li key={idx}>{x}</li>)}
+                          </ul>
+                        </td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {recommended && recommended.length > 0 && showEligibleOnly && (recommended.filter(r => r.eligible).length === 0) && (
+              <div style={{ marginTop: 8, color: '#b91c1c' }}>
+                No eligible drivers based on current rules. Try changing vehicle/license or free up a driver.
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop: 12 }}>

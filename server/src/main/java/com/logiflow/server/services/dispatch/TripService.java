@@ -17,4 +17,7 @@ public interface TripService {
 
     TripDto rerouteTrip(Integer tripId, TripRerouteRequest request);
     TripDto cancelTrip(Integer tripId, TripCancelRequest request);
+
+    // Proof of delivery (POD)
+    com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto getDeliveryConfirmation(Integer tripId);
 }

@@ -46,6 +46,10 @@ const TripDetailPage = () => {
   const [distanceEstimate, setDistanceEstimate] = useState(null);
   const [feeEstimate, setFeeEstimate] = useState(null);
 
+  const [deliveryConfirmation, setDeliveryConfirmation] = useState(null);
+  const [podLoading, setPodLoading] = useState(false);
+  const [podError, setPodError] = useState(null);
+
   const [liveLocation, setLiveLocation] = useState(null); // {latitude, longitude, driverId, tripId}
   const [actionError, setActionError] = useState(null);
   const [cancelling, setCancelling] = useState(false);
@@ -114,6 +118,27 @@ const TripDetailPage = () => {
     try {
       const t = await tripService.getTripById(Number(tripId));
       setTrip(t);
+
+      // Load POD for completed trips (dispatcher verification)
+      setDeliveryConfirmation(null);
+      setPodError(null);
+      if ((t?.status || '').toUpperCase() === 'COMPLETED') {
+        try {
+          setPodLoading(true);
+          const pod = await tripService.getDeliveryConfirmation(Number(tripId));
+          // If confirmationId is null/undefined, treat as no confirmation found
+          if (pod?.confirmationId) {
+            setDeliveryConfirmation(pod);
+          } else {
+            setPodError('No delivery confirmation found');
+          }
+        } catch (e) {
+          // If there is no POD record, keep page working and show a message
+          setPodError(e?.response?.data?.error || 'No delivery confirmation found');
+        } finally {
+          setPodLoading(false);
+        }
+      }
       if (t?.currentLat != null && t?.currentLng != null) {
         setLiveLocation({ latitude: t.currentLat, longitude: t.currentLng, driverId: t.driverId, tripId: String(t.tripId) });
       }
@@ -156,6 +181,78 @@ const TripDetailPage = () => {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  const renderPOD = () => {
+    if ((trip?.status || '').toUpperCase() !== 'COMPLETED') return null;
+
+    return (
+      <div className="detail-card full-width" style={{ marginTop: '1rem' }}>
+        <div className="card-header">
+          <h2 className="card-title">Proof of Delivery (POD)</h2>
+        </div>
+        <div className="card-body">
+          {podLoading && <div className="page-subtitle">Loading delivery confirmation…</div>}
+
+          {!podLoading && podError && (
+            <div className="page-subtitle" style={{ color: '#b91c1c' }}>
+              {podError}
+            </div>
+          )}
+
+          {!podLoading && !podError && deliveryConfirmation && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+              <div>
+                <div className="detail-label">Type</div>
+                <div className="detail-value">{deliveryConfirmation.confirmationType}</div>
+
+                <div className="detail-label" style={{ marginTop: '0.75rem' }}>Recipient</div>
+                <div className="detail-value">{deliveryConfirmation.recipientName || 'N/A'}</div>
+
+                <div className="detail-label" style={{ marginTop: '0.75rem' }}>Confirmed at</div>
+                <div className="detail-value">{formatDateTime(deliveryConfirmation.confirmedAt)}</div>
+
+                <div className="detail-label" style={{ marginTop: '0.75rem' }}>Notes</div>
+                <div className="detail-value">{deliveryConfirmation.notes || '—'}</div>
+              </div>
+
+              <div>
+                {deliveryConfirmation.confirmationType === 'SIGNATURE' && deliveryConfirmation.signatureData && (
+                  <>
+                    <div className="detail-label">Signature</div>
+                    <img
+                      src={`data:image/png;base64,${deliveryConfirmation.signatureData}`}
+                      alt="Signature"
+                      style={{ width: '100%', maxWidth: 420, borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff' }}
+                    />
+                  </>
+                )}
+
+                {deliveryConfirmation.confirmationType === 'PHOTO' && deliveryConfirmation.photoData && (
+                  <>
+                    <div className="detail-label">Delivery photo</div>
+                    <img
+                      src={`data:image/jpeg;base64,${deliveryConfirmation.photoData}`}
+                      alt="Delivery photo"
+                      style={{ width: '100%', maxWidth: 420, borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff' }}
+                    />
+                  </>
+                )}
+
+                {deliveryConfirmation.confirmationType === 'OTP' && (
+                  <>
+                    <div className="detail-label">OTP Code</div>
+                    <div className="detail-value" style={{ fontFamily: 'monospace', fontSize: '1.1rem' }}>
+                      {deliveryConfirmation.otpCode || 'N/A'}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const timeline = useMemo(() => {
@@ -491,6 +588,8 @@ const TripDetailPage = () => {
             )}
           </div>
         </div>
+
+        {renderPOD()}
 
         {trip.orders && trip.orders.length > 0 && (
           <div className="detail-card full-width">

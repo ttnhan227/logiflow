@@ -67,10 +67,15 @@ const DispatchOrderDetailPage = () => {
     setEditMode(true);
     setFormData({
       customerName: order.customerName || '',
+      customerPhone: order.customerPhone || '',
       pickupAddress: order.pickupAddress || '',
       deliveryAddress: order.deliveryAddress || '',
       packageDetails: order.packageDetails || '',
-      priorityLevel: order.priorityLevel || 'NORMAL'
+      priorityLevel: order.priorityLevel || 'NORMAL',
+      pickupType: order.pickupType || 'PORT_TERMINAL',
+      containerNumber: order.containerNumber || '',
+      dockInfo: order.dockInfo || '',
+      weightTons: order.weightTons ?? '',
     });
   };
 
@@ -260,7 +265,7 @@ const DispatchOrderDetailPage = () => {
                 </div>
               </div>
 
-              <div className="detail-row">
+        <div className="detail-row">
                 <div className="detail-item">
                   <div className="detail-icon">📦</div>
                   <div>
@@ -279,6 +284,95 @@ const DispatchOrderDetailPage = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="detail-row">
+                <div className="detail-item">
+                  <div className="detail-icon">⚖️</div>
+                  <div>
+                    <div className="detail-label">Weight</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          type="number"
+                          value={formData.weightTons}
+                          onChange={(e) => handleInputChange('weightTons', e.target.value)}
+                          className="edit-input"
+                          placeholder="Weight (tons)"
+                        />
+                      ) : (
+                        order.weightTons != null ? `${order.weightTons} t` : (order.weightKg != null ? `${order.weightKg} kg` : 'N/A')
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-icon">🚚</div>
+                  <div>
+                    <div className="detail-label">Pickup Type</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <select
+                          value={formData.pickupType}
+                          onChange={(e) => handleInputChange('pickupType', e.target.value)}
+                          className="edit-select"
+                        >
+                          <option value="PORT_TERMINAL">PORT_TERMINAL</option>
+                          <option value="WAREHOUSE">WAREHOUSE</option>
+                        </select>
+                      ) : (
+                        order.pickupType || 'N/A'
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-row">
+                {((editMode && formData.pickupType === 'PORT_TERMINAL') || (!editMode && order.pickupType === 'PORT_TERMINAL')) && (
+                  <div className="detail-item">
+                    <div className="detail-icon">🧾</div>
+                    <div>
+                      <div className="detail-label">Container Number</div>
+                      <div className="detail-value">
+                        {editMode ? (
+                          <input
+                            type="text"
+                            value={formData.containerNumber}
+                            onChange={(e) => handleInputChange('containerNumber', e.target.value)}
+                            className="edit-input"
+                            placeholder="e.g., CONT-001"
+                          />
+                        ) : (
+                          order.containerNumber || 'N/A'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {((editMode && formData.pickupType === 'WAREHOUSE') || (!editMode && order.pickupType === 'WAREHOUSE')) && (
+                  <div className="detail-item">
+                    <div className="detail-icon">🏭</div>
+                    <div>
+                      <div className="detail-label">Dock Info</div>
+                      <div className="detail-value">
+                        {editMode ? (
+                          <input
+                            type="text"
+                            value={formData.dockInfo}
+                            onChange={(e) => handleInputChange('dockInfo', e.target.value)}
+                            className="edit-input"
+                            placeholder="e.g., Dock 3 / Gate B"
+                          />
+                        ) : (
+                          order.dockInfo || 'N/A'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {editMode && (

@@ -44,6 +44,7 @@ public class SecurityConfiguration {
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/api/registration/**").permitAll()
+                                .requestMatchers("/api/maps/**").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()
                                 .requestMatchers("/ws/notifications-native", "/ws/notifications-native/**").permitAll()
