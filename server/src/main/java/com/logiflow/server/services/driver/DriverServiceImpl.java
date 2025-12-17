@@ -13,6 +13,7 @@ import com.logiflow.server.websocket.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import com.logiflow.server.services.maps.MapsService;
+import com.logiflow.server.services.admin.SystemSettingsService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,6 +34,7 @@ public class DriverServiceImpl implements DriverService {
     private final TripAssignmentRepository tripAssignmentRepository;
     private final NotificationService notificationService;
     private final DeliveryConfirmationRepository deliveryConfirmationRepository;
+    private final SystemSettingsService systemSettingsService;
 
     public DriverServiceImpl(UserRepository userRepository,
                          DriverRepository driverRepository,
@@ -41,7 +43,8 @@ public class DriverServiceImpl implements DriverService {
                          MapsService mapsService,
                          TripAssignmentRepository tripAssignmentRepository,
                          NotificationService notificationService,
-                         DeliveryConfirmationRepository deliveryConfirmationRepository) {
+                         DeliveryConfirmationRepository deliveryConfirmationRepository,
+                         SystemSettingsService systemSettingsService) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.tripRepository = tripRepository;
@@ -50,6 +53,7 @@ public class DriverServiceImpl implements DriverService {
         this.tripAssignmentRepository = tripAssignmentRepository;
         this.notificationService = notificationService;
         this.deliveryConfirmationRepository = deliveryConfirmationRepository;
+        this.systemSettingsService = systemSettingsService;
     }
 
     private String resolveDriverUsername(Integer driverId) {
@@ -279,19 +283,32 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     public ComplianceDto getMyCompliance(Integer driverId) {
-        // đơn giản: tổng cộng giờ đã làm + yêu cầu nghỉ tối thiểu 8h nếu lái > 8h
+        // Get work hours from driver work logs
         BigDecimal hours = driverWorkLogRepository.sumHoursWorkedByDriverId(driverId);
-        // logic đơn giản: nếu hours >= 8 thì bắt buộc nghỉ 8h, nếu <8 thì restRequired = 0
-        BigDecimal restRequired = hours != null && hours.compareTo(new BigDecimal("8.00")) >= 0
-                ? new BigDecimal("8.00")
+
+        // Get compliance settings from system configuration
+        BigDecimal maxDailyHours = getSystemSettingAsBigDecimal("compliance", "max_daily_hours", new BigDecimal("8.00"));
+        BigDecimal mandatoryRestHours = getSystemSettingAsBigDecimal("work-rest", "mandatory_rest_hours", new BigDecimal("8.00"));
+
+        // Calculate required rest based on system settings
+        BigDecimal restRequired = hours != null && hours.compareTo(maxDailyHours) >= 0
+                ? mandatoryRestHours
                 : BigDecimal.ZERO;
 
-        // lấy nextAvailableTime gần nhất từ DriverWorkLog (nếu có)
+        // Get next available time from DriverWorkLog (simplified - return null for now)
         LocalDateTime nextAvailable = null;
-        // cách đơn giản: không có repo riêng, ta có thể để null (hoặc sau này bổ sung query)
-        // Trong bản tối giản: trả null, vẫn compile & chạy.
 
         return new ComplianceDto(hours == null ? BigDecimal.ZERO : hours, restRequired, nextAvailable);
+    }
+
+    private BigDecimal getSystemSettingAsBigDecimal(String category, String key, BigDecimal defaultValue) {
+        try {
+            // TODO: Implement proper system settings lookup once SystemSettingsService has getSettingValue method
+            // For now, return defaults but structure is ready for system settings integration
+            return defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
 
     // ======= mapping =======

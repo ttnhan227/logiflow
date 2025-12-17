@@ -59,6 +59,9 @@ public class TripOversightServiceImpl implements TripOversightService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Override
     public TripOversightDto getTripOversight(Integer tripId) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
@@ -131,6 +134,7 @@ public class TripOversightServiceImpl implements TripOversightService {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
 
+        String oldStatus = trip.getStatus();
         if (status == null || status.isBlank()) {
             throw new RuntimeException("Status is required");
         }
@@ -139,6 +143,15 @@ public class TripOversightServiceImpl implements TripOversightService {
         // For now, accept any string but could add validation
         trip.setStatus(status);
         Trip savedTrip = tripRepository.save(trip);
+
+        // Audit the admin trip status update
+        auditLogService.log(
+            "ADMIN_UPDATE_TRIP_STATUS",
+            "admin", // TODO: replace with actual username from context
+            "ADMIN", // TODO: replace with actual role from context
+            String.format("Trip #%d status changed from '%s' to '%s'",
+                tripId, oldStatus != null ? oldStatus : "null", status)
+        );
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
@@ -212,6 +225,15 @@ public class TripOversightServiceImpl implements TripOversightService {
             trip.setDelayAdminComment(adminComment);
         }
         Trip savedTrip = tripRepository.save(trip);
+
+        // Audit the critical SLA extension decision
+        String auditAction = "MANUAL_SLA_EXTENSION";
+        String auditDetails = String.format("Trip #%d: %s | Driver: %s | Reason: %s",
+            tripId, adminComment,
+            driverUsername != null ? driverUsername : "Unknown",
+            trip.getDelayReason() != null ? trip.getDelayReason() : "No reason provided");
+
+        auditLogService.log(auditAction, "admin", "ADMIN", auditDetails);
 
         // Send delay response only to driver (not admin broadcast)
         if (driverUsername != null && !driverUsername.isEmpty()) {

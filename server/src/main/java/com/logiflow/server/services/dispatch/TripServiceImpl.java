@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import com.logiflow.server.dtos.dispatch.TripCancelRequest;
 import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
 import com.logiflow.server.services.dispatch.TripAssignmentMatchingService;
+import com.logiflow.server.services.admin.AuditLogService;
 
 @Service
 public class TripServiceImpl implements TripService {
@@ -60,6 +61,9 @@ public class TripServiceImpl implements TripService {
 
     @Autowired
     private TripAssignmentMatchingService tripAssignmentMatchingService;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -217,6 +221,17 @@ public class TripServiceImpl implements TripService {
             trip.setStatus("in_progress");
         }
         Trip saved = tripRepository.save(trip);
+
+        // Audit the critical trip assignment operation
+        String driverUsername = driver.getUser() != null ? driver.getUser().getUsername() : "Unknown";
+        String vehiclePlate = vehicle != null ? vehicle.getLicensePlate() : "Unknown";
+        auditLogService.log(
+            "TRIP_ASSIGNED",
+            "dispatcher", // TODO: replace with actual username from context
+            "DISPATCHER", // TODO: replace with actual role from context
+            String.format("Trip #%d assigned to driver %s (%s) with vehicle %s",
+                tripId, driverUsername, driver.getDriverId(), vehiclePlate)
+        );
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(saved.getTripId())
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
@@ -384,6 +399,17 @@ public class TripServiceImpl implements TripService {
                 "{\"reason\":\"" + escapeJson(request.getReason()) + "\"}");
 
         Trip savedTrip = tripRepository.save(trip);
+
+        // Audit the critical trip cancellation operation
+        auditLogService.log(
+            "TRIP_CANCELLED",
+            "dispatcher", // TODO: replace with actual username from context
+            "DISPATCHER", // TODO: replace with actual role from context
+            String.format("Trip #%d cancelled | Reason: %s | Orders affected: %d",
+                tripId,
+                request.getReason() != null ? request.getReason() : "No reason provided",
+                trip.getOrders() != null ? trip.getOrders().size() : 0)
+        );
         tripRepository.flush();
         tripProgressEventRepository.flush();
 
