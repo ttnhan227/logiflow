@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderCreateRequest {
-    
+
     @NotBlank(message = "Customer name is required")
     private String customerName;
     
@@ -30,12 +30,23 @@ public class OrderCreateRequest {
     private Order.PriorityLevel priorityLevel;
     
     private BigDecimal distanceKm;
-    
+
+    // Backward compatibility
     private BigDecimal weightKg;
-    
+
+    // Bulk cargo
+    private BigDecimal weightTons;
+
+    @NotNull(message = "Pickup type is required")
+    private Order.PickupType pickupType;
+
+    // Conditional: required if pickupType == PORT_TERMINAL
+    private String containerNumber;
+
+    // Conditional: required if pickupType == WAREHOUSE
+    private String dockInfo;
+
     private BigDecimal packageValue;
-    
+
     private Integer tripId;
 }
-
-

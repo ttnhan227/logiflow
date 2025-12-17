@@ -166,7 +166,7 @@ const OrderImportPage = () => {
 };
 
 function getMissingRequiredHeaders(headers) {
-  const required = ['Customer Name', 'Pickup Address', 'Delivery Address'];
+  const required = ['Customer Name', 'Pickup Address', 'Delivery Address', 'Weight (tons)', 'Pickup Type'];
   const lower = headers.map(h => String(h).toLowerCase());
   return required.filter(r => !lower.includes(r.toLowerCase()));
 }

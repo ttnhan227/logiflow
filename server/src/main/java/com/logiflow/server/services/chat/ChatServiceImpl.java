@@ -85,18 +85,18 @@ public class ChatServiceImpl implements ChatService {
         // Only broadcast notification to dispatchers if message is from driver
         // Avoid notifying dispatchers when they send messages to each other
         // Handle both "DRIVER" and "ROLE_DRIVER" formats
-        if (senderRole != null && 
-            (senderRole.equalsIgnoreCase("DRIVER") || senderRole.equalsIgnoreCase("ROLE_DRIVER"))) {
+        if (senderRole != null &&
+                (senderRole.equalsIgnoreCase("DRIVER") || senderRole.equalsIgnoreCase("ROLE_DRIVER"))) {
             try {
-                notificationService.sendAdminNotification(
-                        com.logiflow.server.dtos.notification.AdminNotificationDto.of(
-                                "TRIP_CHAT",
-                                "INFO",
-                                "New chat message",
-                                "Trip #" + tripId + ": " + content,
-                                "/dispatch/trips/" + tripId,
-                                "Open Trip"
-                        )
+                // Send to dispatchers via websocket and persist in DB
+                notificationService.broadcastToDispatchers(
+                        "TRIP_CHAT",
+                        "INFO",
+                        "New chat message",
+                        "Trip #" + tripId + ": " + content,
+                        "/dispatch/trips/" + tripId,
+                        "Open Trip",
+                        tripId
                 );
             } catch (Exception ignored) {
             }

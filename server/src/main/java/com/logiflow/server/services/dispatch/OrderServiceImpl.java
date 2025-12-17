@@ -42,6 +42,51 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
+    private static final BigDecimal KG_PER_TON = new BigDecimal("1000");
+
+    private void applyPickupInfo(Order order, Order.PickupType pickupType, String containerNumber, String dockInfo) {
+        order.setPickupType(pickupType);
+        order.setContainerNumber(containerNumber);
+        order.setDockInfo(dockInfo);
+
+        if (pickupType == null) {
+            throw new RuntimeException("pickupType is required");
+        }
+
+        if (pickupType == Order.PickupType.PORT_TERMINAL) {
+            if (containerNumber == null || containerNumber.trim().isEmpty()) {
+                throw new RuntimeException("containerNumber is required for PORT_TERMINAL pickup");
+            }
+            order.setDockInfo(null);
+        } else if (pickupType == Order.PickupType.WAREHOUSE) {
+            if (dockInfo == null || dockInfo.trim().isEmpty()) {
+                throw new RuntimeException("dockInfo is required for WAREHOUSE pickup");
+            }
+            order.setContainerNumber(null);
+        }
+    }
+
+    private void applyWeights(Order order, BigDecimal weightKg, BigDecimal weightTons) {
+        order.setWeightTons(weightTons);
+
+        // If weightTons provided, derive kg for existing fee logic.
+        if (weightTons != null) {
+            order.setWeightKg(weightTons.multiply(KG_PER_TON));
+            return;
+        }
+
+        // Otherwise keep existing behavior.
+        order.setWeightKg(weightKg);
+
+        // If only kg provided, also derive tons for UI.
+        if (weightKg != null) {
+            try {
+                order.setWeightTons(weightKg.divide(KG_PER_TON, 3, RoundingMode.HALF_UP));
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     @Autowired
     private OrderRepository orderRepository;
 
@@ -142,9 +187,10 @@ public class OrderServiceImpl implements OrderService {
         order.setCreatedBy(createdBy);
         order.setCreatedAt(LocalDateTime.now());
 
-        // Set distance, weight, and package value
+        // Set distance, weight, pickup info, and package value
         order.setDistanceKm(request.getDistanceKm());
-        order.setWeightKg(request.getWeightKg());
+        applyWeights(order, request.getWeightKg(), request.getWeightTons());
+        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
         order.setPackageValue(request.getPackageValue());
 
         // Calculate distance automatically if not provided and MapsService is available
@@ -278,7 +324,8 @@ public class OrderServiceImpl implements OrderService {
                 order.setCreatedAt(LocalDateTime.now());
 
                 order.setDistanceKm(request.getDistanceKm());
-                order.setWeightKg(request.getWeightKg());
+                applyWeights(order, request.getWeightKg(), request.getWeightTons());
+                applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
                 order.setPackageValue(request.getPackageValue());
 
 
@@ -356,7 +403,10 @@ public class OrderServiceImpl implements OrderService {
                     "Package Details",
                     "Priority Level",
                     "Distance (km)",
-                    "Weight (kg)",
+                    "Weight (tons)",
+                    "Pickup Type",
+                    "Container Number",
+                    "Dock Info",
                     "Package Value (VND)",
                     "Trip ID"
             });
@@ -364,12 +414,15 @@ public class OrderServiceImpl implements OrderService {
             csvWriter.writeNext(new String[]{
                     "Nguyen Van A",
                     "+84-912-345-678",
-                    "123 Le Loi, District 1, Ho Chi Minh City",
+                    "Cat Lai Port, Ho Chi Minh City",
                     "456 Nguyen Hue, District 1, Ho Chi Minh City",
-                    "5kg documents",
+                    "Bulk cargo",
                     "NORMAL",
                     "10.5",
-                    "5.0",
+                    "12.5",
+                    "PORT_TERMINAL",
+                    "CONT-001",
+                    "",
                     "500000",
                     ""
             });
@@ -398,7 +451,10 @@ public class OrderServiceImpl implements OrderService {
                     "Package Details",
                     "Priority Level",
                     "Distance (km)",
-                    "Weight (kg)",
+                    "Weight (tons)",
+                    "Pickup Type",
+                    "Container Number",
+                    "Dock Info",
                     "Package Value (VND)",
                     "Trip ID"
             };
@@ -412,14 +468,17 @@ public class OrderServiceImpl implements OrderService {
             Row exampleRow = sheet.createRow(1);
             exampleRow.createCell(0).setCellValue("Nguyen Van A");
             exampleRow.createCell(1).setCellValue("+84-912-345-678");
-            exampleRow.createCell(2).setCellValue("123 Le Loi, District 1, Ho Chi Minh City");
+            exampleRow.createCell(2).setCellValue("Cat Lai Port, Ho Chi Minh City");
             exampleRow.createCell(3).setCellValue("456 Nguyen Hue, District 1, Ho Chi Minh City");
-            exampleRow.createCell(4).setCellValue("5kg documents");
+            exampleRow.createCell(4).setCellValue("Bulk cargo");
             exampleRow.createCell(5).setCellValue("NORMAL");
             exampleRow.createCell(6).setCellValue(10.5); // Distance in km
-            exampleRow.createCell(7).setCellValue(5.0); // Weight in kg
-            exampleRow.createCell(8).setCellValue(500000); // Package value in VND
-            exampleRow.createCell(9).setCellValue("");
+            exampleRow.createCell(7).setCellValue(12.5); // Weight in tons
+            exampleRow.createCell(8).setCellValue("PORT_TERMINAL");
+            exampleRow.createCell(9).setCellValue("CONT-001");
+            exampleRow.createCell(10).setCellValue("");
+            exampleRow.createCell(11).setCellValue(500000); // Package value in VND
+            exampleRow.createCell(12).setCellValue("");
 
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
@@ -455,7 +514,8 @@ public class OrderServiceImpl implements OrderService {
         order.setPriorityLevel(request.getPriorityLevel());
 
         order.setDistanceKm(request.getDistanceKm());
-        order.setWeightKg(request.getWeightKg());
+        applyWeights(order, request.getWeightKg(), request.getWeightTons());
+        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
         order.setPackageValue(request.getPackageValue());
 
         if (order.getDistanceKm() == null && mapsService != null) {

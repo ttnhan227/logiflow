@@ -81,9 +81,10 @@ public class MapsController {
 
     /**
      * Get route directions between two points
-     * GET /api/maps/directions?originLat=...&originLng=...&destLat=...&destLng=...&includeGeometry=false
-     * 
+     * GET /api/maps/directions?originLat=...&originLng=...&destLat=...&destLng=...&includeGeometry=false&profile=truck
+     *
      * @param includeGeometry Optional. Set to false to exclude geometry (reduces response size). Default: true
+     * @param profile Optional routing profile (driving|truck). Default: driving
      */
     @GetMapping("/directions")
     public ResponseEntity<DirectionsResultDto> getDirections(
@@ -91,9 +92,10 @@ public class MapsController {
             @RequestParam String originLng,
             @RequestParam String destLat,
             @RequestParam String destLng,
-            @RequestParam(required = false, defaultValue = "true") boolean includeGeometry) {
+            @RequestParam(required = false, defaultValue = "true") boolean includeGeometry,
+            @RequestParam(required = false, defaultValue = "driving") String profile) {
         try {
-            DirectionsResultDto result = mapsService.getDirections(originLat, originLng, destLat, destLng, includeGeometry);
+            DirectionsResultDto result = mapsService.getDirections(originLat, originLng, destLat, destLng, includeGeometry, profile);
             if (result == null) {
                 return ResponseEntity.badRequest().build();
             }

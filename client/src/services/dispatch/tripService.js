@@ -10,6 +10,8 @@ const createTrip = (payload) => api.post(`${basePath}/trips`, payload).then(r =>
 
 const assignTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/assign`, payload).then(r => r.data);
 
+const getRecommendedDrivers = (tripId, limit = 10) => api.get(`${basePath}/trips/${tripId}/recommended-drivers`, { params: { limit } }).then(r => r.data);
+
 const updateTripStatus = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/status`, payload).then(r => r.data);
 
 const rerouteTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/reroute`, payload).then(r => r.data);
@@ -27,6 +29,7 @@ const tripService = {
   rerouteTrip,
   cancelTrip,
   getAvailableDrivers,
+  getRecommendedDrivers,
 };
 
 export default tripService;

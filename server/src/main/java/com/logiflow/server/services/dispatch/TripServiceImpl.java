@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import com.logiflow.server.dtos.dispatch.TripCancelRequest;
 import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
+import com.logiflow.server.services.dispatch.TripAssignmentMatchingService;
 
 @Service
 public class TripServiceImpl implements TripService {
@@ -52,6 +53,9 @@ public class TripServiceImpl implements TripService {
 
     @Autowired
     private TripProgressEventRepository tripProgressEventRepository;
+
+    @Autowired
+    private TripAssignmentMatchingService tripAssignmentMatchingService;
 
     @Override
     @Transactional
@@ -184,22 +188,8 @@ public class TripServiceImpl implements TripService {
         Driver driver = driverRepository.findById(request.getDriverId())
                 .orElseThrow(() -> new RuntimeException("Driver not found with id: " + request.getDriverId()));
 
-        if (driver.getStatus() != null && !driver.getStatus().equalsIgnoreCase("available")) {
-            throw new RuntimeException("Driver is not available (status: " + driver.getStatus() + ")");
-        }
-
-        // Check if driver already has an active trip assignment
-        Long activeAssignmentsCount = tripAssignmentRepository.countActiveAssignmentsByDriverId(request.getDriverId());
-        if (activeAssignmentsCount != null && activeAssignmentsCount > 0) {
-            throw new RuntimeException("Driver already has an active trip assignment. Drivers can only have one active trip at a time.");
-        }
-        if (vehicle == null) {
-            throw new RuntimeException("Vehicle is required for trip assignment");
-        }
-        if (vehicle.getRequiredLicense() != null && driver.getLicenseType() != null
-                && !vehicle.getRequiredLicense().equalsIgnoreCase(driver.getLicenseType())) {
-            throw new RuntimeException("Driver license (" + driver.getLicenseType() + ") does not match vehicle requirement (" + vehicle.getRequiredLicense() + ")");
-        }
+        // Centralized intelligent validation (availability, active assignment, rest/compliance, license, capacity)
+        tripAssignmentMatchingService.validateAssignment(tripId, request.getDriverId(), vehicle != null ? vehicle.getVehicleId() : null);
 
         TripAssignment assignment = new TripAssignment();
         assignment.setTrip(trip);
