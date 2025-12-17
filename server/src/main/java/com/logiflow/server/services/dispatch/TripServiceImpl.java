@@ -12,6 +12,7 @@ import com.logiflow.server.repositories.route.RouteRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.trip.TripProgressEventRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
+import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 
 import com.logiflow.server.dtos.dispatch.TripCancelRequest;
 import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
+import com.logiflow.server.services.dispatch.TripAssignmentMatchingService;
 
 @Service
 public class TripServiceImpl implements TripService {
@@ -51,7 +53,13 @@ public class TripServiceImpl implements TripService {
     private TripAssignmentRepository tripAssignmentRepository;
 
     @Autowired
+    private DeliveryConfirmationRepository deliveryConfirmationRepository;
+
+    @Autowired
     private TripProgressEventRepository tripProgressEventRepository;
+
+    @Autowired
+    private TripAssignmentMatchingService tripAssignmentMatchingService;
 
     @Override
     @Transactional
@@ -184,22 +192,8 @@ public class TripServiceImpl implements TripService {
         Driver driver = driverRepository.findById(request.getDriverId())
                 .orElseThrow(() -> new RuntimeException("Driver not found with id: " + request.getDriverId()));
 
-        if (driver.getStatus() != null && !driver.getStatus().equalsIgnoreCase("available")) {
-            throw new RuntimeException("Driver is not available (status: " + driver.getStatus() + ")");
-        }
-
-        // Check if driver already has an active trip assignment
-        Long activeAssignmentsCount = tripAssignmentRepository.countActiveAssignmentsByDriverId(request.getDriverId());
-        if (activeAssignmentsCount != null && activeAssignmentsCount > 0) {
-            throw new RuntimeException("Driver already has an active trip assignment. Drivers can only have one active trip at a time.");
-        }
-        if (vehicle == null) {
-            throw new RuntimeException("Vehicle is required for trip assignment");
-        }
-        if (vehicle.getRequiredLicense() != null && driver.getLicenseType() != null
-                && !vehicle.getRequiredLicense().equalsIgnoreCase(driver.getLicenseType())) {
-            throw new RuntimeException("Driver license (" + driver.getLicenseType() + ") does not match vehicle requirement (" + vehicle.getRequiredLicense() + ")");
-        }
+        // Centralized intelligent validation (availability, active assignment, rest/compliance, license, capacity)
+        tripAssignmentMatchingService.validateAssignment(tripId, request.getDriverId(), vehicle != null ? vehicle.getVehicleId() : null);
 
         TripAssignment assignment = new TripAssignment();
         assignment.setTrip(trip);
@@ -426,6 +420,38 @@ public class TripServiceImpl implements TripService {
                lower.equals("completed") || 
                lower.equals("cancelled") ||
                lower.equals("scheduled");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto getDeliveryConfirmation(Integer tripId) {
+        // Ensure trip exists (consistent error handling)
+        tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+
+        // If no confirmation exists, return an empty/null DTO instead of throwing an error
+        var confirmationOpt = deliveryConfirmationRepository.findByTripTripId(tripId);
+        
+        if (confirmationOpt.isEmpty()) {
+            // Return an empty DTO with only tripId set (safe null object pattern)
+            var dto = new com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto();
+            dto.setTripId(tripId);
+            return dto;
+        }
+
+        var confirmation = confirmationOpt.get();
+        var dto = new com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto();
+        dto.setConfirmationId(confirmation.getConfirmationId());
+        dto.setTripId(tripId);
+        dto.setConfirmationType(confirmation.getConfirmationType());
+        dto.setSignatureData(confirmation.getSignatureData());
+        dto.setPhotoData(confirmation.getPhotoData());
+        dto.setOtpCode(confirmation.getOtpCode());
+        dto.setRecipientName(confirmation.getRecipientName());
+        dto.setNotes(confirmation.getNotes());
+        dto.setConfirmedAt(confirmation.getConfirmedAt());
+        dto.setConfirmedBy(confirmation.getConfirmedBy());
+        return dto;
     }
 
     private String normalizeStatus(String status) {

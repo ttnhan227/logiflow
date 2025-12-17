@@ -9,6 +9,7 @@ const OrdersPage = () => {
   const [ordersResp, setOrdersResp] = useState(null);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [pickupTypeFilter, setPickupTypeFilter] = useState(''); // '', 'PORT_TERMINAL', 'WAREHOUSE'
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -32,7 +33,7 @@ const OrdersPage = () => {
   useEffect(() => {
     // reset page when filter changes
     setPage(0);
-  }, [statusFilter]);
+  }, [statusFilter, pickupTypeFilter]);
 
   useEffect(() => {
     fetch();
@@ -66,6 +67,7 @@ const OrdersPage = () => {
       o.customerPhone?.includes(searchTerm) ||
       o.orderId?.toString().includes(searchTerm)
     )
+    .filter(o => !pickupTypeFilter || o.pickupType === pickupTypeFilter)
     // Hard-coded rule: urgent hauls on top, then newest first
     .sort((a, b) => {
       const aUrgent = a.priorityLevel === 'URGENT' ? 1 : 0;
@@ -111,6 +113,15 @@ const OrdersPage = () => {
           <option value="DELIVERED">Delivered</option>
           <option value="CANCELLED">Cancelled</option>
         </select>
+        <select 
+          className="filter-select" 
+          value={pickupTypeFilter}
+          onChange={(e) => setPickupTypeFilter(e.target.value)}
+        >
+          <option value="">All Types</option>
+          <option value="PORT_TERMINAL">PORT_TERMINAL</option>
+          <option value="WAREHOUSE">WAREHOUSE</option>
+        </select>
         <button className="btn-refresh" onClick={fetch}>↻ Refresh</button>
         <div className="results-count">
           {typeof ordersResp?.totalItems === 'number'
@@ -130,8 +141,7 @@ const OrdersPage = () => {
         <div className="empty-state">
           <div className="empty-icon">📦</div>
           <h3>No orders found</h3>
-          <p>Create your first order or adjust your filters</p>
-          <Link to="/dispatch/orders/create" className="btn-primary">Create Order</Link>
+          <p>Import orders or adjust your filters</p>
         </div>
       )}
 
@@ -146,6 +156,7 @@ const OrdersPage = () => {
                   <th>Phone</th>
                   <th>Pickup</th>
                   <th>Delivery</th>
+                  <th>Pickup Type</th>
                   <th>Status</th>
                   <th>Priority</th>
                   <th>Fee</th>
@@ -160,6 +171,25 @@ const OrdersPage = () => {
                     <td className="cell-text">{order.customerPhone}</td>
                     <td className="cell-text cell-address">{order.pickupAddress}</td>
                     <td className="cell-text cell-address">{order.deliveryAddress}</td>
+                    <td className="cell-text">
+                      {order.pickupType ? (
+                        <span 
+                          className="status-badge"
+                          style={{ 
+                            backgroundColor: order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' : '#dbeafe',
+                            color: order.pickupType === 'PORT_TERMINAL' ? '#92400e' : '#0c4a6e'
+                          }}
+                        >
+                          {order.pickupType}
+                        </span>
+                      ) : '—'}
+                      {order.pickupType === 'PORT_TERMINAL' && order.containerNumber && (
+                        <span style={{ marginLeft: 6, fontSize: 12, color: '#334155' }}>🧾 {order.containerNumber}</span>
+                      )}
+                      {order.pickupType === 'WAREHOUSE' && order.dockInfo && (
+                        <span style={{ marginLeft: 6, fontSize: 12, color: '#334155' }}>🏭 {order.dockInfo}</span>
+                      )}
+                    </td>
                     <td className="cell-status">
                       <span 
                         className="status-badge" 

@@ -33,6 +33,21 @@ public class MapsServiceImpl implements MapsService {
     private static final String OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving";
     private static final String OSRM_TRIP_URL = "http://router.project-osrm.org/trip/v1/driving";
 
+    private String buildOsrmRouteBaseUrl(String profile) {
+        // Public demo server supports driving/bike/walk.
+        // For "truck" we do best-effort by falling back to driving.
+        if (profile == null || profile.trim().isEmpty()) return OSRM_BASE_URL;
+        String p = profile.trim().toLowerCase();
+        if ("truck".equals(p)) {
+            return "http://router.project-osrm.org/route/v1/driving";
+        }
+        if ("driving".equals(p)) {
+            return "http://router.project-osrm.org/route/v1/driving";
+        }
+        // Unknown profiles fallback
+        return "http://router.project-osrm.org/route/v1/driving";
+    }
+
     public MapsServiceImpl() {
         this.restTemplate = new RestTemplate();
         // Set proper headers as required by Nominatim usage policy
@@ -153,8 +168,14 @@ public class MapsServiceImpl implements MapsService {
      * @return DirectionsResultDto or null if routing fails
      */
     @Override
-    public DirectionsResultDto getDirections(String originLat, String originLng, 
+    public DirectionsResultDto getDirections(String originLat, String originLng,
                                          String destLat, String destLng, boolean includeGeometry) {
+        return getDirections(originLat, originLng, destLat, destLng, includeGeometry, "driving");
+    }
+
+    @Override
+    public DirectionsResultDto getDirections(String originLat, String originLng,
+                                            String destLat, String destLng, boolean includeGeometry, String profile) {
         if (originLat == null || originLng == null || destLat == null || destLng == null) {
             return null;
         }
@@ -163,11 +184,12 @@ public class MapsServiceImpl implements MapsService {
             // OSRM API format: /route/v1/{profile}/{coordinates}?overview={level}&geometries=geojson
             // Use simplified overview when geometry not needed to reduce response size
             String overview = includeGeometry ? "full" : "simplified";
-            String coordinates = String.format("%s,%s;%s,%s", 
+            String coordinates = String.format("%s,%s;%s,%s",
                 originLng, originLat, destLng, destLat);
+            String baseUrl = buildOsrmRouteBaseUrl(profile);
             String url = String.format(
                 "%s/%s?overview=%s&geometries=geojson",
-                OSRM_BASE_URL, coordinates, overview
+                baseUrl, coordinates, overview
             );
 
             @SuppressWarnings("unchecked")

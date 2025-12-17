@@ -69,29 +69,48 @@ public class OrderFileParser {
                         request.setDistanceKm(null);
                     }
                 }
-                
-                // Weight (kg) - column 7
+
+                // Weight (tons) - column 7
                 if (row.length > 7 && row[7] != null && !row[7].trim().isEmpty()) {
                     try {
-                        request.setWeightKg(new java.math.BigDecimal(row[7].trim()));
+                        request.setWeightTons(new java.math.BigDecimal(row[7].trim()));
                     } catch (NumberFormatException e) {
-                        request.setWeightKg(null);
+                        request.setWeightTons(null);
                     }
                 }
-                
-                // Package Value - column 8
+
+                // Pickup Type - column 8
                 if (row.length > 8 && row[8] != null && !row[8].trim().isEmpty()) {
                     try {
-                        request.setPackageValue(new java.math.BigDecimal(row[8].trim()));
+                        request.setPickupType(Order.PickupType.valueOf(row[8].trim().toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        request.setPickupType(null);
+                    }
+                }
+
+                // Container Number - column 9
+                if (row.length > 9 && row[9] != null && !row[9].trim().isEmpty()) {
+                    request.setContainerNumber(row[9].trim());
+                }
+
+                // Dock Info - column 10
+                if (row.length > 10 && row[10] != null && !row[10].trim().isEmpty()) {
+                    request.setDockInfo(row[10].trim());
+                }
+
+                // Package Value - column 11
+                if (row.length > 11 && row[11] != null && !row[11].trim().isEmpty()) {
+                    try {
+                        request.setPackageValue(new java.math.BigDecimal(row[11].trim()));
                     } catch (NumberFormatException e) {
                         request.setPackageValue(null);
                     }
                 }
-                
-                // Trip ID - column 9
-                if (row.length > 9 && row[9] != null && !row[9].trim().isEmpty()) {
+
+                // Trip ID - column 12
+                if (row.length > 12 && row[12] != null && !row[12].trim().isEmpty()) {
                     try {
-                        request.setTripId(Integer.parseInt(row[9].trim()));
+                        request.setTripId(Integer.parseInt(row[12].trim()));
                     } catch (NumberFormatException e) {
                         request.setTripId(null);
                     }
@@ -182,24 +201,55 @@ public class OrderFileParser {
                         }
                     }
                 }
-                
-                // Weight (kg) - column 7
+
+                // Weight (tons) - column 7
                 Cell cell7 = row.getCell(7);
                 if (cell7 != null) {
                     String value = getCellValueAsString(cell7);
                     if (value != null && !value.trim().isEmpty()) {
                         try {
-                            request.setWeightKg(new java.math.BigDecimal(value.trim()));
+                            request.setWeightTons(new java.math.BigDecimal(value.trim()));
                         } catch (NumberFormatException e) {
-                            request.setWeightKg(null);
+                            request.setWeightTons(null);
                         }
                     }
                 }
-                
-                // Package Value - column 8
+
+                // Pickup Type - column 8
                 Cell cell8 = row.getCell(8);
                 if (cell8 != null) {
                     String value = getCellValueAsString(cell8);
+                    if (value != null && !value.trim().isEmpty()) {
+                        try {
+                            request.setPickupType(Order.PickupType.valueOf(value.trim().toUpperCase()));
+                        } catch (IllegalArgumentException e) {
+                            request.setPickupType(null);
+                        }
+                    }
+                }
+
+                // Container Number - column 9
+                Cell cell9 = row.getCell(9);
+                if (cell9 != null) {
+                    String value = getCellValueAsString(cell9);
+                    if (value != null && !value.trim().isEmpty()) {
+                        request.setContainerNumber(value.trim());
+                    }
+                }
+
+                // Dock Info - column 10
+                Cell cell10 = row.getCell(10);
+                if (cell10 != null) {
+                    String value = getCellValueAsString(cell10);
+                    if (value != null && !value.trim().isEmpty()) {
+                        request.setDockInfo(value.trim());
+                    }
+                }
+
+                // Package Value - column 11
+                Cell cell11 = row.getCell(11);
+                if (cell11 != null) {
+                    String value = getCellValueAsString(cell11);
                     if (value != null && !value.trim().isEmpty()) {
                         try {
                             request.setPackageValue(new java.math.BigDecimal(value.trim()));
@@ -208,11 +258,11 @@ public class OrderFileParser {
                         }
                     }
                 }
-                
-                // Trip ID - column 9
-                Cell cell9 = row.getCell(9);
-                if (cell9 != null) {
-                    String value = getCellValueAsString(cell9);
+
+                // Trip ID - column 12
+                Cell cell12 = row.getCell(12);
+                if (cell12 != null) {
+                    String value = getCellValueAsString(cell12);
                     if (value != null && !value.trim().isEmpty()) {
                         try {
                             request.setTripId((int) Double.parseDouble(value.trim()));
@@ -270,4 +320,3 @@ public class OrderFileParser {
         return true;
     }
 }
-

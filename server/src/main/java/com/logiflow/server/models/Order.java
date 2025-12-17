@@ -61,8 +61,33 @@ public class Order {
     @Column(name = "distance_km", precision = 10, scale = 2, nullable = true)
     private BigDecimal distanceKm;
 
+    /**
+     * Backward-compatible weight (kg). For bulk cargo, use {@link #weightTons}.
+     */
     @Column(name = "weight_kg", precision = 10, scale = 2, nullable = true)
     private BigDecimal weightKg;
+
+    /**
+     * Bulk cargo weight in tons (t).
+     */
+    @Column(name = "weight_tons", precision = 10, scale = 3, nullable = true)
+    private BigDecimal weightTons;
+
+    @Column(name = "pickup_type", length = 30, nullable = true)
+    @Enumerated(EnumType.STRING)
+    private PickupType pickupType;
+
+    /**
+     * Required when pickupType = PORT_TERMINAL.
+     */
+    @Column(name = "container_number", length = 50, nullable = true)
+    private String containerNumber;
+
+    /**
+     * Required when pickupType = WAREHOUSE.
+     */
+    @Column(name = "dock_info", length = 100, nullable = true)
+    private String dockInfo;
 
     @Column(name = "package_value", precision = 15, scale = 2, nullable = true)
     private BigDecimal packageValue;
@@ -95,5 +120,10 @@ public class Order {
 
     public static enum OrderStatus {
         PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED
+    }
+
+    public static enum PickupType {
+        PORT_TERMINAL,
+        WAREHOUSE
     }
 }

@@ -384,10 +384,45 @@ public class DriverServiceImpl implements DriverService {
             throw new RuntimeException("Trip must be in 'arrived' or 'in_progress' state to confirm delivery");
         }
 
+        if (confirmationDto == null) {
+            throw new RuntimeException("Confirmation payload is required");
+        }
+
+        String type = confirmationDto.getConfirmationType();
+        if (type == null || type.isBlank()) {
+            throw new RuntimeException("confirmationType is required (SIGNATURE, PHOTO, OTP)");
+        }
+        type = type.trim().toUpperCase();
+
+        // Basic recipient info (optional but recommended)
+        if (confirmationDto.getRecipientName() == null || confirmationDto.getRecipientName().isBlank()) {
+            throw new RuntimeException("recipientName is required");
+        }
+
+        // Validate payload by confirmation type
+        switch (type) {
+            case "SIGNATURE" -> {
+                if (confirmationDto.getSignatureData() == null || confirmationDto.getSignatureData().isBlank()) {
+                    throw new RuntimeException("signatureData is required for SIGNATURE confirmation");
+                }
+            }
+            case "PHOTO" -> {
+                if (confirmationDto.getPhotoData() == null || confirmationDto.getPhotoData().isBlank()) {
+                    throw new RuntimeException("photoData is required for PHOTO confirmation");
+                }
+            }
+            case "OTP" -> {
+                if (confirmationDto.getOtpCode() == null || confirmationDto.getOtpCode().isBlank()) {
+                    throw new RuntimeException("otpCode is required for OTP confirmation");
+                }
+            }
+            default -> throw new RuntimeException("Invalid confirmationType: " + type + " (expected SIGNATURE, PHOTO, OTP)");
+        }
+
         // Create delivery confirmation record
         DeliveryConfirmation confirmation = new DeliveryConfirmation();
         confirmation.setTrip(trip);
-        confirmation.setConfirmationType(confirmationDto.getConfirmationType());
+        confirmation.setConfirmationType(type);
         confirmation.setSignatureData(confirmationDto.getSignatureData());
         confirmation.setPhotoData(confirmationDto.getPhotoData());
         confirmation.setOtpCode(confirmationDto.getOtpCode());
