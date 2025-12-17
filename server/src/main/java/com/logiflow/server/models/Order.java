@@ -73,15 +73,6 @@ public class Order {
     @Column(name = "weight_tons", precision = 10, scale = 3, nullable = true)
     private BigDecimal weightTons;
 
-    @Column(name = "pickup_type", length = 30, nullable = true)
-    @Enumerated(EnumType.STRING)
-    private PickupType pickupType;
-
-    /**
-     * Required when pickupType = PORT_TERMINAL.
-     */
-    @Column(name = "container_number", length = 50, nullable = true)
-    private String containerNumber;
 
     /**
      * Required when pickupType = WAREHOUSE.
@@ -115,15 +106,11 @@ public class Order {
     }
 
     public static enum PickupType {
-        PORT, WAREHOUSE
+        PORT_TERMINAL,
+        WAREHOUSE
     }
 
     public static enum OrderStatus {
         PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED
-    }
-
-    public static enum PickupType {
-        PORT_TERMINAL,
-        WAREHOUSE
     }
 }
