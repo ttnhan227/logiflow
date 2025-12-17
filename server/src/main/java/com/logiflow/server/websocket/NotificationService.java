@@ -214,10 +214,10 @@ public class NotificationService {
     }
 
     /**
-     * Send notification about new registration request
+     * Send notification about new registration request (websocket + database)
      */
     public void notifyNewRegistrationRequest(String username, String role, Integer requestId) {
-        AdminNotificationDto notification = AdminNotificationDto.of(
+        AdminNotificationDto websocketNotification = AdminNotificationDto.of(
             "REGISTRATION_REQUEST",
             "INFO",
             "New Registration Request",
@@ -225,14 +225,27 @@ public class NotificationService {
             "/admin/registration-requests/" + requestId,
             "Review Request"
         );
-        sendAdminNotification(notification);
+        sendAdminNotification(websocketNotification);
+
+        // Store in database for persistence (following driver report pattern)
+        Notification dbNotification = new Notification(
+            Notification.NotificationType.REGISTRATION_REQUEST,
+            "INFO",
+            "New Registration Request",
+            "New " + role + " registration from: " + username,
+            "/admin/registration-requests/" + requestId,
+            "Review Request",
+            requestId,  // relatedEntityId = requestId
+            null        // targetAdminUser (broadcast to all admins)
+        );
+        notificationRepository.save(dbNotification);
     }
 
     /**
-     * Send compliance alert notification
+     * Send compliance alert notification (websocket + database)
      */
     public void notifyComplianceAlert(String alertType, String severity, String message, String actionUrl) {
-        AdminNotificationDto notification = AdminNotificationDto.of(
+        AdminNotificationDto websocketNotification = AdminNotificationDto.of(
             "COMPLIANCE_ALERT",
             severity,
             "Compliance Alert",
@@ -240,14 +253,27 @@ public class NotificationService {
             actionUrl,
             "View Details"
         );
-        sendAdminNotification(notification);
+        sendAdminNotification(websocketNotification);
+
+        // Store in database for persistence
+        Notification dbNotification = new Notification(
+            Notification.NotificationType.COMPLIANCE_ALERT,
+            severity,
+            "Compliance Alert",
+            message,
+            actionUrl,
+            "View Details",
+            null,  // relatedEntityId
+            null   // targetAdminUser (broadcast to all)
+        );
+        notificationRepository.save(dbNotification);
     }
 
     /**
-     * Send system event notification
+     * Send system event notification (websocket + database)
      */
     public void notifySystemEvent(String title, String message, String severity) {
-        AdminNotificationDto notification = AdminNotificationDto.of(
+        AdminNotificationDto websocketNotification = AdminNotificationDto.of(
             "SYSTEM_EVENT",
             severity,
             title,
@@ -255,7 +281,20 @@ public class NotificationService {
             "/admin/dashboard",
             "View Dashboard"
         );
-        sendAdminNotification(notification);
+        sendAdminNotification(websocketNotification);
+
+        // Store in database for persistence
+        Notification dbNotification = new Notification(
+            Notification.NotificationType.SYSTEM_EVENT,
+            severity,
+            title,
+            message,
+            "/admin/dashboard",
+            "View Dashboard",
+            null,  // relatedEntityId
+            null   // targetAdminUser (broadcast to all)
+        );
+        notificationRepository.save(dbNotification);
     }
 
     /**
