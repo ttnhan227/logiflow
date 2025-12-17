@@ -12,6 +12,7 @@ import com.logiflow.server.repositories.route.RouteRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.trip.TripProgressEventRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
+import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class TripServiceImpl implements TripService {
 
     @Autowired
     private TripAssignmentRepository tripAssignmentRepository;
+
+    @Autowired
+    private DeliveryConfirmationRepository deliveryConfirmationRepository;
 
     @Autowired
     private TripProgressEventRepository tripProgressEventRepository;
@@ -416,6 +420,38 @@ public class TripServiceImpl implements TripService {
                lower.equals("completed") || 
                lower.equals("cancelled") ||
                lower.equals("scheduled");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto getDeliveryConfirmation(Integer tripId) {
+        // Ensure trip exists (consistent error handling)
+        tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+
+        // If no confirmation exists, return an empty/null DTO instead of throwing an error
+        var confirmationOpt = deliveryConfirmationRepository.findByTripTripId(tripId);
+        
+        if (confirmationOpt.isEmpty()) {
+            // Return an empty DTO with only tripId set (safe null object pattern)
+            var dto = new com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto();
+            dto.setTripId(tripId);
+            return dto;
+        }
+
+        var confirmation = confirmationOpt.get();
+        var dto = new com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto();
+        dto.setConfirmationId(confirmation.getConfirmationId());
+        dto.setTripId(tripId);
+        dto.setConfirmationType(confirmation.getConfirmationType());
+        dto.setSignatureData(confirmation.getSignatureData());
+        dto.setPhotoData(confirmation.getPhotoData());
+        dto.setOtpCode(confirmation.getOtpCode());
+        dto.setRecipientName(confirmation.getRecipientName());
+        dto.setNotes(confirmation.getNotes());
+        dto.setConfirmedAt(confirmation.getConfirmedAt());
+        dto.setConfirmedBy(confirmation.getConfirmedBy());
+        return dto;
     }
 
     private String normalizeStatus(String status) {

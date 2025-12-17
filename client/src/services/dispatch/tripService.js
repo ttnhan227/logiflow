@@ -14,6 +14,8 @@ const getRecommendedDrivers = (tripId, limit = 10) => api.get(`${basePath}/trips
 
 const updateTripStatus = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/status`, payload).then(r => r.data);
 
+const getDeliveryConfirmation = (tripId) => api.get(`${basePath}/trips/${tripId}/delivery-confirmation`).then(r => r.data);
+
 const rerouteTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/reroute`, payload).then(r => r.data);
 
 const cancelTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/cancel`, payload).then(r => r.data);
@@ -30,6 +32,7 @@ const tripService = {
   cancelTrip,
   getAvailableDrivers,
   getRecommendedDrivers,
+  getDeliveryConfirmation,
 };
 
 export default tripService;

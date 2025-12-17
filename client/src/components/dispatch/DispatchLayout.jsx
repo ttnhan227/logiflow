@@ -36,6 +36,7 @@ const DispatchLayout = () => {
             <Link to="/dispatch/orders" className="dispatch-nav-link">📦 Orders</Link>
             <Link to="/dispatch/trips" className="dispatch-nav-link">🚐 Trips</Link>
             <Link to="/dispatch/drivers" className="dispatch-nav-link">👥 Drivers</Link>
+            <Link to="/dispatch/reports" className="dispatch-nav-link">📈 Reports</Link>
           </nav>
 
           {user && (

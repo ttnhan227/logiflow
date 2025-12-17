@@ -13,6 +13,7 @@ import tripsOversightService from './admin/tripsOversightService';
 import orderService from './dispatch/orderService';
 import dispatchDriverService from './dispatch/driverService';
 import tripService from './dispatch/tripService';
+import dispatchReportsService from './dispatch/reportsService';
 import dispatchRouteService from './dispatch/routeService';
 import dispatchVehicleService from './dispatch/vehicleService';
 import trackingClient from './trackingClient';
@@ -35,6 +36,7 @@ export {
   orderService,
   dispatchDriverService,
   tripService,
+  dispatchReportsService,
   dispatchRouteService,
   dispatchVehicleService,
   trackingClient,

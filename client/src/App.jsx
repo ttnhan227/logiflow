@@ -47,6 +47,7 @@ import TripCreatePage from "./components/dispatch/TripCreatePage";
 import TripDetailPage from "./components/dispatch/TripDetailPage";
 import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchNotificationsPage from "./components/dispatch/DispatchNotificationsPage";
+import DispatchReportsPage from "./components/dispatch/DispatchReportsPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
 import DriverManager from "./components/manager/DriverManager/DriverManager.jsx";
 import IssueReports from "./components/manager/IssueReports/IssueReports";
@@ -196,6 +197,11 @@ function App() {
           <Route path="/dispatch/notifications" element={
             <ProtectedRoute requiredRole="DISPATCHER">
               <DispatchNotificationsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dispatch/reports" element={
+            <ProtectedRoute requiredRole="DISPATCHER">
+              <DispatchReportsPage />
             </ProtectedRoute>
           } />
         </Route>

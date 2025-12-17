@@ -49,6 +49,19 @@ public class TripController {
         }
     }
 
+    // Proof of delivery (POD) / delivery confirmation
+    @GetMapping("/trips/{tripId}/delivery-confirmation")
+    public ResponseEntity<?> getDeliveryConfirmation(@PathVariable Integer tripId) {
+        try {
+            var pod = tripService.getDeliveryConfirmation(tripId);
+            return ResponseEntity.ok(pod);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/trips")
     public ResponseEntity<?> createTrip(
             @Valid @RequestBody TripCreateRequest request) {
