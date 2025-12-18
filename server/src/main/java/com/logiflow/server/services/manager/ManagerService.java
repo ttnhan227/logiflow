@@ -6,12 +6,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface ManagerService {
-
-    // API 1: Driver performance
-//    List<ManagerDtos.DriverPerformanceDto> getDriverPerformance(
-//            LocalDate startDate,
-//            LocalDate endDate
-//    );
+    // 1 Dashboard overview
+    ManagerDtos.ManagerOverviewDto getDashboardOverview(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 
     // API 2: Overall operations performance
     ManagerDtos.OperationsPerformanceDto getOperationsPerformance(
@@ -29,13 +28,13 @@ public interface ManagerService {
     );
 
     // API 5: Compliance / Issues Report
-    List<ManagerDtos.IssueReportItemDto> getIssueReports(
+    ManagerDtos.IssuesReportResponseDto getIssueReports(
             LocalDate startDate,
             LocalDate endDate
     );
 
     // API 6: Compliance check
-    ManagerDtos.ComplianceCheckDto getComplianceCheck(
+    ManagerDtos.ComplianceCheckResponseDto getComplianceCheck(
             LocalDate startDate,
             LocalDate endDate
     );
@@ -58,4 +57,8 @@ public interface ManagerService {
             LocalDate endDate
     );
 
+    List<ManagerDtos.RecommendationDto> getRecommendations(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 }

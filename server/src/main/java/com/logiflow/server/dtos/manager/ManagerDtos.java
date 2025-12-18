@@ -5,29 +5,65 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 public class ManagerDtos {
+    // 1. Manager Overview
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ManagerOverviewDto {
 
-    // 1) DRIVER PERFORMANCE (API /operations/drivers/performance)
-//    @Data
-//    @NoArgsConstructor
-//    @AllArgsConstructor
-//    @Builder
-//    public static class DriverPerformanceDto {
-//
-//        private String driverId;
-//        private String driverName;
-//
-//        private Integer totalTrips;
-//        private Integer completedTrips;
-//        private Integer cancelledTrips;
-//        private Integer delayedTrips;
-//
-//        private Double onTimeRatePercent;    // 0–100
-//        private Double averageDelayMinutes;  // phút
-//        private Double totalDistanceKm;      // km
-//    }
+        private OverviewKpiDto kpi;
 
-    // 2) OPERATIONS PERFORMANCE (API /operations/performance)
+        private FleetStatusDto fleet;
+
+        private DeliveriesSummaryDto deliveriesSummary;
+
+        private List<AlertDto> topAlerts;
+
+        private LocalDateTime lastUpdated;
+    }
+
+    // KPI tổng hợp
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OverviewKpiDto {
+        private int totalTrips;
+        private int completedTrips;
+        private int delayedTrips;
+        private double onTimeRatePercent;
+        private double fleetUtilizationPercent;
+    }
+
+    // Deliveries summary
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DeliveriesSummaryDto {
+        private int totalTrips;
+        private int completedTrips;
+        private int cancelledTrips;
+        private int delayedTrips;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RecommendationDto {
+        private String code;        // ROUTE_DELAY / OVER_CAPACITY / COMPLIANCE / MAINTENANCE
+        private String severity;    // HIGH / MEDIUM
+        private String message;     // việc cần làm
+        private String evidence;    // số liệu dẫn chứng
+    }
+
+    // 2 OPERATIONS PERFORMANCE (API /operations/performance)
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -42,6 +78,18 @@ public class ManagerDtos {
         private Double averageDelayMinutes;
         private Double totalDistanceKm;
         private Double averageDistancePerTripKm;
+
+        // tonnage utilization
+        private Double totalCargoWeightKg;
+        private Double totalVehicleCapacityKg;
+        private Double averageTonnageUtilizationPercent;
+        private Integer overCapacityTrips;
+
+        //
+        private Integer delayedCompletedTrips;
+        private Integer delayedInProgressTrips;
+        private Integer eligibleCompletedTrips;
+
     }
 
     // 3) FLEET STATUS (API /fleet/status)
@@ -67,7 +115,7 @@ public class ManagerDtos {
     @Builder
     public static class DeliveryReportItemDto {
 
-        private String date;                  // "2025-12-10"
+        private String date;
         private Integer totalTrips;
         private Integer completedTrips;
         private Integer cancelledTrips;
@@ -75,6 +123,7 @@ public class ManagerDtos {
         private Double onTimeRatePercent;
         private Double averageDelayMinutes;
         private Double totalDistanceKm;
+        private Double totalCargoWeightKg;
     }
 
     // API 5: Compliance / Issues Report
@@ -94,24 +143,61 @@ public class ManagerDtos {
         private Double delayMinutes;    // nếu có
     }
 
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IssuesSummaryDto {
+        private int totalIssues;
+        private int delayedIssues;
+        private int cancelledIssues;
+        private int technicalIssues; // tạm thời 0 (chưa có model)
+        private int highSeverity;    // tạm thời 0 (chưa có severity)
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IssuesReportResponseDto {
+        private IssuesSummaryDto summary;
+        private List<IssueReportItemDto> items;
+    }
+
     // API 6: COMPLIANCE CHECK
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class ComplianceCheckDto {
+    public static class ComplianceSummaryDto {
+        private int totalViolations;
+        private int highRiskCount;
+        private int mediumRiskCount;
+        private int lowRiskCount;
+    }
 
-        private Integer totalTripsChecked;
-        private Integer compliantTrips;
-        private Integer tripsWithViolations;
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ComplianceViolationDto {
+        private String date;
+        private String tripId;
+        private String ruleCode;       // e.g. ARRIVAL_DELAY, MISSING_ACTUAL_TIME
+        private String severity;       // LOW | MEDIUM | HIGH
+        private String description;
+        private Double value;          // số phút trễ, hoặc null
+        private String driverId;     // thêm
+        private String driverName;   // thêm
+    }
 
-        private Integer totalViolations;
-        private Integer speedingViolations;
-        private Integer routeDeviationViolations;
-        private Integer lateDeliveryViolations;
-
-        private Integer driversWithViolations;
-        private Double complianceRatePercent;   // % chuyến tuân thủ
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ComplianceCheckResponseDto {
+        private ComplianceSummaryDto summary;
+        private List<ComplianceViolationDto> items;
     }
 
     // API 7: ROUTE ANALYTICS / SUMMARY
@@ -121,9 +207,9 @@ public class ManagerDtos {
     @Builder
     public static class RouteSummaryItemDto {
 
-        private String routeId;                 // R001, R002...
-        private String origin;                  // "Warehouse A"
-        private String destination;             // "City Center"
+        private String routeId;
+        private String origin;
+        private String destination;
 
         private Integer totalTrips;
         private Double totalDistanceKm;
@@ -131,7 +217,12 @@ public class ManagerDtos {
         private Double averageDurationMinutes;
         private Double onTimeRatePercent;
 
-        private String optimizationSuggestion;  // gợi ý tối ưu đơn giản
+        private String optimizationSuggestion;
+        private Integer delayedTrips;
+        private Integer cancelledTrips;
+        private Double averageDelayMinutes;
+        private Double totalCargoWeightKg;
+
     }
 
     // API 8: ALERTS
@@ -141,18 +232,19 @@ public class ManagerDtos {
     @Builder
     public static class AlertDto {
 
-        private String alertId;          // A001
-        private String type;             // "VEHICLE_MAINTENANCE", "DRIVER_BEHAVIOR", "DELAY_RISK", ...
+        private String alertId;
+        private String type;
         private String severity;         // "LOW", "MEDIUM", "HIGH", "CRITICAL"
-        private String title;            // "Vehicle V01 due for maintenance"
-        private String message;          // mô tả chi tiết
+        private String title;
+        private String message;
 
-        private String relatedDriverId;  // có thể null
+        private String relatedTripId;
+        private String relatedDriverId;
         private String relatedDriverName;
-        private String relatedVehicleId; // có thể null
+        private String relatedVehicleId;
 
-        private String createdAt;        // "2025-12-11T10:30:00"
-        private Boolean acknowledged;    // đã đọc/chấp nhận hay chưa
+        private String createdAt;
+        private Boolean acknowledged;
     }
 
     // API 9: MANAGER ACTIVITIES / AUDIT
@@ -162,15 +254,15 @@ public class ManagerDtos {
     @Builder
     public static class ManagerActivityDto {
 
-        private String activityId;       // "M001"
-        private String username;         // "sarah.manager"
-        private String action;           // "VIEW_DRIVER_PERFORMANCE"
-        private String description;      // mô tả ngắn
-        private String entityType;       // "TRIP", "DRIVER", "VEHICLE", "ROUTE", ...
-        private String entityId;         // "D001", "R003", ...
+        private String activityId;
+        private String username;
+        private String action;
+        private String description;
+        private String entityType;
+        private String entityId;
 
-        private String timestamp;        // "2025-12-11T10:30:00"
-        private String ipAddress;        // "192.168.1.10"
+        private String timestamp;
+        private String ipAddress;
     }
 
 

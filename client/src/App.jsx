@@ -1,6 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { authService } from './services';
+import {BrowserRouter as Router, Routes, Route, Navigate, useLocation} from 'react-router-dom';
+import {useEffect, useState} from 'react';
+import {authService} from './services';
 import './App.css';
 import './components/layout.css';
 import MainLayout from './components/MainLayout';
@@ -46,228 +46,287 @@ import TripDetailPage from "./components/dispatch/TripDetailPage";
 import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
 import MonitorOperations from "./components/manager/MonitorOperations/MonitorOperations.jsx";
-import IssueReports from "./components/manager/IssueReports/IssueReports";
+import IssueReports from "./components/manager/Issues/IssueReports";
 import CompliancePage from "./components/manager/Compliance/CompliancePage";
 import RouteAnalyticsPage from "./components/manager/RouteAnalytics/RouteAnalyticsPage";
 import AlertsPage from "./components/manager/Alerts/AlertsPage";
 import ManagerActivitiesPage from "./components/manager/Activities/ManagerActivitiesPage";
 import ManagerLayout from './components/manager/ManagerLayout.jsx';
+import ManagerDashboard from "./components/manager/Dashboard/ManagerDashboard.jsx";
+import RecommendationsPage from "./components/manager/Recommendations/RecommendationsPage.jsx";
 
 // Protected Route Component with role-based access
-const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const [authState, setAuthState] = useState({ loading: true, user: null });
-  const location = useLocation();
+const ProtectedRoute = ({children, requiredRole = null}) => {
+    const [authState, setAuthState] = useState({loading: true, user: null});
+    const location = useLocation();
 
-  useEffect(() => {
-    const user = authService.getCurrentUser();
-    setAuthState({ loading: false, user });
-  }, [location]);
+    useEffect(() => {
+        const user = authService.getCurrentUser();
+        setAuthState({loading: false, user});
+    }, [location]);
 
-  if (authState.loading) {
-    return <div>Loading...</div>;
-  }
+    if (authState.loading) {
+        return <div>Loading...</div>;
+    }
 
-  // Only redirect to login if coming from login page
-  if (!authState.user && location.state?.from === '/login') {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+    // Only redirect to login if coming from login page
+    if (!authState.user && location.state?.from === '/login') {
+        return <Navigate to="/login" state={{from: location}} replace/>;
+    }
 
-  // Check if route requires specific role
-  if (requiredRole && authState.user.role !== requiredRole) {
-    // Show unauthorized page if user doesn't have required role
-    return <UnauthorizedPage />;
-  }
+    // Check if route requires specific role
+    if (requiredRole && authState.user.role !== requiredRole) {
+        // Show unauthorized page if user doesn't have required role
+        return <UnauthorizedPage/>;
+    }
 
-  return children;
+    return children;
 };
 
 // Handle redirection after login based on user role
 const AuthRedirect = () => {
-  const user = authService.getCurrentUser();
-  return user?.role === 'ADMIN' ? 
-    <Navigate to="/admin/dashboard" replace /> : 
-    <Navigate to="/" replace />;
+    const user = authService.getCurrentUser();
+    return user?.role === 'ADMIN' ?
+        <Navigate to="/admin/dashboard" replace/> :
+        <Navigate to="/" replace/>;
 };
 
 
-
 function App() {
-  return (
-    <Router>
-      <Routes>
-        {/* Public routes with MainLayout */}
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/fleet" element={<FleetPage />} />
-          <Route path="/coverage" element={<CoveragePage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/track" element={<TrackPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/faq" element={<FaqPage />} />
-          <Route path="/business" element={<BusinessPage />} />
-          <Route path="/mobile-app" element={<MobileAppPage />} />
-          <Route path="/drivers" element={<DriversPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/edit" element={<ProfileEditPage />} />
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
-        </Route>
+    return (
+        <Router>
+            <Routes>
+                {/* Public routes with MainLayout */}
+                <Route element={<MainLayout/>}>
+                    <Route path="/" element={<HomePage/>}/>
+                    <Route path="/about" element={<AboutPage/>}/>
+                    <Route path="/services" element={<ServicesPage/>}/>
+                    <Route path="/fleet" element={<FleetPage/>}/>
+                    <Route path="/coverage" element={<CoveragePage/>}/>
+                    <Route path="/pricing" element={<PricingPage/>}/>
+                    <Route path="/track" element={<TrackPage/>}/>
+                    <Route path="/contact" element={<ContactPage/>}/>
+                    <Route path="/faq" element={<FaqPage/>}/>
+                    <Route path="/business" element={<BusinessPage/>}/>
+                    <Route path="/mobile-app" element={<MobileAppPage/>}/>
+                    <Route path="/drivers" element={<DriversPage/>}/>
+                    <Route path="/profile" element={<ProfilePage/>}/>
+                    <Route path="/profile/edit" element={<ProfileEditPage/>}/>
+                    <Route path="/unauthorized" element={<UnauthorizedPage/>}/>
+                </Route>
 
-          {/* Manager routes with ManagerLayout (sidebar) */}
-          <Route
-              path="/manager"
-              element={
-                  <ProtectedRoute requiredRole="MANAGER">
-                      <ManagerLayout />
-                  </ProtectedRoute>
-              }
-          >
-              <Route index element={<MonitorOperations />} />
+                {/* Manager routes with ManagerLayout (sidebar) */}
+                <Route path="/manager" element={<ManagerLayout/>}>
+                    {/* vào /manager tự chuyển sang dashboard */}
+                    <Route index element={<Navigate to="dashboard" replace/>}/>
 
-              <Route path="monitor-operations" element={<MonitorOperations />} />
-              <Route path="issues" element={<IssueReports />} />
-              <Route path="compliance" element={<CompliancePage />} />
-              <Route path="analytics/routes" element={<RouteAnalyticsPage />} />
-              <Route path="alerts" element={<AlertsPage />} />
-              <Route path="activities" element={<ManagerActivitiesPage />} />
+                    {/* route cũ để tránh 404 khi còn sót link */}
+                    <Route path="drivers" element={<Navigate to="/manager/monitor-operations" replace/>}/>
 
-              {/* alias tạm để khỏi 404 nếu còn link cũ */}
-              <Route path="drivers" element={<MonitorOperations />} />
-          </Route>
+                    <Route
+                        path="dashboard"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <ManagerDashboard/>
+                            </ProtectedRoute>
+                        }
+                    />
 
-          {/* Dispatch routes with DispatchLayout */}
-        <Route element={<DispatchLayout />}>
-          <Route path="/dispatch/orders" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <OrdersPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/dispatch/orders/import" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <OrderImportPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/dispatch/orders/:orderId" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <DispatchOrderDetailPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/dispatch/trips" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <TripsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/dispatch/trips/create" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <TripCreatePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/dispatch/trips/:tripId" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <TripDetailPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/dispatch/trips/:tripId/assign" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <TripAssignPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/dispatch/drivers" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
-              <AvailableDriversPage />
-            </ProtectedRoute>
-          } />
-        </Route>
+                    <Route
+                        path="recommendations"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <RecommendationsPage/>
+                            </ProtectedRoute>
+                        }
+                    />
 
-        {/* Admin routes with AdminLayout (sidebar) */}
-        <Route element={<AdminSideNav />}>
-          <Route path="/admin/dashboard" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/reports" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminReportsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <UserManagementPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users/:userId" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminUserDetailsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users/:userId/edit" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminUserEditPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/system/configuration" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminSettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/system/overview" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminSystemOverviewPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/audit-logs" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminAuditLogPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/orders-oversight" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminOrdersOversightPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/registration-requests" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminRegistrationRequestsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/registration-requests/:requestId" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminRegistrationRequestDetailsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/routes" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminRoutesPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/vehicles" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminVehiclesPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/reports" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminReportsPage />
-            </ProtectedRoute>
-          } />
-        </Route>
+                    <Route
+                        path="monitor-operations"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <MonitorOperations/>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="issues"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <IssueReports/>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="compliance"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <CompliancePage/>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="analytics/routes"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <RouteAnalyticsPage/>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="alerts"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <AlertsPage/>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="activities"
+                        element={
+                            <ProtectedRoute requiredRole="MANAGER">
+                                <ManagerActivitiesPage/>
+                            </ProtectedRoute>
+                        }
+                    />
+                </Route>
+
+                {/* Dispatch routes with DispatchLayout */}
+                <Route element={<DispatchLayout/>}>
+                    <Route path="/dispatch/orders" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <OrdersPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/dispatch/orders/import" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <OrderImportPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/dispatch/orders/:orderId" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <DispatchOrderDetailPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/dispatch/trips" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <TripsPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/dispatch/trips/create" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <TripCreatePage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/dispatch/trips/:tripId" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <TripDetailPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/dispatch/trips/:tripId/assign" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <TripAssignPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/dispatch/drivers" element={
+                        <ProtectedRoute requiredRole="DISPATCHER">
+                            <AvailableDriversPage/>
+                        </ProtectedRoute>
+                    }/>
+                </Route>
+
+                {/* Admin routes with AdminLayout (sidebar) */}
+                <Route element={<AdminSideNav/>}>
+                    <Route path="/admin/dashboard" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminDashboardPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/reports" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminReportsPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/users" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <UserManagementPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/users/:userId" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminUserDetailsPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/users/:userId/edit" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminUserEditPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/system/configuration" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminSettingsPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/system/overview" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminSystemOverviewPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/audit-logs" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminAuditLogPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/orders-oversight" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminOrdersOversightPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/registration-requests" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminRegistrationRequestsPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/registration-requests/:requestId" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminRegistrationRequestDetailsPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/routes" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminRoutesPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/vehicles" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminVehiclesPage/>
+                        </ProtectedRoute>
+                    }/>
+                    <Route path="/admin/reports" element={
+                        <ProtectedRoute requiredRole="ADMIN">
+                            <AdminReportsPage/>
+                        </ProtectedRoute>
+                    }/>
+                </Route>
 
 
+                <Route path="/login" element={
+                    authService.getCurrentUser() ?
+                        <AuthRedirect/> :
+                        <LoginPage/>
+                }/>
+                <Route path="/register/driver" element={<DriverRegisterPage/>}/>
 
-        <Route path="/login" element={
-          authService.getCurrentUser() ? 
-          <AuthRedirect /> : 
-          <LoginPage />
-        } />
-        <Route path="/register/driver" element={<DriverRegisterPage />} />
-
-        {/* 404 - Not Found */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Router>
-  );
+                {/* 404 - Not Found */}
+                <Route path="*" element={<NotFoundPage/>}/>
+            </Routes>
+        </Router>
+    );
 }
 
 export default App;

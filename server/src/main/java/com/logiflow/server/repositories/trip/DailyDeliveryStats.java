@@ -9,6 +9,5 @@ public interface DailyDeliveryStats {
     Integer getCompletedTrips();
     Integer getCancelledTrips();
     Integer getDelayedTrips();
-
     Double getTotalDistanceKm();
 }

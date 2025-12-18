@@ -16,19 +16,19 @@ public class ManagerController {
 
     private final ManagerService managerService;
 
-    // API 1: Driver performance
-//    @GetMapping("/operations/drivers/performance")
-//    public List<ManagerDtos.DriverPerformanceDto> getDriverPerformance(
-//            @RequestParam(required = false)
-//            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-//            LocalDate startDate,
-//
-//            @RequestParam(required = false)
-//            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-//            LocalDate endDate
-//    ) {
-//        return managerService.getDriverPerformance(startDate, endDate);
-//    }
+    // 1 Dashboard overview
+    @GetMapping("/dashboard/overview")
+    public ManagerDtos.ManagerOverviewDto getDashboardOverview(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate
+    ) {
+        return managerService.getDashboardOverview(startDate, endDate);
+    }
 
     // API 2: Overall operations performance
     @GetMapping("/operations/performance")
@@ -66,10 +66,11 @@ public class ManagerController {
 
     // API 5: Issue reports
     @GetMapping("/reports/issues")
-    public List<ManagerDtos.IssueReportItemDto> getIssueReports(
+    public ManagerDtos.IssuesReportResponseDto getIssueReports(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate startDate,
+
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate
@@ -79,7 +80,7 @@ public class ManagerController {
 
     // API 6: Compliance check
     @GetMapping("/compliance/check")
-    public ManagerDtos.ComplianceCheckDto getComplianceCheck(
+    public ManagerDtos.ComplianceCheckResponseDto getComplianceCheck(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate startDate,
@@ -91,12 +92,26 @@ public class ManagerController {
         return managerService.getComplianceCheck(startDate, endDate);
     }
 
+    @GetMapping("/recommendations")
+    public List<ManagerDtos.RecommendationDto> getRecommendations(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate
+    ) {
+        return managerService.getRecommendations(startDate, endDate);
+    }
+
     // API 7: Route analytics / summary
     @GetMapping("/analytics/route-summary")
     public List<ManagerDtos.RouteSummaryItemDto> getRouteSummary(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate startDate,
+
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate
@@ -104,12 +119,15 @@ public class ManagerController {
         return managerService.getRouteSummary(startDate, endDate);
     }
 
+
+
     // API 8: Alerts
     @GetMapping("/alerts")
     public List<ManagerDtos.AlertDto> getAlerts(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate startDate,
+
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate
@@ -123,6 +141,7 @@ public class ManagerController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate startDate,
+
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate

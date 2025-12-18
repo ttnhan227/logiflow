@@ -1,46 +1,55 @@
 import React, { useEffect, useState } from "react";
 import { getComplianceCheck } from "../../../services/manager/managerService";
+import "../manager.css";
 
 const CompliancePage = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
-    const [data, setData] = useState(null);
+
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const [summary, setSummary] = useState(null);
+    const [items, setItems] = useState([]);
 
     const toInputDate = (d) => d.toISOString().slice(0, 10);
 
     useEffect(() => {
         const today = new Date();
-        const past = new Date();
-        past.setDate(today.getDate() - 6);
+        const from = new Date();
+        from.setDate(today.getDate() - 6);
 
-        const s = toInputDate(past);
+        const s = toInputDate(from);
         const e = toInputDate(today);
 
         setStartDate(s);
         setEndDate(e);
-        load(s, e);
+
+        loadData(s, e);
+        // eslint-disable-next-line
     }, []);
 
-    const load = async (s, e) => {
+    const loadData = async (s, e) => {
         setLoading(true);
+        setError("");
+
         try {
             const res = await getComplianceCheck(s, e);
-            setData(res);
+            setSummary(res?.summary || null);
+            setItems(Array.isArray(res?.items) ? res.items : []);
         } catch (err) {
-            console.error("Error loading compliance:", err);
-        } finally {
-            setLoading(false);
+            console.error(err);
+            setSummary(null);
+            setItems([]);
+            setError("Failed to load compliance data.");
         }
-    };
 
-    const handleView = () => {
-        load(startDate, endDate);
+        setLoading(false);
     };
 
     return (
-        <div className="driver-manager-page">
-            <h1>✅ Compliance Check</h1>
+        <div className="manager-page">
+            <h1>✅ Compliance</h1>
 
             <div className="filters">
                 <label>
@@ -61,62 +70,71 @@ const CompliancePage = () => {
                     />
                 </label>
 
-                <button onClick={handleView} disabled={loading}>
+                <button onClick={() => loadData(startDate, endDate)} disabled={loading}>
                     {loading ? "Loading..." : "View"}
                 </button>
             </div>
 
-            {!data && !loading && <p>No data.</p>}
+            {error && <div className="error">{error}</div>}
 
-            {data && (
+            {summary && (
                 <div className="summary-cards">
                     <div className="card">
-                        <div className="card-label">Trips Checked</div>
-                        <div className="card-value">{data.totalTripsChecked}</div>
-                    </div>
-                    <div className="card">
-                        <div className="card-label">Compliant Trips</div>
-                        <div className="card-value">{data.compliantTrips}</div>
-                    </div>
-                    <div className="card">
-                        <div className="card-label">Trips With Violations</div>
-                        <div className="card-value">{data.tripsWithViolations}</div>
-                    </div>
-                    <div className="card">
                         <div className="card-label">Total Violations</div>
-                        <div className="card-value">{data.totalViolations}</div>
+                        <div className="card-value">{summary.totalViolations}</div>
                     </div>
+
                     <div className="card">
-                        <div className="card-label">Speeding</div>
-                        <div className="card-value">{data.speedingViolations}</div>
+                        <div className="card-label">High Risk</div>
+                        <div className="card-value">{summary.highRiskCount}</div>
                     </div>
+
                     <div className="card">
-                        <div className="card-label">Route Deviation</div>
-                        <div className="card-value">
-                            {data.routeDeviationViolations}
-                        </div>
+                        <div className="card-label">Medium Risk</div>
+                        <div className="card-value">{summary.mediumRiskCount}</div>
                     </div>
+
                     <div className="card">
-                        <div className="card-label">Late Deliveries</div>
-                        <div className="card-value">
-                            {data.lateDeliveryViolations}
-                        </div>
-                    </div>
-                    <div className="card">
-                        <div className="card-label">Drivers With Violations</div>
-                        <div className="card-value">{data.driversWithViolations}</div>
-                    </div>
-                    <div className="card">
-                        <div className="card-label">Compliance Rate</div>
-                        <div className="card-value">
-                            {data.complianceRatePercent != null
-                                ? data.complianceRatePercent.toFixed(1)
-                                : "-"}
-                            %
-                        </div>
+                        <div className="card-label">Low Risk</div>
+                        <div className="card-value">{summary.lowRiskCount}</div>
                     </div>
                 </div>
             )}
+
+            <h2>Violations</h2>
+
+            <table className="manager-table">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Trip</th>
+                    <th>Rule</th>
+                    <th>Severity</th>
+                    <th>Description</th>
+                    <th>Value</th>
+                </tr>
+                </thead>
+                <tbody>
+                {items.length === 0 ? (
+                    <tr>
+                        <td colSpan="6" style={{ textAlign: "center" }}>
+                            No violations found
+                        </td>
+                    </tr>
+                ) : (
+                    items.map((x, idx) => (
+                        <tr key={idx}>
+                            <td>{x.date ?? "-"}</td>
+                            <td>{x.tripId ?? "-"}</td>
+                            <td>{x.ruleCode ?? "-"}</td>
+                            <td>{x.severity ?? "-"}</td>
+                            <td>{x.description ?? "-"}</td>
+                            <td>{x.value != null ? x.value : "-"}</td>
+                        </tr>
+                    ))
+                )}
+                </tbody>
+            </table>
         </div>
     );
 };
