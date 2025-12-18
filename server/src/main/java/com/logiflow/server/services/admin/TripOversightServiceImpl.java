@@ -235,7 +235,7 @@ public class TripOversightServiceImpl implements TripOversightService {
 
         auditLogService.log(auditAction, "admin", "ADMIN", auditDetails);
 
-        // Send delay response only to driver (not admin broadcast)
+        // Send delay response to driver
         if (driverUsername != null && !driverUsername.isEmpty()) {
             System.out.println("DEBUG: Admin approving delay for trip " + tripId + ", sending notification to driver " + driverUsername);
             System.out.println("DEBUG: Notification message: " + notificationMessage);
@@ -249,6 +249,44 @@ public class TripOversightServiceImpl implements TripOversightService {
             System.out.println("DEBUG: Sent DELAY_RESPONSE notification to /topic/driver/" + driverUsername);
         } else {
             System.out.println("WARN: No driver found for trip " + tripId + ", cannot send notification");
+        }
+
+        // Send delay update notification to customers
+        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+            for (Order order : trip.getOrders()) {
+                if (order.getCustomer() != null) {
+                    User customerUser = order.getCustomer();
+                    String customerUsername = customerUser.getUsername();
+                    String customerMessage;
+
+                    if ("APPROVED".equalsIgnoreCase(responseType)) {
+                        Integer approvedExtension = extensionMinutes != null && extensionMinutes > 0 ? extensionMinutes : 30;
+                        customerMessage = String.format(
+                            "Delay update for order #%d: SLA extended by %d minutes. New ETA will be adjusted accordingly.",
+                            order.getOrderId(),
+                            approvedExtension
+                        );
+                    } else {
+                        customerMessage = String.format(
+                            "Delay update for order #%d: Delay report was not approved. Order will proceed on original schedule.",
+                            order.getOrderId()
+                        );
+                    }
+
+                    try {
+                        notificationService.sendOrderNotification(
+                            customerUser.getUserId(),
+                            order.getOrderId(),
+                            "DELAY_UPDATE",
+                            customerMessage,
+                            trip.getStatus() != null ? trip.getStatus() : "unknown"
+                        );
+                        System.out.println("DEBUG: Sent DELAY_UPDATE notification to customer " + customerUsername + " for order " + order.getOrderId());
+                    } catch (Exception e) {
+                        System.err.println("Failed to send delay update notification to customer " + customerUsername + ": " + e.getMessage());
+                    }
+                }
+            }
         }
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(tripId)

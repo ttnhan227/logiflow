@@ -22,6 +22,13 @@ public class Customer {
 
     // Contact information (using User phone)
 
+    // Company information for B2B customers
+    @Column(name = "company_name", length = 100)
+    private String companyName;
+
+    @Column(name = "company_code", length = 50)
+    private String companyCode;
+
     // Address information
     @Column(name = "default_delivery_address", columnDefinition = "TEXT")
     private String defaultDeliveryAddress;

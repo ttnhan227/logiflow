@@ -23,6 +23,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _companyNameController = TextEditingController();
+  final _companyCodeController = TextEditingController();
   String? _paymentMethod;
 
   XFile? _selectedImage;
@@ -50,6 +52,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     _fullNameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _companyNameController.dispose();
+    _companyCodeController.dispose();
     super.dispose();
   }
 
@@ -113,6 +117,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         if (profile.fullName != null) _fullNameController.text = profile.fullName!;
         if (profile.phone != null) _phoneController.text = profile.phone!;
         if (profile.address != null) _addressController.text = profile.address!;
+        if (profile.companyName != null) _companyNameController.text = profile.companyName!;
+        if (profile.companyCode != null) _companyCodeController.text = profile.companyCode!;
         _paymentMethod = profile.paymentMethod;
       });
     } catch (e) {
@@ -135,6 +141,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         fullName: _fullNameController.text.trim().isNotEmpty ? _fullNameController.text.trim() : null,
         phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+        companyName: _companyNameController.text.trim().isNotEmpty ? _companyNameController.text.trim() : null,
+        companyCode: _companyCodeController.text.trim().isNotEmpty ? _companyCodeController.text.trim() : null,
         paymentMethod: _paymentMethod,
       );
 
@@ -242,6 +250,15 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
               _buildTextField('Phone Number', _phoneController),
               const SizedBox(height: 16),
               _buildTextField('Address', _addressController, maxLines: 3),
+              const SizedBox(height: 24),
+              const Text(
+                'Company Information (Optional)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildTextField('Company Name', _companyNameController),
+              const SizedBox(height: 16),
+              _buildTextField('Company Code', _companyCodeController),
               const SizedBox(height: 16),
               _buildPaymentMethodDropdown(),
             ] else ...[
@@ -250,6 +267,18 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
               _buildInfoRow('Phone', _profile!.phone ?? 'Not set'),
               const SizedBox(height: 12),
               _buildInfoRow('Address', _profile!.address ?? 'Not set'),
+              if (_profile!.companyName != null || _profile!.companyCode != null) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Company Information',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                if (_profile!.companyName != null)
+                  _buildInfoRow('Company', _profile!.companyName!),
+                if (_profile!.companyCode != null)
+                  _buildInfoRow('Company Code', _profile!.companyCode!),
+              ],
             ],
           ],
         ),

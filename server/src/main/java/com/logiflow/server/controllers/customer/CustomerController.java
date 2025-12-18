@@ -82,4 +82,11 @@ public class CustomerController {
         var result = customerService.getOrderHistory(authentication.getName());
         return ResponseEntity.ok(result);
     }
+
+    // 8) GET /api/customer/me/performance - Get company performance metrics
+    @GetMapping("/performance")
+    public ResponseEntity<CompanyPerformanceDto> getCompanyPerformance(Authentication authentication) {
+        var result = customerService.getCompanyPerformance(authentication.getName());
+        return ResponseEntity.ok(result);
+    }
 }

@@ -285,7 +285,117 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
+                                  if (order.slaExtensionMinutes != null && order.slaExtensionMinutes! > 0) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange[100],
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.orange[300]!),
+                                      ),
+                                      child: Text(
+                                        '+${order.slaExtensionMinutes}m',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.orange[800],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
+                              ),
+                            ],
+                            // Delay Information
+                            if (order.delayReason != null && order.delayReason!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.orange[200]!),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.warning_amber,
+                                          size: 16,
+                                          color: Colors.orange[700],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Delay Reported',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.orange[800],
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: _getDelayStatusColor(order.delayStatus),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            _getDelayStatusText(order.delayStatus),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      order.delayReason!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.orange[900],
+                                      ),
+                                    ),
+                                    if (order.delayAdminComment != null && order.delayAdminComment!.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue[50],
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: Colors.blue[200]!),
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(
+                                              Icons.admin_panel_settings,
+                                              size: 14,
+                                              color: Colors.blue[700],
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                'Admin: ${order.delayAdminComment}',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.blue[900],
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ],
                             const SizedBox(height: 8),
@@ -337,6 +447,34 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
 
   String _formatDateTime(DateTime date) {
     return '${date.month}/${date.day} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Color _getDelayStatusColor(String? status) {
+    if (status == null) return Colors.grey;
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        return Colors.green;
+      case 'REJECTED':
+        return Colors.red;
+      case 'PENDING':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getDelayStatusText(String? status) {
+    if (status == null) return 'Unknown';
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        return 'Approved';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'PENDING':
+        return 'Pending';
+      default:
+        return status;
+    }
   }
 }
 

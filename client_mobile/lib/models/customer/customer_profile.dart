@@ -7,6 +7,8 @@ class CustomerProfile extends Equatable {
   final String? fullName;
   final String? phone;
   final String? address;
+  final String? companyName;
+  final String? companyCode;
   final String? paymentMethod;
   final String? profilePictureUrl;
   final DateTime createdAt;
@@ -20,6 +22,8 @@ class CustomerProfile extends Equatable {
     this.fullName,
     this.phone,
     this.address,
+    this.companyName,
+    this.companyCode,
     this.paymentMethod,
     this.profilePictureUrl,
     required this.createdAt,
@@ -35,6 +39,8 @@ class CustomerProfile extends Equatable {
       fullName: json['fullName'],
       phone: json['phone'],
       address: json['address'],
+      companyName: json['companyName'],
+      companyCode: json['companyCode'],
       paymentMethod: json['paymentMethod'],
       profilePictureUrl: json['profilePictureUrl'],
       createdAt: DateTime.parse(json['createdAt']),
@@ -51,6 +57,8 @@ class CustomerProfile extends Equatable {
       'fullName': fullName,
       'phone': phone,
       'address': address,
+      'companyName': companyName,
+      'companyCode': companyCode,
       'paymentMethod': paymentMethod,
       'createdAt': createdAt.toIso8601String(),
       'totalOrders': totalOrders,
@@ -66,6 +74,8 @@ class CustomerProfile extends Equatable {
     fullName,
     phone,
     address,
+    companyName,
+    companyCode,
     paymentMethod,
     profilePictureUrl,
     createdAt,
@@ -78,6 +88,8 @@ class UpdateProfileRequest extends Equatable {
   final String? fullName;
   final String? phone;
   final String? address;
+  final String? companyName;
+  final String? companyCode;
   final String? paymentMethod;
   final String? profilePictureUrl;
 
@@ -85,6 +97,8 @@ class UpdateProfileRequest extends Equatable {
     this.fullName,
     this.phone,
     this.address,
+    this.companyName,
+    this.companyCode,
     this.paymentMethod,
     this.profilePictureUrl,
   });
@@ -94,11 +108,13 @@ class UpdateProfileRequest extends Equatable {
       'fullName': fullName,
       'phone': phone,
       'address': address,
+      'companyName': companyName,
+      'companyCode': companyCode,
       'paymentMethod': paymentMethod,
       'profilePictureUrl': profilePictureUrl,
     };
   }
 
   @override
-  List<Object?> get props => [fullName, phone, address, paymentMethod, profilePictureUrl];
+  List<Object?> get props => [fullName, phone, address, companyName, companyCode, paymentMethod, profilePictureUrl];
 }

@@ -136,6 +136,8 @@ public class CustomerDtos {
         private String fullName;
         private String phone;
         private String address;
+        private String companyName; // for B2B customers
+        private String companyCode; // for B2B customers
         private String paymentMethod; // optional: credit card, cash, etc.
         private String profilePictureUrl; // from User model
         private LocalDateTime createdAt;
@@ -148,7 +150,30 @@ public class CustomerDtos {
         private String fullName;
         private String phone;
         private String address;
+        private String companyName; // for B2B customers
+        private String companyCode; // for B2B customers
         private String paymentMethod;
         private String profilePictureUrl; // for profile image updates
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class CompanyPerformanceDto {
+        private int totalOrders;
+        private int deliveredOrders;
+        private int cancelledOrders;
+        private double onTimeDeliveryRate; // percentage (0-100)
+        private long averageDelayMinutes;
+        private long averageDeliveryTimeMinutes;
+        private BigDecimal totalSpent;
+        private List<PickupTypePerformanceDto> pickupTypePerformance;
+    }
+
+    @Data @NoArgsConstructor @AllArgsConstructor
+    public static class PickupTypePerformanceDto {
+        private String pickupType; // 'PORT' or 'WAREHOUSE'
+        private int totalOrders;
+        private int onTimeOrders;
+        private double onTimeRate; // percentage
+        private long averageDelayMinutes;
     }
 }

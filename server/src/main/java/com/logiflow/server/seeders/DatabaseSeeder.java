@@ -364,6 +364,17 @@ public class DatabaseSeeder implements CommandLineRunner {
         String[] wards = {"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11"};
         String[] streets = {"Nguyen Trai", "Le Hong Phong", "Tran Hung Dao", "Vo Van Tan", "Pham Ngoc Thach", "Tong Huu Dinh"};
 
+        // Company data for B2B customers (some customers are B2B companies)
+        String[] companyNames = {
+            "Logistics Solutions Ltd", "Global Trade Corp", "Metro Freight Services",
+            "Pacific Shipping Co", "Prime Logistics Group", "Express Cargo Ltd",
+            "Blue Ocean Traders", "Fast Track Logistics", "Unity Shipping Corp"
+        };
+        String[] companyCodes = {
+            "LOG001", "GTC002", "MFS003", "PSC004", "PLG005",
+            "ECL006", "BOT007", "FTL008", "USC009"
+        };
+
         List<Customer> customers = java.util.stream.IntStream.range(0, customerUsers.size())
                 .mapToObj(index -> {
                     User user = customerUsers.get(index);
@@ -388,6 +399,15 @@ public class DatabaseSeeder implements CommandLineRunner {
                         int daysSinceLastOrder = 1 + (Math.abs(user.getUsername().hashCode()) % 60);
                         customer.setLastOrderDate(LocalDateTime.now().minusDays(daysSinceLastOrder));
                     }
+
+                    // Add company information to ~40% of customers (B2B simulation)
+                    int companySeed = Math.abs(user.getUsername().hashCode()) % 100;
+                    if (companySeed < 40) { // 40% chance of being a B2B customer
+                        int companyIndex = companySeed % companyNames.length;
+                        customer.setCompanyName(companyNames[companyIndex]);
+                        customer.setCompanyCode(companyCodes[companyIndex]);
+                    }
+
                     return customer;
                 }).toList();
 
