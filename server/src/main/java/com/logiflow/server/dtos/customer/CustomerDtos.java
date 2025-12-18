@@ -80,6 +80,9 @@ public class CustomerDtos {
         private String tripStatus;
         private LocalDateTime createdAt;
         private LocalDateTime estimatedDeliveryTime;
+        private Integer slaExtensionMinutes;
+        private String delayReason;
+        private String delayStatus;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
@@ -156,24 +159,5 @@ public class CustomerDtos {
         private String profilePictureUrl; // for profile image updates
     }
 
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class CompanyPerformanceDto {
-        private int totalOrders;
-        private int deliveredOrders;
-        private int cancelledOrders;
-        private double onTimeDeliveryRate; // percentage (0-100)
-        private long averageDelayMinutes;
-        private long averageDeliveryTimeMinutes;
-        private BigDecimal totalSpent;
-        private List<PickupTypePerformanceDto> pickupTypePerformance;
-    }
 
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class PickupTypePerformanceDto {
-        private String pickupType; // 'PORT' or 'WAREHOUSE'
-        private int totalOrders;
-        private int onTimeOrders;
-        private double onTimeRate; // percentage
-        private long averageDelayMinutes;
-    }
 }

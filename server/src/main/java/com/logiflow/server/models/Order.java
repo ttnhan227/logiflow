@@ -106,6 +106,7 @@ public class Order {
     }
 
     public static enum PickupType {
+        STANDARD,
         PORT_TERMINAL,
         WAREHOUSE
     }

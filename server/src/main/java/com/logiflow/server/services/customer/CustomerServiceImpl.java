@@ -253,6 +253,8 @@ public class CustomerServiceImpl implements CustomerService {
         profile.setFullName(customer.getUser().getFullName());
         profile.setPhone(customer.getUser().getPhone());
         profile.setAddress(customer.getDefaultDeliveryAddress());
+        profile.setCompanyName(customer.getCompanyName()); // ✅ Add company fields
+        profile.setCompanyCode(customer.getCompanyCode()); // ✅ Add company fields
         profile.setPaymentMethod(customer.getPreferredPaymentMethod());
         profile.setProfilePictureUrl(customer.getUser().getProfilePictureUrl());
         profile.setCreatedAt(customer.getUser().getCreatedAt());
@@ -281,6 +283,12 @@ public class CustomerServiceImpl implements CustomerService {
         }
         if (request.getAddress() != null) {
             customer.setDefaultDeliveryAddress(request.getAddress());
+        }
+        if (request.getCompanyName() != null) {
+            customer.setCompanyName(request.getCompanyName());
+        }
+        if (request.getCompanyCode() != null) {
+            customer.setCompanyCode(request.getCompanyCode());
         }
         if (request.getPaymentMethod() != null) {
             customer.setPreferredPaymentMethod(request.getPaymentMethod());
@@ -338,166 +346,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public CompanyPerformanceDto getCompanyPerformance(String customerUsername) {
-        User customer = getCurrentCustomer(customerUsername);
-        List<Order> allOrders = orderRepository.findByCustomerId(customer.getUserId());
 
-        CompanyPerformanceDto performance = new CompanyPerformanceDto();
-        performance.setTotalOrders(allOrders.size());
-
-        // Calculate delivered and cancelled counts
-        int deliveredCount = 0;
-        int cancelledCount = 0;
-        BigDecimal totalSpent = BigDecimal.ZERO;
-        long totalDelayMinutes = 0;
-        long totalDeliveryTimeMinutes = 0;
-        int delayedOrdersCount = 0;
-        int onTimeOrdersCount = 0;
-
-        // Group orders by pickup type for performance analysis
-        List<PickupTypePerformanceDto> pickupTypePerformance = new java.util.ArrayList<>();
-
-        // Calculate PORT performance
-        List<Order> portOrders = allOrders.stream()
-                .filter(order -> order.getPickupType() != null && "PORT".equals(order.getPickupType().name()))
-                .collect(Collectors.toList());
-
-        if (!portOrders.isEmpty()) {
-            PickupTypePerformanceDto portPerformance = calculatePickupTypePerformance(portOrders, "PORT");
-            pickupTypePerformance.add(portPerformance);
-        }
-
-        // Calculate WAREHOUSE performance
-        List<Order> warehouseOrders = allOrders.stream()
-                .filter(order -> order.getPickupType() != null && "WAREHOUSE".equals(order.getPickupType().name()))
-                .collect(Collectors.toList());
-
-        if (!warehouseOrders.isEmpty()) {
-            PickupTypePerformanceDto warehousePerformance = calculatePickupTypePerformance(warehouseOrders, "WAREHOUSE");
-            pickupTypePerformance.add(warehousePerformance);
-        }
-
-        // Calculate overall metrics
-        for (Order order : allOrders) {
-            if (order.getOrderStatus() == Order.OrderStatus.DELIVERED) {
-                deliveredCount++;
-                if (order.getShippingFee() != null) {
-                    totalSpent = totalSpent.add(order.getShippingFee());
-                }
-
-                // Calculate delivery time and on-time performance
-                if (order.getTrip() != null && order.getTrip().getScheduledArrival() != null
-                    && order.getTrip().getActualArrival() != null) {
-
-                    long deliveryTimeMinutes = java.time.Duration.between(
-                        order.getTrip().getScheduledDeparture(),
-                        order.getTrip().getActualArrival()
-                    ).toMinutes();
-                    totalDeliveryTimeMinutes += deliveryTimeMinutes;
-
-                    // Check if on-time (within SLA - assuming 2 hour window)
-                    long scheduledArrivalMinutes = java.time.Duration.between(
-                        order.getTrip().getScheduledDeparture(),
-                        order.getTrip().getScheduledArrival()
-                    ).toMinutes();
-
-                    if (deliveryTimeMinutes <= scheduledArrivalMinutes + 120) { // 2 hour grace period
-                        onTimeOrdersCount++;
-                    }
-
-                    // Calculate delay if late
-                    if (deliveryTimeMinutes > scheduledArrivalMinutes) {
-                        totalDelayMinutes += (deliveryTimeMinutes - scheduledArrivalMinutes);
-                        delayedOrdersCount++;
-                    }
-                }
-            } else if (order.getOrderStatus() == Order.OrderStatus.CANCELLED) {
-                cancelledCount++;
-            }
-        }
-
-        performance.setDeliveredOrders(deliveredCount);
-        performance.setCancelledOrders(cancelledCount);
-        performance.setTotalSpent(totalSpent);
-
-        // Calculate on-time delivery rate
-        if (deliveredCount > 0) {
-            performance.setOnTimeDeliveryRate((double) onTimeOrdersCount / deliveredCount * 100.0);
-        } else {
-            performance.setOnTimeDeliveryRate(0.0);
-        }
-
-        // Calculate average delay
-        if (delayedOrdersCount > 0) {
-            performance.setAverageDelayMinutes(totalDelayMinutes / delayedOrdersCount);
-        } else {
-            performance.setAverageDelayMinutes(0);
-        }
-
-        // Calculate average delivery time
-        if (deliveredCount > 0) {
-            performance.setAverageDeliveryTimeMinutes(totalDeliveryTimeMinutes / deliveredCount);
-        } else {
-            performance.setAverageDeliveryTimeMinutes(0);
-        }
-
-        performance.setPickupTypePerformance(pickupTypePerformance);
-
-        return performance;
-    }
-
-    private PickupTypePerformanceDto calculatePickupTypePerformance(List<Order> orders, String pickupType) {
-        PickupTypePerformanceDto performance = new PickupTypePerformanceDto();
-        performance.setPickupType(pickupType);
-        performance.setTotalOrders(orders.size());
-
-        int onTimeCount = 0;
-        long totalDelayMinutes = 0;
-        int delayedCount = 0;
-
-        for (Order order : orders) {
-            if (order.getOrderStatus() == Order.OrderStatus.DELIVERED
-                && order.getTrip() != null
-                && order.getTrip().getScheduledArrival() != null
-                && order.getTrip().getActualArrival() != null) {
-
-                long scheduledMinutes = java.time.Duration.between(
-                    order.getTrip().getScheduledDeparture(),
-                    order.getTrip().getScheduledArrival()
-                ).toMinutes();
-
-                long actualMinutes = java.time.Duration.between(
-                    order.getTrip().getScheduledDeparture(),
-                    order.getTrip().getActualArrival()
-                ).toMinutes();
-
-                if (actualMinutes <= scheduledMinutes + 120) { // 2 hour grace period
-                    onTimeCount++;
-                }
-
-                if (actualMinutes > scheduledMinutes) {
-                    totalDelayMinutes += (actualMinutes - scheduledMinutes);
-                    delayedCount++;
-                }
-            }
-        }
-
-        performance.setOnTimeOrders(onTimeCount);
-        if (orders.size() > 0) {
-            performance.setOnTimeRate((double) onTimeCount / orders.size() * 100.0);
-        } else {
-            performance.setOnTimeRate(0.0);
-        }
-
-        if (delayedCount > 0) {
-            performance.setAverageDelayMinutes(totalDelayMinutes / delayedCount);
-        } else {
-            performance.setAverageDelayMinutes(0);
-        }
-
-        return performance;
-    }
 
     private OrderDto mapToOrderDto(Order order) {
         OrderDto dto = new OrderDto();
@@ -560,6 +409,13 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setDistanceKm(order.getDistanceKm());
         dto.setOrderStatus(order.getOrderStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
+
+        // Delay-related fields (from trip, since delays affect entire trips)
+        if (order.getTrip() != null) {
+            dto.setDelayReason(order.getTrip().getDelayReason());
+            dto.setDelayStatus(order.getTrip().getDelayStatus());
+            dto.setSlaExtensionMinutes(order.getTrip().getSlaExtensionMinutes());
+        }
 
         if (order.getTrip() != null) {
             dto.setTripStatus(order.getTrip().getStatus());

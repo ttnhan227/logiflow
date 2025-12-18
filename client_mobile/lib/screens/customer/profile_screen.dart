@@ -250,6 +250,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
               _buildTextField('Phone Number', _phoneController),
               const SizedBox(height: 16),
               _buildTextField('Address', _addressController, maxLines: 3),
+              const SizedBox(height: 16),
+              _buildPaymentMethodDropdown(),
               const SizedBox(height: 24),
               const Text(
                 'Company Information (Optional)',
@@ -259,26 +261,23 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
               _buildTextField('Company Name', _companyNameController),
               const SizedBox(height: 16),
               _buildTextField('Company Code', _companyCodeController),
-              const SizedBox(height: 16),
-              _buildPaymentMethodDropdown(),
             ] else ...[
               _buildInfoRow('Full Name', _profile!.fullName ?? 'Not set'),
               const SizedBox(height: 12),
               _buildInfoRow('Phone', _profile!.phone ?? 'Not set'),
               const SizedBox(height: 12),
               _buildInfoRow('Address', _profile!.address ?? 'Not set'),
-              if (_profile!.companyName != null || _profile!.companyCode != null) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Company Information',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                if (_profile!.companyName != null)
-                  _buildInfoRow('Company', _profile!.companyName!),
-                if (_profile!.companyCode != null)
-                  _buildInfoRow('Company Code', _profile!.companyCode!),
-              ],
+              const SizedBox(height: 12),
+              _buildInfoRow('Payment Method', _getPaymentMethodDisplay(_profile!.paymentMethod)),
+              const SizedBox(height: 16),
+              const Text(
+                'Company Information',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              _buildInfoRow('Company Name', _profile!.companyName ?? 'Not set'),
+              const SizedBox(height: 12),
+              _buildInfoRow('Company Code', _profile!.companyCode ?? 'Not set'),
             ],
           ],
         ),
@@ -399,5 +398,22 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year}';
+  }
+
+  String _getPaymentMethodDisplay(String? paymentMethod) {
+    if (paymentMethod == null) return 'Not set';
+
+    switch (paymentMethod) {
+      case 'cash':
+        return 'Cash on Delivery';
+      case 'credit_card':
+        return 'Credit Card';
+      case 'debit_card':
+        return 'Debit Card';
+      case 'digital_wallet':
+        return 'Digital Wallet';
+      default:
+        return paymentMethod;
+    }
   }
 }

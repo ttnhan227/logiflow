@@ -220,10 +220,7 @@ public class TripOversightServiceImpl implements TripOversightService {
                 throw new RuntimeException("Invalid response type: " + responseType);
         }
 
-        // Persist admin decision and optional comment
-        if (adminComment != null && !adminComment.isEmpty()) {
-            trip.setDelayAdminComment(adminComment);
-        }
+        // Admin decision is tracked but no comment stored for customers
         Trip savedTrip = tripRepository.save(trip);
 
         // Audit the critical SLA extension decision

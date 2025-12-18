@@ -362,38 +362,7 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                         color: Colors.orange[900],
                                       ),
                                     ),
-                                    if (order.delayAdminComment != null && order.delayAdminComment!.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue[50],
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: Colors.blue[200]!),
-                                        ),
-                                        child: Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Icon(
-                                              Icons.admin_panel_settings,
-                                              size: 14,
-                                              color: Colors.blue[700],
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                'Admin: ${order.delayAdminComment}',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: Colors.blue[900],
-                                                  fontStyle: FontStyle.italic,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+
                                   ],
                                 ),
                               ),

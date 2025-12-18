@@ -36,7 +36,6 @@ public class TripOversightDto {
     private String delayReason;
     private Integer slaExtensionMinutes;
     private String delayStatus;
-    private String delayAdminComment;
 
     // Route information
     private String originAddress;
@@ -97,7 +96,6 @@ public class TripOversightDto {
         dto.setDelayReason(trip.getDelayReason());
         dto.setSlaExtensionMinutes(trip.getSlaExtensionMinutes() != null ? trip.getSlaExtensionMinutes() : 0);
         dto.setDelayStatus(trip.getDelayStatus());
-        dto.setDelayAdminComment(trip.getDelayAdminComment());
 
         // Route information - with null checks
         if (trip.getRoute() != null) {

@@ -291,72 +291,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'Order Details',
+                  'Pickup Type',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                // Pickup Address Input with Backend Suggestions
-                Stack(
-                  children: [
-                    TextFormField(
-                      controller: _pickupAddressController,
-                      decoration: InputDecoration(
-                        labelText: 'Pickup Address',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: _isLoadingPickupSuggestions
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : null,
-                      ),
-                      maxLines: 3,
-                      onChanged: (query) {
-                        _loadPickupSuggestions(query);
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter pickup address';
-                        }
-                        return null;
-                      },
-                    ),
-                    if (_pickupSuggestions.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(top: 65),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(5),
-                          boxShadow: const [BoxShadow(blurRadius: 2)],
-                        ),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: _pickupSuggestions.length,
-                          separatorBuilder: (context, index) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final suggestion = _pickupSuggestions[index];
-                            return ListTile(
-                              dense: true,
-                              title: Text(
-                                suggestion,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              onTap: () {
-                                _pickupAddressController.text = suggestion;
-                                setState(() {
-                                  _pickupSuggestions = [];
-                                });
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                  ],
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -366,7 +302,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'PORT', child: Text('🚢 Port')),
+                    DropdownMenuItem(value: 'STANDARD', child: Text('📍 Standard Pickup')),
+                    DropdownMenuItem(value: 'PORT_TERMINAL', child: Text('🚢 Port Terminal')),
                     DropdownMenuItem(
                       value: 'WAREHOUSE',
                       child: Text('🏭 Warehouse'),
@@ -376,178 +313,266 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     setState(() => _pickupType = value ?? '');
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _containerNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Container Number (optional)',
-                    border: OutlineInputBorder(),
+                const SizedBox(height: 24),
+                // Only show order details if pickup type is selected
+                if (_pickupType.isNotEmpty) ...[
+                  const Text(
+                    'Order Details',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _terminalNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Terminal Name (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _warehouseNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Warehouse Name (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _dockNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Dock Number (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Delivery Address Input with Backend Suggestions
-                Stack(
-                  children: [
-                    TextFormField(
-                      controller: _deliveryAddressController,
-                      decoration: InputDecoration(
-                        labelText: 'Delivery Address',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: _isLoadingDeliverySuggestions
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : null,
-                      ),
-                      maxLines: 3,
-                      onChanged: (query) {
-                        _loadDeliverySuggestions(query);
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter delivery address';
-                        }
-                        return null;
-                      },
-                    ),
-                    if (_deliverySuggestions.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(top: 65),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(5),
-                          boxShadow: const [BoxShadow(blurRadius: 2)],
+                  const SizedBox(height: 16),
+                  // Pickup Address Input with Backend Suggestions
+                  Stack(
+                    children: [
+                      TextFormField(
+                        controller: _pickupAddressController,
+                        decoration: InputDecoration(
+                          labelText: 'Pickup Address',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: _isLoadingPickupSuggestions
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : null,
                         ),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: _deliverySuggestions.length,
-                          separatorBuilder: (context, index) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final suggestion = _deliverySuggestions[index];
-                            return ListTile(
-                              dense: true,
-                              title: Text(
-                                suggestion,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              onTap: () {
-                                _deliveryAddressController.text = suggestion;
-                                setState(() {
-                                  _deliverySuggestions = [];
-                                });
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _packageDetailsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Package Details',
-                    border: OutlineInputBorder(),
-                    hintText:
-                        'Describe the package (weight, size, special instructions)',
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                // Package Weight
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _weightController,
-                        decoration: const InputDecoration(
-                          labelText: 'Package Weight (kg)',
-                          border: OutlineInputBorder(),
-                          suffixText: 'kg',
-                        ),
-                        keyboardType: TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        maxLines: 3,
+                        onChanged: (query) {
+                          _loadPickupSuggestions(query);
+                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return null; // Weight is optional
-                          }
-                          final weight = double.tryParse(value);
-                          if (weight == null) {
-                            return 'Please enter a valid weight';
-                          }
-                          if (weight <= 0) {
-                            return 'Weight must be greater than 0';
+                            return 'Please enter pickup address';
                           }
                           return null;
                         },
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _packageValueController,
-                        decoration: const InputDecoration(
-                          labelText: 'Package Value (VND)',
-                          border: OutlineInputBorder(),
-                          prefixText: 'VND ',
+                      if (_pickupSuggestions.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 65),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(5),
+                            boxShadow: const [BoxShadow(blurRadius: 2)],
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: _pickupSuggestions.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final suggestion = _pickupSuggestions[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  suggestion,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                onTap: () {
+                                  _pickupAddressController.text = suggestion;
+                                  setState(() {
+                                    _pickupSuggestions = [];
+                                  });
+                                },
+                              );
+                            },
+                          ),
                         ),
-                        keyboardType: TextInputType.number,
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Conditional fields based on pickup type
+                  if (_pickupType == 'PORT_TERMINAL') ...[
+                    TextFormField(
+                      controller: _containerNumberController,
+                      decoration: const InputDecoration(
+                        labelText: 'Container Number',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter container number (e.g., ABC123456)',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _terminalNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Terminal Name',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter port terminal name',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _dockNumberController,
+                      decoration: const InputDecoration(
+                        labelText: 'Dock Number',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter dock/gate number',
+                      ),
+                    ),
+                  ] else if (_pickupType == 'WAREHOUSE') ...[
+                    TextFormField(
+                      controller: _warehouseNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Warehouse Name',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter warehouse name',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _dockNumberController,
+                      decoration: const InputDecoration(
+                        labelText: 'Dock Number',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter loading dock number',
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _priority,
-                  decoration: const InputDecoration(
-                    labelText: 'Delivery Priority',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  // Delivery Address Input with Backend Suggestions
+                  Stack(
+                    children: [
+                      TextFormField(
+                        controller: _deliveryAddressController,
+                        decoration: InputDecoration(
+                          labelText: 'Delivery Address',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: _isLoadingDeliverySuggestions
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        maxLines: 3,
+                        onChanged: (query) {
+                          _loadDeliverySuggestions(query);
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter delivery address';
+                          }
+                          return null;
+                        },
+                      ),
+                      if (_deliverySuggestions.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 65),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(5),
+                            boxShadow: const [BoxShadow(blurRadius: 2)],
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: _deliverySuggestions.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final suggestion = _deliverySuggestions[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  suggestion,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                onTap: () {
+                                  _deliveryAddressController.text = suggestion;
+                                  setState(() {
+                                    _deliverySuggestions = [];
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                    ],
                   ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'NORMAL',
-                      child: Text('📦 Normal Delivery'),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _packageDetailsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Package Details',
+                      border: OutlineInputBorder(),
+                      hintText:
+                          'Describe the package (weight, size, special instructions)',
                     ),
-                    DropdownMenuItem(
-                      value: 'URGENT',
-                      child: Text('⚡ Urgent Delivery'),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  // Package Weight
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _weightController,
+                          decoration: const InputDecoration(
+                            labelText: 'Package Weight (kg)',
+                            border: OutlineInputBorder(),
+                            suffixText: 'kg',
+                          ),
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return null; // Weight is optional
+                            }
+                            final weight = double.tryParse(value);
+                            if (weight == null) {
+                              return 'Please enter a valid weight';
+                            }
+                            if (weight <= 0) {
+                              return 'Weight must be greater than 0';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _packageValueController,
+                          decoration: const InputDecoration(
+                            labelText: 'Package Value (VND)',
+                            border: OutlineInputBorder(),
+                            prefixText: 'VND ',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _priority,
+                    decoration: const InputDecoration(
+                      labelText: 'Delivery Priority',
+                      border: OutlineInputBorder(),
                     ),
-                  ],
-                  onChanged: (value) {
-                    setState(() => _priority = value ?? 'NORMAL');
-                  },
-                ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'NORMAL',
+                        child: Text('📦 Normal Delivery'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'URGENT',
+                        child: Text('⚡ Urgent Delivery'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _priority = value ?? 'NORMAL');
+                    },
+                  ),
+                ], // Close the pickup type conditional block
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,

@@ -22,5 +22,5 @@ public interface CustomerService {
     List<OrderHistoryDto> getOrderHistory(String customerUsername);
 
     // Performance analytics
-    CompanyPerformanceDto getCompanyPerformance(String customerUsername);
+
 }

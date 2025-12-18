@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/customer/customer_service.dart';
 import '../../models/customer/order_history.dart';
-import '../../models/customer/company_performance.dart';
-import 'company_performance_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -13,7 +11,6 @@ class OrderHistoryScreen extends StatefulWidget {
 
 class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   List<OrderHistory> _orders = [];
-  CompanyPerformance? _performance;
   bool _isLoading = true;
   String? _error;
 
@@ -31,10 +28,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       });
 
       final orders = await customerService.getOrderHistory();
-      final performance = await customerService.getCompanyPerformance();
       setState(() {
         _orders = orders;
-        _performance = performance;
       });
     } catch (e) {
       setState(() => _error = e.toString());
@@ -98,15 +93,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               onRefresh: _refresh,
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: _orders.length + (_performance != null ? 1 : 0),
+                itemCount: _orders.length,
                 itemBuilder: (context, index) {
-                  // Show performance summary as first item
-                  if (_performance != null && index == 0) {
-                    return _buildPerformanceSummaryCard();
-                  }
-
-                  final orderIndex = _performance != null ? index - 1 : index;
-                  final order = _orders[orderIndex];
+                  final order = _orders[index];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Padding(
@@ -295,99 +284,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  Widget _buildPerformanceSummaryCard() {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: Colors.blue.shade50,
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const CompanyPerformanceScreen(),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '📊 Company Performance',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward,
-                    color: Colors.blue.shade700,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPerformanceMetric(
-                      '${_performance!.onTimeDeliveryRate.toStringAsFixed(1)}%',
-                      'On-Time Rate',
-                      _performance!.onTimeDeliveryRate >= 90 ? Colors.green :
-                      _performance!.onTimeDeliveryRate >= 75 ? Colors.orange : Colors.red,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildPerformanceMetric(
-                      '${_performance!.totalOrders}',
-                      'Total Orders',
-                      Colors.blue,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tap for detailed analytics →',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.blue.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildPerformanceMetric(String value, String label, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();

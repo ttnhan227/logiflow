@@ -127,8 +127,6 @@ public class DriverServiceImpl implements DriverService {
         trip.setDelayReason(delayReason);
         // Whenever driver submits or updates, reset status back to PENDING
         trip.setDelayStatus("PENDING");
-        // Clear previous admin comment so the next response is explicit
-        trip.setDelayAdminComment(null);
 
         tripRepository.save(trip);
 
@@ -364,7 +362,6 @@ public class DriverServiceImpl implements DriverService {
         dto.setDelayReason(t.getDelayReason());
         dto.setSlaExtensionMinutes(t.getSlaExtensionMinutes());
         dto.setDelayStatus(t.getDelayStatus());
-        dto.setDelayAdminComment(t.getDelayAdminComment());
 
         if (t.getOrders() != null) {
             dto.setOrders(t.getOrders().stream().map(o -> {
