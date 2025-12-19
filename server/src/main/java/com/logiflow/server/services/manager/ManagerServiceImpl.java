@@ -281,8 +281,6 @@ public class ManagerServiceImpl implements ManagerService {
 
         for (Vehicle vehicle : vehicles) {
             String physicalStatus = normalize(vehicle.getStatus());
-
-            // 1️ Ưu tiên tuyệt đối trạng thái vật lý
             if (isMaintenance(physicalStatus)) {
                 maintenance++;
                 continue;
@@ -515,7 +513,7 @@ public class ManagerServiceImpl implements ManagerService {
         int delayed = (int) items.stream().filter(x -> "Delayed".equalsIgnoreCase(x.getIssueType())).count();
         int cancelled = (int) items.stream().filter(x -> "Cancelled".equalsIgnoreCase(x.getIssueType())).count();
 
-        // Module 3: chưa có bảng chi phí, technical/highSeverity giữ 0 (data thật)
+        // Module 3: chưa có bảng chi phí, technical/highSeverity giữ 0
         ManagerDtos.IssuesSummaryDto summary = ManagerDtos.IssuesSummaryDto.builder()
                 .totalIssues(items.size())
                 .delayedIssues(delayed)
@@ -549,14 +547,13 @@ public class ManagerServiceImpl implements ManagerService {
         int medium = 0;
         int low = 0;
 
-        // cấu hình truyền thống: cảnh báo sắp hết hạn bằng số ngày
+        // cảnh báo sắp hết hạn bằng số ngày
         final int licenseExpiringDays = 30;
         LocalDate licenseThreshold = LocalDate.now().plusDays(licenseExpiringDays);
 
         for (Trip t : trips) {
             if (t == null) continue;
 
-            // Trip có assignment mới check compliance (đúng nghiệp vụ module 5)
             List<TripAssignment> assigns = t.getTripAssignments();
             if (assigns == null || assigns.isEmpty()) continue;
 
@@ -577,7 +574,6 @@ public class ManagerServiceImpl implements ManagerService {
                                 : s.toString();
 
                 // RULE A: LICENSE_EXPIRING (MEDIUM)
-                // NOTE: nếu field khác tên, đổi chỗ này theo model Driver thực tế.
                 try {
                     LocalDate licenseExpiryDate = d.getLicenseExpiryDate();
                     if (licenseExpiryDate != null && !licenseExpiryDate.isAfter(licenseThreshold)) {
@@ -596,7 +592,6 @@ public class ManagerServiceImpl implements ManagerService {
                         medium++;
                     }
                 } catch (Exception ignored) {
-                    // nếu model Driver chưa có field licenseExpiryDate thì anh báo nhóm để bổ sung
                 }
 
                 // RULE B: MISSING_WORKLOG (HIGH)
@@ -623,7 +618,7 @@ public class ManagerServiceImpl implements ManagerService {
                 }
 
                 // RULE C: REST_TIME_VIOLATION (HIGH/MEDIUM)
-                // Dựa dữ liệu thật: restTakenHours = nextAvailableTime - endTime, so với restHoursRequired
+                // restTakenHours = nextAvailableTime - endTime, so với restHoursRequired
                 if (tripIdInt != null && driverIdInt != null) {
                     List<com.logiflow.server.models.DriverWorkLog> logs =
                             driverWorkLogRepository.findByTrip_TripIdAndDriver_DriverId(tripIdInt, driverIdInt);
@@ -955,7 +950,7 @@ public class ManagerServiceImpl implements ManagerService {
             }
         }
 
-        // sort theo severity: HIGH trước, MEDIUM, LOW
+        // sort theo severity: HIGH, MEDIUM, LOW
         recs.sort((a, b) -> Integer.compare(sevScore(b.getSeverity()), sevScore(a.getSeverity())));
         return recs;
     }
@@ -997,7 +992,7 @@ public class ManagerServiceImpl implements ManagerService {
         List<ManagerDtos.AlertDto> alerts = new ArrayList<>();
         int seq = 1;
 
-        // ===== TRIP ALERTS =====
+        // TRIP ALERTS
         List<Trip> trips = tripRepository.findByScheduledDepartureBetween(from, to);
 
         for (Trip trip : trips) {
@@ -1065,7 +1060,7 @@ public class ManagerServiceImpl implements ManagerService {
             }
         }
 
-        // ===== VEHICLE MAINTENANCE ALERTS =====
+        // VEHICLE MAINTENANCE ALERTS
         List<Vehicle> vehicles = vehicleRepository.findAll();
 
         for (Vehicle v : vehicles) {
@@ -1123,7 +1118,6 @@ public class ManagerServiceImpl implements ManagerService {
     private String safeVehicleId(Vehicle v) {
         try {
             if (v == null) return null;
-            // tùy model: có thể là getVehicleId() hoặc getPlateNumber()
             if (v.getVehicleId() != null) return String.valueOf(v.getVehicleId());
         } catch (Exception ignored) {
         }

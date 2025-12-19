@@ -59,8 +59,8 @@ public class ManagerDtos {
     public static class RecommendationDto {
         private String code;        // ROUTE_DELAY / OVER_CAPACITY / COMPLIANCE / MAINTENANCE
         private String severity;    // HIGH / MEDIUM
-        private String message;     // việc cần làm
-        private String evidence;    // số liệu dẫn chứng
+        private String message;
+        private String evidence;
     }
 
     // 2 OPERATIONS PERFORMANCE (API /operations/performance)
@@ -89,7 +89,6 @@ public class ManagerDtos {
         private Integer delayedCompletedTrips;
         private Integer delayedInProgressTrips;
         private Integer eligibleCompletedTrips;
-
     }
 
     // 3) FLEET STATUS (API /fleet/status)
@@ -133,14 +132,14 @@ public class ManagerDtos {
     @Builder
     public static class IssueReportItemDto {
 
-        private String tripId;          // ID chuyến
+        private String tripId;
         private String driverId;
         private String driverName;
         private String vehicleId;
-        private String date;            // yyyy-MM-dd
+        private String date;
         private String issueType;       // "Delayed", "Cancelled", "VehicleFailure", ...
         private String description;     // mô tả ngắn
-        private Double delayMinutes;    // nếu có
+        private Double delayMinutes;
     }
 
     @Data
@@ -264,6 +263,4 @@ public class ManagerDtos {
         private String timestamp;
         private String ipAddress;
     }
-
-
 }
