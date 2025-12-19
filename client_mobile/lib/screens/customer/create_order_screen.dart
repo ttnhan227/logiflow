@@ -62,6 +62,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   CustomerProfile? _customerProfile;
   bool _hasPromptedForAutoFill = false;
 
+  // Distance calculation debouncing
+  bool _isDistanceCalculationInProgress = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -208,14 +211,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final pickupAddress = _pickupAddressController.text.trim();
     final deliveryAddress = _deliveryAddressController.text.trim();
 
-    if (pickupAddress.isEmpty || deliveryAddress.isEmpty) {
-      setState(() {
-        _calculatedDistance = null;
-        _calculatedDuration = null;
-      });
+    if (pickupAddress.isEmpty || deliveryAddress.isEmpty || _isDistanceCalculationInProgress) {
       return;
     }
 
+    _isDistanceCalculationInProgress = true;
     setState(() => _isCalculatingDistance = true);
 
     try {
@@ -224,6 +224,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         setState(() {
           _calculatedDistance = result.totalDistance;
           _calculatedDuration = result.totalDuration;
+        });
+      } else if (mounted) {
+        setState(() {
+          _calculatedDistance = null;
+          _calculatedDuration = null;
         });
       }
     } catch (e) {
@@ -237,6 +242,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       if (mounted) {
         setState(() => _isCalculatingDistance = false);
       }
+      _isDistanceCalculationInProgress = false;
     }
   }
 
@@ -610,7 +616,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                   const SizedBox(height: 16),
                   // Distance and Duration Display
-                  if (_isCalculatingDistance || (_calculatedDistance != null && _calculatedDuration != null))
+                  if (_isCalculatingDistance || (_calculatedDistance != null || _calculatedDuration != null))
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -639,14 +645,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Distance: $_calculatedDistance',
+                                        'Distance: ${_calculatedDistance ?? "Unable to calculate"}',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.blue,
                                         ),
                                       ),
                                       Text(
-                                        'Estimated duration: $_calculatedDuration',
+                                        'Estimated duration: ${_calculatedDuration ?? "Unable to calculate"}',
                                         style: const TextStyle(
                                           color: Colors.blue,
                                           fontSize: 12,
@@ -718,16 +724,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                 ], // Close the pickup type conditional block
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _createOrder,
-                    child: _isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text('Create Order'),
+                if (_pickupType.isNotEmpty)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _createOrder,
+                      child: _isLoading
+                          ? const CircularProgressIndicator()
+                          : const Text('Create Order'),
+                    ),
                   ),
-                ),
               ],
             ),
           ),

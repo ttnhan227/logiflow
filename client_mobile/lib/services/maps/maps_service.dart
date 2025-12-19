@@ -2,24 +2,24 @@ import '../api_client.dart';
 import 'dart:convert';
 
 class DistanceResult {
-  final String totalDistance;
-  final int distanceMeters;
-  final String totalDuration;
-  final int durationSeconds;
+  final String? totalDistance;
+  final int? distanceMeters;
+  final String? totalDuration;
+  final int? durationSeconds;
 
   DistanceResult({
-    required this.totalDistance,
-    required this.distanceMeters,
-    required this.totalDuration,
-    required this.durationSeconds,
+    this.totalDistance,
+    this.distanceMeters,
+    this.totalDuration,
+    this.durationSeconds,
   });
 
   factory DistanceResult.fromJson(Map<String, dynamic> json) {
     return DistanceResult(
-      totalDistance: json['totalDistance'],
-      distanceMeters: json['distanceMeters'],
-      totalDuration: json['totalDuration'],
-      durationSeconds: json['durationSeconds'],
+      totalDistance: json['totalDistance'] as String?,
+      distanceMeters: json['distanceMeters'] as int?,
+      totalDuration: json['totalDuration'] as String?,
+      durationSeconds: json['durationSeconds'] as int?,
     );
   }
 }
@@ -50,8 +50,11 @@ class MapsService {
       final response = await apiClient.get(
         '/maps/distance?origin=${Uri.encodeComponent(originAddress)}&destination=${Uri.encodeComponent(destinationAddress)}',
       );
-      if (response.statusCode == 200) {
-        return DistanceResult.fromJson(jsonDecode(response.body));
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        final json = jsonDecode(response.body);
+        if (json is Map<String, dynamic>) {
+          return DistanceResult.fromJson(json);
+        }
       }
       return null;
     } catch (e) {
