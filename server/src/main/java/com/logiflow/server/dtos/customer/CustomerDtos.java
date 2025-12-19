@@ -27,8 +27,7 @@ public class CustomerDtos {
         private BigDecimal pickupLng;
         private BigDecimal deliveryLat;
         private BigDecimal deliveryLng;
-        private BigDecimal weightKg;
-        private BigDecimal packageValue;
+        private BigDecimal weightTonnes;
         private String priority; // "NORMAL" or "URGENT"
     }
 

@@ -38,7 +38,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _deliveryAddressController = TextEditingController();
   final _packageDetailsController = TextEditingController();
   final _weightController = TextEditingController();
-  final _packageValueController = TextEditingController();
   final LayerLink _pickupLink = LayerLink();
   final LayerLink _deliveryLink = LayerLink();
 
@@ -162,7 +161,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     _deliveryAddressController.dispose();
     _packageDetailsController.dispose();
     _weightController.dispose();
-    _packageValueController.dispose();
     super.dispose();
   }
 
@@ -193,8 +191,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             : null,
         deliveryAddress: _deliveryAddressController.text.trim(),
         packageDetails: _packageDetailsController.text.trim(),
-        weightKg: double.tryParse(_weightController.text.trim()),
-        packageValue: double.tryParse(_packageValueController.text.trim()),
+        weightTonnes: double.tryParse(_weightController.text.trim()),
         priority: _priority,
       );
 
@@ -222,7 +219,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         _deliveryAddressController.clear();
         _packageDetailsController.clear();
         _weightController.clear();
-        _packageValueController.clear();
         _pickupType = '';
         _priority = 'NORMAL';
         _formKey.currentState?.reset();
@@ -509,47 +505,29 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                   const SizedBox(height: 16),
                   // Package Weight
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _weightController,
-                          decoration: const InputDecoration(
-                            labelText: 'Package Weight (kg)',
-                            border: OutlineInputBorder(),
-                            suffixText: 'kg',
-                          ),
-                          keyboardType: TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return null; // Weight is optional
-                            }
-                            final weight = double.tryParse(value);
-                            if (weight == null) {
-                              return 'Please enter a valid weight';
-                            }
-                            if (weight <= 0) {
-                              return 'Weight must be greater than 0';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _packageValueController,
-                          decoration: const InputDecoration(
-                            labelText: 'Package Value (VND)',
-                            border: OutlineInputBorder(),
-                            prefixText: 'VND ',
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
+                  TextFormField(
+                    controller: _weightController,
+                    decoration: const InputDecoration(
+                      labelText: 'Package Weight (tonnes)',
+                      border: OutlineInputBorder(),
+                      suffixText: 'tonnes',
+                    ),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return null; // Weight is optional
+                      }
+                      final weight = double.tryParse(value);
+                      if (weight == null) {
+                        return 'Please enter a valid weight';
+                      }
+                      if (weight <= 0) {
+                        return 'Weight must be greater than 0';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(

@@ -408,10 +408,7 @@ public class DriverServiceImpl implements DriverService {
         }
         type = type.trim().toUpperCase();
 
-        // Basic recipient info (optional but recommended)
-        if (confirmationDto.getRecipientName() == null || confirmationDto.getRecipientName().isBlank()) {
-            throw new RuntimeException("recipientName is required");
-        }
+
 
         // Validate payload by confirmation type
         switch (type) {

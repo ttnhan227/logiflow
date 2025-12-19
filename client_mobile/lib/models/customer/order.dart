@@ -175,8 +175,7 @@ class CreateOrderRequest extends Equatable {
   final double? pickupLng;
   final double? deliveryLat;
   final double? deliveryLng;
-  final double? weightKg;
-  final double? packageValue;
+  final double? weightTonnes;
   final String? priority; // "NORMAL" or "URGENT"
 
   const CreateOrderRequest({
@@ -194,8 +193,7 @@ class CreateOrderRequest extends Equatable {
     this.pickupLng,
     this.deliveryLat,
     this.deliveryLng,
-    this.weightKg,
-    this.packageValue,
+    this.weightTonnes,
     this.priority = "NORMAL",
   });
 
@@ -215,8 +213,7 @@ class CreateOrderRequest extends Equatable {
       'pickupLng': pickupLng,
       'deliveryLat': deliveryLat,
       'deliveryLng': deliveryLng,
-      'weightKg': weightKg,
-      'packageValue': packageValue,
+      'weightTonnes': weightTonnes,
       'priority': priority,
     };
   }
@@ -237,8 +234,7 @@ class CreateOrderRequest extends Equatable {
     pickupLng,
     deliveryLat,
     deliveryLng,
-    weightKg,
-    packageValue,
+    weightTonnes,
     priority,
   ];
 }

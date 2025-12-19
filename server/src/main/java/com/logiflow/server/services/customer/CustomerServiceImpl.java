@@ -73,8 +73,7 @@ public class CustomerServiceImpl implements CustomerService {
         order.setDockNumber(request.getDockNumber());
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setPackageDetails(request.getPackageDetails());
-        order.setWeightKg(request.getWeightKg());
-        order.setPackageValue(request.getPackageValue());
+        order.setWeightKg(request.getWeightTonnes());
         order.setCreatedBy(customer);
         order.setCustomer(customer);
 
