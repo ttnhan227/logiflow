@@ -78,8 +78,9 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   }
 
   // Check if route requires specific role
-  if (requiredRole && authState.user.role !== requiredRole) {
-    // Show unauthorized page if user doesn't have required role
+  // Allow ADMIN users to access all role-specific pages
+  if (requiredRole && authState.user.role !== 'ADMIN' && authState.user.role !== requiredRole) {
+    // Show unauthorized page if user doesn't have required role and is not admin
     return <UnauthorizedPage />;
   }
 
