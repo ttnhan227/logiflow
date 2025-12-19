@@ -169,7 +169,7 @@ const MainLayout = () => {
             )}
 
              {user && user.role === 'MANAGER' && (
-              <Link to="/manager/drivers" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Manager</Link>
+              <Link to="/manager/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Manager</Link>
             )}
             {user ? (
               <>

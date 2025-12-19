@@ -126,6 +126,64 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("driver") com.logiflow.server.models.Driver driver, 
             @Param("startDateTime") LocalDateTime startDateTime, 
             @Param("endDateTime") LocalDateTime endDateTime);
+    /**
+     * Dispatcher daily counts of ALL trips bucketed by scheduledDeparture date.
+     */
+    @Query("""
+        SELECT
+            function('date', t.scheduledDeparture) AS date,
+            COUNT(t) AS totalTrips,
+            SUM(CASE WHEN lower(t.status) = 'scheduled'   THEN 1 ELSE 0 END) AS scheduledTrips,
+            SUM(CASE WHEN lower(t.status) = 'in_progress' THEN 1 ELSE 0 END) AS inProgressTrips,
+            SUM(CASE WHEN lower(t.status) = 'delayed'     THEN 1 ELSE 0 END) AS delayedStatusTrips,
+            SUM(CASE WHEN lower(t.status) = 'cancelled'   THEN 1 ELSE 0 END) AS cancelledTrips,
+            SUM(CASE WHEN lower(t.status) = 'completed'   THEN 1 ELSE 0 END) AS completedTrips
+        FROM Trip t
+                                WHERE t.scheduledDeparture >= :from
+                                        AND t.scheduledDeparture <  :to
+        GROUP BY function('date', t.scheduledDeparture)
+        ORDER BY function('date', t.scheduledDeparture)
+        """)
+    List<DailyTripStatusCounts> findDailyTripStatusCounts(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
+    /**
+     * Dispatcher daily count of completed trips with actualArrival bucketed by actualArrival date.
+     * Delay minutes are computed in service layer for DB portability.
+     */
+    @Query("""
+        SELECT
+            function('date', t.actualArrival) AS date,
+            COUNT(t) AS completedTripsWithActualArrival
+        FROM Trip t
+                                WHERE lower(t.status) = 'completed'
+                                        AND t.actualArrival IS NOT NULL
+                                        AND t.actualArrival >= :from
+                                        AND t.actualArrival <  :to
+        GROUP BY function('date', t.actualArrival)
+        ORDER BY function('date', t.actualArrival)
+        """)
+    List<DailyCompletedDelayAgg> findDailyCompletedTripsByActualArrival(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
+    /**
+     * Dispatcher: get completed trips in range by actualArrival for delay calculations & delay reasons.
+     */
+    @Query("""
+        SELECT t FROM Trip t
+                                WHERE lower(t.status) = 'completed'
+                                        AND t.actualArrival IS NOT NULL
+                                        AND t.actualArrival >= :from
+                                        AND t.actualArrival <  :to
+        """)
+    List<Trip> findCompletedTripsByActualArrivalRange(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
 
     // Manager module (alerts): fetch Trip + TripAssignment + Driver in one query to avoid lazy-loading & N+1
     @Query("""
