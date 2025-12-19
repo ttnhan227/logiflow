@@ -48,15 +48,6 @@ import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchNotificationsPage from "./components/dispatch/DispatchNotificationsPage";
 import DispatchReportsPage from "./components/dispatch/DispatchReportsPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
-import MonitorOperations from "./components/manager/MonitorOperations/MonitorOperations.jsx";
-import IssueReports from "./components/manager/Issues/IssueReports";
-import CompliancePage from "./components/manager/Compliance/CompliancePage";
-import RouteAnalyticsPage from "./components/manager/RouteAnalytics/RouteAnalyticsPage";
-import AlertsPage from "./components/manager/Alerts/AlertsPage";
-import ManagerActivitiesPage from "./components/manager/Activities/ManagerActivitiesPage";
-import ManagerLayout from './components/manager/ManagerLayout.jsx';
-import ManagerRecommendationsPage from "./components/manager/Recommendations/RecommendationsPage";
-import ManagerDashboardPage from "./components/manager/Dashboard/ManagerDashboard";
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -120,19 +111,6 @@ function App() {
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Route>
 
-          {/* Manager routes with ManagerLayout (sidebar) */}
-          <Route element={<ManagerLayout />}>
-              <Route path="/manager" element={<ProtectedRoute requiredRole="MANAGER"><MonitorOperations /></ProtectedRoute>} />
-
-              <Route path="/manager/monitor-operations" element={<ProtectedRoute requiredRole="MANAGER"><MonitorOperations /></ProtectedRoute>} />
-              <Route path="/manager/issues" element={<ProtectedRoute requiredRole="MANAGER"><IssueReports /></ProtectedRoute>} />
-              <Route path="/manager/compliance" element={<ProtectedRoute requiredRole="MANAGER"><CompliancePage /></ProtectedRoute>} />
-              <Route path="/manager/analytics/routes" element={<ProtectedRoute requiredRole="MANAGER"><RouteAnalyticsPage /></ProtectedRoute>} />
-              <Route path="/manager/alerts" element={<ProtectedRoute requiredRole="MANAGER"><AlertsPage /></ProtectedRoute>} />
-              <Route path="/manager/activities" element={<ProtectedRoute requiredRole="MANAGER"><ManagerActivitiesPage /></ProtectedRoute>} />
-              <Route path="/manager/recommendations" element={<ProtectedRoute requiredRole="MANAGER"><ManagerRecommendationsPage /></ProtectedRoute>} />
-              <Route path="/manager/dashboard" element={<ProtectedRoute requiredRole="MANAGER"><ManagerDashboardPage /></ProtectedRoute>} />
-          </Route>
 
           {/* Dispatch routes with DispatchLayout */}
         <Route element={<DispatchLayout />}>

@@ -185,16 +185,5 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("to")   LocalDateTime to
     );
 
-    // Manager module (alerts): fetch Trip + TripAssignment + Driver in one query to avoid lazy-loading & N+1
-    @Query("""
-            select distinct t from Trip t
-            left join fetch t.tripAssignments ta
-            left join fetch ta.driver d
-            where t.scheduledDeparture between :from and :to
-            """)
-    List<Trip> findByScheduledDepartureBetweenWithAssignments(
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to
-    );
 
 }

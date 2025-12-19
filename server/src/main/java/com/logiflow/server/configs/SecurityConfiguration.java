@@ -55,7 +55,6 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/dispatch/**").hasAnyRole("ADMIN", "DISPATCHER")
                                 .requestMatchers("/api/driver/**").hasAnyRole("ADMIN", "DRIVER")
-                                .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
                                 .requestMatchers("/api/user/**").authenticated()
                                 .anyRequest().authenticated()
                 )
