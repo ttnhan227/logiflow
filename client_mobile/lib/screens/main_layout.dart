@@ -162,14 +162,14 @@ class _MainLayoutState extends State<MainLayout> {
         _isLoading = false;
       });
 
-      // Connect to notification service if user is a driver
-      if (user != null && user.role.toUpperCase() == 'DRIVER') {
-        await _connectNotifications(user.username);
+      // Connect to notification service for both drivers and customers
+      if (user != null && (user.role.toUpperCase() == 'DRIVER' || user.role.toUpperCase() == 'CUSTOMER')) {
+        await _connectNotifications(user.username, user.role.toUpperCase());
       }
     }
   }
 
-  Future<void> _connectNotifications(String driverId) async {
+  Future<void> _connectNotifications(String userId, String userRole) async {
     _notificationService.onNotificationReceived = (notification) {
       // Show notification as SnackBar
       if (mounted) {
@@ -186,9 +186,13 @@ class _MainLayoutState extends State<MainLayout> {
               label: isChat ? 'Open Chat' : 'View',
               textColor: Colors.white,
               onPressed: () {
-                // Navigate to trips screen or chat screen when available
-                setState(() => _currentIndex = 1);
-                _pageController.jumpToPage(1);
+                // Navigate to appropriate screen based on user role
+                if (userRole == 'DRIVER') {
+                  setState(() => _currentIndex = 1); // Trips screen
+                } else if (userRole == 'CUSTOMER') {
+                  setState(() => _currentIndex = 2); // Track Orders screen
+                }
+                _pageController.jumpToPage(_currentIndex);
               },
             ),
           ),
@@ -196,7 +200,12 @@ class _MainLayoutState extends State<MainLayout> {
       }
     };
 
-    await _notificationService.connect(driverId);
+    // Connect based on user role
+    if (userRole == 'DRIVER') {
+      await _notificationService.connectAsDriver(userId);
+    } else if (userRole == 'CUSTOMER') {
+      await _notificationService.connectAsCustomer(userId);
+    }
 
     // Note: Real notifications will come from the admin backend via WebSocket
     // Test notifications disabled to improve performance
@@ -464,9 +473,9 @@ class _MainLayoutState extends State<MainLayout> {
           ],
         ),
         actions: [
-          // Show notification bell for drivers only
+          // Show notification bell for both drivers and customers
           if (_currentUser != null &&
-              _currentUser!.role.toUpperCase() == 'DRIVER')
+              (_currentUser!.role.toUpperCase() == 'DRIVER' || _currentUser!.role.toUpperCase() == 'CUSTOMER'))
             NotificationBell(
               notificationService: _notificationService,
               onNavigateToTripDetail: _navigateToTripDetail,

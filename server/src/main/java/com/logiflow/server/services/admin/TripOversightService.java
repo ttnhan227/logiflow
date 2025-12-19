@@ -10,5 +10,6 @@ public interface TripOversightService {
     TripOversightDto getTripOversight(Integer tripId);
     TripOversightDto updateTripStatus(Integer tripId, String status);
     TripOversightDto respondToTripDelayReport(Integer tripId, String responseType, Integer extensionMinutes);
+    List<TripOversightDto> getTripsWithDelayReports();
     // Add more admin-specific methods as needed
 }

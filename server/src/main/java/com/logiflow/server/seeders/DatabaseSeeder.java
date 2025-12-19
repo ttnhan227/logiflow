@@ -163,6 +163,15 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         // Configure Scheduled vs Actual times
         configureTripTimes(trip, baseTime, status, route.getEstimatedDurationHours());
+
+        // Add delay information to some active trips for demo
+        if ("in_progress".equals(status) || "arrived".equals(status)) {
+            // Add delay data to ~50% of active trips
+            if (random.nextInt(100) < 50) {
+                addDelayDataToTrip(trip);
+            }
+        }
+
         tripsList.add(trip);
 
         // B. Assignment Setup
@@ -400,12 +409,29 @@ public class DatabaseSeeder implements CommandLineRunner {
                         customer.setLastOrderDate(LocalDateTime.now().minusDays(daysSinceLastOrder));
                     }
 
-                    // Add company information to ~40% of customers (B2B simulation)
-                    int companySeed = Math.abs(user.getUsername().hashCode()) % 100;
-                    if (companySeed < 40) { // 40% chance of being a B2B customer
-                        int companyIndex = companySeed % companyNames.length;
-                        customer.setCompanyName(companyNames[companyIndex]);
-                        customer.setCompanyCode(companyCodes[companyIndex]);
+                    // Add company information to specific customers for demo + ~30% random
+                    String username = user.getUsername();
+                    boolean isB2B = false;
+
+                    // Force some specific users to have company data for demo
+                    if ("nguyen.mai".equals(username) || "tran.binh".equals(username)) {
+                        customer.setCompanyName("Logistics Solutions Ltd");
+                        customer.setCompanyCode("LOG001");
+                        isB2B = true;
+                    } else if ("pham.duc".equals(username) || "le.huong".equals(username)) {
+                        customer.setCompanyName("Global Trade Corp");
+                        customer.setCompanyCode("GTC002");
+                        isB2B = true;
+                    }
+
+                    // Add company information to ~30% of remaining customers (B2B simulation)
+                    if (!isB2B) {
+                        int companySeed = Math.abs(user.getUsername().hashCode()) % 100;
+                        if (companySeed < 30) { // 30% chance of being a B2B customer
+                            int companyIndex = companySeed % companyNames.length;
+                            customer.setCompanyName(companyNames[companyIndex]);
+                            customer.setCompanyCode(companyCodes[companyIndex]);
+                        }
                     }
 
                     return customer;
@@ -669,5 +695,36 @@ public class DatabaseSeeder implements CommandLineRunner {
         request.setStatus(status);
         request.setCreatedAt(createdAt);
         return request;
+    }
+
+    private void addDelayDataToTrip(Trip trip) {
+        // Random delay reasons for demo
+        String[] delayReasons = {
+            "Heavy traffic congestion in urban area",
+            "Port gate waiting time extended",
+            "Warehouse loading delay due to staff shortage",
+            "Weather conditions affecting route",
+            "Vehicle maintenance check required",
+            "Container handling delay at terminal",
+            "Customer pickup delay at origin"
+        };
+
+        // Random delay reason
+        String delayReason = delayReasons[random.nextInt(delayReasons.length)];
+
+        // Random delay status (mostly approved for demo)
+        String delayStatus = random.nextInt(100) < 80 ? "APPROVED" : "PENDING";
+
+        // Random SLA extension if approved
+        Integer slaExtension = null;
+
+        if ("APPROVED".equals(delayStatus)) {
+            slaExtension = 15 + random.nextInt(46); // 15-60 minutes
+        }
+
+        // Set delay data on trip
+        trip.setDelayReason(delayReason);
+        trip.setDelayStatus(delayStatus);
+        trip.setSlaExtensionMinutes(slaExtension);
     }
 }

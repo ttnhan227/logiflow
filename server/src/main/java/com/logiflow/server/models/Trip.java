@@ -85,10 +85,5 @@ public class Trip {
     @Column(name = "delay_status", length = 20, nullable = true)
     private String delayStatus;
 
-    /**
-     * Optional comment from admin when responding to a delay report
-     * (e.g. explanation for approval/rejection, guidance to driver).
-     */
-    @Column(name = "delay_admin_comment", length = 500, nullable = true)
-    private String delayAdminComment;
+
 }

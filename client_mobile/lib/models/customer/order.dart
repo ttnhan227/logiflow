@@ -260,6 +260,9 @@ class OrderSummary extends Equatable {
   final String? tripStatus;
   final DateTime createdAt;
   final DateTime? estimatedDeliveryTime;
+  final int? slaExtensionMinutes;
+  final String? delayReason;
+  final String? delayStatus;
 
   const OrderSummary({
     required this.orderId,
@@ -278,6 +281,9 @@ class OrderSummary extends Equatable {
     this.tripStatus,
     required this.createdAt,
     this.estimatedDeliveryTime,
+    this.slaExtensionMinutes,
+    this.delayReason,
+    this.delayStatus,
   });
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
@@ -300,6 +306,9 @@ class OrderSummary extends Equatable {
       estimatedDeliveryTime: json['estimatedDeliveryTime'] != null
           ? DateTime.parse(json['estimatedDeliveryTime'])
           : null,
+      slaExtensionMinutes: json['slaExtensionMinutes'],
+      delayReason: json['delayReason'],
+      delayStatus: json['delayStatus'],
     );
   }
 
@@ -321,5 +330,8 @@ class OrderSummary extends Equatable {
     tripStatus,
     createdAt,
     estimatedDeliveryTime,
+    slaExtensionMinutes,
+    delayReason,
+    delayStatus,
   ];
 }

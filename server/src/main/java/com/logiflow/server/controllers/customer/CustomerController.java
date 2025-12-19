@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/customer/me")
@@ -83,10 +84,19 @@ public class CustomerController {
         return ResponseEntity.ok(result);
     }
 
-    // 8) GET /api/customer/me/performance - Get company performance metrics
-    @GetMapping("/performance")
-    public ResponseEntity<CompanyPerformanceDto> getCompanyPerformance(Authentication authentication) {
-        var result = customerService.getCompanyPerformance(authentication.getName());
+    // 8) GET /api/customer/me/notifications - Get customer notifications
+    @GetMapping("/notifications")
+    public ResponseEntity<List<Map<String, Object>>> getNotifications(Authentication authentication) {
+        var result = customerService.getNotifications(authentication.getName());
         return ResponseEntity.ok(result);
     }
+
+    // 9) POST /api/customer/me/notifications/mark-all-read - Mark all notifications as read
+    @PostMapping("/notifications/mark-all-read")
+    public ResponseEntity<Void> markAllNotificationsAsRead(Authentication authentication) {
+        customerService.markAllNotificationsAsRead(authentication.getName());
+        return ResponseEntity.ok().build();
+    }
+
+
 }

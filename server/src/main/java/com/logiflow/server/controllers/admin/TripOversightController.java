@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/admin/trips")
 public class TripOversightController {
@@ -36,6 +38,16 @@ public class TripOversightController {
         try {
             TripOversightListResponse response = tripOversightService.getTripsOversight(status, page, size);
             return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/delay-reports")
+    public ResponseEntity<List<TripOversightDto>> getTripsWithDelayReports() {
+        try {
+            List<TripOversightDto> delayedTrips = tripOversightService.getTripsWithDelayReports();
+            return ResponseEntity.ok(delayedTrips);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }

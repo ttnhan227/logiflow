@@ -4,6 +4,7 @@ import com.logiflow.server.dtos.customer.CustomerDtos.*;
 import com.logiflow.server.models.User;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CustomerService {
     User getCurrentCustomer(String authName);
@@ -21,6 +22,10 @@ public interface CustomerService {
     // History
     List<OrderHistoryDto> getOrderHistory(String customerUsername);
 
+    // Notifications
+    List<Map<String, Object>> getNotifications(String customerUsername);
+    void markAllNotificationsAsRead(String customerUsername);
+
     // Performance analytics
-    CompanyPerformanceDto getCompanyPerformance(String customerUsername);
+
 }

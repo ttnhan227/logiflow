@@ -9,15 +9,22 @@ class NotificationService {
   StompClient? _stompClient;
   Function(Map<String, dynamic>)? onNotificationReceived;
   bool _isConnected = false;
-  String? _driverId;
+  String? _userId;
+  String? _userType; // 'driver' or 'customer'
 
   // Store notifications in memory (both read and unread)
   final List<Map<String, dynamic>> _notifications = [];
 
-  /// Load persisted notifications for the current driver from the backend.
+  /// Load persisted notifications for the current user from the backend.
   Future<void> loadPersistedNotifications() async {
+    if (_userType == null) return;
+
     try {
-      final response = await apiClient.get('/driver/me/notifications');
+      final endpoint = _userType == 'driver'
+          ? '/driver/me/notifications'
+          : '/customer/me/notifications';
+
+      final response = await apiClient.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         _notifications.clear();
@@ -42,22 +49,23 @@ class NotificationService {
     }
   }
 
-  Future<void> connect(String driverId) async {
-    if (_isConnected && _driverId == driverId) {
+  Future<void> connect(String userId, {String userType = 'driver'}) async {
+    if (_isConnected && _userId == userId && _userType == userType) {
       print(
-        'Already connected to STOMP notification service for driver: $driverId',
+        'Already connected to STOMP notification service for $userType: $userId',
       );
       return;
     }
 
     // Use the username directly (the service already receives the logged-in username)
-    print('Using driver username as STOMP subscription ID: $driverId');
-    _driverId = driverId;
+    print('Using $userType username as STOMP subscription ID: $userId');
+    _userId = userId;
+    _userType = userType;
 
     // Close existing connection if any
     disconnect();
 
-    // Preload any persisted notifications for this driver
+    // Preload any persisted notifications for this user
     await loadPersistedNotifications();
 
     final baseUrl = ApiClient.baseUrl.replaceFirst('/api', '');
@@ -111,17 +119,27 @@ class NotificationService {
     await Future.delayed(const Duration(seconds: 1));
   }
 
+  // Convenience method for connecting as driver (backward compatibility)
+  Future<void> connectAsDriver(String driverId) async {
+    await connect(driverId, userType: 'driver');
+  }
+
+  // Convenience method for connecting as customer
+  Future<void> connectAsCustomer(String customerId) async {
+    await connect(customerId, userType: 'customer');
+  }
+
   void _onStompConnect(StompFrame frame) {
     _isConnected = true;
     print('Connected to STOMP notification service');
 
-    if (_driverId == null) {
-      print('WARN: _driverId is null on STOMP connect, cannot subscribe');
+    if (_userId == null || _userType == null) {
+      print('WARN: _userId or _userType is null on STOMP connect, cannot subscribe');
       return;
     }
 
-    // Subscribe to driver-specific topic for all notifications
-    final topic = '/topic/driver/$_driverId';
+    // Subscribe to user-specific topic for all notifications
+    final topic = '/topic/$_userType/$_userId';
     print('Subscribing to STOMP topic: $topic');
     _stompClient?.subscribe(
       destination: topic,
@@ -195,8 +213,14 @@ class NotificationService {
 
   // Mark all notifications as read (both on backend and locally)
   Future<void> markAllNotificationsAsRead() async {
+    if (_userType == null) return;
+
     try {
-      await apiClient.post('/driver/me/notifications/mark-all-read');
+      final endpoint = _userType == 'driver'
+          ? '/driver/me/notifications/mark-all-read'
+          : '/customer/me/notifications/mark-all-read';
+
+      await apiClient.post(endpoint);
     } catch (e) {
       print('Failed to mark notifications as read on server: $e');
     }
