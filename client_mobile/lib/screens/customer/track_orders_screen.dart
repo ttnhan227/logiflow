@@ -285,29 +285,10 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  if (order.slaExtensionMinutes != null && order.slaExtensionMinutes! > 0) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange[100],
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: Colors.orange[300]!),
-                                      ),
-                                      child: Text(
-                                        '+${order.slaExtensionMinutes}m',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.orange[800],
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                 ],
                               ),
                             ],
-                            // Delay Information
+                            // Trip Delay Information (affects entire trip, not just this order)
                             if (order.delayReason != null && order.delayReason!.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Container(
@@ -328,27 +309,13 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                           color: Colors.orange[700],
                                         ),
                                         const SizedBox(width: 4),
-                                        Text(
-                                          'Delay Reported',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.orange[800],
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: _getDelayStatusColor(order.delayStatus),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
+                                        Expanded(
                                           child: Text(
-                                            _getDelayStatusText(order.delayStatus),
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.white,
+                                            'Trip Delay Reported',
+                                            style: TextStyle(
+                                              fontSize: 12,
                                               fontWeight: FontWeight.w600,
+                                              color: Colors.orange[800],
                                             ),
                                           ),
                                         ),
@@ -356,13 +323,12 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      order.delayReason!,
+                                      'This delay affects your entire trip. ${order.delayReason}',
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.orange[900],
                                       ),
                                     ),
-
                                   ],
                                 ),
                               ),

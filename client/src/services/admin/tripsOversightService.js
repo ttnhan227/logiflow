@@ -134,11 +134,22 @@ const respondToTripDelayReport = async (tripId, response, extensionMinutes) => {
   return res.data;
 };
 
+// Get trips with pending delay reports
+const getTripsWithDelayReports = async () => {
+  try {
+    const res = await api.get('/admin/trips/delay-reports');
+    return normalizeTrips(res.data || []);
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const tripsOversightService = {
   getTripsOversight,
   getTripOversight,
   updateTripOrderStatus,
   respondToTripDelayReport,
+  getTripsWithDelayReports,
 };
 
 export default tripsOversightService;

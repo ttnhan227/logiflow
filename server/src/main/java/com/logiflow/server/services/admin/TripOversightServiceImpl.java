@@ -130,6 +130,36 @@ public class TripOversightServiceImpl implements TripOversightService {
     }
 
     @Override
+    public List<TripOversightDto> getTripsWithDelayReports() {
+        // Get all trips with delay reports (PENDING status)
+        List<Trip> allTrips = tripRepository.findAll();
+        List<Trip> delayedTrips = allTrips.stream()
+                .filter(trip -> trip.getDelayReason() != null &&
+                               !trip.getDelayReason().trim().isEmpty() &&
+                               "PENDING".equalsIgnoreCase(trip.getDelayStatus()))
+                .collect(Collectors.toList());
+
+        // Convert to DTOs (with null-safe processing)
+        List<TripOversightDto> tripDtos = new ArrayList<>();
+        for (Trip trip : delayedTrips) {
+            TripOversightDto dto = TripOversightDto.fromTrip(trip);
+            if (dto != null) {
+                tripDtos.add(dto);
+            }
+        }
+
+        // Sort by creation date (newest delay reports first)
+        tripDtos.sort((a, b) -> {
+            if (a.getCreatedAt() != null && b.getCreatedAt() != null) {
+                return b.getCreatedAt().compareTo(a.getCreatedAt());
+            }
+            return 0;
+        });
+
+        return tripDtos;
+    }
+
+    @Override
     public TripOversightDto updateTripStatus(Integer tripId, String status) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
@@ -259,13 +289,13 @@ public class TripOversightServiceImpl implements TripOversightService {
                     if ("APPROVED".equalsIgnoreCase(responseType)) {
                         Integer approvedExtension = extensionMinutes != null && extensionMinutes > 0 ? extensionMinutes : 30;
                         customerMessage = String.format(
-                            "Delay update for order #%d: SLA extended by %d minutes. New ETA will be adjusted accordingly.",
+                            "Trip delay update for order #%d: Trip SLA extended by %d minutes. New ETA will be adjusted accordingly.",
                             order.getOrderId(),
                             approvedExtension
                         );
                     } else {
                         customerMessage = String.format(
-                            "Delay update for order #%d: Delay report was not approved. Order will proceed on original schedule.",
+                            "Trip delay update for order #%d: Trip delay report was not approved. Trip will proceed on original schedule.",
                             order.getOrderId()
                         );
                     }

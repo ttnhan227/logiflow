@@ -37,7 +37,9 @@ const RiskTag = ({ risk }) => {
 const AdminTripsOversightPage = () => {
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
+  const [delayReports, setDelayReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDelays, setLoadingDelays] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [riskFilter, setRiskFilter] = useState('ALL');
@@ -63,6 +65,26 @@ const AdminTripsOversightPage = () => {
       }
     };
     load();
+  }, []);
+
+  // Load delay reports
+  useEffect(() => {
+    const loadDelayReports = async () => {
+      try {
+        setLoadingDelays(true);
+        const reports = await tripsOversightService.getTripsWithDelayReports();
+        setDelayReports(reports);
+      } catch (err) {
+        console.error('Failed to load delay reports:', err);
+      } finally {
+        setLoadingDelays(false);
+      }
+    };
+    loadDelayReports();
+
+    // Refresh delay reports every 30 seconds
+    const interval = setInterval(loadDelayReports, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load unread notification count
@@ -211,6 +233,134 @@ const AdminTripsOversightPage = () => {
         </div>
       </div>
 
+      {/* Delay Reports Section */}
+      {!loadingDelays && delayReports.length > 0 && (
+        <div className="card" style={{
+          marginBottom: '24px',
+          border: '2px solid #f59e0b',
+          backgroundColor: '#fefce8'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>🚨</span>
+              <h3 style={{ margin: 0, color: '#92400e' }}>
+                Pending Delay Reports ({delayReports.length})
+              </h3>
+            </div>
+            <button
+              className="btn btn-primary btn-small"
+              onClick={() => {
+                const reports = delayReports;
+                setDelayReports([]);
+                setTimeout(() => setDelayReports(reports), 100); // Force refresh
+              }}
+              style={{ fontSize: '12px' }}
+            >
+              Refresh
+            </button>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '16px'
+          }}>
+            {delayReports.map((trip) => (
+              <div
+                key={trip.tripId}
+                style={{
+                  border: '1px solid #f59e0b',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: '12px'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '16px', color: '#111827' }}>
+                      Trip #{trip.tripId}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px' }}>
+                      {trip.originCity || 'N/A'} → {trip.destinationCity || 'N/A'}
+                    </div>
+                  </div>
+                  <span style={{
+                    backgroundColor: '#fef3c7',
+                    color: '#92400e',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    padding: '4px 8px',
+                    borderRadius: '12px'
+                  }}>
+                    PENDING REVIEW
+                  </span>
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{
+                    fontSize: '14px',
+                    color: '#374151',
+                    fontWeight: 500,
+                    marginBottom: '4px'
+                  }}>
+                    Delay Reason:
+                  </div>
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#6b7280',
+                    backgroundColor: '#f9fafb',
+                    padding: '8px',
+                    borderRadius: '4px'
+                  }}>
+                    {trip.delayReason}
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                    <div>Driver: {trip.driver?.name || 'Not assigned'}</div>
+                    <div>Orders: {(trip.orders || []).length}</div>
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                    <div>Status: {trip.tripStatus || 'Unknown'}</div>
+                    <div>Risk: <RiskTag risk={trip.risk} /></div>
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  justifyContent: 'flex-end'
+                }}>
+                  <button
+                    className="btn btn-secondary btn-small"
+                    onClick={() => navigate(`/admin/trips-oversight/${trip.tripId}`)}
+                    style={{ fontSize: '12px' }}
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {filtered.length > 0 ? (
         <>
           <div className="admin-table-wrapper">
@@ -222,6 +372,7 @@ const AdminTripsOversightPage = () => {
                   <th>Orders</th>
                   <th>Status</th>
                   <th>Risk</th>
+                  <th>Delay</th>
                   <th>Driver</th>
                   <th>Vehicle</th>
                   <th>SLA Due</th>
@@ -271,6 +422,19 @@ const AdminTripsOversightPage = () => {
                     </td>
                     <td>
                       <RiskTag risk={trip.risk} />
+                    </td>
+                    <td>
+                      {trip.delayReason ? (
+                        <span style={{
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: '#92400e'
+                        }}>
+                          🚨 Reported
+                        </span>
+                      ) : (
+                        <span className="muted" style={{ fontSize: '12px' }}>No delay</span>
+                      )}
                     </td>
                     <td>
                       {trip.driver ? (

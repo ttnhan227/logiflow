@@ -72,4 +72,26 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // Count unread notifications for a specific user (driver)
     @Query("SELECT COUNT(n) FROM Notification n WHERE n.targetUser.username = :username AND n.isRead = false")
     Long countUnreadForUser(@Param("username") String username);
+
+    // ===== Customer-facing queries =====
+
+    // All notifications for a specific customer user
+    @Query("SELECT n FROM Notification n WHERE n.targetUser.username = :username ORDER BY n.createdAt DESC")
+    List<Notification> findAllForCustomer(@Param("username") String username);
+
+    // Unread notifications for a specific customer user
+    @Query("SELECT n FROM Notification n WHERE n.targetUser.username = :username AND n.isRead = false ORDER BY n.createdAt DESC")
+    List<Notification> findUnreadForCustomer(@Param("username") String username);
+
+    // Count unread notifications for a specific customer user
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.targetUser.username = :username AND n.isRead = false")
+    Long countUnreadForCustomer(@Param("username") String username);
+
+    // Mark notifications as read for a specific customer user
+    @Query("UPDATE Notification n SET n.isRead = true WHERE n.targetUser.username = :username AND n.notificationId IN :ids")
+    void markAsReadForCustomer(@Param("username") String username, @Param("ids") List<Long> notificationIds);
+
+    // Mark all notifications as read for a specific customer user
+    @Query("UPDATE Notification n SET n.isRead = true WHERE n.targetUser.username = :username AND n.isRead = false")
+    void markAllAsReadForCustomer(@Param("username") String username);
 }

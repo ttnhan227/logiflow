@@ -4,12 +4,15 @@ import com.logiflow.server.dtos.customer.CustomerDtos.*;
 import com.logiflow.server.dtos.maps.DistanceResultDto;
 import com.logiflow.server.models.*;
 import com.logiflow.server.repositories.customer.CustomerRepository;
+import com.logiflow.server.repositories.notification.NotificationRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.websocket.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,17 +28,20 @@ public class CustomerServiceImpl implements CustomerService {
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
+    private final NotificationRepository notificationRepository;
     private final MapsService mapsService;
     private final NotificationService notificationService;
 
     public CustomerServiceImpl(UserRepository userRepository,
                              CustomerRepository customerRepository,
                              OrderRepository orderRepository,
+                             NotificationRepository notificationRepository,
                              MapsService mapsService,
                              NotificationService notificationService) {
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.orderRepository = orderRepository;
+        this.notificationRepository = notificationRepository;
         this.mapsService = mapsService;
         this.notificationService = notificationService;
     }
@@ -410,7 +416,7 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setOrderStatus(order.getOrderStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
 
-        // Delay-related fields (from trip, since delays affect entire trips)
+        // Trip delay-related fields (delays affect entire trips, not individual orders)
         if (order.getTrip() != null) {
             dto.setDelayReason(order.getTrip().getDelayReason());
             dto.setDelayStatus(order.getTrip().getDelayStatus());
@@ -485,5 +491,27 @@ public class CustomerServiceImpl implements CustomerService {
 
         // Round to whole VND
         return totalFee.setScale(0, RoundingMode.HALF_UP);
+    }
+
+    @Override
+    public List<Map<String, Object>> getNotifications(String customerUsername) {
+        List<Notification> notifications = notificationRepository.findAllForCustomer(customerUsername);
+        return notifications.stream()
+                .map(notification -> {
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("notificationId", notification.getNotificationId());
+                    map.put("message", notification.getMessage());
+                    map.put("type", notification.getNotificationType().toString());
+                    map.put("createdAt", notification.getCreatedAt().toString());
+                    map.put("relatedEntityId", notification.getRelatedEntityId());
+                    map.put("isRead", notification.getIsRead());
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void markAllNotificationsAsRead(String customerUsername) {
+        notificationRepository.markAllAsReadForCustomer(customerUsername);
     }
 }
