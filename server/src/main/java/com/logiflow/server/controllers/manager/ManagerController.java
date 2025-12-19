@@ -17,18 +17,18 @@ public class ManagerController {
     private final ManagerService managerService;
 
     // API 1: Driver performance
-    @GetMapping("/operations/drivers/performance")
-    public List<ManagerDtos.DriverPerformanceDto> getDriverPerformance(
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate startDate,
-
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate endDate
-    ) {
-        return managerService.getDriverPerformance(startDate, endDate);
-    }
+//    @GetMapping("/operations/drivers/performance")
+//    public List<ManagerDtos.DriverPerformanceDto> getDriverPerformance(
+//            @RequestParam(required = false)
+//            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+//            LocalDate startDate,
+//
+//            @RequestParam(required = false)
+//            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+//            LocalDate endDate
+//    ) {
+//        return managerService.getDriverPerformance(startDate, endDate);
+//    }
 
     // API 2: Overall operations performance
     @GetMapping("/operations/performance")

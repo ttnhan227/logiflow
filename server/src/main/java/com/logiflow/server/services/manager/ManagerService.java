@@ -8,10 +8,10 @@ import java.util.List;
 public interface ManagerService {
 
     // API 1: Driver performance
-    List<ManagerDtos.DriverPerformanceDto> getDriverPerformance(
-            LocalDate startDate,
-            LocalDate endDate
-    );
+//    List<ManagerDtos.DriverPerformanceDto> getDriverPerformance(
+//            LocalDate startDate,
+//            LocalDate endDate
+//    );
 
     // API 2: Overall operations performance
     ManagerDtos.OperationsPerformanceDto getOperationsPerformance(

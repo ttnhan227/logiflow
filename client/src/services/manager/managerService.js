@@ -13,18 +13,6 @@ function getAuthHeaders() {
     };
 }
 
-export async function getDriverPerformance(startDate, endDate) {
-    const response = await axios.get(
-        `${API_BASE_URL}/operations/drivers/performance`,
-        {
-            params: { startDate, endDate },
-            headers: getAuthHeaders(),
-            withCredentials: false,
-        }
-    );
-    return response.data;
-}
-
 export async function getOperationsPerformance(startDate, endDate) {
     const response = await axios.get(
         `${API_BASE_URL}/operations/performance`,

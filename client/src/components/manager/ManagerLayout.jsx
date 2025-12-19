@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { authService } from '../../services';
 import './manager.css';
 
@@ -8,52 +8,76 @@ const ManagerLayout = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
+    setUser(authService.getCurrentUser());
   }, []);
 
   const handleLogout = async () => {
     try {
       await authService.logout();
-      setUser(null);
       navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
       window.location.href = '/login';
     }
   };
 
   return (
-    <div className="manager-app">
-      <header className="manager-header">
-        <div className="manager-header-inner">
-          <div className="manager-logo">
-            <span className="manager-logo-text">👔 Manager Center</span>
-          </div>
-
-          <nav className="manager-nav">
-            <Link to="/manager/drivers" className="manager-nav-link">📦 Driver</Link>
-            <Link to="/manager/issues" className="manager-nav-link">🚐 Issues & Report</Link>
-            <Link to="/manager/compliance" className="manager-nav-link">👥 Compliance</Link>
-            <Link to="/manager/analytics/routes" className="manager-nav-link">🗺️ Route Analytics</Link>
-            <Link to="/manager/alerts" className="manager-nav-link">🔔 Alerts</Link>
-            <Link to="/manager/activities" className="manager-nav-link">📊 Activities</Link>
-          </nav>
-
-          {user && (
-            <div className="manager-user">
-              <span className="manager-greeting">Hi, {user.username}</span>
-              <button onClick={handleLogout} className="manager-logout-btn">
-                🚪 Logout
-              </button>
-            </div>
-          )}
+    <div className="manager-layout">
+      {/* Top Header */}
+      <header className="manager-topbar">
+        <div className="manager-topbar-left">
+          <Link to="/" className="manager-home-link">
+            ← Home
+          </Link>
+          <span className="manager-app-name">Manager Panel</span>
         </div>
+
+        {user && (
+          <div className="manager-topbar-right">
+            <span className="manager-user-name">{user.username}</span>
+            <button className="manager-logout" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
+        )}
       </header>
 
-      <main className="manager-content">
-        <Outlet />
-      </main>
+      {/* Body */}
+      <div className="manager-body">
+        {/* Sidebar */}
+        <aside className="manager-sidebar">
+            {/*theo dõi vận hành tổng thể (drivers + fleet + operations)*/}
+          <NavLink to="/manager/monitor-operations" className="manager-menu-item">
+              Monitor Operations
+          </NavLink>
+          <NavLink to="/manager/issues" className="manager-menu-item">
+            Issues & Reports
+          </NavLink>
+          <NavLink to="/manager/compliance" className="manager-menu-item">
+            Compliance
+          </NavLink>
+          <NavLink to="/manager/analytics/routes" className="manager-menu-item">
+            Route Analytics
+          </NavLink>
+          <NavLink to="/manager/alerts" className="manager-menu-item">
+            Alerts
+          </NavLink>
+          <NavLink to="/manager/activities" className="manager-menu-item">
+            Activities
+          </NavLink>
+        </aside>
+
+        {/* Content */}
+        <main className="manager-main">
+          <div className="manager-page-header">
+            <h1 className="manager-page-title">Manager Content</h1>
+            <p className="manager-page-subtitle">
+              Operational overview and management tools
+            </p>
+          </div>
+
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };
