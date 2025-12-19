@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/customer/customer_service.dart';
 import '../../services/maps/maps_service.dart';
 import '../../models/customer/order.dart';
+import '../../models/customer/customer_profile.dart';
 
 class AddressSuggestion extends StatelessWidget {
   final String address;
@@ -51,6 +52,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   List<String> _deliverySuggestions = [];
   bool _isLoadingPickupSuggestions = false;
   bool _isLoadingDeliverySuggestions = false;
+
+  // Distance calculation state
+  String? _calculatedDistance;
+  String? _calculatedDuration;
+  bool _isCalculatingDistance = false;
+
+  // Auto-fill pickup address state
+  CustomerProfile? _customerProfile;
+  bool _hasPromptedForAutoFill = false;
 
   @override
   void didChangeDependencies() {
@@ -135,6 +145,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       // Pre-fill customer info from profile if available
       final profile = await customerService.getProfile();
       setState(() {
+        _customerProfile = profile;
         if (profile.fullName != null && profile.fullName!.isNotEmpty) {
           _customerNameController.text = profile.fullName!;
         }
@@ -146,6 +157,86 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     } catch (e) {
       // Skip pre-filling on error, user can still enter manually
       setState(() => _isInitializing = false);
+    }
+  }
+
+  Future<void> _promptAutoFillPickupAddress() async {
+    if (_customerProfile?.address == null ||
+        _customerProfile!.address!.isEmpty ||
+        _hasPromptedForAutoFill ||
+        _pickupAddressController.text.isNotEmpty) {
+      return;
+    }
+
+    final shouldAutoFill = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Use Your Address?'),
+          content: Text(
+            'Would you like to use your saved address as the pickup location?\n\n"${_customerProfile!.address}"'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('No, thanks'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Yes, use it'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldAutoFill == true && mounted) {
+      setState(() {
+        _pickupAddressController.text = _customerProfile!.address!;
+        _hasPromptedForAutoFill = true;
+      });
+      // Trigger distance calculation
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _calculateDistance();
+      });
+    } else {
+      setState(() => _hasPromptedForAutoFill = true);
+    }
+  }
+
+  void _calculateDistance() async {
+    final pickupAddress = _pickupAddressController.text.trim();
+    final deliveryAddress = _deliveryAddressController.text.trim();
+
+    if (pickupAddress.isEmpty || deliveryAddress.isEmpty) {
+      setState(() {
+        _calculatedDistance = null;
+        _calculatedDuration = null;
+      });
+      return;
+    }
+
+    setState(() => _isCalculatingDistance = true);
+
+    try {
+      final result = await mapsService.calculateDistance(pickupAddress, deliveryAddress);
+      if (mounted && result != null) {
+        setState(() {
+          _calculatedDistance = result.totalDistance;
+          _calculatedDuration = result.totalDuration;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _calculatedDistance = null;
+          _calculatedDuration = null;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCalculatingDistance = false);
+      }
     }
   }
 
@@ -221,6 +312,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         _weightController.clear();
         _pickupType = '';
         _priority = 'NORMAL';
+        _calculatedDistance = null;
+        _calculatedDuration = null;
+        _hasPromptedForAutoFill = false;
         _formKey.currentState?.reset();
       }
     } catch (e) {
@@ -307,6 +401,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ],
                   onChanged: (value) {
                     setState(() => _pickupType = value ?? '');
+                    // Prompt to auto-fill pickup address from profile when pickup type is selected
+                    if (value != null && value.isNotEmpty) {
+                      Future.delayed(const Duration(milliseconds: 200), () {
+                        if (mounted) _promptAutoFillPickupAddress();
+                      });
+                    }
                   },
                 ),
                 const SizedBox(height: 24),
@@ -338,6 +438,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         maxLines: 3,
                         onChanged: (query) {
                           _loadPickupSuggestions(query);
+                          // Trigger distance calculation with a small delay
+                          Future.delayed(const Duration(milliseconds: 500), () {
+                            if (mounted) _calculateDistance();
+                          });
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -372,6 +476,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   _pickupAddressController.text = suggestion;
                                   setState(() {
                                     _pickupSuggestions = [];
+                                  });
+                                  // Trigger distance calculation immediately
+                                  Future.delayed(const Duration(milliseconds: 100), () {
+                                    if (mounted) _calculateDistance();
                                   });
                                 },
                               );
@@ -450,6 +558,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         maxLines: 3,
                         onChanged: (query) {
                           _loadDeliverySuggestions(query);
+                          // Trigger distance calculation with a small delay
+                          Future.delayed(const Duration(milliseconds: 500), () {
+                            if (mounted) _calculateDistance();
+                          });
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -485,6 +597,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   setState(() {
                                     _deliverySuggestions = [];
                                   });
+                                  // Trigger distance calculation immediately
+                                  Future.delayed(const Duration(milliseconds: 100), () {
+                                    if (mounted) _calculateDistance();
+                                  });
                                 },
                               );
                             },
@@ -492,6 +608,56 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  // Distance and Duration Display
+                  if (_isCalculatingDistance || (_calculatedDistance != null && _calculatedDuration != null))
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.route, color: Colors.blue),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _isCalculatingDistance
+                                ? const Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('Calculating distance...'),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Distance: $_calculatedDistance',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Estimated duration: $_calculatedDuration',
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _packageDetailsController,
