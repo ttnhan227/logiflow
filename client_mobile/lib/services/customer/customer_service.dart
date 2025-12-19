@@ -4,7 +4,6 @@ import '../../models/customer/order.dart';
 import '../../models/customer/customer_profile.dart';
 import '../../models/customer/order_tracking.dart';
 import '../../models/customer/order_history.dart';
-import '../../models/customer/company_performance.dart';
 
 class CustomerService {
   static const String baseEndpoint = '/customer/me';
@@ -124,22 +123,6 @@ class CustomerService {
       }
     } catch (e) {
       throw Exception('Failed to get order history: $e');
-    }
-  }
-
-  // Get company performance metrics
-  Future<CompanyPerformance> getCompanyPerformance() async {
-    try {
-      final response = await apiClient.get('$baseEndpoint/performance');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return CompanyPerformance.fromJson(data);
-      } else {
-        throw Exception('Failed to get company performance: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('Failed to get company performance: $e');
     }
   }
 }
