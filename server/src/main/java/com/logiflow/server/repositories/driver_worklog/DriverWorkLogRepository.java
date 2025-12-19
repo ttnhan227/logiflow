@@ -19,4 +19,10 @@ public interface DriverWorkLogRepository extends JpaRepository<DriverWorkLog, In
     LocalDateTime findLatestNextAvailableTimeByDriverId(@Param("driverId") Integer driverId);
 
     Long countByDriver_DriverId(Integer driverId);
+
+    // manager
+    boolean existsByTrip_TripIdAndDriver_DriverId(Integer tripId, Integer driverId);
+    java.util.List<com.logiflow.server.models.DriverWorkLog>
+    findByTrip_TripIdAndDriver_DriverId(Integer tripId, Integer driverId);
+
 }

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api/manager';
 
-// hàm chung lấy header Authorization
+// header Authorization
 function getAuthHeaders() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -11,6 +11,16 @@ function getAuthHeaders() {
     return {
         Authorization: `Bearer ${token}`,
     };
+}
+
+// Manager Dashboard
+export async function getDashboardOverview(startDate, endDate) {
+    const response = await axios.get(`${API_BASE_URL}/dashboard/overview`, {
+        params: { startDate, endDate },
+        headers: getAuthHeaders(),
+        withCredentials: false,
+    });
+    return response.data;
 }
 
 export async function getOperationsPerformance(startDate, endDate) {
@@ -83,6 +93,15 @@ export async function getAlerts(startDate, endDate) {
 
 export async function getManagerActivities(startDate, endDate) {
     const response = await axios.get(`${API_BASE_URL}/audit/activities`, {
+        params: { startDate, endDate },
+        headers: getAuthHeaders(),
+        withCredentials: false,
+    });
+    return response.data;
+}
+
+export async function getRecommendations(startDate, endDate) {
+    const response = await axios.get(`${API_BASE_URL}/recommendations`, {
         params: { startDate, endDate },
         headers: getAuthHeaders(),
         withCredentials: false,

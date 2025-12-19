@@ -1,47 +1,85 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getRouteSummary } from "../../../services/manager/managerService";
+import "../manager.css";
 
 const RouteAnalyticsPage = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
-    const [routes, setRoutes] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [rows, setRows] = useState([]);
 
-    const toInputDate = (d) => d.toISOString().slice(0, 10);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const toInputDate = (date) => date.toISOString().slice(0, 10);
+
+    const formatNumber = (v) => {
+        if (v === null || v === undefined) return "0";
+        const n = Number(v);
+        if (Number.isNaN(n)) return "0";
+        return n.toLocaleString();
+    };
+
+    const formatFixed = (v, digits = 1) => {
+        if (v === null || v === undefined) return "-";
+        const n = Number(v);
+        if (Number.isNaN(n)) return "-";
+        return n.toFixed(digits);
+    };
+
+    const toTons = (kg) => {
+        if (kg === null || kg === undefined) return null;
+        const n = Number(kg);
+        if (Number.isNaN(n)) return null;
+        return n / 1000;
+    };
 
     useEffect(() => {
         const today = new Date();
-        const past = new Date();
-        past.setDate(today.getDate() - 6);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 6);
 
-        const s = toInputDate(past);
+        const s = toInputDate(sevenDaysAgo);
         const e = toInputDate(today);
 
         setStartDate(s);
         setEndDate(e);
-        load(s, e);
+
+        void loadData(s, e);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const load = async (s, e) => {
+    const loadData = async (s, e) => {
         setLoading(true);
+        setError("");
+
         try {
             const data = await getRouteSummary(s, e);
-            setRoutes(data || []);
+            const arr = Array.isArray(data) ? data : [];
+            setRows(arr);
+            if (arr.length === 0) setError("No route analytics data.");
         } catch (err) {
-            console.error("Error loading route summary:", err);
-            setRoutes([]);
+            console.error(err);
+            setRows([]);
+            setError("Failed to load route analytics.");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleView = () => {
-        load(startDate, endDate);
+    const handleSearch = () => {
+        void loadData(startDate, endDate);
     };
 
+    const sortedRows = useMemo(() => {
+        const clone = [...rows];
+        // ưu tiên route có nhiều trip hơn
+        clone.sort((a, b) => (Number(b.totalTrips) || 0) - (Number(a.totalTrips) || 0));
+        return clone;
+    }, [rows]);
+
     return (
-        <div className="driver-manager-page">
-            <h1>📊 Route Analytics</h1>
+        <div className="manager-page">
+            <h2>Route Analytics</h2>
 
             <div className="filters">
                 <label>
@@ -52,6 +90,7 @@ const RouteAnalyticsPage = () => {
                         onChange={(e) => setStartDate(e.target.value)}
                     />
                 </label>
+
                 <label>
                     To:
                     <input
@@ -60,58 +99,64 @@ const RouteAnalyticsPage = () => {
                         onChange={(e) => setEndDate(e.target.value)}
                     />
                 </label>
-                <button onClick={handleView} disabled={loading}>
+
+                <button onClick={handleSearch} disabled={loading}>
                     {loading ? "Loading..." : "View"}
                 </button>
             </div>
 
-            {!loading && routes.length === 0 && <p>No data.</p>}
+            {error && <div className="error">{error}</div>}
 
-            {routes.length > 0 && (
-                <table className="driver-table">
+            {!error && sortedRows.length > 0 && (
+                <table className="manager-table">
                     <thead>
                     <tr>
                         <th>#</th>
                         <th>Route</th>
                         <th>Origin</th>
                         <th>Destination</th>
+
                         <th>Total Trips</th>
+                        <th>Delayed</th>
+                        <th>Cancelled</th>
+
+                        <th>Avg Delay (min)</th>
+                        <th>On-time Rate (%)</th>
+
                         <th>Total Distance (km)</th>
                         <th>Avg Distance (km)</th>
                         <th>Avg Duration (min)</th>
-                        <th>On-time Rate (%)</th>
+
+                        <th>Cargo (t)</th>
                         <th>Suggestion</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {routes.map((r, idx) => (
+                    {sortedRows.map((r, idx) => (
                         <tr key={r.routeId ?? idx}>
                             <td>{idx + 1}</td>
-                            <td>{r.routeId}</td>
-                            <td>{r.origin}</td>
-                            <td>{r.destination}</td>
-                            <td>{r.totalTrips}</td>
+                            <td>{r.routeId ?? "-"}</td>
+                            <td>{r.origin ?? "-"}</td>
+                            <td>{r.destination ?? "-"}</td>
+
+                            <td>{formatNumber(r.totalTrips)}</td>
+                            <td>{formatNumber(r.delayedTrips ?? 0)}</td>
+                            <td>{formatNumber(r.cancelledTrips ?? 0)}</td>
+
+                            <td>{formatFixed(r.averageDelayMinutes, 1)}</td>
+                            <td>{formatFixed(r.onTimeRatePercent, 1)}</td>
+
+                            <td>{formatFixed(r.totalDistanceKm, 1)}</td>
+                            <td>{formatFixed(r.averageDistanceKm, 1)}</td>
+                            <td>{formatFixed(r.averageDurationMinutes, 1)}</td>
+
                             <td>
-                                {r.totalDistanceKm != null
-                                    ? r.totalDistanceKm.toFixed(1)
+                                {toTons(r.totalCargoWeightKg) != null
+                                    ? toTons(r.totalCargoWeightKg).toFixed(2)
                                     : "-"}
                             </td>
-                            <td>
-                                {r.averageDistanceKm != null
-                                    ? r.averageDistanceKm.toFixed(1)
-                                    : "-"}
-                            </td>
-                            <td>
-                                {r.averageDurationMinutes != null
-                                    ? r.averageDurationMinutes.toFixed(1)
-                                    : "-"}
-                            </td>
-                            <td>
-                                {r.onTimeRatePercent != null
-                                    ? r.onTimeRatePercent.toFixed(1)
-                                    : "-"}
-                            </td>
-                            <td>{r.optimizationSuggestion}</td>
+
+                            <td>{r.optimizationSuggestion ?? "-"}</td>
                         </tr>
                     ))}
                     </tbody>

@@ -45,6 +45,16 @@ const ManagerLayout = () => {
       <div className="manager-body">
         {/* Sidebar */}
         <aside className="manager-sidebar">
+            {/*tổng quan quản lý (KPI + cảnh báo chính)*/}
+            <NavLink to="/manager/dashboard" className="manager-menu-item">
+                Dashboard Overview
+            </NavLink>
+            <NavLink
+                to="/manager/recommendations"
+                className={({ isActive }) => (isActive ? "active" : "")}
+            >
+                Recommendations
+            </NavLink>
             {/*theo dõi vận hành tổng thể (drivers + fleet + operations)*/}
           <NavLink to="/manager/monitor-operations" className="manager-menu-item">
               Monitor Operations

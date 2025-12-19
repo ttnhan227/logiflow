@@ -1,108 +1,128 @@
-import React, { useEffect, useState } from "react";
-import { getAlerts } from "../../../services/manager/managerService";
+import React, { useEffect, useMemo, useState } from "react";
+import { getAlerts } from "../../../services/manager/managerService.js";
+import "../manager.css";
 
 const AlertsPage = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
-    const [alerts, setAlerts] = useState([]);
+
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [alerts, setAlerts] = useState([]);
 
     const toInputDate = (d) => d.toISOString().slice(0, 10);
 
     useEffect(() => {
         const today = new Date();
-        const past = new Date();
-        past.setDate(today.getDate() - 6);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 6);
 
-        const s = toInputDate(past);
+        const s = toInputDate(sevenDaysAgo);
         const e = toInputDate(today);
 
         setStartDate(s);
         setEndDate(e);
-        load(s, e);
+
+        loadData(s, e);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const load = async (s, e) => {
+    const loadData = async (s, e) => {
         setLoading(true);
+        setError("");
         try {
             const data = await getAlerts(s, e);
-            setAlerts(data || []);
+            setAlerts(Array.isArray(data) ? data : []);
         } catch (err) {
-            console.error("Error loading alerts:", err);
+            setError("Failed to load alerts.");
             setAlerts([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleView = () => {
-        load(startDate, endDate);
-    };
+    const handleSearch = () => loadData(startDate, endDate);
 
-    const severityColor = (sev) => {
-        switch (sev) {
-            case "CRITICAL": return "red";
-            case "HIGH": return "orangered";
-            case "MEDIUM": return "orange";
-            default: return "green";
-        }
-    };
+    const topSummary = useMemo(() => {
+        const total = alerts.length;
+        const critical = alerts.filter((x) => x.severity === "CRITICAL").length;
+        const high = alerts.filter((x) => x.severity === "HIGH").length;
+        const medium = alerts.filter((x) => x.severity === "MEDIUM").length;
+        return { total, critical, high, medium };
+    }, [alerts]);
 
     return (
-        <div className="driver-manager-page">
+        <div className="manager-page">
             <h1>🚨 Alerts</h1>
 
             <div className="filters">
                 <label>
                     From:
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                    />
+                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 </label>
+
                 <label>
                     To:
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                    />
+                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                 </label>
-                <button onClick={handleView} disabled={loading}>
+
+                <button onClick={handleSearch} disabled={loading}>
                     {loading ? "Loading..." : "View"}
                 </button>
             </div>
 
-            {!loading && alerts.length === 0 && <p>No alerts.</p>}
+            {error && <div className="error">{error}</div>}
 
-            {alerts.length > 0 && (
-                <table className="driver-table">
+            {!error && (
+                <div className="summary-cards">
+                    <div className="card">
+                        <div className="card-label">Total Alerts</div>
+                        <div className="card-value">{topSummary.total}</div>
+                    </div>
+                    <div className="card">
+                        <div className="card-label">Critical</div>
+                        <div className="card-value">{topSummary.critical}</div>
+                    </div>
+                    <div className="card">
+                        <div className="card-label">High</div>
+                        <div className="card-value">{topSummary.high}</div>
+                    </div>
+                    <div className="card">
+                        <div className="card-label">Medium</div>
+                        <div className="card-value">{topSummary.medium}</div>
+                    </div>
+                </div>
+            )}
+
+            {!loading && !error && alerts.length === 0 && <div>No alerts found.</div>}
+
+            {!error && alerts.length > 0 && (
+                <table className="manager-table">
                     <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Severity</th>
-                        <th>Title</th>
+                        <th>Time</th>
                         <th>Type</th>
-                        <th>Driver</th>
+                        <th>Title</th>
+                        <th>Message</th>
+                        <th>Severity</th>
+                        <th>Trip</th>
                         <th>Vehicle</th>
-                        <th>Created At</th>
-                        <th>Acknowledged</th>
                     </tr>
                     </thead>
                     <tbody>
                     {alerts.map((a, idx) => (
                         <tr key={a.alertId ?? idx}>
-                            <td>{idx + 1}</td>
-                            <td style={{ color: severityColor(a.severity), fontWeight: "bold" }}>
-                                {a.severity}
+                            <td>{a.createdAt ?? "-"}</td>
+                            <td>{a.type ?? "-"}</td>
+                            <td>{a.title ?? "-"}</td>
+                            <td>{a.message ?? "-"}</td>
+                            <td>
+                  <span className={`badge badge-${(a.severity || "LOW").toLowerCase()}`}>
+                    {a.severity ?? "LOW"}
+                  </span>
                             </td>
-                            <td>{a.title}</td>
-                            <td>{a.type}</td>
-                            <td>{a.relatedDriverName || "-"}</td>
-                            <td>{a.relatedVehicleId || "-"}</td>
-                            <td>{a.createdAt}</td>
-                            <td>{a.acknowledged ? "Yes" : "No"}</td>
+                            <td>{a.relatedTripId ?? "-"}</td>
+                            <td>{a.relatedVehicleId ?? "-"}</td>
                         </tr>
                     ))}
                     </tbody>
