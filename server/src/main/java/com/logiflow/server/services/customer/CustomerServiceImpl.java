@@ -455,8 +455,12 @@ public class CustomerServiceImpl implements CustomerService {
                 );
                 order.setShippingFee(fee);
             } else {
-                System.err.println("Failed to calculate distance for order between: " +
-                    order.getPickupAddress() + " -> " + order.getDeliveryAddress());
+                // Only log if addresses are not empty (avoid spam for empty orders)
+                if (order.getPickupAddress() != null && !order.getPickupAddress().trim().isEmpty() &&
+                    order.getDeliveryAddress() != null && !order.getDeliveryAddress().trim().isEmpty()) {
+                    System.err.println("Failed to calculate distance for order between: " +
+                        order.getPickupAddress() + " -> " + order.getDeliveryAddress());
+                }
                 // Set default values or leave null
                 order.setDistanceKm(null);
                 order.setShippingFee(null);
