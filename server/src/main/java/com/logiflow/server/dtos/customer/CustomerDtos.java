@@ -45,7 +45,7 @@ public class CustomerDtos {
         private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
-        private BigDecimal weightKg;
+        private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
         private String priorityLevel;
@@ -72,7 +72,7 @@ public class CustomerDtos {
         private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
-        private BigDecimal weightKg;
+        private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
         private String orderStatus;
@@ -120,7 +120,7 @@ public class CustomerDtos {
         private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
-        private BigDecimal weightKg;
+        private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
         private String orderStatus;

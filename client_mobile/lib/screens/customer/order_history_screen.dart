@@ -149,12 +149,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           // Specifications Row
                           Row(
                             children: [
-                              if (order.weightKg != null)
+                              if (order.weightTons != null)
                                 Expanded(
                                   child: Text(
-                                    'Weight: ${order.weightKg!.toStringAsFixed(1)}kg',
+                                    'Weight: ${order.weightTons!.toStringAsFixed(1)}t',
                                     style: const TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 14,
                                       color: Colors.grey,
                                     ),
                                   ),
@@ -283,8 +283,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
     );
   }
-
-
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();

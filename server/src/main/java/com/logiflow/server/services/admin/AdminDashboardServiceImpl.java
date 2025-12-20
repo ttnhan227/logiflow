@@ -71,15 +71,13 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         // Count active users by role
         long activeDispatchers = countActiveUsersByRole(roleNameToId, "DISPATCHER");
         long activeDrivers = countActiveUsersByRole(roleNameToId, "DRIVER");
-        long activeManagers = countActiveUsersByRole(roleNameToId, "MANAGER");
 
         // Get user statistics
         UserStatsDto userStats = new UserStatsDto(
             userRepository.count(),  // total users
             userRepository.countByCreatedAtAfter(LocalDateTime.now().minusDays(7)),  // new signups (last 7 days)
             (int) activeDispatchers,
-            (int) activeDrivers,
-            (int) activeManagers
+            (int) activeDrivers
         );
 
         // Get recent user activities (last 10 logins)

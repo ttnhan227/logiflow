@@ -1614,13 +1614,7 @@
 	);
 }
 
-.role-badge.manager {
-	background: linear-gradient(
-		135deg,
-		#3b82f6,
-		#2563eb
-	);
-}
+
 
 .role-badge.dispatcher {
 	background: linear-gradient(

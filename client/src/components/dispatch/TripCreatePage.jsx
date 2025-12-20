@@ -145,7 +145,7 @@ const TripCreatePage = () => {
               <option value="">-- Select Vehicle --</option>
               {vehicles.map(v => (
                 <option key={v.vehicleId} value={v.vehicleId}>
-                  {v.vehicleType} ({v.capacity} kg)
+                  {v.vehicleType} ({v.capacity} t)
                 </option>
               ))}
             </select>
@@ -224,7 +224,7 @@ const TripCreatePage = () => {
                     </div>
                     <div style={{ color: '#475569', fontSize: '0.85rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <span>
-                        {o.weightTons ? `⚖️ ${o.weightTons} t` : (o.weightKg ? `⚖️ ${o.weightKg} kg` : '')}
+                        {o.weightTons ? `⚖️ ${o.weightTons} t` : ''}
                         {o.packageDetails ? ` • ${o.packageDetails}` : ''}
                       </span>
                       {o.pickupType && (

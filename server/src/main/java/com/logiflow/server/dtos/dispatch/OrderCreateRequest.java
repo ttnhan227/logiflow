@@ -31,10 +31,7 @@ public class OrderCreateRequest {
     
     private BigDecimal distanceKm;
 
-    // Backward compatibility
-    private BigDecimal weightKg;
-
-    // Bulk cargo
+    // Weight in tons (t)
     private BigDecimal weightTons;
 
     @NotNull(message = "Pickup type is required")

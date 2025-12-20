@@ -80,8 +80,8 @@ public class AuthServiceImpl implements AuthService {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
-        // Roles that require admin approval: DISPATCHER (3), DRIVER (4), MANAGER (2)
-        List<Integer> rolesRequiringApproval = Arrays.asList(2, 3, 4);
+        // Roles that require admin approval: DISPATCHER (3), DRIVER (4)
+        List<Integer> rolesRequiringApproval = Arrays.asList(3, 4);
         
         if (rolesRequiringApproval.contains(roleId)) {
             // Create registration request instead of direct user

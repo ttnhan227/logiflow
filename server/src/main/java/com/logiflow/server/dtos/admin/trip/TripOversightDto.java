@@ -165,8 +165,7 @@ public class TripOversightDto {
                     orderDto.setPickupAddress(order.getPickupAddress());
                     orderDto.setDeliveryAddress(order.getDeliveryAddress());
                     orderDto.setPackageDetails(order.getPackageDetails());
-                    orderDto.setWeightTon(order.getWeightKg() != null ?
-                        order.getWeightKg().divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP) : null);
+                    orderDto.setWeightTon(order.getWeightTons());
                     orderDto.setPackageValue(order.getPackageValue());
                     orderDto.setOrderStatus(order.getOrderStatus());
                     orderDto.setPriorityLevel(order.getPriorityLevel());

@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
-    private static final BigDecimal KG_PER_TON = new BigDecimal("1000");
+
 
     private void applyPickupInfo(Order order, Order.PickupType pickupType, String containerNumber, String dockInfo) {
         order.setPickupType(pickupType);
@@ -66,24 +66,10 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private void applyWeights(Order order, BigDecimal weightKg, BigDecimal weightTons) {
-        order.setWeightTons(weightTons);
-
-        // If weightTons provided, derive kg for existing fee logic.
+    private void applyWeights(Order order, BigDecimal weightTons) {
+        // Set weight in tons (primary and only field)
         if (weightTons != null) {
-            order.setWeightKg(weightTons.multiply(KG_PER_TON));
-            return;
-        }
-
-        // Otherwise keep existing behavior.
-        order.setWeightKg(weightKg);
-
-        // If only kg provided, also derive tons for UI.
-        if (weightKg != null) {
-            try {
-                order.setWeightTons(weightKg.divide(KG_PER_TON, 3, RoundingMode.HALF_UP));
-            } catch (Exception ignored) {
-            }
+            order.setWeightTons(weightTons);
         }
     }
 
@@ -189,7 +175,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Set distance, weight, pickup info, and package value
         order.setDistanceKm(request.getDistanceKm());
-        applyWeights(order, request.getWeightKg(), request.getWeightTons());
+        order.setWeightTons(request.getWeightTons());
         applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
         order.setPackageValue(request.getPackageValue());
 
@@ -210,10 +196,10 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        // Calculate shipping fee
+        // Calculate shipping fee using weight in tons directly
         java.math.BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
                 order.getDistanceKm(),
-                order.getWeightKg(),
+                order.getWeightTons(),
                 order.getPackageValue(),
                 order.getPriorityLevel()
         );
@@ -324,7 +310,7 @@ public class OrderServiceImpl implements OrderService {
                 order.setCreatedAt(LocalDateTime.now());
 
                 order.setDistanceKm(request.getDistanceKm());
-                applyWeights(order, request.getWeightKg(), request.getWeightTons());
+                order.setWeightTons(request.getWeightTons());
                 applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
                 order.setPackageValue(request.getPackageValue());
 
@@ -346,9 +332,10 @@ public class OrderServiceImpl implements OrderService {
                 }
 
 
+                // Calculate shipping fee using weight in tons directly
                 BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
                         order.getDistanceKm(),
-                        order.getWeightKg(),
+                        order.getWeightTons(),
                         order.getPackageValue(),
                         order.getPriorityLevel()
                 );
@@ -514,7 +501,7 @@ public class OrderServiceImpl implements OrderService {
         order.setPriorityLevel(request.getPriorityLevel());
 
         order.setDistanceKm(request.getDistanceKm());
-        applyWeights(order, request.getWeightKg(), request.getWeightTons());
+        order.setWeightTons(request.getWeightTons());
         applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
         order.setPackageValue(request.getPackageValue());
 
@@ -534,9 +521,10 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
+        // Calculate shipping fee using weight in tons directly
         BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
                 order.getDistanceKm(),
-                order.getWeightKg(),
+                order.getWeightTons(),
                 order.getPackageValue(),
                 order.getPriorityLevel()
         );

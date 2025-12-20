@@ -95,10 +95,9 @@ const AdminDashboardPage = () => {
   }
 
   const { userStats, fleetOverview, recentActivities, shipmentStatistics, deliveryTimeStats, complianceAlerts } = dashboardData || {};
-  
-  const totalActiveUsers = (userStats?.activeDispatchers || 0) + 
-                          (userStats?.activeDrivers || 0) + 
-                          (userStats?.activeManagers || 0);
+
+  const totalActiveUsers = (userStats?.activeDispatchers || 0) +
+                          (userStats?.activeDrivers || 0);
 
   // Prepare chart data - each status as a separate object for proper bar display
   const chartData = shipmentStatistics ? [

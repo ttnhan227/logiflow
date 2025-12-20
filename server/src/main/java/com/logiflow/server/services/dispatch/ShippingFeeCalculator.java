@@ -21,38 +21,38 @@ public class ShippingFeeCalculator {
     // Default fallback values (used if system settings are not configured)
     private static final BigDecimal DEFAULT_BASE_FEE = new BigDecimal("20");
     private static final BigDecimal DEFAULT_PRICE_PER_KM = new BigDecimal("5");
-    private static final BigDecimal DEFAULT_PRICE_PER_KG = new BigDecimal("50");
+    private static final BigDecimal DEFAULT_PRICE_PER_TON = new BigDecimal("50000");
     private static final BigDecimal DEFAULT_INSURANCE_RATE = new BigDecimal("0.01"); // 1% of package value
     private static final BigDecimal DEFAULT_URGENT_MULTIPLIER = new BigDecimal("1.5"); // 50% extra
     private static final BigDecimal DEFAULT_MIN_FEE = new BigDecimal("10");
 
     /**
      * Calculate shipping fee based on distance, weight, package value, and priority
-     * 
+     *
      * Formula:
      * - Base fee: 20 usd
      * - Distance fee: distance (km) * 5 usd/km
-     * - Weight fee: weight (kg) * 50usd/kg
+     * - Weight fee: weight (tons) * 50000 usd/ton
      * - Insurance fee: package value * 1%
      * - Priority multiplier: URGENT orders get 1.5x multiplier
      * - Minimum fee: 10 usd
-     * 
-     * @param distanceKm Distance in kilometers (can be null)
-     * @param weightKg Weight in kilograms (can be null)
+     *
+     * @param distanceKm Distance in toones (can be null)
+     * @param weightTons Weight in tons (can be null)
      * @param packageValue Package value in VND (can be null)
      * @param priorityLevel Priority level (NORMAL or URGENT)
      * @return Calculated shipping fee in VND
      */
     public BigDecimal calculateShippingFee(
             BigDecimal distanceKm,
-            BigDecimal weightKg,
+            BigDecimal weightTons,
             BigDecimal packageValue,
             Order.PriorityLevel priorityLevel) {
 
         // Get pricing settings from system configuration
         BigDecimal baseFee = getSystemSettingAsBigDecimal("pricing", "base_fee", DEFAULT_BASE_FEE);
         BigDecimal pricePerKm = getSystemSettingAsBigDecimal("pricing", "price_per_km", DEFAULT_PRICE_PER_KM);
-        BigDecimal pricePerKg = getSystemSettingAsBigDecimal("pricing", "price_per_kg", DEFAULT_PRICE_PER_KG);
+        BigDecimal pricePerTon = getSystemSettingAsBigDecimal("pricing", "price_per_ton", DEFAULT_PRICE_PER_TON);
         BigDecimal insuranceRate = getSystemSettingAsBigDecimal("pricing", "insurance_rate", DEFAULT_INSURANCE_RATE);
         BigDecimal urgentMultiplier = getSystemSettingAsBigDecimal("pricing", "urgent_multiplier", DEFAULT_URGENT_MULTIPLIER);
         BigDecimal minFee = getSystemSettingAsBigDecimal("pricing", "min_fee", DEFAULT_MIN_FEE);
@@ -66,8 +66,8 @@ public class ShippingFeeCalculator {
         }
 
         // Weight fee
-        if (weightKg != null && weightKg.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal weightFee = weightKg.multiply(pricePerKg);
+        if (weightTons != null && weightTons.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal weightFee = weightTons.multiply(pricePerTon);
             totalFee = totalFee.add(weightFee);
         }
 

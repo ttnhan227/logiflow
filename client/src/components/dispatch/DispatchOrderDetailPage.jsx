@@ -301,7 +301,7 @@ const DispatchOrderDetailPage = () => {
                           placeholder="Weight (tons)"
                         />
                       ) : (
-                        order.weightTons != null ? `${order.weightTons} t` : (order.weightKg != null ? `${order.weightKg} kg` : 'N/A')
+                        order.weightTons != null ? `${order.weightTons} t` : 'N/A'
                       )}
                     </div>
                   </div>

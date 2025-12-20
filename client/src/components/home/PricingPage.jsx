@@ -188,7 +188,7 @@ const PricingPage = () => {
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚖️</div>
               <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Heavy Packages</h4>
-              <p style={{ color: '#666', marginBottom: '1rem' }}>Over 30kg or special handling</p>
+              <p style={{ color: '#666', marginBottom: '1rem' }}>Over 30t or special handling</p>
               <div style={{ fontSize: '1.2rem', fontWeight: '600', color: 'var(--primary-color)' }}>
                 Weight-based pricing
               </div>

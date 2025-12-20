@@ -53,7 +53,7 @@ const FleetPage = () => {
               Perfect for inter-province and commercial deliveries.
             </p>
             <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-              Capacity: 500kg - 2 tons
+              Capacity: 0.5t - 2 tons
             </div>
           </div>
 

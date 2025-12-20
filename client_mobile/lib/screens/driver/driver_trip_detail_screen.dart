@@ -1344,14 +1344,14 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                   ],
                                                   if (order['packageValue'] !=
                                                           null &&
-                                                      order['weightKg'] != null)
+                                                      order['weightTons'] != null)
                                                     Text(
-                                                      ' �?',
+                                                      ' ?',
                                                       style: TextStyle(
                                                         color: Colors.grey,
                                                       ),
                                                     ),
-                                                  if (order['weightKg'] !=
+                                                  if (order['weightTons'] !=
                                                       null) ...[
                                                     Icon(
                                                       Icons.monitor_weight,
@@ -1360,7 +1360,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                     ),
                                                     const SizedBox(width: 4),
                                                     Text(
-                                                      '${(order['weightKg'] as num).toStringAsFixed(1)}kg',
+                                                      '${(order['weightTons'] as num).toStringAsFixed(2)}t',
                                                       style: const TextStyle(
                                                         fontSize: 12,
                                                         color: Colors.blue,

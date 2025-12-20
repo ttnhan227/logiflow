@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class CustomerServiceImpl implements CustomerService {
 
+
+
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
@@ -73,7 +75,7 @@ public class CustomerServiceImpl implements CustomerService {
         order.setDockNumber(request.getDockNumber());
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setPackageDetails(request.getPackageDetails());
-        order.setWeightKg(request.getWeightTonnes());
+        order.setWeightTons(request.getWeightTonnes());
         order.setCreatedBy(customer);
         order.setCustomer(customer);
 
@@ -328,7 +330,7 @@ public class CustomerServiceImpl implements CustomerService {
                     history.setDockNumber(order.getDockNumber());
                     history.setDeliveryAddress(order.getDeliveryAddress());
                     history.setPackageDetails(order.getPackageDetails());
-                    history.setWeightKg(order.getWeightKg());
+                    history.setWeightTons(order.getWeightTons());
                     history.setPackageValue(order.getPackageValue());
                     history.setDistanceKm(order.getDistanceKm());
                     history.setOrderStatus(order.getOrderStatus().name());
@@ -366,7 +368,7 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setDockNumber(order.getDockNumber());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
-        dto.setWeightKg(order.getWeightKg());
+        dto.setWeightTons(order.getWeightTons());
         dto.setPackageValue(order.getPackageValue());
         dto.setDistanceKm(order.getDistanceKm());
         dto.setPriorityLevel(order.getPriorityLevel().name());
@@ -409,7 +411,7 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setDockNumber(order.getDockNumber());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
-        dto.setWeightKg(order.getWeightKg());
+        dto.setWeightTons(order.getWeightTons());
         dto.setPackageValue(order.getPackageValue());
         dto.setDistanceKm(order.getDistanceKm());
         dto.setOrderStatus(order.getOrderStatus().name());
@@ -442,7 +444,7 @@ public class CustomerServiceImpl implements CustomerService {
             );
 
             if (distanceResult != null) {
-                // Set distance in kilometers (convert from meters)
+                // Set distance in toones (convert from meters)
                 BigDecimal distanceKm = BigDecimal.valueOf(distanceResult.getDistanceMeters())
                     .divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP);
                 order.setDistanceKm(distanceKm);
@@ -450,7 +452,7 @@ public class CustomerServiceImpl implements CustomerService {
                 // Calculate shipping fee
                 BigDecimal fee = calculateShippingFee(
                     distanceKm,
-                    order.getWeightKg() != null ? order.getWeightKg() : BigDecimal.ZERO,
+                    order.getWeightTons() != null ? order.getWeightTons() : BigDecimal.ZERO,
                     order.getPriorityLevel()
                 );
                 order.setShippingFee(fee);
@@ -473,16 +475,17 @@ public class CustomerServiceImpl implements CustomerService {
 
     /**
      * Calculate shipping fee based on distance, weight, and priority
+     * Now uses tons as the primary unit
      */
-    private BigDecimal calculateShippingFee(BigDecimal distanceKm, BigDecimal weightKg, Order.PriorityLevel priority) {
+    private BigDecimal calculateShippingFee(BigDecimal distanceKm, BigDecimal weightTons, Order.PriorityLevel priority) {
         // Rate constants (should match frontend calculations)
         BigDecimal baseFee = BigDecimal.valueOf(50000); // VND base fee
         BigDecimal distanceRate = BigDecimal.valueOf(2500); // VND per km
-        BigDecimal weightRate = BigDecimal.valueOf(2000); // VND per kg
+        BigDecimal weightRatePerTon = BigDecimal.valueOf(2000000); // VND per ton
 
         // Calculate distance and weight components
         BigDecimal distanceFee = distanceKm.multiply(distanceRate);
-        BigDecimal weightFee = weightKg.multiply(weightRate);
+        BigDecimal weightFee = weightTons.multiply(weightRatePerTon);
 
         // Total fee before priority multiplier
         BigDecimal totalFee = baseFee.add(distanceFee).add(weightFee);

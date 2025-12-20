@@ -26,6 +26,8 @@ import java.util.Optional;
 @Transactional
 public class DriverServiceImpl implements DriverService {
 
+
+
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
     private final TripRepository tripRepository;
@@ -372,7 +374,7 @@ public class DriverServiceImpl implements DriverService {
                 brief.setPickupAddress(o.getPickupAddress());
                 brief.setDeliveryAddress(o.getDeliveryAddress());
                 brief.setPackageDetails(o.getPackageDetails());
-                brief.setWeightKg(o.getWeightKg());
+                brief.setWeightTons(o.getWeightTons());
                 brief.setPackageValue(o.getPackageValue());
                 brief.setDistanceKm(o.getDistanceKm());
                 brief.setStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null);

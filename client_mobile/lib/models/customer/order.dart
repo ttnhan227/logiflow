@@ -13,7 +13,7 @@ class Order extends Equatable {
   final String? dockNumber;
   final String? deliveryAddress;
   final String? packageDetails;
-  final double? weightKg;
+  final double? weightTons;
   final double? packageValue;
   final double? distanceKm;
   final String? priorityLevel;
@@ -41,7 +41,7 @@ class Order extends Equatable {
     this.dockNumber,
     this.deliveryAddress,
     this.packageDetails,
-    this.weightKg,
+    this.weightTons,
     this.packageValue,
     this.distanceKm,
     this.priorityLevel,
@@ -71,7 +71,7 @@ class Order extends Equatable {
       dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
-      weightKg: json['weightKg']?.toDouble(),
+      weightTons: json['weightTons']?.toDouble(),
       packageValue: json['packageValue']?.toDouble(),
       distanceKm: json['distanceKm']?.toDouble(),
       priorityLevel: json['priorityLevel'],
@@ -112,7 +112,7 @@ class Order extends Equatable {
       'dockNumber': dockNumber,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
-      'weightKg': weightKg,
+      'weightTons': weightTons,
       'packageValue': packageValue,
       'distanceKm': distanceKm,
       'priorityLevel': priorityLevel,
@@ -143,7 +143,7 @@ class Order extends Equatable {
     dockNumber,
     deliveryAddress,
     packageDetails,
-    weightKg,
+    weightTons,
     packageValue,
     distanceKm,
     priorityLevel,
@@ -249,7 +249,7 @@ class OrderSummary extends Equatable {
   final String? dockNumber;
   final String deliveryAddress;
   final String? packageDetails;
-  final double? weightKg;
+  final double? weightTons;
   final double? packageValue;
   final double? distanceKm;
   final String orderStatus;
@@ -270,7 +270,7 @@ class OrderSummary extends Equatable {
     this.dockNumber,
     required this.deliveryAddress,
     this.packageDetails,
-    this.weightKg,
+    this.weightTons,
     this.packageValue,
     this.distanceKm,
     required this.orderStatus,
@@ -293,7 +293,7 @@ class OrderSummary extends Equatable {
       dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
-      weightKg: json['weightKg']?.toDouble(),
+      weightTons: json['weightTons']?.toDouble(),
       packageValue: json['packageValue']?.toDouble(),
       distanceKm: json['distanceKm']?.toDouble(),
       orderStatus: json['orderStatus'],
@@ -319,7 +319,7 @@ class OrderSummary extends Equatable {
     dockNumber,
     deliveryAddress,
     packageDetails,
-    weightKg,
+    weightTons,
     packageValue,
     distanceKm,
     orderStatus,

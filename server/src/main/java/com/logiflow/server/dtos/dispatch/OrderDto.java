@@ -19,7 +19,6 @@ public class OrderDto {
     private String deliveryAddress;
     private String packageDetails;
     private java.math.BigDecimal distanceKm;
-    private java.math.BigDecimal weightKg;
     private java.math.BigDecimal weightTons;
     private Order.PickupType pickupType;
     private String containerNumber;
@@ -42,7 +41,6 @@ public class OrderDto {
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
         dto.setDistanceKm(order.getDistanceKm());
-        dto.setWeightKg(order.getWeightKg());
         dto.setWeightTons(order.getWeightTons());
         dto.setPickupType(order.getPickupType());
         dto.setContainerNumber(order.getContainerNumber());

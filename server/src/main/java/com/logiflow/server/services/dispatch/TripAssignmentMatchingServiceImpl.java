@@ -279,12 +279,9 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
 
         for (Order o : trip.getOrders()) {
             if (o == null) continue;
-            // Prefer weightTons, fallback to weightKg
+            // Use weightTons (primary field)
             if (o.getWeightTons() != null) {
                 total = total.add(o.getWeightTons());
-                any = true;
-            } else if (o.getWeightKg() != null) {
-                total = total.add(o.getWeightKg().divide(new BigDecimal("1000"), 3, RoundingMode.HALF_UP));
                 any = true;
             }
         }

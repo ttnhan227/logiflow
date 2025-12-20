@@ -24,11 +24,10 @@ const AdminUserEditPage = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const roles = ['ADMIN', 'MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
+  const roles = ['ADMIN', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
 
   const rolePermissions = {
     ADMIN: ['Full system access', 'User management', 'System configuration'],
-    MANAGER: ['View all routes', 'Assign drivers', 'Generate reports'],
     DISPATCHER: ['Create routes', 'Assign orders', 'Track drivers'],
     DRIVER: ['View assigned routes', 'Update delivery status', 'Upload photos'],
     CUSTOMER: ['Place orders', 'Track deliveries', 'View history'],

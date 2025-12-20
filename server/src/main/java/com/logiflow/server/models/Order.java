@@ -62,13 +62,7 @@ public class Order {
     private BigDecimal distanceKm;
 
     /**
-     * Backward-compatible weight (kg). For bulk cargo, use {@link #weightTons}.
-     */
-    @Column(name = "weight_kg", precision = 10, scale = 2, nullable = true)
-    private BigDecimal weightKg;
-
-    /**
-     * Bulk cargo weight in tons (t).
+     * Weight in tons (t) - unified measurement for all cargo types.
      */
     @Column(name = "weight_tons", precision = 10, scale = 3, nullable = true)
     private BigDecimal weightTons;

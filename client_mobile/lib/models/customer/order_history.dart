@@ -10,7 +10,7 @@ class OrderHistory extends Equatable {
   final String? dockNumber;
   final String deliveryAddress;
   final String? packageDetails;
-  final double? weightKg;
+  final double? weightTons;
   final double? packageValue;
   final double? distanceKm;
   final String orderStatus;
@@ -29,7 +29,7 @@ class OrderHistory extends Equatable {
     this.dockNumber,
     required this.deliveryAddress,
     this.packageDetails,
-    this.weightKg,
+    this.weightTons,
     this.packageValue,
     this.distanceKm,
     required this.orderStatus,
@@ -50,7 +50,7 @@ class OrderHistory extends Equatable {
       dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
-      weightKg: json['weightKg']?.toDouble(),
+      weightTons: json['weightTons']?.toDouble(),
       packageValue: json['packageValue']?.toDouble(),
       distanceKm: json['distanceKm']?.toDouble(),
       orderStatus: json['orderStatus'],
@@ -74,7 +74,7 @@ class OrderHistory extends Equatable {
       'dockNumber': dockNumber,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
-      'weightKg': weightKg,
+      'weightTons': weightTons,
       'packageValue': packageValue,
       'distanceKm': distanceKm,
       'orderStatus': orderStatus,
@@ -96,7 +96,7 @@ class OrderHistory extends Equatable {
     dockNumber,
     deliveryAddress,
     packageDetails,
-    weightKg,
+    weightTons,
     packageValue,
     distanceKm,
     orderStatus,

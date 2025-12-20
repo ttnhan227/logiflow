@@ -219,12 +219,12 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                             // Specifications Row - Keep essential only
                             Row(
                               children: [
-                                if (order.weightKg != null)
+                                if (order.weightTons != null)
                                   Expanded(
                                     child: Text(
-                                      '${order.weightKg!.toStringAsFixed(1)}kg',
+                                      '${order.weightTons!.toStringAsFixed(1)}t',
                                       style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 14,
                                         color: Colors.grey,
                                       ),
                                     ),
@@ -289,14 +289,17 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                               ),
                             ],
                             // Trip Delay Information (affects entire trip, not just this order)
-                            if (order.delayReason != null && order.delayReason!.isNotEmpty) ...[
+                            if (order.delayReason != null &&
+                                order.delayReason!.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   color: Colors.orange[50],
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.orange[200]!),
+                                  border: Border.all(
+                                    color: Colors.orange[200]!,
+                                  ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,10 +548,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               Text(order.packageDetails!),
             ],
             const SizedBox(height: 16),
-            if (order.weightKg != null)
+            if (order.weightTons != null)
               _buildInfoRow(
                 'Weight',
-                '${order.weightKg?.toStringAsFixed(1)} kg',
+                '${order.weightTons?.toStringAsFixed(1)} t',
               ),
             if (order.packageValue != null)
               _buildInfoRow(

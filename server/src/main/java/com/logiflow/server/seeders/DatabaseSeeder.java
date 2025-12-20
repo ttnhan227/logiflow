@@ -273,44 +273,44 @@ public class DatabaseSeeder implements CommandLineRunner {
         String item = items[random.nextInt(items.length)];
         int weight = 5 + random.nextInt(45);
 
-        // Set weight field
-        order.setWeightKg(new BigDecimal(weight));
+        // Set weight field (convert to toones)
+        order.setWeightTons(new BigDecimal(weight).divide(new BigDecimal(1000), 3, java.math.RoundingMode.HALF_UP));
 
         // Set package value based on item type and weight (realistic pricing)
-        BigDecimal baseValuePerKg;
+        BigDecimal baseValuePerToon;
         String detailedDescription;
 
         switch (item.toLowerCase()) {
             case "electronics":
-                baseValuePerKg = new BigDecimal("500000"); // High value electronics
+                baseValuePerToon = new BigDecimal("500000"); // High value electronics
                 detailedDescription = "High-quality electronic devices including tablets, laptops, and accessories carefully packed for safe transport";
                 break;
             case "office furniture":
-                baseValuePerKg = new BigDecimal("80000");  // Mid-range furniture
+                baseValuePerToon = new BigDecimal("80000");  // Mid-range furniture
                 detailedDescription = "Professional office furniture set including desks, chairs, and storage units requiring special handling";
                 break;
             case "legal documents":
-                baseValuePerKg = new BigDecimal("10000000"); // High value documents
+                baseValuePerToon = new BigDecimal("10000000"); // High value documents
                 detailedDescription = "Confidential legal documents and corporate records in secure, climate-controlled packaging";
                 break;
             case "ind. machinery":
-                baseValuePerKg = new BigDecimal("300000");  // Heavy equipment
+                baseValuePerToon = new BigDecimal("300000");  // Heavy equipment
                 detailedDescription = "Industrial machinery and equipment components with specialized packaging and handling requirements";
                 break;
             case "textiles":
-                baseValuePerKg = new BigDecimal("150000");  // Valuable fabrics
+                baseValuePerToon = new BigDecimal("150000");  // Valuable fabrics
                 detailedDescription = "Premium textile products and clothing materials requiring moisture-resistant packaging";
                 break;
             case "fresh produce":
-                baseValuePerKg = new BigDecimal("25000");   // Lower value produce
+                baseValuePerToon = new BigDecimal("25000");   // Lower value produce
                 detailedDescription = "Fresh agricultural produce and perishable goods maintained at optimal temperature during transport";
                 break;
             default:
-                baseValuePerKg = new BigDecimal("100000");
+                baseValuePerToon = new BigDecimal("100000");
                 detailedDescription = "Miscellaneous goods safely packaged for transportation";
         }
 
-        BigDecimal packageValue = baseValuePerKg.multiply(new BigDecimal(weight)).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal packageValue = baseValuePerToon.multiply(new BigDecimal(weight)).setScale(2, java.math.RoundingMode.HALF_UP);
         order.setPackageValue(packageValue);
 
         order.setPackageDetails(detailedDescription);
@@ -325,7 +325,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         // Calculate Shipping Fee (distance + weight based)
         BigDecimal shippingFee = trip.getRoute().getDistanceKm().multiply(new BigDecimal("2500")) // Distance fee (2500 VND per km)
-                .add(new BigDecimal(weight * 2000)) // Weight fee (2000 VND per kg)
+                .add(order.getWeightTons().multiply(new BigDecimal("2000000"))) // Weight fee (2000000 VND per ton)
                 .add(new BigDecimal("50000")); // Base shipping fee
         if (order.getPriorityLevel() == Order.PriorityLevel.URGENT) shippingFee = shippingFee.multiply(new BigDecimal("1.3"));
         order.setShippingFee(shippingFee);
@@ -454,12 +454,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createRole("ADMIN", "System administrator with full access"),
                 createRole("DISPATCHER", "Manages trip assignments and routing"),
                 createRole("DRIVER", "Vehicle driver"),
-                createRole("MANAGER", "Fleet and operations manager"),
-                createRole("CUSTOMER", "Customer who places delivery orders"),
-                createRole("USER", "Standard user")
+                createRole("CUSTOMER", "Customer who places delivery orders")
         );
         roleRepository.saveAll(roles);
-        System.out.println("Seeded 6 roles");
+        System.out.println("Seeded 4 roles");
     }
 
     private Role createRole(String name, String description) {
@@ -472,17 +470,19 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedUsersWithRoles() {
         List<Role> roles = roleRepository.findAll();
-        if (roles.size() < 6) return;
+        if (roles.size() < 4) return;
         LocalDateTime now = LocalDateTime.now();
 
         List<User> users = Arrays.asList(
                 createUserWithRole("admin", "admin@logiflow.com", "123", roles.get(0), "Admin User", "+84-901-000-001", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(120), now.minusDays(1)),
                 createUserWithRole("john.dispatcher", "john.d@logiflow.com", "123", roles.get(1), "John Dispatcher", "+84-901-234-501", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(110), now.minusDays(2)),
-                createUserWithRole("sarah.manager", "sarah.m@logiflow.com", "123", roles.get(3), "Sarah Manager", "+84-901-234-502", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(105), now.minusDays(3)),
+
+                createUserWithRole("sarah.driver", "sarah.d@logiflow.com", "123", roles.get(2), "Sarah Driver", "+84-901-234-502", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(105), now.minusDays(3)),
                 createUserWithRole("mike.driver", "mike.d@logiflow.com", "123", roles.get(2), "Mike Driver", "+84-901-234-503", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(89), now.minusDays(10)),
                 createUserWithRole("amy.dispatcher2", "amy.d@logiflow.com", "123", roles.get(1), "Amy Dispatcher", "+84-901-234-504", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(95), now.minusDays(5)),
+                createUserWithRole("lisa.dispatcher3", "lisa.d@logiflow.com", "123", roles.get(1), "Lisa Dispatcher", "+84-901-234-506", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(100), now.minusDays(4)),
                 createUserWithRole("carl.driver2", "carl.d@logiflow.com", "123", roles.get(2), "Carl Driver", "+84-901-234-505", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(84), now.minusDays(8)),
-                createUserWithRole("lisa.manager2", "lisa.m@logiflow.com", "123", roles.get(3), "Lisa Manager", "+84-901-234-506", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(100), now.minusDays(4)),
+
                 createUserWithRole("david.driver3", "david.d@logiflow.com", "123", roles.get(2), "David Driver", "+84-901-234-507", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(79), now.minusDays(12)),
                 createUserWithRole("emma.driver4", "emma.d@logiflow.com", "123", roles.get(2), "Emma Driver", "+84-901-234-508", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(74), now.minusDays(15)),
                 createUserWithRole("bob.driver5", "bob.d@logiflow.com", "123", roles.get(2), "Bob Driver", "+84-901-234-509", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(69), now.minusDays(7)),
@@ -492,16 +492,16 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createUserWithRole("iris.driver9", "iris.d@logiflow.com", "123", roles.get(2), "Iris Driver", "+84-901-234-513", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(49), now.minusDays(13)),
                 createUserWithRole("jack.driver10", "jack.d@logiflow.com", "123", roles.get(2), "Jack Driver", "+84-901-234-514", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(44), now.minusDays(14)),
 
-                createUserWithRole("nguyen.mai", "nguyen.mai@gmail.com", "123", roles.get(4), "Nguyen Thi Mai", "+84-901-111-111", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(60), now.minusDays(1)),
-                createUserWithRole("tran.binh", "tran.binh@gmail.com", "123", roles.get(4), "Tran Van Binh", "+84-902-222-222", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(55), now.minusDays(2)),
-                createUserWithRole("pham.duc", "pham.duc@gmail.com", "123", roles.get(4), "Pham Van Duc", "+84-903-333-333", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(50), now.minusDays(3)),
-                createUserWithRole("le.huong", "le.huong@gmail.com", "123", roles.get(4), "Le Thi Huong", "+84-904-444-444", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(45), now.minusDays(4)),
-                createUserWithRole("hoang.tam", "hoang.tam@gmail.com", "123", roles.get(4), "Hoang Minh Tam", "+84-905-555-555", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(40), now.minusDays(5)),
-                createUserWithRole("diep.loc", "diep.loc@gmail.com", "123", roles.get(4), "Diep Van Loc", "+84-906-666-666", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(35), now.minusDays(6)),
-                createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(4), "Vo Thanh Nhung", "+84-907-777-777", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(30), now.minusDays(7)),
-                createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(4), "Bui Duc Phong", "+84-908-888-888", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(25), now.minusDays(8)),
-                createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(4), "Do Thi Huong", "+84-909-999-999", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(20), now.minusDays(9)),
-                createUserWithRole("ly.son", "ly.son@gmail.com", "123", roles.get(4), "Ly Ngoc Son", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
+                createUserWithRole("nguyen.mai", "nguyen.mai@gmail.com", "123", roles.get(3), "Nguyen Thi Mai", "+84-901-111-111", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(60), now.minusDays(1)),
+                createUserWithRole("tran.binh", "tran.binh@gmail.com", "123", roles.get(3), "Tran Van Binh", "+84-902-222-222", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(55), now.minusDays(2)),
+                createUserWithRole("pham.duc", "pham.duc@gmail.com", "123", roles.get(3), "Pham Van Duc", "+84-903-333-333", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(50), now.minusDays(3)),
+                createUserWithRole("le.huong", "le.huong@gmail.com", "123", roles.get(3), "Le Thi Huong", "+84-904-444-444", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(45), now.minusDays(4)),
+                createUserWithRole("hoang.tam", "hoang.tam@gmail.com", "123", roles.get(3), "Hoang Minh Tam", "+84-905-555-555", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(40), now.minusDays(5)),
+                createUserWithRole("diep.loc", "diep.loc@gmail.com", "123", roles.get(3), "Diep Van Loc", "+84-906-666-666", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(35), now.minusDays(6)),
+                createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(3), "Vo Thanh Nhung", "+84-907-777-777", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(30), now.minusDays(7)),
+                createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(3), "Bui Duc Phong", "+84-908-888-888", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(25), now.minusDays(8)),
+                createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(3), "Do Thi Huong", "+84-909-999-999", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(20), now.minusDays(9)),
+                createUserWithRole("ly.son", "ly.son@gmail.com", "123", roles.get(3), "Ly Ngoc Son", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
         );
         userRepository.saveAll(users);
         System.out.println("Seeded 25 users with roles");
@@ -539,20 +539,21 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .filter(user -> user.getRole() != null && "DRIVER".equalsIgnoreCase(user.getRole().getRoleName()))
                 .toList();
 
-        if (driverUsers.size() < 10) return;
+        if (driverUsers.size() < 11) return;
         LocalDateTime now = LocalDateTime.now();
 
         List<Driver> drivers = Arrays.asList(
-                createDriver(driverUsers.get(0), "Mike Driver", "E", 15, "VN-E-123456789", LocalDateTime.of(1985, 3, 15, 10, 0), 4.8, new BigDecimal("21.0313"), new BigDecimal("105.8518"), now.minusDays(89)),
-                createDriver(driverUsers.get(1), "Carl Driver", "B2", 11, "VN-B2-234567890", LocalDateTime.of(1990, 7, 22, 14, 30), 4.6, new BigDecimal("21.0282"), new BigDecimal("105.8542"), now.minusDays(84)),
-                createDriver(driverUsers.get(2), "David Driver", "D", 14, "VN-D-345678901", LocalDateTime.of(1988, 1, 5, 9, 15), 4.9, new BigDecimal("20.8462"), new BigDecimal("106.6884"), now.minusDays(79)),
-                createDriver(driverUsers.get(3), "Emma Driver", "E", 5, "VN-E-456789012", LocalDateTime.of(1995, 11, 30, 16, 45), 4.4, new BigDecimal("21.0278"), new BigDecimal("105.8342"), now.minusDays(74)),
-                createDriver(driverUsers.get(4), "Bob Driver", "FC", 13, "VN-FC-567890123", LocalDateTime.of(1987, 5, 18, 11, 20), 4.7, new BigDecimal("10.8230"), new BigDecimal("106.6297"), now.minusDays(69)),
-                createDriver(driverUsers.get(5), "Frank Driver", "C", 8, "VN-C-678901234", LocalDateTime.of(1992, 9, 8, 13, 10), 4.5, new BigDecimal("16.0544"), new BigDecimal("108.2022"), now.minusDays(64)),
-                createDriver(driverUsers.get(6), "Grace Driver", "D", 12, "VN-D-789012345", LocalDateTime.of(1989, 4, 12, 15, 35), 4.8, new BigDecimal("12.2388"), new BigDecimal("109.1967"), now.minusDays(59)),
-                createDriver(driverUsers.get(7), "Henry Driver", "B2", 9, "VN-B2-890123456", LocalDateTime.of(1991, 8, 27, 8, 50), 4.3, new BigDecimal("10.7726"), new BigDecimal("106.6980"), now.minusDays(54)),
-                createDriver(driverUsers.get(8), "Iris Driver", "E", 7, "VN-E-901234567", LocalDateTime.of(1993, 12, 14, 10, 25), 4.6, new BigDecimal("20.8197"), new BigDecimal("106.7242"), now.minusDays(49)),
-                createDriver(driverUsers.get(9), "Jack Driver", "C", 10, "VN-C-012345678", LocalDateTime.of(1990, 6, 3, 12, 40), 4.7, new BigDecimal("10.0378"), new BigDecimal("105.7833"), now.minusDays(44))
+                createDriver(driverUsers.get(0), "Sarah Driver", "D", 12, "VN-D-123456789", now.plusYears(3).plusMonths(2), 4.7, new BigDecimal("21.0285"), new BigDecimal("105.8342"), now.minusDays(105)),
+                createDriver(driverUsers.get(1), "Mike Driver", "E", 15, "VN-E-234567890", now.plusYears(4).plusMonths(1), 4.8, new BigDecimal("21.0313"), new BigDecimal("105.8518"), now.minusDays(89)),
+                createDriver(driverUsers.get(2), "Carl Driver", "B2", 11, "VN-B2-345678901", now.plusYears(2).plusMonths(8), 4.6, new BigDecimal("21.0282"), new BigDecimal("105.8542"), now.minusDays(84)),
+                createDriver(driverUsers.get(3), "David Driver", "D", 14, "VN-D-456789012", now.plusYears(3).plusMonths(6), 4.9, new BigDecimal("20.8462"), new BigDecimal("106.6884"), now.minusDays(79)),
+                createDriver(driverUsers.get(4), "Emma Driver", "E", 5, "VN-E-567890123", now.plusYears(2).plusMonths(4), 4.4, new BigDecimal("21.0278"), new BigDecimal("105.8342"), now.minusDays(74)),
+                createDriver(driverUsers.get(5), "Bob Driver", "FC", 13, "VN-FC-678901234", now.plusYears(4).plusMonths(3), 4.7, new BigDecimal("10.8230"), new BigDecimal("106.6297"), now.minusDays(69)),
+                createDriver(driverUsers.get(6), "Frank Driver", "C", 8, "VN-C-789012345", now.plusYears(2).plusMonths(9), 4.5, new BigDecimal("16.0544"), new BigDecimal("108.2022"), now.minusDays(64)),
+                createDriver(driverUsers.get(7), "Grace Driver", "D", 12, "VN-D-890123456", now.plusYears(3).plusMonths(7), 4.8, new BigDecimal("12.2388"), new BigDecimal("109.1967"), now.minusDays(59)),
+                createDriver(driverUsers.get(8), "Henry Driver", "B2", 9, "VN-B2-901234567", now.plusYears(2).plusMonths(11), 4.3, new BigDecimal("10.7726"), new BigDecimal("106.6980"), now.minusDays(54)),
+                createDriver(driverUsers.get(9), "Iris Driver", "E", 7, "VN-E-012345678", now.plusYears(3).plusMonths(1), 4.6, new BigDecimal("20.8197"), new BigDecimal("106.7242"), now.minusDays(49)),
+                createDriver(driverUsers.get(10), "Jack Driver", "C", 10, "VN-C-123456789", now.plusYears(2).plusMonths(6), 4.7, new BigDecimal("10.0378"), new BigDecimal("105.7833"), now.minusDays(44))
         );
         driverRepository.saveAll(drivers);
         System.out.println("Seeded " + drivers.size() + " drivers");
@@ -670,10 +671,11 @@ public class DatabaseSeeder implements CommandLineRunner {
         LocalDateTime now = LocalDateTime.now();
 
         List<RegistrationRequest> requests = Arrays.asList(
-                createRegistrationRequest("mike.d@logiflow.com", "Mike Driver", "+84-901-234-503", "DL123456", "B2", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(90)),
-                createRegistrationRequest("carl.d@logiflow.com", "Carl Driver", "+84-901-234-505", "DL234567", "C", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(85)),
-                createRegistrationRequest("david.d@logiflow.com", "David Driver", "+84-901-234-507", "DL345678", "D", now.plusYears(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(80)),
-                createRegistrationRequest("rejected@example.com", "Rejected User", "+84-999-000-001", "DL999999", "B2", now.plusYears(1), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(10))
+                createRegistrationRequest("sarah.d@logiflow.com", "Sarah Driver", "+84-901-234-502", "DL123456", "D", now.plusYears(3).plusMonths(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(105)),
+                createRegistrationRequest("mike.d@logiflow.com", "Mike Driver", "+84-901-234-503", "DL234567", "B2", now.plusYears(4).plusMonths(1), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(90)),
+                createRegistrationRequest("carl.d@logiflow.com", "Carl Driver", "+84-901-234-505", "DL345678", "C", now.plusYears(2).plusMonths(8), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(85)),
+                createRegistrationRequest("david.d@logiflow.com", "David Driver", "+84-901-234-507", "DL456789", "D", now.plusYears(3).plusMonths(6), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(80)),
+                createRegistrationRequest("rejected@example.com", "Rejected User", "+84-999-000-001", "DL999999", "B2", now.plusYears(1).plusMonths(6), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(10))
         );
         registrationRequestRepository.saveAll(requests);
         System.out.println("Seeded registration requests");

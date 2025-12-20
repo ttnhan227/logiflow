@@ -503,7 +503,7 @@ const CoveragePage = () => {
             </div>
             <div>
               <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>200+</div>
-              <div>Kilometers of Routes</div>
+              <div>Toones of Routes</div>
             </div>
             <div>
               <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>150+</div>

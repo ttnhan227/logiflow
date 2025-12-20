@@ -36,7 +36,7 @@ const FaqPage = () => {
       questions: [
         {
           question: "What types of shipments do you handle?",
-          answer: "We handle packages up to 30kg for standard deliveries, with specialized services for larger shipments. This includes documents, small parcels, electronics, clothing, perishables, and industrial goods. For oversized or heavy cargo, we recommend our business logistics solutions."
+          answer: "We handle packages up to 30t for standard deliveries, with specialized services for larger shipments. This includes documents, small parcels, electronics, clothing, perishables, and industrial goods. For oversized or heavy cargo, we recommend our business logistics solutions."
         },
         {
           question: "How long does delivery take?",

@@ -9,9 +9,8 @@ public class UserStatsDto {
     // Overall stats
     private long totalUsers;
     private long newSignups;
-    
+
     // Role-based stats
     private int activeDispatchers;
     private int activeDrivers;
-    private int activeManagers;
 }

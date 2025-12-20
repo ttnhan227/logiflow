@@ -8,13 +8,12 @@ import './modal.css';
 // Role color mapping
 const ROLE_COLORS = {
   ADMIN: '#9333ea',      // purple
-  MANAGER: '#3b82f6',    // blue
   DISPATCHER: '#22c55e', // green
   DRIVER: '#f97316',     // orange
   CUSTOMER: '#64748b',   // gray
 };
 
-const ROLE_IDS = { ADMIN: 1, MANAGER: 2, DISPATCHER: 3, DRIVER: 4, CUSTOMER: 5 };
+const ROLE_IDS = { ADMIN: 1, DISPATCHER: 3, DRIVER: 4, CUSTOMER: 5 };
 
 // Format date utility
 const formatDate = (dateString) => {
@@ -39,7 +38,6 @@ const formatDate = (dateString) => {
 // Role icon mapping
 const ROLE_ICONS = {
   ADMIN: '👨‍💼',
-  MANAGER: '📊',
   DISPATCHER: '📦',
   DRIVER: '🚗',
   CUSTOMER: '👤',
@@ -173,7 +171,6 @@ const UserModal = ({ user, onClose, onSave, roles }) => {
 
   const rolePermissions = {
     ADMIN: ['Full system access', 'User management', 'System configuration'],
-    MANAGER: ['View all routes', 'Assign drivers', 'Generate reports'],
     DISPATCHER: ['Create routes', 'Assign orders', 'Track drivers'],
     DRIVER: ['View assigned routes', 'Update delivery status', 'Upload photos'],
     CUSTOMER: ['Place orders', 'Track deliveries', 'View history'],
@@ -331,7 +328,7 @@ const UserModal = ({ user, onClose, onSave, roles }) => {
 const UserManagementPage = () => {
   const navigate = useNavigate();
   // Available roles for creating/editing users (ADMIN excluded)
-  const roles = ['MANAGER', 'DISPATCHER', 'DRIVER', 'CUSTOMER'];
+  const roles = ['DISPATCHER', 'DRIVER', 'CUSTOMER'];
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -343,8 +340,8 @@ const UserManagementPage = () => {
   const [page, setPage] = useState(0);
   const [size] = useState(10);
 
-  // Role sort priority (DISPATCHER > MANAGER > DRIVER > CUSTOMER)
-  const ROLE_PRIORITY = { DISPATCHER: 1, MANAGER: 2, DRIVER: 3, CUSTOMER: 4, ADMIN: 99 };
+  // Role sort priority (DISPATCHER > DRIVER > CUSTOMER)
+  const ROLE_PRIORITY = { DISPATCHER: 1, DRIVER: 2, CUSTOMER: 3, ADMIN: 99 };
 
   const sortByRolePriority = (userList) => {
     return [...userList].sort((a, b) => {
@@ -447,7 +444,6 @@ const UserManagementPage = () => {
         >
           <option value="ALL">All Roles</option>
           <option value="DISPATCHER">Dispatcher</option>
-          <option value="MANAGER">Manager</option>
           <option value="DRIVER">Driver</option>
           <option value="CUSTOMER">Customer</option>
         </select>

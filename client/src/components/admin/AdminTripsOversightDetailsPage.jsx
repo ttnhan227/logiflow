@@ -725,7 +725,7 @@ const AdminTripsOversightDetailsPage = () => {
                           <span style={{ fontWeight: 600, fontSize: '16px' }}>{(trip.vehicle.capacity / 1000).toFixed(1)}</span>
                           <span style={{ fontWeight: 600, color: '#6b7280' }}> tons</span>
                           <span style={{ color: '#9ca3af', fontSize: '12px', marginLeft: '8px' }}>
-                            ({trip.vehicle.capacity} kg)
+                            ({trip.vehicle.capacity} toones)
                           </span>
                         </div>
                       </div>
