@@ -34,7 +34,7 @@ const StatusBadge = ({ status }) => {
   };
 
   return (
-    <span 
+    <span
       style={{
         display: 'inline-block',
         padding: '4px 12px',
@@ -49,6 +49,33 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const RoleBadge = ({ role }) => {
+  const getRoleStyle = () => {
+    if (role === 'DRIVER') {
+      return { backgroundColor: '#dbeafe', color: '#1e40af' };
+    }
+    if (role === 'CUSTOMER') {
+      return { backgroundColor: '#dcfce7', color: '#166534' };
+    }
+    return { backgroundColor: '#f3f4f6', color: '#6b7280' };
+  };
+
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '4px 12px',
+        borderRadius: '12px',
+        fontSize: '12px',
+        fontWeight: '600',
+        ...getRoleStyle(),
+      }}
+    >
+      {role === 'DRIVER' ? '🚗 Driver' : role === 'CUSTOMER' ? '🏢 Customer' : role || 'Unknown'}
+    </span>
+  );
+};
+
 const AdminRegistrationRequestsPage = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
@@ -56,6 +83,7 @@ const AdminRegistrationRequestsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [size] = useState(10);
 
@@ -83,18 +111,24 @@ const AdminRegistrationRequestsPage = () => {
 
   useEffect(() => {
     let result = requests;
+    // Filter by role
+    if (roleFilter !== 'ALL') {
+      result = result.filter((r) => r.role?.roleName === roleFilter);
+    }
+    // Filter by search
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         (r) =>
           r.fullName?.toLowerCase().includes(term) ||
           r.email?.toLowerCase().includes(term) ||
-          r.phone?.toLowerCase().includes(term)
+          r.phone?.toLowerCase().includes(term) ||
+          r.companyName?.toLowerCase().includes(term)
       );
     }
     setFilteredRequests(result);
     setPage(0);
-  }, [searchTerm, requests]);
+  }, [searchTerm, roleFilter, requests]);
 
   const handleViewDetails = (request) => {
     navigate(`/admin/registration-requests/${request.requestId}`);
@@ -107,7 +141,7 @@ const AdminRegistrationRequestsPage = () => {
     return (
       <div className="admin-page-container">
         <div className="admin-page-header">
-          <h1>📋 Driver Registration Requests</h1>
+          <h1>📋 Registration Requests</h1>
         </div>
         <div className="loading-state">
           <span className="loading-spinner"></span> Loading registration requests...
@@ -120,7 +154,7 @@ const AdminRegistrationRequestsPage = () => {
     return (
       <div className="admin-page-container">
         <div className="admin-page-header">
-          <h1>📋 Driver Registration Requests</h1>
+          <h1>📋 Registration Requests</h1>
         </div>
         <div className="error-banner">{error}</div>
       </div>
@@ -131,8 +165,8 @@ const AdminRegistrationRequestsPage = () => {
     <div className="admin-page-container">
       {/* Header */}
       <div className="admin-page-header">
-        <h1>📋 Driver Registration Requests</h1>
-        <p>Review and approve driver registration applications</p>
+        <h1>📋 Registration Requests</h1>
+        <p>Review and approve driver and customer registration applications</p>
       </div>
 
       {/* Error banner */}
@@ -142,10 +176,25 @@ const AdminRegistrationRequestsPage = () => {
       <div className="admin-page-toolbar">
         <input
           type="text"
-          placeholder="🔍 Search by name, email, or phone..."
+          placeholder="🔍 Search by name, company, email, or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+            backgroundColor: 'white'
+          }}
+        >
+          <option value="ALL">All Roles</option>
+          <option value="DRIVER">Drivers</option>
+          <option value="CUSTOMER">Customers</option>
+        </select>
       </div>
 
       {/* Table or Empty State */}
@@ -158,7 +207,7 @@ const AdminRegistrationRequestsPage = () => {
           <div className="empty-state-icon">📋</div>
           <div className="empty-state-title">No requests found</div>
           <div className="empty-state-description">
-            {searchTerm ? 'Try adjusting your search' : 'There are no driver registration requests at this time'}
+            {searchTerm ? 'Try adjusting your search' : 'There are no registration requests at this time'}
           </div>
         </div>
       ) : (
@@ -170,6 +219,7 @@ const AdminRegistrationRequestsPage = () => {
                   <th>Applicant</th>
                   <th>Email</th>
                   <th>Phone</th>
+                  <th>Type</th>
                   <th>Requested</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -196,6 +246,9 @@ const AdminRegistrationRequestsPage = () => {
                     </td>
                     <td>{req.email}</td>
                     <td>{req.phone || '—'}</td>
+                    <td>
+                      <RoleBadge role={req.role?.roleName} />
+                    </td>
                     <td>
                       <span className="table-date">{formatDate(req.createdAt)}</span>
                     </td>

@@ -218,9 +218,49 @@ const MainLayout = () => {
               </>
             ) : (
               <>
-                <Link to="/drivers" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
-                  Join as Driver
-                </Link>
+                {/* Join Us Dropdown */}
+                <div
+                  className="nav-dropdown"
+                  style={{ position: 'relative' }}
+                  onMouseEnter={() => setDropdownOpen('join')}
+                  onMouseLeave={() => setDropdownOpen(null)}
+                >
+                  <span className="nav-link" style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    Join Us ▾
+                  </span>
+                  <div
+                    className="dropdown-menu"
+                    style={{
+                      opacity: dropdownOpen === 'join' ? 1 : 0,
+                      visibility: dropdownOpen === 'join' ? 'visible' : 'hidden',
+                      transform: dropdownOpen === 'join' ? 'translateY(0)' : 'translateY(-10px)',
+                      transition: 'all 0.2s ease',
+                      zIndex: 1000,
+                    }}
+                  >
+                    <Link
+                      to="/register/driver"
+                      className="dropdown-item"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setDropdownOpen(null);
+                      }}
+                    >
+                      🚗 Join as Driver
+                    </Link>
+                    <Link
+                      to="/register/customer"
+                      className="dropdown-item"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setDropdownOpen(null);
+                      }}
+                    >
+                      🏢 Register Company
+                    </Link>
+                  </div>
+                </div>
+
                 <Link to="/login" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>
                   Login
                 </Link>

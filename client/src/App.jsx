@@ -33,6 +33,7 @@ import AdminTripsOversightPage from "./components/admin/AdminTripsOversightPage"
 import AdminTripsOversightDetailsPage from "./components/admin/AdminTripsOversightDetailsPage";
 import AdminNotificationsPage from "./components/admin/AdminNotificationsPage";
 import DriverRegisterPage from "./components/auth/DriverRegisterPage";
+import CustomerRegisterPage from "./components/auth/CustomerRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 import ProfilePage from "./components/profile/ProfilePage";
@@ -253,11 +254,12 @@ function App() {
 
 
         <Route path="/login" element={
-          authService.getCurrentUser() ? 
-          <AuthRedirect /> : 
+          authService.getCurrentUser() ?
+          <AuthRedirect /> :
           <LoginPage />
         } />
         <Route path="/register/driver" element={<DriverRegisterPage />} />
+        <Route path="/register/customer" element={<CustomerRegisterPage />} />
 
         {/* 404 - Not Found */}
         <Route path="*" element={<NotFoundPage />} />

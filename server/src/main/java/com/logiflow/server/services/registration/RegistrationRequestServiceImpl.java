@@ -1,6 +1,7 @@
 package com.logiflow.server.services.registration;
 
 import com.logiflow.server.dtos.auth.DriverRegistrationRequest;
+import com.logiflow.server.dtos.auth.CustomerRegistrationRequest;
 import com.logiflow.server.models.RegistrationRequest;
 import com.logiflow.server.models.Role;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
@@ -171,6 +172,48 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
         notificationService.notifyNewRegistrationRequest(
             saved.getEmail(),
             driverRole.getRoleName(),
+            saved.getRequestId()
+        );
+    }
+
+    @Override
+    public void createCustomerRequest(CustomerRegistrationRequest req) {
+        // Uniqueness checks across users and pending requests
+        userRepository.findByEmail(req.getEmail()).ifPresent(u -> {
+            throw new RuntimeException("Email already exists");
+        });
+        registrationRequestRepository.findByEmail(req.getEmail()).ifPresent(r -> {
+            throw new RuntimeException("Email is already pending approval");
+        });
+
+        Role customerRole = roleRepository.findByRoleName("CUSTOMER")
+                .orElseThrow(() -> new RuntimeException("Customer role not found"));
+
+        RegistrationRequest entity = new RegistrationRequest();
+        entity.setEmail(req.getEmail());
+        entity.setFullName(req.getFullName());
+        entity.setPhone(req.getPhone());
+        entity.setRole(customerRole);
+        entity.setStatus(RegistrationRequest.RequestStatus.PENDING);
+        entity.setCreatedAt(LocalDateTime.now());
+
+        // Map customer/company fields
+        entity.setCompanyName(req.getCompanyName());
+        entity.setCompanyTaxId(req.getCompanyTaxId());
+        entity.setCompanyIndustry(req.getCompanyIndustry());
+        entity.setCompanyAddress(req.getCompanyAddress());
+        entity.setCompanyPhone(req.getCompanyPhone());
+        entity.setCompanyWebsite(req.getCompanyWebsite());
+        entity.setBusinessLicenseUrl(req.getBusinessLicenseUrl());
+        entity.setTaxCertificateUrl(req.getTaxCertificateUrl());
+        entity.setUserPosition(req.getUserPosition());
+
+        RegistrationRequest saved = registrationRequestRepository.save(entity);
+
+        // Send notification to admins about new registration request
+        notificationService.notifyNewRegistrationRequest(
+            saved.getEmail(),
+            customerRole.getRoleName(),
             saved.getRequestId()
         );
     }

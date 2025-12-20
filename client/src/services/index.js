@@ -1,6 +1,7 @@
 import api from './api';
 import authService from './auth/authService';
 import driverRegistrationService from './auth/driverRegistrationService';
+import customerRegistrationService from './auth/customerRegistrationService';
 import userService from './admin/userService';
 import uploadService from './upload/uploadService';
 import profileService from './profile/profileService';
@@ -24,6 +25,7 @@ export {
   api,
   authService,
   driverRegistrationService,
+  customerRegistrationService,
   userService,
   uploadService,
   profileService,

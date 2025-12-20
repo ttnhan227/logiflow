@@ -17,6 +17,10 @@ const AdminRegistrationRequestDetailsPage = () => {
   const [approvalSuccess, setApprovalSuccess] = useState(false);
   const [finalCredentials, setFinalCredentials] = useState(null);
 
+  // Determine if this is a driver or customer registration
+  const isDriverRegistration = request?.role?.roleName === 'DRIVER';
+  const isCustomerRegistration = request?.role?.roleName === 'CUSTOMER';
+
   useEffect(() => {
     const loadRequestDetails = async () => {
       try {
@@ -50,12 +54,13 @@ const AdminRegistrationRequestDetailsPage = () => {
 
   const handleApproveClick = () => {
     // Generate preview credentials for review
-    const baseUsername = (request.email || request.fullName || 'driver')
+    const fallbackUsername = isDriverRegistration ? 'driver' : 'customer';
+    const baseUsername = (request.email || request.fullName || fallbackUsername)
       .split('@')[0]
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '.')
       .substring(0, 30);
-    const previewUsername = baseUsername || 'driver';
+    const previewUsername = baseUsername || fallbackUsername;
     const previewPassword = '••••••••'; // Masked for preview
 
     setGeneratedCredentials({
@@ -220,7 +225,7 @@ const AdminRegistrationRequestDetailsPage = () => {
       <div className="admin-page-container">
         <div className="admin-page-header">
           <h1>✅ Account Created Successfully</h1>
-          <p>Driver account has been created and credentials sent via email</p>
+          <p>{isDriverRegistration ? 'Driver' : 'Customer'} account has been created and credentials sent via email</p>
         </div>
 
         <div className="admin-details-container">
@@ -238,10 +243,10 @@ const AdminRegistrationRequestDetailsPage = () => {
                   ✓
                 </div>
                 <h3 style={{ color: '#10b981', margin: '0 0 8px 0' }}>
-                  Driver Account Created Successfully!
+                  {isDriverRegistration ? 'Driver' : 'Customer'} Account Created Successfully!
                 </h3>
                 <p style={{ color: '#6b7280', margin: 0 }}>
-                  The driver has been notified via email with their login credentials.
+                  The {isDriverRegistration ? 'driver' : 'customer'} has been notified via email with their login credentials.
                 </p>
               </div>
 
@@ -252,7 +257,7 @@ const AdminRegistrationRequestDetailsPage = () => {
                 border: '1px solid #0ea5e9',
                 marginBottom: '24px'
               }}>
-                <h4 style={{ margin: '0 0 16px 0', color: '#0c4a6e' }}>📧 Credentials Sent to Driver</h4>
+                <h4 style={{ margin: '0 0 16px 0', color: '#0c4a6e' }}>📧 Credentials Sent to {isDriverRegistration ? 'Driver' : 'Customer'}</h4>
 
                 <div style={{ display: 'grid', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -293,7 +298,7 @@ const AdminRegistrationRequestDetailsPage = () => {
                   fontSize: '13px',
                   color: '#1e40af'
                 }}>
-                  <strong>📧 Email Notification:</strong> The driver will receive an email at <strong>{request.email}</strong>
+                  <strong>📧 Email Notification:</strong> The {isDriverRegistration ? 'driver' : 'customer'} will receive an email at <strong>{request.email}</strong>
                   with instructions on how to log in and change their password.
                 </div>
               </div>
@@ -306,10 +311,14 @@ const AdminRegistrationRequestDetailsPage = () => {
               }}>
                 <h4 style={{ margin: '0 0 12px 0', color: '#15803d' }}>📋 Account Summary</h4>
                 <div style={{ display: 'grid', gap: '6px', fontSize: '14px' }}>
-                  <div><strong>Name:</strong> {request.fullName}</div>
+                  <div><strong>{isDriverRegistration ? 'Name' : 'Contact Person'}:</strong> {request.fullName}</div>
                   <div><strong>Email:</strong> {request.email}</div>
                   <div><strong>Role:</strong> {request.role?.roleName || 'DRIVER'}</div>
-                  <div><strong>License:</strong> {request.licenseNumber} ({request.licenseType})</div>
+                  {isDriverRegistration ? (
+                    <div><strong>License:</strong> {request.licenseNumber} ({request.licenseType})</div>
+                  ) : (
+                    <div><strong>Company:</strong> {request.companyName}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -335,7 +344,7 @@ const AdminRegistrationRequestDetailsPage = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h1>📋 Registration Request Details</h1>
-            <p>Viewing driver registration for {request.fullName || request.email}</p>
+            <p>Viewing {isDriverRegistration ? 'driver' : isCustomerRegistration ? 'customer' : ''} registration for {request.fullName || request.companyName || request.email}</p>
             {editMode && (
               <div style={{
                 marginTop: '8px',
@@ -443,226 +452,382 @@ const AdminRegistrationRequestDetailsPage = () => {
           </div>
         </div>
 
-        {/* Personal Information Card */}
-        <div className="details-card">
-          <div className="card-header">
-            <h2>Personal Information</h2>
-          </div>
-          <div className="card-content">
-            <div className="details-grid">
-              <div className="detail-item">
-                <label>Full Name</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editedData.fullName || ''}
-                    onChange={(e) => handleEditInputChange('fullName', e.target.value)}
-                    placeholder="Enter full name"
-                  />
-                ) : (
-                  <div className="detail-value">{request.fullName || '—'}</div>
-                )}
-              </div>
-              <div className="detail-item">
-                <label>Date of Birth</label>
-                {editMode ? (
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={editedData.dateOfBirth || ''}
-                    onChange={(e) => handleEditInputChange('dateOfBirth', e.target.value)}
-                  />
-                ) : (
-                  <div className="detail-value">{request.dateOfBirth || '—'}</div>
-                )}
-              </div>
-              <div className="detail-item">
-                <label>Email</label>
-                <div className="detail-value">{request.email}</div>
-              </div>
-              <div className="detail-item">
-                <label>Phone</label>
-                {editMode ? (
-                  <input
-                    type="tel"
-                    className="form-input"
-                    value={editedData.phone || ''}
-                    onChange={(e) => handleEditInputChange('phone', e.target.value)}
-                    placeholder="Enter phone number"
-                  />
-                ) : (
-                  <div className="detail-value">{request.phone || '—'}</div>
-                )}
-              </div>
-              <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
-                <label>Address</label>
-                {editMode ? (
-                  <textarea
-                    className="form-input"
-                    value={editedData.address || ''}
-                    onChange={(e) => handleEditInputChange('address', e.target.value)}
-                    placeholder="Enter address"
-                    rows="3"
-                  />
-                ) : (
-                  <div className="detail-value">{request.address || '—'}</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-
-
-        {/* License Information Card */}
-        <div className="details-card">
-          <div className="card-header">
-            <h2>Driver's License Information</h2>
-          </div>
-          <div className="card-content">
-            <div className="details-grid">
-              <div className="detail-item">
-                <label>License Number</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editedData.licenseNumber || ''}
-                    onChange={(e) => handleEditInputChange('licenseNumber', e.target.value)}
-                    placeholder="Enter license number"
-                  />
-                ) : (
-                  <div className="detail-value">{request.licenseNumber || '—'}</div>
-                )}
-              </div>
-              <div className="detail-item">
-                <label>License Type</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editedData.licenseType || ''}
-                    onChange={(e) => handleEditInputChange('licenseType', e.target.value)}
-                    placeholder="Enter license type (e.g., B2, C, D)"
-                  />
-                ) : (
-                  <div className="detail-value">{request.licenseType || '—'}</div>
-                )}
-              </div>
-              <div className="detail-item">
-                <label>Expiry Date</label>
-                {editMode ? (
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={editedData.licenseExpiry || ''}
-                    onChange={(e) => handleEditInputChange('licenseExpiry', e.target.value)}
-                  />
-                ) : (
-                  <div className="detail-value">{request.licenseExpiry || '—'}</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* License Image Card */}
-        {request.licenseImageUrl && (
+        {/* Personal/Company Information Card */}
+        {isDriverRegistration && (
           <div className="details-card">
             <div className="card-header">
-              <h2>Driver's License Image</h2>
-            </div>
-            <div className="card-content profile-picture-container">
-              <a href={toAbsoluteUrl(request.licenseImageUrl)} target="_blank" rel="noreferrer">
-                <img 
-                  src={toAbsoluteUrl(request.licenseImageUrl)} 
-                  alt="Driver's License" 
-                  className="profile-picture-img"
-                  style={{ maxWidth: '600px', borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                />
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* CV Document Card */}
-        {request.cvUrl && (
-          <div className="details-card">
-            <div className="card-header">
-              <h2>CV / Resume</h2>
+              <h2>Personal Information</h2>
             </div>
             <div className="card-content">
-              <div style={{ 
-                padding: '24px', 
-                backgroundColor: '#f9fafb', 
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{ fontSize: '48px' }}>📋</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '600', fontSize: '15px', marginBottom: '4px' }}>
-                    CV Document
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                    {request.cvUrl.split('/').pop()}
-                  </div>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Full Name</label>
+                  {editMode ? (
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={editedData.fullName || ''}
+                      onChange={(e) => handleEditInputChange('fullName', e.target.value)}
+                      placeholder="Enter full name"
+                    />
+                  ) : (
+                    <div className="detail-value">{request.fullName || '—'}</div>
+                  )}
                 </div>
-                <a 
-                  href={toAbsoluteUrl(request.cvUrl)} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="btn btn-primary"
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  📥 Download CV
-                </a>
+                <div className="detail-item">
+                  <label>Date of Birth</label>
+                  {editMode ? (
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={editedData.dateOfBirth || ''}
+                      onChange={(e) => handleEditInputChange('dateOfBirth', e.target.value)}
+                    />
+                  ) : (
+                    <div className="detail-value">{request.dateOfBirth || '—'}</div>
+                  )}
+                </div>
+                <div className="detail-item">
+                  <label>Email</label>
+                  <div className="detail-value">{request.email}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Phone</label>
+                  {editMode ? (
+                    <input
+                      type="tel"
+                      className="form-input"
+                      value={editedData.phone || ''}
+                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                      placeholder="Enter phone number"
+                    />
+                  ) : (
+                    <div className="detail-value">{request.phone || '—'}</div>
+                  )}
+                </div>
+                <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
+                  <label>Address</label>
+                  {editMode ? (
+                    <textarea
+                      className="form-input"
+                      value={editedData.address || ''}
+                      onChange={(e) => handleEditInputChange('address', e.target.value)}
+                      placeholder="Enter address"
+                      rows="3"
+                    />
+                  ) : (
+                    <div className="detail-value">{request.address || '—'}</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Emergency Contact Card */}
-        <div className="details-card">
-          <div className="card-header">
-            <h2>Emergency Contact</h2>
-          </div>
-          <div className="card-content">
-            <div className="details-grid">
-              <div className="detail-item">
-                <label>Contact Name</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editedData.emergencyContactName || ''}
-                    onChange={(e) => handleEditInputChange('emergencyContactName', e.target.value)}
-                    placeholder="Enter emergency contact name"
-                  />
-                ) : (
-                  <div className="detail-value">{request.emergencyContactName || '—'}</div>
-                )}
-              </div>
-              <div className="detail-item">
-                <label>Contact Phone</label>
-                {editMode ? (
-                  <input
-                    type="tel"
-                    className="form-input"
-                    value={editedData.emergencyContactPhone || ''}
-                    onChange={(e) => handleEditInputChange('emergencyContactPhone', e.target.value)}
-                    placeholder="Enter emergency contact phone"
-                  />
-                ) : (
-                  <div className="detail-value">{request.emergencyContactPhone || '—'}</div>
-                )}
+        {/* Company Information Card */}
+        {isCustomerRegistration && (
+          <div className="details-card">
+            <div className="card-header">
+              <h2>Company Information</h2>
+            </div>
+            <div className="card-content">
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Company Name</label>
+                  <div className="detail-value">{request.companyName || '—'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Tax ID</label>
+                  <div className="detail-value">{request.companyTaxId || '—'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Industry</label>
+                  <div className="detail-value">{request.companyIndustry || '—'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Company Phone</label>
+                  <div className="detail-value">{request.companyPhone || '—'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Company Website</label>
+                  <div className="detail-value">{request.companyWebsite || '—'}</div>
+                </div>
+                <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
+                  <label>Company Address</label>
+                  <div className="detail-value">{request.companyAddress || '—'}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Contact Person Information Card (for customers) */}
+        {isCustomerRegistration && (
+          <div className="details-card">
+            <div className="card-header">
+              <h2>Authorized Contact Person</h2>
+            </div>
+            <div className="card-content">
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Full Name</label>
+                  <div className="detail-value">{request.fullName || '—'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Position/Title</label>
+                  <div className="detail-value">{request.userPosition || '—'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Email</label>
+                  <div className="detail-value">{request.email}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Phone</label>
+                  <div className="detail-value">{request.phone || '—'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+
+        {/* Driver-specific sections */}
+        {isDriverRegistration && (
+          <>
+            {/* License Information Card */}
+            <div className="details-card">
+              <div className="card-header">
+                <h2>Driver's License Information</h2>
+              </div>
+              <div className="card-content">
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <label>License Number</label>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={editedData.licenseNumber || ''}
+                        onChange={(e) => handleEditInputChange('licenseNumber', e.target.value)}
+                        placeholder="Enter license number"
+                      />
+                    ) : (
+                      <div className="detail-value">{request.licenseNumber || '—'}</div>
+                    )}
+                  </div>
+                  <div className="detail-item">
+                    <label>License Type</label>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={editedData.licenseType || ''}
+                        onChange={(e) => handleEditInputChange('licenseType', e.target.value)}
+                        placeholder="Enter license type (e.g., B2, C, D)"
+                      />
+                    ) : (
+                      <div className="detail-value">{request.licenseType || '—'}</div>
+                    )}
+                  </div>
+                  <div className="detail-item">
+                    <label>Expiry Date</label>
+                    {editMode ? (
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={editedData.licenseExpiry || ''}
+                        onChange={(e) => handleEditInputChange('licenseExpiry', e.target.value)}
+                      />
+                    ) : (
+                      <div className="detail-value">{request.licenseExpiry || '—'}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* License Image Card */}
+            {request.licenseImageUrl && (
+              <div className="details-card">
+                <div className="card-header">
+                  <h2>Driver's License Image</h2>
+                </div>
+                <div className="card-content profile-picture-container">
+                  <a href={toAbsoluteUrl(request.licenseImageUrl)} target="_blank" rel="noreferrer">
+                    <img
+                      src={toAbsoluteUrl(request.licenseImageUrl)}
+                      alt="Driver's License"
+                      className="profile-picture-img"
+                      style={{ maxWidth: '600px', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                    />
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* CV Document Card */}
+            {request.cvUrl && (
+              <div className="details-card">
+                <div className="card-header">
+                  <h2>CV / Resume</h2>
+                </div>
+                <div className="card-content">
+                  <div style={{
+                    padding: '24px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ fontSize: '48px' }}>📋</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', fontSize: '15px', marginBottom: '4px' }}>
+                        CV Document
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                        {request.cvUrl.split('/').pop()}
+                      </div>
+                    </div>
+                    <a
+                      href={toAbsoluteUrl(request.cvUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-primary"
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      📥 Download CV
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Emergency Contact Card */}
+            <div className="details-card">
+              <div className="card-header">
+                <h2>Emergency Contact</h2>
+              </div>
+              <div className="card-content">
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <label>Contact Name</label>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={editedData.emergencyContactName || ''}
+                        onChange={(e) => handleEditInputChange('emergencyContactName', e.target.value)}
+                        placeholder="Enter emergency contact name"
+                      />
+                    ) : (
+                      <div className="detail-value">{request.emergencyContactName || '—'}</div>
+                    )}
+                  </div>
+                  <div className="detail-item">
+                    <label>Contact Phone</label>
+                    {editMode ? (
+                      <input
+                        type="tel"
+                        className="form-input"
+                        value={editedData.emergencyContactPhone || ''}
+                        onChange={(e) => handleEditInputChange('emergencyContactPhone', e.target.value)}
+                        placeholder="Enter emergency contact phone"
+                      />
+                    ) : (
+                      <div className="detail-value">{request.emergencyContactPhone || '—'}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Customer-specific sections */}
+        {isCustomerRegistration && (
+          <>
+            {/* Business License Document Card */}
+            {request.businessLicenseUrl && (
+              <div className="details-card">
+                <div className="card-header">
+                  <h2>Business License</h2>
+                </div>
+                <div className="card-content">
+                  <div style={{
+                    padding: '24px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ fontSize: '48px' }}>📄</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', fontSize: '15px', marginBottom: '4px' }}>
+                        Business License Document
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                        {request.businessLicenseUrl.split('/').pop()}
+                      </div>
+                    </div>
+                    <a
+                      href={toAbsoluteUrl(request.businessLicenseUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-primary"
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      📥 Download License
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tax Certificate Document Card */}
+            {request.taxCertificateUrl && (
+              <div className="details-card">
+                <div className="card-header">
+                  <h2>Tax Certificate</h2>
+                </div>
+                <div className="card-content">
+                  <div style={{
+                    padding: '24px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ fontSize: '48px' }}>🧾</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', fontSize: '15px', marginBottom: '4px' }}>
+                        Tax Certificate Document
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                        {request.taxCertificateUrl.split('/').pop()}
+                      </div>
+                    </div>
+                    <a
+                      href={toAbsoluteUrl(request.taxCertificateUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-primary"
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      📥 Download Certificate
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Action Buttons */}
@@ -703,7 +868,7 @@ const AdminRegistrationRequestDetailsPage = () => {
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ margin: '0 0 8px 0', color: '#1f2937' }}>Review Account Creation</h2>
               <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
-                Please review the account details that will be created for this driver.
+                Please review the account details that will be created for this {isDriverRegistration ? 'driver' : 'customer'}.
               </p>
             </div>
 
@@ -748,7 +913,7 @@ const AdminRegistrationRequestDetailsPage = () => {
                   fontSize: '13px',
                   color: '#92400e'
                 }}>
-                  <strong>⚠️ Important:</strong> The driver will receive these credentials via email after account creation. Make sure the email address is correct.
+                  <strong>⚠️ Important:</strong> The {isDriverRegistration ? 'driver' : 'customer'} will receive these credentials via email after account creation. Make sure the email address is correct.
                 </div>
               </div>
 
@@ -756,11 +921,15 @@ const AdminRegistrationRequestDetailsPage = () => {
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#1f2937' }}>Account Details</h3>
 
                 <div style={{ display: 'grid', gap: '8px', fontSize: '14px' }}>
-                  <div><strong>Name:</strong> {request.fullName || 'N/A'}</div>
+                  <div><strong>{isDriverRegistration ? 'Name' : 'Contact Person'}:</strong> {request.fullName || 'N/A'}</div>
                   <div><strong>Email:</strong> {request.email}</div>
                   <div><strong>Phone:</strong> {request.phone || 'N/A'}</div>
                   <div><strong>Role:</strong> {request.role?.roleName || 'DRIVER'}</div>
-                  <div><strong>License:</strong> {request.licenseNumber || 'N/A'} ({request.licenseType || 'N/A'})</div>
+                  {isDriverRegistration ? (
+                    <div><strong>License:</strong> {request.licenseNumber || 'N/A'} ({request.licenseType || 'N/A'})</div>
+                  ) : (
+                    <div><strong>Company:</strong> {request.companyName || 'N/A'}</div>
+                  )}
                 </div>
               </div>
             </div>

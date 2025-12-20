@@ -34,6 +34,15 @@ public class FileStorageServiceImpl implements FileStorageService {
     @Value("${app.upload.folder.cv-documents}")
     private String cvDocumentsFolder;
 
+    @Value("${app.upload.folder.business-licenses}")
+    private String businessLicensesFolder;
+
+    @Value("${app.upload.folder.tax-certificates}")
+    private String taxCertificatesFolder;
+
+    @Value("${app.upload.folder.company-logos}")
+    private String companyLogosFolder;
+
     public FileStorageServiceImpl(Cloudinary cloudinary) {
         this.cloudinary = cloudinary;
     }
@@ -276,6 +285,122 @@ public class FileStorageServiceImpl implements FileStorageService {
             return null;
         }
     }
+
+    @Override
+    public String storeBusinessLicense(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("No file provided");
+        }
+
+        if (file.getSize() > maxSize) {
+            throw new RuntimeException("File size exceeds the allowed limit of " + maxSize + " bytes");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || (!ALLOWED_TYPES.contains(contentType) && !ALLOWED_DOCUMENT_TYPES.contains(contentType))) {
+            throw new RuntimeException("Unsupported file type: " + contentType + ". Images and documents are allowed.");
+        }
+
+        try {
+            String filename = UUID.randomUUID().toString();
+
+            Map<String, Object> params = ObjectUtils.asMap(
+                    "folder", businessLicensesFolder,
+                    "public_id", filename,
+                    "resource_type", "auto"
+            );
+
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+            String secureUrl = (String) uploadResult.get("secure_url");
+
+            if (secureUrl == null) {
+                throw new RuntimeException("Cloudinary upload failed - no URL returned");
+            }
+
+            return secureUrl;
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload file to Cloudinary", e);
+        }
+    }
+
+    @Override
+    public void deleteBusinessLicense(String cloudinaryUrl) {
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) return;
+
+        try {
+            String publicId = extractPublicIdFromCloudinaryUrl(cloudinaryUrl);
+
+            if (publicId == null) {
+                return; // Invalid URL format
+            }
+
+            Map<String, Object> deleteParams = ObjectUtils.asMap("resource_type", "auto");
+            cloudinary.uploader().destroy(publicId, deleteParams);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from Cloudinary", e);
+        }
+    }
+
+    @Override
+    public String storeTaxCertificate(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("No file provided");
+        }
+
+        if (file.getSize() > maxSize) {
+            throw new RuntimeException("File size exceeds the allowed limit of " + maxSize + " bytes");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || (!ALLOWED_TYPES.contains(contentType) && !ALLOWED_DOCUMENT_TYPES.contains(contentType))) {
+            throw new RuntimeException("Unsupported file type: " + contentType + ". Images and documents are allowed.");
+        }
+
+        try {
+            String filename = UUID.randomUUID().toString();
+
+            Map<String, Object> params = ObjectUtils.asMap(
+                    "folder", taxCertificatesFolder,
+                    "public_id", filename,
+                    "resource_type", "auto"
+            );
+
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+            String secureUrl = (String) uploadResult.get("secure_url");
+
+            if (secureUrl == null) {
+                throw new RuntimeException("Cloudinary upload failed - no URL returned");
+            }
+
+            return secureUrl;
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload file to Cloudinary", e);
+        }
+    }
+
+    @Override
+    public void deleteTaxCertificate(String cloudinaryUrl) {
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) return;
+
+        try {
+            String publicId = extractPublicIdFromCloudinaryUrl(cloudinaryUrl);
+
+            if (publicId == null) {
+                return; // Invalid URL format
+            }
+
+            Map<String, Object> deleteParams = ObjectUtils.asMap("resource_type", "auto");
+            cloudinary.uploader().destroy(publicId, deleteParams);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from Cloudinary", e);
+        }
+    }
+
+
 
     private String getExtension(String originalFilename, String contentType) {
         if (originalFilename != null) {

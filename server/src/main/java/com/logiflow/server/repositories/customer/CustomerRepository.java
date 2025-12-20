@@ -25,4 +25,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer> {
 
     @Query("SELECT DISTINCT c FROM Customer c JOIN FETCH c.user ORDER BY c.customerId")
     List<Customer> findAllCustomersWithUser();
+
+    Optional<Customer> findByCompanyCode(String companyCode);
 }

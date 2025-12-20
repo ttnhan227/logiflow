@@ -65,6 +65,35 @@ public class RegistrationRequest {
     @Column(name = "cv_url", length = 500)
     private String cvUrl;
 
+    // Customer-specific fields (optional for other roles)
+    @Column(name = "company_name", length = 100)
+    private String companyName;
+
+    @Column(name = "company_tax_id", length = 50)
+    private String companyTaxId;
+
+    @Column(name = "company_industry", length = 50)
+    private String companyIndustry;
+
+    @Column(name = "company_address", length = 255)
+    private String companyAddress;
+
+    @Column(name = "company_phone", length = 20)
+    private String companyPhone;
+
+    @Column(name = "company_website", length = 100)
+    private String companyWebsite;
+
+    @Column(name = "business_license_url", length = 500)
+    private String businessLicenseUrl;
+
+    @Column(name = "tax_certificate_url", length = 500)
+    private String taxCertificateUrl;
+
+    // User position in company (for customer registration)
+    @Column(name = "user_position", length = 50)
+    private String userPosition;
+
     public enum RequestStatus {
         PENDING,
         APPROVED,

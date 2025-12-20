@@ -2,6 +2,7 @@ package com.logiflow.server.controllers.auth;
 
 import com.logiflow.server.dtos.auth.AuthResponse;
 import com.logiflow.server.dtos.auth.DriverRegistrationRequest;
+import com.logiflow.server.dtos.auth.CustomerRegistrationRequest;
 import com.logiflow.server.services.registration.RegistrationRequestService;
 import com.logiflow.server.services.registration.RegistrationRequestServiceImpl;
 import jakarta.validation.Valid;
@@ -31,6 +32,17 @@ public class DriverRegistrationController {
             registrationRequestService.createDriverRequest(request);
             return ResponseEntity.ok(new AuthResponse(null, null, null, null,
                     "Driver registration request submitted successfully. Please wait for admin approval."));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, null, ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/customer")
+    public ResponseEntity<AuthResponse> registerCustomer(@Valid @RequestBody CustomerRegistrationRequest request) {
+        try {
+            registrationRequestService.createCustomerRequest(request);
+            return ResponseEntity.ok(new AuthResponse(null, null, null, null,
+                    "Customer registration request submitted successfully. Please wait for admin approval."));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, null, ex.getMessage()));
         }

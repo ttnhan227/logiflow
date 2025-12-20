@@ -60,7 +60,49 @@ const uploadService = {
     } catch (error) {
       throw error;
     }
-  }
+  },
+
+  uploadBusinessLicense: async (file, onUploadProgress) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post('/uploads/business-license', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress,
+      });
+
+      if (!response.data || !response.data.path) {
+        throw new Error('Server did not return file path');
+      }
+
+      return response.data; // { path }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  uploadTaxCertificate: async (file, onUploadProgress) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post('/uploads/tax-certificate', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress,
+      });
+
+      if (!response.data || !response.data.path) {
+        throw new Error('Server did not return file path');
+      }
+
+      return response.data; // { path }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+
 };
 
 export default uploadService;

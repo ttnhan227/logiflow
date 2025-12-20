@@ -51,6 +51,8 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/api/uploads/license-image").permitAll()
                                 .requestMatchers("/api/uploads/cv").permitAll()
+                                .requestMatchers("/api/uploads/business-license").permitAll()
+                                .requestMatchers("/api/uploads/tax-certificate").permitAll()
                                 .requestMatchers("/api/uploads/**").authenticated()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/dispatch/**").hasAnyRole("ADMIN", "DISPATCHER")

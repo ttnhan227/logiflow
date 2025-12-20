@@ -4,10 +4,12 @@ import com.logiflow.server.models.RegistrationRequest;
 import com.logiflow.server.models.Role;
 import com.logiflow.server.models.User;
 import com.logiflow.server.models.Driver;
+import com.logiflow.server.models.Customer;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
+import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.services.admin.AuditLogService;
 import com.logiflow.server.services.registration.RegistrationRequestServiceImpl;
 import com.logiflow.server.websocket.NotificationService;
@@ -38,6 +40,8 @@ public class AdminRegistrationRequestController {
     private RoleRepository roleRepository;
     @Autowired
     private DriverRepository driverRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
     @Autowired
     private AuditLogService auditLogService;
     @Autowired
@@ -80,6 +84,34 @@ public class AdminRegistrationRequestController {
 
     private String generateTempPassword() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
+    private String generateCompanyCode(String companyName) {
+        if (companyName == null || companyName.trim().isEmpty()) {
+            return "COMP" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        }
+
+        // Create base code from company name
+        String base = companyName.trim().toUpperCase()
+            .replaceAll("[^A-Z0-9]", "") // Remove non-alphanumeric
+            .substring(0, Math.min(8, companyName.length())); // Take first 8 chars
+
+        if (base.length() < 4) {
+            base = "COMP" + base;
+        }
+
+        // Ensure uniqueness
+        String candidate = base;
+        int attempt = 0;
+        while (customerRepository.findByCompanyCode(candidate).isPresent()) {
+            attempt++;
+            candidate = base + (100 + (int) (Math.random() * 900));
+            if (attempt > 20) {
+                candidate = "COMP" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+                break;
+            }
+        }
+        return candidate;
     }
 
     @GetMapping
@@ -130,8 +162,9 @@ public class AdminRegistrationRequestController {
         user.setRole(req.getRole());
         user.setIsActive(true);
         userRepository.save(user);
-        // If approving a driver, create Driver entity as well
+        // Create role-specific entity
         if (req.getRole() != null && "DRIVER".equalsIgnoreCase(req.getRole().getRoleName())) {
+            // If approving a driver, create Driver entity
             Driver driver = new Driver();
             driver.setUser(user);
 
@@ -148,6 +181,21 @@ public class AdminRegistrationRequestController {
             // healthStatus default is FIT from entity
             // status default is available
             driverRepository.save(driver);
+        } else if (req.getRole() != null && "CUSTOMER".equalsIgnoreCase(req.getRole().getRoleName())) {
+            // If approving a customer, create Customer entity
+            Customer customer = new Customer();
+            customer.setUser(user);
+
+            // Map company fields from registration request
+            customer.setCompanyName(req.getCompanyName());
+            customer.setCompanyCode(generateCompanyCode(req.getCompanyName()));
+            customer.setDefaultDeliveryAddress(req.getCompanyAddress());
+
+            // Initialize stats
+            customer.setTotalOrders(0);
+            customer.setTotalSpent(java.math.BigDecimal.ZERO);
+
+            customerRepository.save(customer);
         }
 
         // Update request status

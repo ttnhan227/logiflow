@@ -73,4 +73,36 @@ public class UploadController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping(value = "/business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UploadResponse> uploadBusinessLicense(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            String path = fileStorageService.storeBusinessLicense(file);
+            UploadResponse response = new UploadResponse(path);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping(value = "/tax-certificate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UploadResponse> uploadTaxCertificate(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            String path = fileStorageService.storeTaxCertificate(file);
+            UploadResponse response = new UploadResponse(path);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
 }

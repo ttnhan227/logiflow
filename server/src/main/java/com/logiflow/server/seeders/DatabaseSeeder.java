@@ -668,20 +668,30 @@ public class DatabaseSeeder implements CommandLineRunner {
     private void seedRegistrationRequests() {
         Role driverRole = roleRepository.findByRoleName("DRIVER")
                 .orElseThrow(() -> new RuntimeException("DRIVER role not found"));
+        Role customerRole = roleRepository.findByRoleName("CUSTOMER")
+                .orElseThrow(() -> new RuntimeException("CUSTOMER role not found"));
         LocalDateTime now = LocalDateTime.now();
 
         List<RegistrationRequest> requests = Arrays.asList(
-                createRegistrationRequest("sarah.d@logiflow.com", "Sarah Driver", "+84-901-234-502", "DL123456", "D", now.plusYears(3).plusMonths(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(105)),
-                createRegistrationRequest("mike.d@logiflow.com", "Mike Driver", "+84-901-234-503", "DL234567", "B2", now.plusYears(4).plusMonths(1), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(90)),
-                createRegistrationRequest("carl.d@logiflow.com", "Carl Driver", "+84-901-234-505", "DL345678", "C", now.plusYears(2).plusMonths(8), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(85)),
-                createRegistrationRequest("david.d@logiflow.com", "David Driver", "+84-901-234-507", "DL456789", "D", now.plusYears(3).plusMonths(6), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(80)),
-                createRegistrationRequest("rejected@example.com", "Rejected User", "+84-999-000-001", "DL999999", "B2", now.plusYears(1).plusMonths(6), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(10))
+                // Driver registration requests
+                createDriverRegistrationRequest("sarah.d@logiflow.com", "Sarah Driver", "+84-901-234-502", "DL123456", "D", now.plusYears(3).plusMonths(2), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(105)),
+                createDriverRegistrationRequest("mike.d@logiflow.com", "Mike Driver", "+84-901-234-503", "DL234567", "B2", now.plusYears(4).plusMonths(1), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(90)),
+                createDriverRegistrationRequest("carl.d@logiflow.com", "Carl Driver", "+84-901-234-505", "DL345678", "C", now.plusYears(2).plusMonths(8), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(85)),
+                createDriverRegistrationRequest("david.d@logiflow.com", "David Driver", "+84-901-234-507", "DL456789", "D", now.plusYears(3).plusMonths(6), driverRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(80)),
+                createDriverRegistrationRequest("john.smith@example.com", "John Smith", "+84-999-000-001", "DL999999", "B2", now.plusYears(1).plusMonths(6), driverRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(10)),
+
+                // Customer registration requests
+                createCustomerRegistrationRequest("mai.nguyen@logistics-solutions.com", "Mai Nguyen", "+84-901-111-111", "Logistics Solutions Ltd", "LOG001", "Logistics", "Manager", customerRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(60)),
+                createCustomerRegistrationRequest("binh.tran@globaltrade.com", "Binh Tran", "+84-902-222-222", "Global Trade Corp", "GTC002", "Manufacturing", "Operations Director", customerRole, RegistrationRequest.RequestStatus.APPROVED, now.minusDays(55)),
+                createCustomerRegistrationRequest("maria.garcia@metrofreight.com", "Maria Garcia", "+84-999-222-222", "Metro Freight Services", "MFS003", "Transportation", "Logistics Manager", customerRole, RegistrationRequest.RequestStatus.PENDING, now.minusDays(45)),
+                createCustomerRegistrationRequest("david.chen@pacificshipping.com", "David Chen", "+84-999-333-333", "Pacific Shipping Co", "PSC004", "Shipping", "CEO", customerRole, RegistrationRequest.RequestStatus.PENDING, now.minusDays(40)),
+                createCustomerRegistrationRequest("sarah.johnson@johnsonlogistics.com", "Sarah Johnson", "+84-999-111-111", "Johnson Logistics", "JL001", "Manufacturing", "Operations Manager", customerRole, RegistrationRequest.RequestStatus.REJECTED, now.minusDays(35))
         );
         registrationRequestRepository.saveAll(requests);
         System.out.println("Seeded registration requests");
     }
 
-    private RegistrationRequest createRegistrationRequest(String email, String fullName, String phone, String licenseNumber, String licenseType, LocalDateTime licenseExpiry, Role role, RegistrationRequest.RequestStatus status, LocalDateTime createdAt) {
+    private RegistrationRequest createDriverRegistrationRequest(String email, String fullName, String phone, String licenseNumber, String licenseType, LocalDateTime licenseExpiry, Role role, RegistrationRequest.RequestStatus status, LocalDateTime createdAt) {
         RegistrationRequest request = new RegistrationRequest();
         request.setEmail(email);
         request.setFullName(fullName);
@@ -693,6 +703,22 @@ public class DatabaseSeeder implements CommandLineRunner {
         request.setAddress("Sample Address");
         request.setEmergencyContactName("Contact");
         request.setEmergencyContactPhone("123456");
+        request.setRole(role);
+        request.setStatus(status);
+        request.setCreatedAt(createdAt);
+        return request;
+    }
+
+    private RegistrationRequest createCustomerRegistrationRequest(String email, String fullName, String phone, String companyName, String companyTaxId, String companyIndustry, String userPosition, Role role, RegistrationRequest.RequestStatus status, LocalDateTime createdAt) {
+        RegistrationRequest request = new RegistrationRequest();
+        request.setEmail(email);
+        request.setFullName(fullName);
+        request.setPhone(phone);
+        request.setCompanyName(companyName);
+        request.setCompanyTaxId(companyTaxId);
+        request.setCompanyIndustry(companyIndustry);
+        request.setUserPosition(userPosition);
+        request.setCompanyAddress("Sample Company Address");
         request.setRole(role);
         request.setStatus(status);
         request.setCreatedAt(createdAt);
