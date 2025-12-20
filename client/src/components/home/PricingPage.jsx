@@ -232,7 +232,7 @@ const PricingPage = () => {
                 100-500 deliveries
               </div>
               <div style={{ color: '#666', marginBottom: '1rem' }}>10-15% discount on standard rates</div>
-              <div style={{ color: '#888', fontSize: '0.9rem' }}>Dedicated account manager included</div>
+              <div style={{ color: '#888', fontSize: '0.9rem' }}>Dedicated account support included</div>
             </div>
 
             <div style={{
