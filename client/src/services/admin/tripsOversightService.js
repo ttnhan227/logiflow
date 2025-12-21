@@ -37,6 +37,10 @@ const normalizeTrips = (trips = []) =>
     destinationAddress: trip.destinationAddress,
     originCity: trip.originCity,
     destinationCity: trip.destinationCity,
+    originLat: trip.originLat,
+    originLng: trip.originLng,
+    destinationLat: trip.destinationLat,
+    destinationLng: trip.destinationLng,
     totalDistanceKm: trip.totalDistanceKm,
     totalWeightTon: trip.totalWeightTon,
 
@@ -46,6 +50,8 @@ const normalizeTrips = (trips = []) =>
       compliance: trip.driver.complianceFlags || [],
       phone: trip.driver.phone,
       status: trip.driver.status,
+      currentLat: trip.driver.currentLat,
+      currentLng: trip.driver.currentLng,
     } : null,
     vehicle: trip.vehicle ? {
       plate: trip.vehicle.licensePlate,
@@ -123,7 +129,8 @@ const updateTripOrderStatus = async (tripId, status) => {
 // Respond to trip delay report (was respondToTripDelayReport with different param)
 const getTripOversight = async (tripId) => {
   const res = await api.get(`/admin/trips/${tripId}`);
-  return res.data;
+  // Apply same normalization as getTripsOversight for single trip
+  return normalizeTrips([res.data])[0];
 };
 
 const respondToTripDelayReport = async (tripId, response, extensionMinutes) => {

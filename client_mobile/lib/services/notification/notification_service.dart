@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 import '../api_client.dart';
@@ -70,22 +71,27 @@ class NotificationService {
 
     final baseUrl = ApiClient.baseUrl.replaceFirst('/api', '');
 
+    // Get JWT token for authentication (same as GPS service)
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
     // Normalize to ws://host:port/ws/notifications-native (Spring STOMP endpoint)
     String wsUrl;
     if (baseUrl.startsWith('https://')) {
       wsUrl =
           baseUrl.replaceFirst('https://', 'wss://') +
-          '/ws/notifications-native';
+          '/ws/notifications-native?token=$token';
     } else if (baseUrl.startsWith('http://')) {
       wsUrl =
-          baseUrl.replaceFirst('http://', 'ws://') + '/ws/notifications-native';
+          baseUrl.replaceFirst('http://', 'ws://') + '/ws/notifications-native?token=$token';
     } else {
       // Fallback (e.g., localhost:8080/api)
-      wsUrl = 'ws://$baseUrl/ws/notifications-native';
+      wsUrl = 'ws://$baseUrl/ws/notifications-native?token=$token';
     }
 
     print('DEBUG - ApiClient.baseUrl: ${ApiClient.baseUrl}');
     print('DEBUG - baseUrl (stripped /api): $baseUrl');
+    print('DEBUG - JWT token present: ${token != null}');
     print('DEBUG - Connecting to STOMP over WebSocket: $wsUrl');
 
     _stompClient = StompClient(
@@ -134,7 +140,9 @@ class NotificationService {
     print('Connected to STOMP notification service');
 
     if (_userId == null || _userType == null) {
-      print('WARN: _userId or _userType is null on STOMP connect, cannot subscribe');
+      print(
+        'WARN: _userId or _userType is null on STOMP connect, cannot subscribe',
+      );
       return;
     }
 

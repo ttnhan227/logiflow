@@ -42,6 +42,10 @@ public class TripOversightDto {
     private String destinationAddress;
     private String originCity;
     private String destinationCity;
+    private BigDecimal originLat;
+    private BigDecimal originLng;
+    private BigDecimal destinationLat;
+    private BigDecimal destinationLng;
     private BigDecimal totalDistanceKm;
     private BigDecimal totalWeightTon;
 
@@ -104,6 +108,10 @@ public class TripOversightDto {
             dto.setDestinationAddress(route.getDestinationAddress());
             dto.setOriginCity(extractCity(route.getOriginAddress()));
             dto.setDestinationCity(extractCity(route.getDestinationAddress()));
+            dto.setOriginLat(route.getOriginLat());
+            dto.setOriginLng(route.getOriginLng());
+            dto.setDestinationLat(route.getDestinationLat());
+            dto.setDestinationLng(route.getDestinationLng());
             dto.setEta(trip.getScheduledArrival()); // Use scheduled arrival as ETA
         }
 
@@ -142,7 +150,34 @@ public class TripOversightDto {
 
             if (selectedAssignment != null) {
                 if (selectedAssignment.getDriver() != null) {
-                    dto.setDriver(DriverSummaryDto.fromDriver(selectedAssignment.getDriver(), new java.util.ArrayList<>()));
+                    DriverSummaryDto driverDto = DriverSummaryDto.fromDriver(selectedAssignment.getDriver(), new java.util.ArrayList<>());
+                    // Try to get real-time GPS location from tracking system first
+                    try {
+                        com.logiflow.server.controllers.maps.GpsTrackingController.LocationMessage latestLocation =
+                            com.logiflow.server.controllers.maps.GpsTrackingController.getLatestLocation(
+                                selectedAssignment.getDriver().getDriverId().toString(),
+                                trip.getTripId().toString()
+                            );
+                        if (latestLocation != null) {
+                            driverDto.setCurrentLat(BigDecimal.valueOf(latestLocation.getLatitude()));
+                            driverDto.setCurrentLng(BigDecimal.valueOf(latestLocation.getLongitude()));
+                        } else {
+                            // Fallback to database location if GPS memory doesn't have it
+                            com.logiflow.server.models.Driver driver = selectedAssignment.getDriver();
+                            if (driver.getCurrentLocationLat() != null && driver.getCurrentLocationLng() != null) {
+                                driverDto.setCurrentLat(driver.getCurrentLocationLat());
+                                driverDto.setCurrentLng(driver.getCurrentLocationLng());
+                            }
+                        }
+                    } catch (Exception e) {
+                        // GPS location not available, use database location as fallback
+                        com.logiflow.server.models.Driver driver = selectedAssignment.getDriver();
+                        if (driver.getCurrentLocationLat() != null && driver.getCurrentLocationLng() != null) {
+                            driverDto.setCurrentLat(driver.getCurrentLocationLat());
+                            driverDto.setCurrentLng(driver.getCurrentLocationLng());
+                        }
+                    }
+                    dto.setDriver(driverDto);
                 }
                 if (trip.getVehicle() != null) {
                     dto.setVehicle(VehicleSummaryDto.fromVehicle(trip.getVehicle()));

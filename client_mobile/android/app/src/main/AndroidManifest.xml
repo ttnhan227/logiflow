@@ -4,6 +4,13 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
+    <!-- Foreground service permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- Notification permissions -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="client_mobile"
         android:name="${applicationName}"
@@ -30,8 +37,15 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- GPS Foreground Service for background location tracking -->
+        <service
+            android:name=".GpsForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
+
         <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+             This is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

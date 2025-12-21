@@ -1,7 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import { tripsOversightService } from '../../services';
 import './admin.css';
+
+// Fix for default marker icons in react-leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom marker icons for origin and destination
+const originIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const destinationIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Driver current location icon (if available)
+const driverIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 const statusColor = {
   PENDING: '#e0f2fe',
@@ -376,7 +416,7 @@ const AdminTripsOversightDetailsPage = () => {
           <div className="card-content">
             <div className="details-grid">
               <div className="detail-item">
-                <label>Trip Status</label>
+                <label>🚛 Trip Status</label>
                 <div className="detail-value">
                   <span
                     className="order-badge"
@@ -390,7 +430,7 @@ const AdminTripsOversightDetailsPage = () => {
                 </div>
               </div>
               <div className="detail-item">
-                <label>Trip Type</label>
+                <label>📋 Trip Type</label>
                 <div className="detail-value">
                   <span style={{
                     display: 'inline-block',
@@ -406,13 +446,13 @@ const AdminTripsOversightDetailsPage = () => {
                 </div>
               </div>
               <div className="detail-item">
-                <label>Order Count</label>
+                <label>📦 Order Count</label>
                 <div className="detail-value">
                   <span style={{
                     display: 'inline-block',
                     padding: '4px 12px',
                     borderRadius: '12px',
-                    fontSize: '14px',
+                    fontSize: '12px',
                     fontWeight: '600',
                     backgroundColor: trip.hasUrgentOrders ? '#fee2e2' : '#dbeafe',
                     color: trip.hasUrgentOrders ? '#dc2626' : '#2563eb'
@@ -423,7 +463,7 @@ const AdminTripsOversightDetailsPage = () => {
                 </div>
               </div>
               <div className="detail-item">
-                <label>Total Weight</label>
+                <label>⚖️ Total Weight</label>
                 <div className="detail-value">
                   <span style={{
                     display: 'inline-block',
@@ -438,22 +478,6 @@ const AdminTripsOversightDetailsPage = () => {
                   </span>
                 </div>
               </div>
-              <div className="detail-item">
-                <label>Total Distance</label>
-                <div className="detail-value">
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 12px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: '#ecfdf3',
-                    color: '#166534'
-                  }}>
-                    {trip.totalDistanceKm ? `${trip.totalDistanceKm} km` : 'N/A'}
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -464,46 +488,175 @@ const AdminTripsOversightDetailsPage = () => {
             <h2>🗺️ Route Information</h2>
           </div>
           <div className="card-content">
+            <div className="route-summary" style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ fontSize: '18px', fontWeight: 600 }}>📍</div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>
+                  {trip.originCity || trip.originAddress || 'Unknown'} → {trip.destinationCity || trip.destinationAddress || 'Unknown'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
+                <span>📏 {trip.totalDistanceKm ? `${trip.totalDistanceKm} km` : 'Distance N/A'}</span>
+                <span>⚡ {trip.totalWeightTon ? `${trip.totalWeightTon.toFixed(1)} tons` : 'Weight N/A'}</span>
+                <span>🕐 {trip.tripType ? trip.tripType.toUpperCase() : 'STANDARD'}</span>
+              </div>
+            </div>
+
             <div className="details-grid">
               <div className="detail-item">
-                <label>Origin</label>
-                <div className="detail-value">
-                  <div style={{ fontWeight: 600, marginBottom: '4px' }}>{trip.originCity || 'N/A'}</div>
-                  <div className="muted small">{trip.originAddress || 'No address specified'}</div>
-                </div>
-              </div>
-              <div className="detail-item">
-                <label>Destination</label>
-                <div className="detail-value">
-                  <div style={{ fontWeight: 600, marginBottom: '4px' }}>{trip.destinationCity || 'N/A'}</div>
-                  <div className="muted small">{trip.destinationAddress || 'No address specified'}</div>
-                </div>
-              </div>
-              <div className="detail-item">
-                <label>Scheduled Departure</label>
+                <label>🚀 Scheduled Departure</label>
                 <div className="detail-value">
                   {trip.scheduledDeparture ? (
-                    <>
-                      <div style={{ fontWeight: 600 }}>{new Date(trip.scheduledDeparture).toLocaleDateString()}</div>
-                      <div className="muted small">{new Date(trip.scheduledDeparture).toLocaleTimeString()}</div>
-                    </>
+                    <div style={{ fontWeight: 600, fontSize: '14px' }}>
+                      {new Date(trip.scheduledDeparture).toLocaleString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </div>
                   ) : (
                     <span className="muted">Not scheduled</span>
                   )}
                 </div>
               </div>
               <div className="detail-item">
-                <label>Scheduled Arrival</label>
+                <label>🏁 Scheduled Arrival</label>
                 <div className="detail-value">
                   {trip.scheduledArrival ? (
-                    <>
-                      <div style={{ fontWeight: 600 }}>{new Date(trip.scheduledArrival).toLocaleDateString()}</div>
-                      <div className="muted small">{new Date(trip.scheduledArrival).toLocaleTimeString()}</div>
-                    </>
+                    <div style={{ fontWeight: 600, fontSize: '14px' }}>
+                      {new Date(trip.scheduledArrival).toLocaleString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </div>
                   ) : (
                     <span className="muted">Not scheduled</span>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Trip Route Map */}
+        <div className="details-card">
+          <div className="card-header">
+            <h2>🗺️ Trip Route Map</h2>
+          </div>
+          <div className="card-content">
+            <div style={{ height: '400px', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e5e7eb' }}>
+              <MapContainer
+                center={[
+                  (parseFloat(trip.originLat || 0) + parseFloat(trip.destinationLat || 0)) / 2 || 15.8,
+                  (parseFloat(trip.originLng || 0) + parseFloat(trip.destinationLng || 0)) / 2 || 107.0
+                ]}
+                zoom={8}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                {/* Origin Marker */}
+                {trip.originLat && trip.originLng && (
+                  <Marker
+                    position={[parseFloat(trip.originLat), parseFloat(trip.originLng)]}
+                    icon={originIcon}
+                  >
+                    <Popup>
+                      <div style={{ minWidth: '200px' }}>
+                        <strong style={{ fontSize: '14px', color: '#16a34a' }}>🟢 Origin</strong><br />
+                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Departure:</span><br />
+                        <span style={{ fontSize: '12px', color: '#666' }}>{trip.originAddress || trip.originCity}</span>
+                        {trip.scheduledDeparture && (
+                          <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                            <strong>Scheduled:</strong> {new Date(trip.scheduledDeparture).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Destination Marker */}
+                {trip.destinationLat && trip.destinationLng && (
+                  <Marker
+                    position={[parseFloat(trip.destinationLat), parseFloat(trip.destinationLng)]}
+                    icon={destinationIcon}
+                  >
+                    <Popup>
+                      <div style={{ minWidth: '200px' }}>
+                        <strong style={{ fontSize: '14px', color: '#dc2626' }}>🔴 Destination</strong><br />
+                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Arrival:</span><br />
+                        <span style={{ fontSize: '12px', color: '#666' }}>{trip.destinationAddress || trip.destinationCity}</span>
+                        {trip.scheduledArrival && (
+                          <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                            <strong>Scheduled:</strong> {new Date(trip.scheduledArrival).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Driver Current Location (if available) */}
+                {trip.driver && trip.driver.currentLat && trip.driver.currentLng && (
+                  <Marker
+                    position={[parseFloat(trip.driver.currentLat), parseFloat(trip.driver.currentLng)]}
+                    icon={driverIcon}
+                  >
+                    <Popup>
+                      <div style={{ minWidth: '200px' }}>
+                        <strong style={{ fontSize: '14px', color: '#2563eb' }}>🚗 Driver Location</strong><br />
+                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Driver:</span> {trip.driver.name}<br />
+                        <span style={{ fontSize: '12px', color: '#666' }}>
+                          Last updated: {new Date().toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Route Line - Direct line between origin and destination */}
+                {trip.originLat && trip.originLng && trip.destinationLat && trip.destinationLng && (
+                  <Polyline
+                    positions={[
+                      [parseFloat(trip.originLat), parseFloat(trip.originLng)],
+                      [parseFloat(trip.destinationLat), parseFloat(trip.destinationLng)]
+                    ]}
+                    color="#3b82f6"
+                    weight={3}
+                    opacity={0.7}
+                  />
+                )}
+              </MapContainer>
+            </div>
+
+            <div style={{
+              marginTop: '16px',
+              padding: '12px',
+              backgroundColor: '#f0f9ff',
+              borderRadius: '8px',
+              border: '1px solid #bae6fd',
+              fontSize: '13px',
+              color: '#0369a1'
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: '4px' }}>🗺️ Map Legend</div>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <span>🟢 Origin (Green)</span>
+                <span>🔴 Destination (Red)</span>
+                <span>🚗 Driver Location {trip.driver && trip.driver.currentLat && trip.driver.currentLng ?
+                  `(${parseFloat(trip.driver.currentLat).toFixed(6)}, ${parseFloat(trip.driver.currentLng).toFixed(6)})` :
+                  '(Blue - if available)'}</span>
+                <span>🔵 Route Path</span>
               </div>
             </div>
           </div>
@@ -621,17 +774,17 @@ const AdminTripsOversightDetailsPage = () => {
                     <h3 style={{ marginTop: 0, marginBottom: '12px', color: '#374151' }}>👨‍✈️ Driver</h3>
                     <div className="details-grid">
                       <div className="detail-item">
-                        <label>Name</label>
+                        <label>👤 Name</label>
                         <div className="detail-value">{trip.driver.name}</div>
                       </div>
                       {trip.driver.phone && (
                         <div className="detail-item">
-                          <label>Phone</label>
-                          <div className="detail-value">📞 {trip.driver.phone}</div>
+                          <label>📞 Phone</label>
+                          <div className="detail-value">{trip.driver.phone}</div>
                         </div>
                       )}
                       <div className="detail-item">
-                        <label>Status</label>
+                        <label>📊 Status</label>
                         <div className="detail-value">
                           <span style={{
                             display: 'inline-block',
@@ -666,7 +819,7 @@ const AdminTripsOversightDetailsPage = () => {
                     </h3>
                     <div className="details-grid">
                       <div className="detail-item">
-                        <label>License Plate</label>
+                        <label>🚗 License Plate</label>
                         <div className="detail-value">
                           <span style={{
                             fontFamily: 'monospace',
@@ -683,7 +836,7 @@ const AdminTripsOversightDetailsPage = () => {
                         </div>
                       </div>
                       <div className="detail-item">
-                        <label>Type</label>
+                        <label>🚛 Type</label>
                         <div className="detail-value">
                           <span style={{
                             display: 'inline-block',
@@ -720,7 +873,7 @@ const AdminTripsOversightDetailsPage = () => {
                         </div>
                       </div>
                       <div className="detail-item">
-                        <label>Capacity</label>
+                        <label>⚖️ Capacity</label>
                         <div className="detail-value">
                           <span style={{ fontWeight: 600, fontSize: '16px' }}>{(trip.vehicle.capacity / 1000).toFixed(1)}</span>
                           <span style={{ fontWeight: 600, color: '#6b7280' }}> tons</span>
@@ -730,7 +883,7 @@ const AdminTripsOversightDetailsPage = () => {
                         </div>
                       </div>
                       <div className="detail-item">
-                        <label>Status</label>
+                        <label>📊 Status</label>
                         <div className="detail-value">
                           <span style={{
                             display: 'inline-block',

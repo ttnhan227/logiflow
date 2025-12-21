@@ -7,6 +7,7 @@ import '../../services/auth/auth_service.dart';
 import '../../services/api_client.dart';
 import '../../models/driver/driver_profile.dart';
 import '../../models/driver/update_driver_profile_request.dart';
+import 'driver_settings_screen.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -154,6 +155,15 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       appBar: AppBar(
         title: const Text('Driver Profile'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const DriverSettingsScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
             onPressed: _isLoading ? null : (_isEditing ? _saveProfile : () {

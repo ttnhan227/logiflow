@@ -48,6 +48,9 @@ dependencies:
   # For GPS location
   geolocator: ^10.1.0
 
+  # For permissions management
+  permission_handler: ^11.3.1
+
   # For map visualization
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
