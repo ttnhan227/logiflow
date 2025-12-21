@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -190,7 +190,7 @@ const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
         if (amount == null) return '—';
         try {
             return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
-        } catch (e) {
+        } catch (_err) {
             return `${amount} USD`;
         }
     };

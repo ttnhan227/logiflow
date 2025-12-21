@@ -15,7 +15,12 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("SELECT m FROM ChatMessage m WHERE m.tripId = :tripId ORDER BY m.createdAt ASC")
     List<ChatMessage> findByTripId(@Param("tripId") Integer tripId);
 
-    // Optional: latest messages
+    @Query("SELECT m FROM ChatMessage m WHERE m.orderId = :orderId ORDER BY m.createdAt ASC")
+    List<ChatMessage> findByOrderId(@Param("orderId") Integer orderId);
+
     @Query("SELECT m FROM ChatMessage m WHERE m.tripId = :tripId ORDER BY m.createdAt DESC")
     List<ChatMessage> findLatestByTripId(@Param("tripId") Integer tripId, Pageable pageable);
+
+    @Query("SELECT m FROM ChatMessage m WHERE m.orderId = :orderId ORDER BY m.createdAt DESC")
+    List<ChatMessage> findLatestByOrderId(@Param("orderId") Integer orderId, Pageable pageable);
 }

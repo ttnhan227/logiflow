@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "chat_messages", indexes = {
-        @Index(name = "idx_chat_trip_id_created_at", columnList = "trip_id, created_at")
+        @Index(name = "idx_chat_trip_id_created_at", columnList = "trip_id, created_at"),
+        @Index(name = "idx_chat_order_id_created_at", columnList = "order_id, created_at")
 })
 public class ChatMessage {
 
@@ -17,8 +18,11 @@ public class ChatMessage {
     @Column(name = "message_id")
     private Long messageId;
 
-    @Column(name = "trip_id", nullable = false)
+    @Column(name = "trip_id", nullable = true)
     private Integer tripId;
+
+    @Column(name = "order_id", nullable = true)
+    private Integer orderId;
 
     @Column(name = "sender_username", nullable = false, length = 100)
     private String senderUsername;
@@ -28,6 +32,9 @@ public class ChatMessage {
 
     @Column(name = "recipient_driver_id", nullable = true)
     private Integer recipientDriverId;
+
+    @Column(name = "recipient_customer_id", nullable = true)
+    private Integer recipientCustomerId;
 
     @Column(name = "content", nullable = false, length = 2000)
     private String content;

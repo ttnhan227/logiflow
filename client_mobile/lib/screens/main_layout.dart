@@ -17,6 +17,7 @@ import 'customer/create_order_screen.dart';
 import 'customer/track_orders_screen.dart';
 import 'customer/order_history_screen.dart';
 import 'customer/profile_screen.dart';
+import 'customer/customer_chat_list_screen.dart';
 import 'home/home_screen.dart';
 
 // Custom Scrolling Text Widget - FIXED VERSION
@@ -376,6 +377,10 @@ class _MainLayoutState extends State<MainLayout> {
             label: 'Track Orders',
           ),
           const BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            label: 'Messages',
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.history),
             label: 'History',
           ),
@@ -418,6 +423,7 @@ class _MainLayoutState extends State<MainLayout> {
           const HomeScreen(),
           const CreateOrderScreen(),
           const TrackOrdersScreen(),
+          const CustomerChatListScreen(),
           const OrderHistoryScreen(),
           const CustomerProfileScreen(),
         ];

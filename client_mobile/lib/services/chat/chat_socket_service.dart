@@ -12,7 +12,7 @@ class ChatSocketService {
     return _chatStreamController!.stream;
   }
 
-  Future<void> connect(String driverUsername) async {
+  Future<void> connect(String destination) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null) {
@@ -33,7 +33,7 @@ class ChatSocketService {
     _client = StompClient(
       config: StompConfig(
         url: wsUrl,
-        onConnect: (_) => _onConnect(driverUsername),
+        onConnect: (_) => _onConnect(destination),
         onWebSocketError: (dynamic err) {
           _chatStreamController?.add({
             'type': 'ERROR',
@@ -58,11 +58,11 @@ class ChatSocketService {
     _client?.activate();
   }
 
-  void _onConnect(String driverUsername) {
+  void _onConnect(String destination) {
     _chatStreamController ??= StreamController.broadcast();
     _client?.subscribe(
-      // Backend currently pushes chat via general driver topic
-      destination: '/topic/driver/$driverUsername',
+      // Allow caller to decide which topic to listen on (driver or customer)
+      destination: destination,
       callback: (frame) {
         final body = frame.body;
         if (body != null) {
