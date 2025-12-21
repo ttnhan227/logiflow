@@ -5,6 +5,8 @@ class Order extends Equatable {
   final int? tripId;
   final String? customerName;
   final String? customerPhone;
+  final int? customerId;
+  final int? customerUserId;
   final String? pickupAddress;
   final String? deliveryAddress;
   final String? packageDetails;
@@ -29,6 +31,8 @@ class Order extends Equatable {
     this.tripId,
     this.customerName,
     this.customerPhone,
+    this.customerId,
+    this.customerUserId,
     this.pickupAddress,
     this.deliveryAddress,
     this.packageDetails,
@@ -55,6 +59,8 @@ class Order extends Equatable {
       tripId: json['tripId'],
       customerName: json['customerName'],
       customerPhone: json['customerPhone'],
+      customerId: json['customerId'],
+      customerUserId: json['customerUserId'],
       pickupAddress: json['pickupAddress'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
@@ -82,6 +88,8 @@ class Order extends Equatable {
       'tripId': tripId,
       'customerName': customerName,
       'customerPhone': customerPhone,
+      'customerId': customerId,
+      'customerUserId': customerUserId,
       'pickupAddress': pickupAddress,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
@@ -109,6 +117,8 @@ class Order extends Equatable {
     tripId,
     customerName,
     customerPhone,
+    customerId,
+    customerUserId,
     pickupAddress,
     deliveryAddress,
     packageDetails,
@@ -206,6 +216,8 @@ class OrderSummary extends Equatable {
   final DateTime createdAt;
   final DateTime? estimatedDeliveryTime;
   final double deliveryFee;
+  final int? customerId;
+  final int? customerUserId;
 
   const OrderSummary({
     required this.orderId,
@@ -220,6 +232,8 @@ class OrderSummary extends Equatable {
     required this.createdAt,
     this.estimatedDeliveryTime,
     required this.deliveryFee,
+    this.customerId,
+    this.customerUserId,
   });
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
@@ -236,6 +250,8 @@ class OrderSummary extends Equatable {
       createdAt: DateTime.parse(json['createdAt']),
       estimatedDeliveryTime: json['estimatedDeliveryTime'] != null ? DateTime.parse(json['estimatedDeliveryTime']) : null,
       deliveryFee: json['deliveryFee']?.toDouble() ?? 0.0,
+      customerId: json['customerId'],
+      customerUserId: json['customerUserId'],
     );
   }
 
@@ -253,5 +269,7 @@ class OrderSummary extends Equatable {
     createdAt,
     estimatedDeliveryTime,
     deliveryFee,
+    customerId,
+    customerUserId,
   ];
 }

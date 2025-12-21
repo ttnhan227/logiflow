@@ -93,7 +93,7 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
     if (driverUsername.isEmpty) {
       return;
     }
-    await chatSocketService.connect(driverUsername);
+    await chatSocketService.connect('/topic/driver/$driverUsername');
   }
 
   Future<void> _sendMessage() async {

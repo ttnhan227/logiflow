@@ -1,29 +1,37 @@
 package com.logiflow.server.services.chat;
 
 import com.logiflow.server.dtos.chat.ChatMessageDto;
+import com.logiflow.server.dtos.notification.DispatcherNotificationDto;
 import com.logiflow.server.models.ChatMessage;
+import com.logiflow.server.models.Order;
 import com.logiflow.server.models.Trip;
 import com.logiflow.server.repositories.chat.ChatMessageRepository;
+import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.websocket.NotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ChatServiceImpl implements ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final TripRepository tripRepository;
+    private final OrderRepository orderRepository;
     private final NotificationService notificationService;
 
     public ChatServiceImpl(ChatMessageRepository chatMessageRepository,
                            TripRepository tripRepository,
+                           OrderRepository orderRepository,
                            NotificationService notificationService) {
         this.chatMessageRepository = chatMessageRepository;
         this.tripRepository = tripRepository;
+        this.orderRepository = orderRepository;
         this.notificationService = notificationService;
     }
 
@@ -70,9 +78,6 @@ public class ChatServiceImpl implements ChatService {
 
         ChatMessage saved = chatMessageRepository.save(msg);
 
-        // Real-time delivery (driver + dispatcher topic)
-        // Driver listens: /topic/driver/{driverId}/chat
-        // Dispatch listens: /topic/dispatch/trips/{tripId}/chat
         try {
             if (driverUsername != null && !driverUsername.isEmpty()) {
                 notificationService.sendDriverNotificationByUsername(driverUsername, "CHAT", content);
@@ -82,22 +87,80 @@ public class ChatServiceImpl implements ChatService {
         } catch (Exception ignored) {
         }
 
-        // Only broadcast notification to dispatchers if message is from driver
-        // Avoid notifying dispatchers when they send messages to each other
-        // Handle both "DRIVER" and "ROLE_DRIVER" formats
         if (senderRole != null &&
                 (senderRole.equalsIgnoreCase("DRIVER") || senderRole.equalsIgnoreCase("ROLE_DRIVER"))) {
             try {
-                // Send to dispatchers via websocket and persist in DB
-                notificationService.broadcastToDispatchers(
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("tripId", tripId);
+
+                DispatcherNotificationDto dto = DispatcherNotificationDto.of(
                         "TRIP_CHAT",
                         "INFO",
                         "New chat message",
                         "Trip #" + tripId + ": " + content,
                         "/dispatch/trips/" + tripId,
-                        "Open Trip",
-                        tripId
+                        "Open Trip"
                 );
+                dto.setMetadata(metadata);
+                notificationService.sendDispatcherNotification(dto);
+            } catch (Exception ignored) {
+            }
+        }
+
+        return ChatMessageDto.fromEntity(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChatMessageDto> getOrderMessages(Integer orderId) {
+        return chatMessageRepository.findByOrderId(orderId).stream()
+                .map(ChatMessageDto::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public ChatMessageDto sendToOrderCustomer(Integer orderId, String senderUsername, String senderRole, String content) {
+        Order order = orderRepository.findByIdWithRelations(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        Integer customerId = order.getCustomer() != null ? order.getCustomer().getUserId() : null;
+        if (customerId == null) {
+            throw new RuntimeException("Order has no associated customer");
+        }
+
+        ChatMessage msg = new ChatMessage();
+        msg.setOrderId(orderId);
+        msg.setSenderUsername(senderUsername);
+        msg.setSenderRole(senderRole);
+        msg.setRecipientCustomerId(customerId);
+        msg.setContent(content);
+        msg.setCreatedAt(LocalDateTime.now());
+
+        ChatMessage saved = chatMessageRepository.save(msg);
+
+        try {
+            String orderStatus = order.getOrderStatus() != null ? order.getOrderStatus().name() : null;
+            notificationService.sendOrderNotification(customerId, orderId, "ORDER_CHAT", content, orderStatus);
+        } catch (Exception ignored) {
+        }
+
+        if (senderRole != null &&
+                (senderRole.equalsIgnoreCase("CUSTOMER") || senderRole.equalsIgnoreCase("ROLE_CUSTOMER"))) {
+            try {
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("orderId", orderId);
+
+                DispatcherNotificationDto dto = DispatcherNotificationDto.of(
+                        "ORDER_CHAT",
+                        "INFO",
+                        "New customer chat message",
+                        "Order #" + orderId + ": " + content,
+                        "/dispatch/orders/" + orderId,
+                        "Open Order"
+                );
+                dto.setMetadata(metadata);
+                notificationService.sendDispatcherNotification(dto);
             } catch (Exception ignored) {
             }
         }

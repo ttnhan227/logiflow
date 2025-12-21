@@ -36,6 +36,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     // Find by status only
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.customer c " +
            "LEFT JOIN FETCH o.createdBy " +
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +
@@ -46,6 +47,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     // Find by date only
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.customer c " +
            "LEFT JOIN FETCH o.createdBy " +
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +
@@ -56,6 +58,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     // Find by status and date
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.customer c " +
            "LEFT JOIN FETCH o.createdBy " +
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +
@@ -65,6 +68,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.customer c " +
            "LEFT JOIN FETCH o.createdBy " +
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +
@@ -74,6 +78,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     // Find by ID with relations
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.customer c " +
            "LEFT JOIN FETCH o.createdBy " +
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +

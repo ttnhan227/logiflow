@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 public class OrderDto {
     private Integer orderId;
     private Integer tripId;
+    private Integer customerId;
+    private Integer customerUserId;
     private String customerName;
     private String customerPhone;
     private String pickupAddress;
@@ -36,6 +38,8 @@ public class OrderDto {
         OrderDto dto = new OrderDto();
         dto.setOrderId(order.getOrderId());
         dto.setTripId(order.getTrip() != null ? order.getTrip().getTripId() : null);
+        dto.setCustomerId(order.getCustomer() != null ? order.getCustomer().getUserId() : null);
+        dto.setCustomerUserId(order.getCustomer() != null ? order.getCustomer().getUserId() : null);
         dto.setCustomerName(order.getCustomerName());
         dto.setCustomerPhone(order.getCustomerPhone());
         dto.setPickupAddress(order.getPickupAddress());

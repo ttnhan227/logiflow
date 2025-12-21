@@ -1,6 +1,7 @@
 package com.logiflow.server.controllers.dispatch;
 
 import com.logiflow.server.dtos.admin.route.RouteDto;
+import com.logiflow.server.dtos.admin.route.CreateRouteDto;
 import com.logiflow.server.services.dispatch.DispatchRouteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,18 @@ public class DispatchRouteController {
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createRoute(@RequestBody CreateRouteDto request) {
+        try {
+            RouteDto created = dispatchRouteService.createRoute(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", iae.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }

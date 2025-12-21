@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { orderService } from '../../services';
+import OrderChatPopup from './OrderChatPopup';
 import './dispatch.css';
 import './modern-dispatch.css';
 
@@ -23,6 +24,7 @@ const DispatchOrderDetailPage = () => {
     setError(null);
     try {
       const o = await orderService.getOrderById(Number(orderId));
+      console.log('Order loaded:', o, 'customerId:', o?.customerId, 'nested customer:', o?.customer); // DEBUG
       setOrder(o);
     } catch (ex) {
       console.error('Failed to load order', ex);
@@ -459,6 +461,15 @@ const DispatchOrderDetailPage = () => {
           </div>
         )}
       </div>
+
+      {/* Order Chat Popup - only when customer exists */}
+      {order && (order.customerId || order.customerUserId || order.customer?.userId) && (
+        <OrderChatPopup 
+          orderId={order.orderId}
+          customerId={order.customerId || order.customerUserId || order.customer?.userId}
+          order={order} 
+        />
+      )}
     </div>
   );
 };
