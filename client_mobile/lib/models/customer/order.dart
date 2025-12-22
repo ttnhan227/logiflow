@@ -53,6 +53,8 @@ class Order extends Equatable {
     this.deliveryFee,
   });
 
+  double? get weightTons => weightKg != null ? weightKg! / 1000 : null;
+
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       orderId: json['orderId'],
@@ -153,6 +155,11 @@ class CreateOrderRequest extends Equatable {
   final double? weightKg;
   final double? packageValue;
   final String? priority; // "NORMAL" or "URGENT"
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
 
   const CreateOrderRequest({
     required this.customerName,
@@ -167,6 +174,11 @@ class CreateOrderRequest extends Equatable {
     this.weightKg,
     this.packageValue,
     this.priority = "NORMAL",
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
   });
 
   Map<String, dynamic> toJson() {
@@ -183,6 +195,11 @@ class CreateOrderRequest extends Equatable {
       'weightKg': weightKg,
       'packageValue': packageValue,
       'priority': priority,
+      'pickupType': pickupType,
+      'containerNumber': containerNumber,
+      'terminalName': terminalName,
+      'warehouseName': warehouseName,
+      'dockNumber': dockNumber,
     };
   }
 
@@ -200,6 +217,11 @@ class CreateOrderRequest extends Equatable {
     weightKg,
     packageValue,
     priority,
+    pickupType,
+    containerNumber,
+    terminalName,
+    warehouseName,
+    dockNumber,
   ];
 }
 
@@ -241,6 +263,8 @@ class OrderSummary extends Equatable {
     this.delayReason,
     this.delayStatus,
   });
+
+  double? get weightTons => weightKg != null ? weightKg! / 1000 : null;
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     return OrderSummary(

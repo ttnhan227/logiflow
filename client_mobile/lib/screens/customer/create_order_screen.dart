@@ -269,10 +269,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final weightTonnes = double.tryParse(_weightController.text.trim());
       final request = CreateOrderRequest(
         customerName: _customerNameController.text.trim(),
         customerPhone: _customerPhoneController.text.trim(),
         pickupAddress: _pickupAddressController.text.trim(),
+        deliveryAddress: _deliveryAddressController.text.trim(),
+        packageDetails: _packageDetailsController.text.trim().isNotEmpty ? _packageDetailsController.text.trim() : null,
+        weightKg: weightTonnes != null ? weightTonnes * 1000 : null,
+        priority: _priority,
         pickupType: _pickupType.isNotEmpty ? _pickupType : null,
         containerNumber: _containerNumberController.text.trim().isNotEmpty
             ? _containerNumberController.text.trim()
@@ -286,10 +291,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         dockNumber: _dockNumberController.text.trim().isNotEmpty
             ? _dockNumberController.text.trim()
             : null,
-        deliveryAddress: _deliveryAddressController.text.trim(),
-        packageDetails: _packageDetailsController.text.trim(),
-        weightTonnes: double.tryParse(_weightController.text.trim()),
-        priority: _priority,
       );
 
       final order = await customerService.createOrder(request);
