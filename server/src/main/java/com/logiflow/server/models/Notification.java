@@ -80,7 +80,8 @@ public class Notification {
         COMPLIANCE_ALERT,
         SYSTEM_EVENT,
         NEW_ORDER,
-        DRIVER_TRIP_EVENT // Generic driver trip notifications (assigned, delay responses, status updates, etc.)
+        DRIVER_TRIP_EVENT, // Generic driver trip notifications (assigned, delay responses, status updates, etc.)
+        ORDER_DELIVERED   // Order delivery notifications for customers
     }
 
     // Getters and setters

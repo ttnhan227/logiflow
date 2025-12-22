@@ -31,6 +31,8 @@ import com.logiflow.server.dtos.dispatch.TripCancelRequest;
 import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
 import com.logiflow.server.services.dispatch.TripAssignmentMatchingService;
 import com.logiflow.server.services.admin.AuditLogService;
+import com.logiflow.server.websocket.NotificationService;
+import com.logiflow.server.services.payment.PaymentService;
 
 @Service
 public class TripServiceImpl implements TripService {
@@ -64,6 +66,12 @@ public class TripServiceImpl implements TripService {
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     @Override
     @Transactional
@@ -289,6 +297,24 @@ public class TripServiceImpl implements TripService {
                     if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED || 
                         order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
                         order.setOrderStatus(Order.OrderStatus.DELIVERED);
+                        
+                        // Send delivery notification to customer if customer is associated
+                        if (order.getCustomer() != null) {
+                            try {
+                                notificationService.notifyOrderDelivered(
+                                    order.getCustomer().getUserId(),
+                                    order.getOrderId(),
+                                    order.getCustomerName(),
+                                    order.getDeliveryAddress()
+                                );
+
+                                // Send payment request email with PayPal link
+                                paymentService.sendPaymentRequest(order.getOrderId());
+                            } catch (Exception e) {
+                                // Log error but don't fail the trip completion
+                                System.err.println("Failed to send delivery notification/payment request for order #" + order.getOrderId() + ": " + e.getMessage());
+                            }
+                        }
                     }
                 }
                 orderRepository.saveAll(trip.getOrders());

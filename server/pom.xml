@@ -151,6 +151,13 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-mistral-ai</artifactId>
         </dependency>
+
+        <!-- PayPal SDK for payment processing -->
+        <dependency>
+            <groupId>com.paypal.sdk</groupId>
+            <artifactId>paypal-core</artifactId>
+            <version>1.7.2</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -49,6 +49,11 @@ import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchNotificationsPage from "./components/dispatch/DispatchNotificationsPage";
 import DispatchReportsPage from "./components/dispatch/DispatchReportsPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
+import CustomerLayout from "./components/customer/CustomerLayout";
+import CustomerOrdersPage from "./components/customer/CustomerOrdersPage";
+import CustomerOrderDetailPage from "./components/customer/CustomerOrderDetailPage";
+import PaymentSuccessPage from "./components/payment/PaymentSuccessPage";
+import PaymentCancelledPage from "./components/payment/PaymentCancelledPage";
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -72,7 +77,6 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   // Check if route requires specific role
   // Allow ADMIN users to access all role-specific pages
   if (requiredRole && authState.user.role !== 'ADMIN' && authState.user.role !== requiredRole) {
-    // Show unauthorized page if user doesn't have required role and is not admin
     return <UnauthorizedPage />;
   }
 
@@ -163,6 +167,30 @@ function App() {
           <Route path="/dispatch/reports" element={
             <ProtectedRoute requiredRole="DISPATCHER">
               <DispatchReportsPage />
+            </ProtectedRoute>
+          } />
+        </Route>
+
+        {/* Customer routes with CustomerLayout */}
+        <Route element={<CustomerLayout />}>
+          <Route path="/customer/orders" element={
+            <ProtectedRoute requiredRole="CUSTOMER">
+              <CustomerOrdersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/customer/orders/:orderId" element={
+            <ProtectedRoute requiredRole="CUSTOMER">
+              <CustomerOrderDetailPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/payment/success" element={
+            <ProtectedRoute requiredRole="CUSTOMER">
+              <PaymentSuccessPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/payment/cancelled" element={
+            <ProtectedRoute requiredRole="CUSTOMER">
+              <PaymentCancelledPage />
             </ProtectedRoute>
           } />
         </Route>

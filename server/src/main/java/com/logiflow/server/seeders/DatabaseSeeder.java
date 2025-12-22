@@ -268,13 +268,36 @@ public class DatabaseSeeder implements CommandLineRunner {
             order.setOrderStatus(Order.OrderStatus.ASSIGNED);
         }
 
-        // Random cargo details
+        // Random cargo details with weights in tons for heavy logistics
         String[] items = {"Electronics", "Office Furniture", "Legal Documents", "Ind. Machinery", "Textiles", "Fresh Produce"};
         String item = items[random.nextInt(items.length)];
-        int weight = 5 + random.nextInt(45);
 
-        // Set weight field (convert to toones)
-        order.setWeightTons(new BigDecimal(weight).divide(new BigDecimal(1000), 3, java.math.RoundingMode.HALF_UP));
+        // Weight ranges in tons appropriate for heavy logistics
+        BigDecimal weightTons;
+        switch (item.toLowerCase()) {
+            case "electronics":
+                weightTons = new BigDecimal("0.5").add(new BigDecimal(random.nextInt(15)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.5-2.0 tons
+                break;
+            case "office furniture":
+                weightTons = new BigDecimal("1.0").add(new BigDecimal(random.nextInt(20)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 1.0-3.0 tons
+                break;
+            case "legal documents":
+                weightTons = new BigDecimal("0.05").add(new BigDecimal(random.nextInt(15)).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP)); // 0.05-0.20 tons
+                break;
+            case "ind. machinery":
+                weightTons = new BigDecimal("2.0").add(new BigDecimal(random.nextInt(30)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 2.0-5.0 tons
+                break;
+            case "textiles":
+                weightTons = new BigDecimal("0.8").add(new BigDecimal(random.nextInt(17)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.8-2.5 tons
+                break;
+            case "fresh produce":
+                weightTons = new BigDecimal("0.3").add(new BigDecimal(random.nextInt(17)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.3-2.0 tons
+                break;
+            default:
+                weightTons = new BigDecimal("1.0").add(new BigDecimal(random.nextInt(20)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 1.0-3.0 tons default
+        }
+
+        order.setWeightTons(weightTons);
 
         // Set package value based on item type and weight (realistic pricing)
         BigDecimal baseValuePerToon;
@@ -310,7 +333,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 detailedDescription = "Miscellaneous goods safely packaged for transportation";
         }
 
-        BigDecimal packageValue = baseValuePerToon.multiply(new BigDecimal(weight)).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal packageValue = baseValuePerToon.multiply(weightTons).setScale(2, java.math.RoundingMode.HALF_UP);
         order.setPackageValue(packageValue);
 
         order.setPackageDetails(detailedDescription);
@@ -501,7 +524,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(3), "Vo Thanh Nhung", "+84-907-777-777", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(30), now.minusDays(7)),
                 createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(3), "Bui Duc Phong", "+84-908-888-888", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(25), now.minusDays(8)),
                 createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(3), "Do Thi Huong", "+84-909-999-999", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(20), now.minusDays(9)),
-                createUserWithRole("ly.son", "ly.son@gmail.com", "123", roles.get(3), "Ly Ngoc Son", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
+                createUserWithRole("ttnhan227", "ttnhan227@gmail.com", "123", roles.get(3), "Tran Trong Nhan", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
         );
         userRepository.saveAll(users);
         System.out.println("Seeded 25 users with roles");

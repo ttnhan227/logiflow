@@ -48,8 +48,10 @@ public class CustomerDtos {
         private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
+        private BigDecimal shippingFee;
         private String priorityLevel;
         private String orderStatus;
+        private String paymentStatus;
         private String tripStatus; // if assigned to trip
         private LocalDateTime createdAt;
         private LocalDateTime estimatedPickupTime;
@@ -64,6 +66,7 @@ public class CustomerDtos {
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class OrderSummaryDto {
         private Integer orderId;
+        private String customerName;
         private String pickupAddress;
         private String pickupType;
         private String containerNumber;
@@ -75,7 +78,9 @@ public class CustomerDtos {
         private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
+        private BigDecimal shippingFee;
         private String orderStatus;
+        private String paymentStatus;
         private String tripStatus;
         private LocalDateTime createdAt;
         private LocalDateTime estimatedDeliveryTime;
@@ -123,7 +128,9 @@ public class CustomerDtos {
         private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
+        private BigDecimal shippingFee;
         private String orderStatus;
+        private String paymentStatus;
         private LocalDateTime createdAt;
         private LocalDateTime deliveredAt;
         private String driverName;

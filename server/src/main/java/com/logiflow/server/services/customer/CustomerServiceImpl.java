@@ -333,7 +333,9 @@ public class CustomerServiceImpl implements CustomerService {
                     history.setWeightTons(order.getWeightTons());
                     history.setPackageValue(order.getPackageValue());
                     history.setDistanceKm(order.getDistanceKm());
+                    history.setShippingFee(order.getShippingFee());
                     history.setOrderStatus(order.getOrderStatus().name());
+                    history.setPaymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING");
                     history.setCreatedAt(order.getCreatedAt());
                     if (order.getTrip() != null && order.getTrip().getActualArrival() != null) {
                         history.setDeliveredAt(order.getTrip().getActualArrival());
@@ -371,8 +373,10 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setWeightTons(order.getWeightTons());
         dto.setPackageValue(order.getPackageValue());
         dto.setDistanceKm(order.getDistanceKm());
+        dto.setShippingFee(order.getShippingFee());
         dto.setPriorityLevel(order.getPriorityLevel().name());
         dto.setOrderStatus(order.getOrderStatus().name());
+        dto.setPaymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING");
         dto.setCreatedAt(order.getCreatedAt());
 
         if (order.getTrip() != null) {
@@ -403,6 +407,7 @@ public class CustomerServiceImpl implements CustomerService {
     private OrderSummaryDto mapToOrderSummaryDto(Order order) {
         OrderSummaryDto dto = new OrderSummaryDto();
         dto.setOrderId(order.getOrderId());
+        dto.setCustomerName(order.getCustomerName());
         dto.setPickupAddress(order.getPickupAddress());
         dto.setPickupType(order.getPickupType() != null ? order.getPickupType().name() : null);
         dto.setContainerNumber(order.getContainerNumber());
@@ -414,7 +419,9 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setWeightTons(order.getWeightTons());
         dto.setPackageValue(order.getPackageValue());
         dto.setDistanceKm(order.getDistanceKm());
+        dto.setShippingFee(order.getShippingFee());
         dto.setOrderStatus(order.getOrderStatus().name());
+        dto.setPaymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING");
         dto.setCreatedAt(order.getCreatedAt());
 
         // Trip delay-related fields (delays affect entire trips, not individual orders)

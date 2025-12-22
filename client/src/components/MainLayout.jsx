@@ -164,6 +164,10 @@ const MainLayout = () => {
               <Link to="/dispatch/orders" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Dispatch</Link>
             )}
 
+            {user && user.role === 'CUSTOMER' && (
+              <Link to="/customer/orders" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>My Orders</Link>
+            )}
+
             {user && user.role === 'ADMIN' && (
               <Link to="/admin/dashboard" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link>
             )}

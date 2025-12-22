@@ -152,7 +152,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                               if (order.weightTons != null)
                                 Expanded(
                                   child: Text(
-                                    'Weight: ${order.weightTons!.toStringAsFixed(1)}t',
+                                    'Weight: ${order.weightTons} tons',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey,
@@ -181,6 +181,115 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 ),
                             ],
                           ),
+                          // Payment Information
+                          if (order.shippingFee != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue[200]!),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Shipping Fee:',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'VND ${order.shippingFee!.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                      Text(
+                                        '(\$${(order.shippingFee! / 23000).toStringAsFixed(2)})',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          if (order.paymentStatus != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: order.paymentStatus!.toUpperCase() == 'PAID'
+                                        ? Colors.green[100]
+                                        : Colors.orange[100],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: order.paymentStatus!.toUpperCase() == 'PAID'
+                                          ? Colors.green[300]!
+                                          : Colors.orange[300]!,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    order.paymentStatus!.toUpperCase() == 'PAID' ? 'Paid' : 'Pending',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: order.paymentStatus!.toUpperCase() == 'PAID'
+                                          ? Colors.green[700]
+                                          : Colors.orange[700],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          // Professional message for delivered orders
+                          if (order.orderStatus.toUpperCase() == 'DELIVERED') ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue[200]!),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.email,
+                                    size: 20,
+                                    color: Colors.blue,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Please check your email for invoice, receipt, and delivery confirmation details.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,

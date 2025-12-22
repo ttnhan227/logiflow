@@ -54,6 +54,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/uploads/business-license").permitAll()
                                 .requestMatchers("/api/uploads/tax-certificate").permitAll()
                                 .requestMatchers("/api/uploads/**").authenticated()
+                                .requestMatchers("/api/payment/**").permitAll()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/dispatch/**").hasAnyRole("ADMIN", "DISPATCHER")
                                 .requestMatchers("/api/driver/**").hasAnyRole("ADMIN", "DRIVER")

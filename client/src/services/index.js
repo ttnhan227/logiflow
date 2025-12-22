@@ -17,6 +17,8 @@ import tripService from './dispatch/tripService';
 import dispatchReportsService from './dispatch/reportsService';
 import dispatchRouteService from './dispatch/routeService';
 import dispatchVehicleService from './dispatch/vehicleService';
+import customerOrderService from './customer/orderService';
+import paymentService from './paymentService';
 import trackingClient from './trackingClient';
 import chatService from './chatService';
 import chatClient from './chatClient';
@@ -41,6 +43,8 @@ export {
   dispatchReportsService,
   dispatchRouteService,
   dispatchVehicleService,
+  customerOrderService,
+  paymentService,
   trackingClient,
   chatService,
   chatClient,

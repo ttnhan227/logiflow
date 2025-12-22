@@ -95,6 +95,13 @@ public class Order {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "payment_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    @Column(name = "payment_updated_at")
+    private LocalDateTime paymentUpdatedAt;
+
     public static enum PriorityLevel {
         NORMAL, URGENT
     }
@@ -107,5 +114,9 @@ public class Order {
 
     public static enum OrderStatus {
         PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED
+    }
+
+    public static enum PaymentStatus {
+        PENDING, PAID, FAILED, REFUNDED
     }
 }

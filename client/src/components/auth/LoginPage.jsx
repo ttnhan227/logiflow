@@ -23,6 +23,10 @@ const LoginPage = () => {
       // Redirect based on user role
       if (response.role === 'ADMIN') {
         navigate('/admin/dashboard');
+      } else if (response.role === 'CUSTOMER') {
+        navigate('/customer/orders');
+      } else if (response.role === 'DISPATCHER') {
+        navigate('/dispatch/orders');
       } else {
         navigate('/');
       }

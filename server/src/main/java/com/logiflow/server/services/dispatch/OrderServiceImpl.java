@@ -15,6 +15,7 @@ import com.logiflow.server.services.dispatch.ShippingFeeCalculator;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.utils.OrderFileParser;
 import com.logiflow.server.websocket.NotificationService;
+import com.logiflow.server.services.payment.PaymentService;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 import org.apache.poi.ss.usermodel.*;
@@ -90,6 +91,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -537,6 +541,18 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve updated order"));
 
         return OrderDto.fromOrder(orderWithRelations);
+    }
+
+    /**
+     * Send payment request for delivered order
+     */
+    public void sendPaymentRequestForDeliveredOrder(Integer orderId) {
+        try {
+            paymentService.sendPaymentRequest(orderId);
+        } catch (Exception e) {
+            // Log error but don't fail the operation
+            System.err.println("Failed to send payment request for order #" + orderId + ": " + e.getMessage());
+        }
     }
 
 }
