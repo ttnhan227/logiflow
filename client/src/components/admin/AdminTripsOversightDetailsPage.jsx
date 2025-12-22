@@ -656,7 +656,6 @@ const AdminTripsOversightDetailsPage = () => {
                 <span>🚗 Driver Location {trip.driver && trip.driver.currentLat && trip.driver.currentLng ?
                   `(${parseFloat(trip.driver.currentLat).toFixed(6)}, ${parseFloat(trip.driver.currentLng).toFixed(6)})` :
                   '(Blue - if available)'}</span>
-                <span>🔵 Route Path</span>
               </div>
             </div>
           </div>
