@@ -167,7 +167,11 @@ public class EmailServiceImpl implements EmailService {
 
                 "<div style='margin: 30px 0; padding: 20px; background-color: #e8f5e8; border-left: 4px solid #27ae60; border-radius: 4px;'>" +
                 "<h3 style='margin: 0 0 10px 0; color: #27ae60;'>Thank you for your payment!</h3>" +
-                "<p style='margin: 0; color: #2c3e50;'>Your order is now being processed and will be delivered according to the scheduled timeline. You will receive updates on your order status.</p>" +
+                "<p style='margin: 0 0 15px 0; color: #2c3e50;'>Your order is now being processed and will be delivered according to the scheduled timeline. You will receive updates on your order status.</p>" +
+                "<div style='text-align: center; margin-top: 20px;'>" +
+                "<a href='http://localhost:5173/track' style='display: inline-block; padding: 12px 24px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 10px;'>Track Your Order</a>" +
+                "<a href='http://localhost:8080/api/orders/" + orderId + "/invoice/download' style='display: inline-block; padding: 12px 24px; background-color: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>Download Invoice</a>" +
+                "</div>" +
                 "</div>" +
 
                 "<div class='footer'>" +

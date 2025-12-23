@@ -266,10 +266,45 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         // Addresses come from Trip Route
         order.setPickupAddress(trip.getRoute().getOriginAddress());
-        order.setPickupType(Order.PickupType.WAREHOUSE);
-        order.setWarehouseName("Seed Warehouse");
-        order.setDockNumber("D-01");
         order.setDeliveryAddress(trip.getRoute().getDestinationAddress());
+
+        // Randomly assign pickup types: 40% STANDARD, 30% WAREHOUSE, 30% PORT_TERMINAL
+        int pickupTypeRandom = random.nextInt(100);
+        Order.PickupType pickupType;
+
+        if (pickupTypeRandom < 40) {
+            pickupType = Order.PickupType.STANDARD;
+        } else if (pickupTypeRandom < 70) {
+            pickupType = Order.PickupType.WAREHOUSE;
+        } else {
+            pickupType = Order.PickupType.PORT_TERMINAL;
+        }
+
+        order.setPickupType(pickupType);
+
+        // Set fields based on pickup type
+        if (pickupType == Order.PickupType.WAREHOUSE) {
+            // Warehouse pickup - set warehouse and dock info
+            String[] warehouseNames = {"HCM Warehouse", "Da Nang Logistics Center", "Hai Phong Distribution Hub", "Can Tho Storage Facility"};
+            order.setWarehouseName(warehouseNames[random.nextInt(warehouseNames.length)]);
+
+            String[] dockPrefixes = {"D-", "L-", "B-", "G-"}; // Dock, Loading, Bay, Gate
+            int dockNumber = 1 + random.nextInt(20);
+            order.setDockNumber(dockPrefixes[random.nextInt(dockPrefixes.length)] + dockNumber);
+
+        } else if (pickupType == Order.PickupType.PORT_TERMINAL) {
+            // Port terminal pickup - set container and terminal info
+            // Generate realistic container number (MSCU, MAEU, etc. prefixes)
+            String[] containerPrefixes = {"MSCU", "MAEU", "OOLU", "COSU", "HLCU", "YMLU"};
+            String prefix = containerPrefixes[random.nextInt(containerPrefixes.length)];
+            String serial = String.format("%06d", random.nextInt(999999));
+            String checkDigit = String.valueOf(random.nextInt(9));
+            order.setContainerNumber(prefix + serial + "-" + checkDigit);
+
+            String[] terminalNames = {"Saigon Port Terminal 1", "Da Nang Port Terminal", "Hai Phong Port Terminal", "Can Tho River Port"};
+            order.setTerminalName(terminalNames[random.nextInt(terminalNames.length)]);
+        }
+        // For STANDARD pickup type, no additional fields needed
 
         // Synch Order status with Trip status
         if ("completed".equals(tripStatus)) {
@@ -802,41 +837,57 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         System.out.println("Creating payments for " + deliveredPendingOrders.size() + " delivered orders with pending payments...");
 
-        for (Order order : deliveredPendingOrders) {
-            // 80% chance of having PAID status (simulating completed payments)
-            boolean shouldBePaid = random.nextInt(100) < 80;
+        // Group orders by customer to ensure each customer has at least one pending order
+        Map<Integer, List<Order>> ordersByCustomer = deliveredPendingOrders.stream()
+                .collect(Collectors.groupingBy(order -> order.getCustomer().getUserId()));
 
-            if (shouldBePaid) {
-                Payment payment = new Payment();
-                payment.setOrder(order);
-                payment.setAmount(order.getShippingFee());
-                payment.setPaymentStatus(Payment.PaymentStatus.PAID);
-                payment.setPaymentMethod(random.nextBoolean() ? "paypal" : "cash");
+        for (Map.Entry<Integer, List<Order>> entry : ordersByCustomer.entrySet()) {
+            List<Order> customerOrders = entry.getValue();
+            boolean hasPendingForCustomer = false;
 
-                // Payment created 1-7 days after order delivery
-                LocalDateTime deliveryTime = order.getTrip().getActualArrival();
-                if (deliveryTime == null) {
-                    deliveryTime = order.getTrip().getScheduledArrival();
-                }
-                if (deliveryTime != null) {
-                    int daysAfter = 1 + random.nextInt(7);
-                    payment.setCreatedAt(deliveryTime.plusDays(daysAfter));
-                    payment.setUpdatedAt(payment.getCreatedAt());
-                } else {
-                    payment.setCreatedAt(LocalDateTime.now().minusDays(random.nextInt(30)));
-                    payment.setUpdatedAt(payment.getCreatedAt());
+            for (Order order : customerOrders) {
+                // 70% chance of having PAID status, but ensure at least one per customer stays pending
+                boolean shouldBePaid = random.nextInt(100) < 70;
+
+                // If this is the last order for this customer and none are pending yet, force it to stay pending
+                if (!shouldBePaid && !hasPendingForCustomer) {
+                    // This order will stay pending
+                    hasPendingForCustomer = true;
+                    continue;
                 }
 
-                // Set PayPal details if payment method is paypal
-                if ("paypal".equals(payment.getPaymentMethod())) {
-                    payment.setPaypalOrderId("PAY-" + order.getOrderId() + "-" + random.nextInt(100000));
-                    payment.setPaypalTransactionId("TXN-" + order.getOrderId() + "-" + random.nextInt(100000));
+                if (shouldBePaid) {
+                    Payment payment = new Payment();
+                    payment.setOrder(order);
+                    payment.setAmount(order.getShippingFee());
+                    payment.setPaymentStatus(Payment.PaymentStatus.PAID);
+                    payment.setPaymentMethod(random.nextBoolean() ? "paypal" : "cash");
+
+                    // Payment created 1-7 days after order delivery
+                    LocalDateTime deliveryTime = order.getTrip().getActualArrival();
+                    if (deliveryTime == null) {
+                        deliveryTime = order.getTrip().getScheduledArrival();
+                    }
+                    if (deliveryTime != null) {
+                        int daysAfter = 1 + random.nextInt(7);
+                        payment.setCreatedAt(deliveryTime.plusDays(daysAfter));
+                        payment.setUpdatedAt(payment.getCreatedAt());
+                    } else {
+                        payment.setCreatedAt(LocalDateTime.now().minusDays(random.nextInt(30)));
+                        payment.setUpdatedAt(payment.getCreatedAt());
+                    }
+
+                    // Set PayPal details if payment method is paypal
+                    if ("paypal".equals(payment.getPaymentMethod())) {
+                        payment.setPaypalOrderId("PAY-" + order.getOrderId() + "-" + random.nextInt(100000));
+                        payment.setPaypalTransactionId("TXN-" + order.getOrderId() + "-" + random.nextInt(100000));
+                    }
+
+                    payments.add(payment);
+
+                    // Update order payment status to PAID
+                    order.setPaymentStatus(Order.PaymentStatus.PAID);
                 }
-
-                payments.add(payment);
-
-                // Update order payment status to PAID
-                order.setPaymentStatus(Order.PaymentStatus.PAID);
             }
         }
 

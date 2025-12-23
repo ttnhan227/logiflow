@@ -83,12 +83,16 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 // Handle redirection after login based on user role
 const AuthRedirect = () => {
   const user = authService.getCurrentUser();
-  return user?.role === 'ADMIN' ? 
-    <Navigate to="/admin/dashboard" replace /> : 
-    <Navigate to="/" replace />;
+  if (user?.role === 'ADMIN') {
+    return <Navigate to="/admin/dashboard" replace />;
+  } else if (user?.role === 'CUSTOMER') {
+    return <Navigate to="/track" replace />;
+  } else if (user?.role === 'DISPATCHER') {
+    return <Navigate to="/dispatch/orders" replace />;
+  } else {
+    return <Navigate to="/" replace />;
+  }
 };
-
-
 
 function App() {
   return (

@@ -1,4 +1,4 @@
-package com.logiflow.server.controllers.payment;
+package com.logiflow.server.controllers.customer;
 
 import com.logiflow.server.services.payment.PaymentService;
 import com.logiflow.server.models.Order;
@@ -233,10 +233,11 @@ public class PaymentController {
                 "<div class='message'>" +
                 "<h2>Thank You for Your Payment</h2>" +
                 "<p>Your payment has been successfully processed. Your order is now being prepared for delivery.</p>" +
+                "<p>Please check your email for the invoice and order confirmation details.</p>" +
                 "</div>" +
                 orderDetails +
                 "<div class='actions'>" +
-                "<a href='http://localhost:5173' class='btn btn-primary'>Go back to LogiFlow</a>" +
+                "<a href='http://localhost:5173/track' class='btn btn-primary'>Go back to LogiFlow</a>" +
                 "</div>" +
                 "</div>" +
                 "<div class='footer'>" +

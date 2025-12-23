@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        /* ===== Typography ===== */
+        h1 {
+            margin: 0;
+            font-size: 26px;
+            color: #0b5ed7;
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #0b5ed7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== Layout ===== */
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #0b5ed7;
+            padding-bottom: 15px;
+        }
+
+        .header-left,
+        .header-right {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .header-right {
+            text-align: right;
+            width: 220px;
+        }
+
+        .tagline {
+            margin-top: 5px;
+            font-size: 13px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .meta {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fb;
+            border: 1px solid #ddd;
+        }
+
+        .meta p {
+            margin: 3px 0;
+        }
+
+        .section {
+            margin-top: 25px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background: #ffffff;
+        }
+
+        /* ===== Tables ===== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 10px;
+            vertical-align: top;
+        }
+
+        th {
+            width: 35%;
+            background: #f1f4f9;
+            font-weight: bold;
+            color: #333;
+        }
+
+        td {
+            background: #fff;
+        }
+
+        .right {
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* ===== Footer ===== */
+        .footer {
+            margin-top: 40px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            text-align: center;
+            font-size: 10px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<div class="header">
+    <div class="header-left">
+        <h1>LOGIFLOW INVOICE</h1>
+        <div class="tagline">Logistics & Transportation Solutions</div>
+    </div>
+    <div class="header-right">
+        <img th:src="${logoBase64}"
+             alt="LogiFlow Logo"
+             style="width: 180px; height: auto;" />
+    </div>
+</div>
+
+<!-- ===== Invoice Meta ===== -->
+<div class="meta">
+    <p>
+        <strong>Invoice #:</strong>
+        <span th:text="'INV-' + ${order.orderId}"></span>
+    </p>
+    <p>
+        <strong>Date:</strong>
+        <span th:text="${date}"></span>
+    </p>
+</div>
+
+<!-- ===== Customer ===== -->
+<div class="section">
+    <h3>Customer Information</h3>
+    <p th:text="${order.customer.fullName}"></p>
+    <p th:text="${order.customer.email}"></p>
+</div>
+
+<!-- ===== Shipment ===== -->
+<div class="section">
+    <h3>Shipment Details</h3>
+    <table>
+        <tr>
+            <th>Pickup Location</th>
+            <td th:text="${order.pickupAddress}"></td>
+        </tr>
+        <tr>
+            <th>Delivery Location</th>
+            <td th:text="${order.deliveryAddress}"></td>
+        </tr>
+        <tr th:if="${order.pickupType != 'STANDARD'}">
+            <th>Pickup Type</th>
+            <td th:text="${order.pickupType}"></td>
+        </tr>
+        <tr th:if="${order.packageDetails}">
+            <th>Package Description</th>
+            <td th:text="${order.packageDetails}"></td>
+        </tr>
+
+        <!-- PORT_TERMINAL -->
+        <tr th:if="${order.containerNumber != null and !order.containerNumber.isEmpty()}">
+            <th>Container Number</th>
+            <td th:text="${order.containerNumber}"></td>
+        </tr>
+        <tr th:if="${order.terminalName != null and !order.terminalName.isEmpty()}">
+            <th>Terminal</th>
+            <td th:text="${order.terminalName}"></td>
+        </tr>
+
+        <!-- WAREHOUSE -->
+        <tr th:if="${order.warehouseName != null and !order.warehouseName.isEmpty()}">
+            <th>Warehouse</th>
+            <td th:text="${order.warehouseName}"></td>
+        </tr>
+        <tr th:if="${order.dockNumber != null and !order.dockNumber.isEmpty()}">
+            <th>Dock Number</th>
+            <td th:text="${order.dockNumber}"></td>
+        </tr>
+
+        <!-- COMMON -->
+        <tr th:if="${order.distanceKm}">
+            <th>Distance</th>
+            <td th:text="${order.distanceKm + ' km'}"></td>
+        </tr>
+        <tr th:if="${order.weightTons}">
+            <th>Weight</th>
+            <td th:text="${order.weightTons + ' tons'}"></td>
+        </tr>
+        <tr th:if="${order.packageValue}">
+            <th>Declared Value</th>
+            <td th:text="${packageValueFormatted}"></td>
+        </tr>
+        <tr>
+            <th>Priority Level</th>
+            <td th:text="${order.priorityLevel}"></td>
+        </tr>
+        <tr>
+            <th>Order Status</th>
+            <td th:text="${order.orderStatus}"></td>
+        </tr>
+        <tr>
+            <th>Order Date</th>
+            <td th:text="${#temporals.format(order.createdAt, 'MMM dd, yyyy HH:mm')}"></td>
+        </tr>
+    </table>
+</div>
+
+<!-- ===== Payment ===== -->
+<div class="section">
+    <h3>Payment Summary</h3>
+    <table>
+        <tr>
+            <th>Total Amount (VND)</th>
+            <td class="right" th:text="${shippingFeeFormatted + usdEquivalent}"></td>
+        </tr>
+    </table>
+</div>
+
+<!-- ===== Footer ===== -->
+<div class="footer">
+    <p>Thank you for choosing LogiFlow</p>
+    <p>Generated on <span th:text="${date}"></span></p>
+</div>
+
+</body>
+</html>

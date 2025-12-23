@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io';
 import '../../services/customer/customer_service.dart';
+import '../../services/api_client.dart';
 import '../../models/customer/order.dart';
 
 class OrderReceiptScreen extends StatefulWidget {
@@ -218,6 +218,17 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                           const SizedBox(height: 12),
                           _buildInfoRow('From', _order!.pickupAddress ?? 'N/A'),
                           _buildInfoRow('To', _order!.deliveryAddress ?? 'N/A'),
+                          if (_order!.pickupType != null && _order!.pickupType!.isNotEmpty)
+                            _buildInfoRow('Pickup Type', _order!.pickupType!),
+                          // Show pickup type specific fields
+                          if (_order!.warehouseName != null && _order!.warehouseName!.isNotEmpty)
+                            _buildInfoRow('Warehouse', _order!.warehouseName!),
+                          if (_order!.dockNumber != null && _order!.dockNumber!.isNotEmpty)
+                            _buildInfoRow('Dock Number', _order!.dockNumber!),
+                          if (_order!.containerNumber != null && _order!.containerNumber!.isNotEmpty)
+                            _buildInfoRow('Container', _order!.containerNumber!),
+                          if (_order!.terminalName != null && _order!.terminalName!.isNotEmpty)
+                            _buildInfoRow('Terminal', _order!.terminalName!),
                           if (_order!.packageDetails != null && _order!.packageDetails!.isNotEmpty)
                             _buildInfoRow('Package', _order!.packageDetails!),
                           if (_order!.weightTons != null)
@@ -588,324 +599,88 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
     try {
       // Show loading indicator
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Generating PDF...')),
+        const SnackBar(content: Text('Downloading invoice...')),
       );
 
-      // Generate PDF
-      final pdf = pw.Document();
+      // Make request to download invoice using the API client
+      final headers = await apiClient.getHeaders();
+      final url = '${ApiClient.baseUrl.replaceAll('/api', '')}/api/orders/${_order!.orderId}/invoice/download';
+      final response = await http.get(Uri.parse(url), headers: headers);
 
-      pdf.addPage(
-        pw.Page(
-          build: (pw.Context context) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Header
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(20),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.blue50,
-                    borderRadius: pw.BorderRadius.circular(12),
-                    border: pw.Border.all(color: PdfColors.blue200),
-                  ),
-                  child: pw.Column(
-                    children: [
-                      pw.Text(
-                        'ORDER RECEIPT',
-                        style: pw.TextStyle(
-                          fontSize: 24,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.blue,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Text(
-                        'Order #${_order!.orderId}',
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          color: PdfColors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                pw.SizedBox(height: 20),
-
-                // Order Status
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey300),
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'Order Status',
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Text(
-                        _getStatusText(_order!.orderStatus ?? ''),
-                        style: pw.TextStyle(
-                          fontSize: 16,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                pw.SizedBox(height: 16),
-
-                // Customer Information
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey300),
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'Customer Information',
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      _buildPdfInfoRow('Name', _order!.customerName ?? 'N/A'),
-                      _buildPdfInfoRow('Phone', _order!.customerPhone ?? 'N/A'),
-                    ],
-                  ),
-                ),
-
-                pw.SizedBox(height: 16),
-
-                // Order Details
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey300),
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'Order Details',
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      _buildPdfInfoRow('From', _order!.pickupAddress ?? 'N/A'),
-                      _buildPdfInfoRow('To', _order!.deliveryAddress ?? 'N/A'),
-                      if (_order!.packageDetails != null && _order!.packageDetails!.isNotEmpty)
-                        _buildPdfInfoRow('Package', _order!.packageDetails!),
-                      if (_order!.weightTons != null)
-                        _buildPdfInfoRow('Weight', '${_order!.weightTons!.toStringAsFixed(2)} tons'),
-                      if (_order!.packageValue != null)
-                        _buildPdfInfoRow('Value', 'VND ${_order!.packageValue!.toStringAsFixed(0)}'),
-                      if (_order!.distanceKm != null)
-                        _buildPdfInfoRow('Distance', '${_order!.distanceKm!.toStringAsFixed(1)} km'),
-                      if (_order!.priorityLevel != null)
-                        _buildPdfInfoRow('Priority', _order!.priorityLevel!),
-                    ],
-                  ),
-                ),
-
-                pw.SizedBox(height: 16),
-
-                // Payment Information
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey300),
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'Payment Information',
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      if (_order!.deliveryFee != null) ...[
-                        pw.Row(
-                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                          children: [
-                            pw.Text('Shipping Fee:'),
-                            pw.Column(
-                              crossAxisAlignment: pw.CrossAxisAlignment.end,
-                              children: [
-                                pw.Text(
-                                  'VND ${_order!.deliveryFee!.toStringAsFixed(0)}',
-                                  style: pw.TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: pw.FontWeight.bold,
-                                    color: PdfColors.blue,
-                                  ),
-                                ),
-                                pw.Text(
-                                  '(\$${_order!.deliveryFee! / 23000})',
-                                  style: pw.TextStyle(
-                                    fontSize: 12,
-                                    color: PdfColors.blue,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        pw.SizedBox(height: 8),
-                        pw.Container(
-                          padding: const pw.EdgeInsets.all(8),
-                          decoration: pw.BoxDecoration(
-                            color: PdfColors.green50,
-                            borderRadius: pw.BorderRadius.circular(8),
-                            border: pw.Border.all(color: PdfColors.green200),
-                          ),
-                          child: pw.Text(
-                            'Payment Completed',
-                            style: pw.TextStyle(
-                              fontSize: 14,
-                              color: PdfColors.green,
-                              fontWeight: pw.FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                pw.SizedBox(height: 20),
-
-                // Footer
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.grey100,
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Column(
-                    children: [
-                      pw.Text(
-                        'Thank you for choosing LogiFlow!',
-                        style: pw.TextStyle(
-                          fontSize: 16,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.grey700,
-                        ),
-                        textAlign: pw.TextAlign.center,
-                      ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        'Generated on ${DateTime.now().toLocal().toString().split('.')[0]}',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey600,
-                        ),
-                        textAlign: pw.TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-
-      // Try multiple approaches to get directory
-      Directory? output;
-      try {
-        output = await getApplicationDocumentsDirectory();
-      } catch (e) {
-        // Fallback to external storage if available
+      if (response.statusCode == 200) {
+        // Get directory to save file
+        Directory? output;
         try {
-          output = await getExternalStorageDirectory();
-          if (output != null) {
-            output = Directory('${output.path}/Documents');
-            if (!await output.exists()) {
-              await output.create(recursive: true);
+          output = await getApplicationDocumentsDirectory();
+        } catch (e) {
+          // Fallback to external storage if available
+          try {
+            output = await getExternalStorageDirectory();
+            if (output != null) {
+              output = Directory('${output.path}/Documents');
+              if (!await output.exists()) {
+                await output.create(recursive: true);
+              }
             }
+          } catch (e2) {
+            // Last resort - use temporary directory
+            output = await getTemporaryDirectory();
           }
-        } catch (e2) {
-          // Last resort - use temporary directory
-          output = await getTemporaryDirectory();
         }
-      }
 
-      if (output == null) {
-        throw Exception('Unable to access storage directory');
-      }
+        if (output == null) {
+          throw Exception('Unable to access storage directory');
+        }
 
-      // Save PDF to device
-      final file = File('${output.path}/receipt_order_${_order!.orderId}.pdf');
-      await file.writeAsBytes(await pdf.save());
+        // Save PDF to device
+        final file = File('${output.path}/invoice_order_${_order!.orderId}.pdf');
+        await file.writeAsBytes(response.bodyBytes);
 
-      // Show success message and open file
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('PDF saved successfully!'),
-            action: SnackBarAction(
-              label: 'Open',
-              onPressed: () {
-                OpenFile.open(file.path);
-              },
+        // Show success message and open file
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Invoice downloaded successfully!'),
+              action: SnackBarAction(
+                label: 'Open',
+                onPressed: () {
+                  OpenFile.open(file.path);
+                },
+              ),
             ),
-          ),
-        );
+          );
+        }
+      } else if (response.statusCode == 403) {
+        // Forbidden - not authorized to access this invoice
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('You do not have permission to download this invoice')),
+          );
+        }
+      } else if (response.statusCode == 400) {
+        // Bad request - invoice not available (e.g., not paid)
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invoice not available for this order')),
+          );
+        }
+      } else {
+        // Other error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to download invoice: ${response.statusCode}')),
+          );
+        }
       }
 
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to generate PDF: $e')),
+          SnackBar(content: Text('Failed to download invoice: $e')),
         );
       }
     }
   }
 
-  pw.Widget _buildPdfInfoRow(String label, String value) {
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            width: 80,
-            child: pw.Text(
-              '$label:',
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                color: PdfColors.grey700,
-              ),
-            ),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              value,
-              style: const pw.TextStyle(fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }

@@ -8,6 +8,11 @@ class Order extends Equatable {
   final int? customerId;
   final int? customerUserId;
   final String? pickupAddress;
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
   final String? deliveryAddress;
   final String? packageDetails;
   final double? weightKg;
@@ -34,6 +39,11 @@ class Order extends Equatable {
     this.customerId,
     this.customerUserId,
     this.pickupAddress,
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
     this.deliveryAddress,
     this.packageDetails,
     this.weightKg,
@@ -64,6 +74,11 @@ class Order extends Equatable {
       customerId: json['customerId'],
       customerUserId: json['customerUserId'],
       pickupAddress: json['pickupAddress'],
+      pickupType: json['pickupType'],
+      containerNumber: json['containerNumber'],
+      terminalName: json['terminalName'],
+      warehouseName: json['warehouseName'],
+      dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
       weightKg: json['weightTons'] != null ? (json['weightTons'] as num).toDouble() * 1000 : null,
@@ -93,6 +108,11 @@ class Order extends Equatable {
       'customerId': customerId,
       'customerUserId': customerUserId,
       'pickupAddress': pickupAddress,
+      'pickupType': pickupType,
+      'containerNumber': containerNumber,
+      'terminalName': terminalName,
+      'warehouseName': warehouseName,
+      'dockNumber': dockNumber,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
       'weightKg': weightKg,
@@ -122,6 +142,11 @@ class Order extends Equatable {
     customerId,
     customerUserId,
     pickupAddress,
+    pickupType,
+    containerNumber,
+    terminalName,
+    warehouseName,
+    dockNumber,
     deliveryAddress,
     packageDetails,
     weightKg,

@@ -73,6 +73,11 @@ public class TripOversightDto {
         private String customerName;
         private String customerPhone;
         private String pickupAddress;
+        private String pickupType;
+        private String warehouseName;
+        private String dockNumber;
+        private String containerNumber;
+        private String terminalName;
         private String deliveryAddress;
         private String packageDetails;
         private BigDecimal weightTon;
@@ -198,6 +203,11 @@ public class TripOversightDto {
                     orderDto.setCustomerName(order.getCustomerName());
                     orderDto.setCustomerPhone(order.getCustomerPhone());
                     orderDto.setPickupAddress(order.getPickupAddress());
+                    orderDto.setPickupType(order.getPickupType() != null ? order.getPickupType().name() : null);
+                    orderDto.setWarehouseName(order.getWarehouseName());
+                    orderDto.setDockNumber(order.getDockNumber());
+                    orderDto.setContainerNumber(order.getContainerNumber());
+                    orderDto.setTerminalName(order.getTerminalName());
                     orderDto.setDeliveryAddress(order.getDeliveryAddress());
                     orderDto.setPackageDetails(order.getPackageDetails());
                     orderDto.setWeightTon(order.getWeightTons());

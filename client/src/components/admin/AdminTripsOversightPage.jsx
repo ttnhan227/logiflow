@@ -393,6 +393,36 @@ const AdminTripsOversightPage = () => {
                       <div style={{ fontSize: '13px' }}>
                         <div style={{ fontWeight: 600 }}>{(trip.orders || []).length} orders</div>
                         <div className="muted small">{trip.totalWeightTon ? `${trip.totalWeightTon} tons` : ''}</div>
+                        {/* Show pickup types for orders */}
+                        {(trip.orders || []).some(order => order.pickupType && order.pickupType !== 'STANDARD') && (
+                          <div style={{ marginTop: '4px' }}>
+                            {(trip.orders || [])
+                              .filter(order => order.pickupType && order.pickupType !== 'STANDARD')
+                              .slice(0, 2) // Show max 2 pickup types
+                              .map((order, idx) => (
+                                <span key={idx} style={{
+                                  backgroundColor: '#e3f2fd',
+                                  color: '#1976d2',
+                                  fontSize: '9px',
+                                  padding: '1px 3px',
+                                  borderRadius: '2px',
+                                  marginRight: '2px',
+                                  display: 'inline-block'
+                                }}>
+                                  {order.pickupType === 'WAREHOUSE' ? '🏭' : '🚢'} {order.pickupType}
+                                </span>
+                              ))}
+                            {(trip.orders || []).filter(order => order.pickupType && order.pickupType !== 'STANDARD').length > 2 && (
+                              <span style={{
+                                fontSize: '9px',
+                                color: '#6b7280',
+                                fontStyle: 'italic'
+                              }}>
+                                +{(trip.orders || []).filter(order => order.pickupType && order.pickupType !== 'STANDARD').length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {trip.hasUrgentOrders && (
                           <span style={{
                             backgroundColor: '#fee2e2',

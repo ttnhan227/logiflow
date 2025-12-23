@@ -135,6 +135,69 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          // Pickup Type Information
+                          if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.blue[200]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Pickup Type: ${order.pickupType}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  // Show specific fields based on pickup type
+                                  if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                                    Text(
+                                      'Warehouse: ${order.warehouseName}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                  if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                                    Text(
+                                      'Dock: ${order.dockNumber}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                  if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                                    Text(
+                                      'Container: ${order.containerNumber}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                  if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                                    Text(
+                                      'Terminal: ${order.terminalName}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                           // Package Details
                           if (order.packageDetails != null &&
                               order.packageDetails!.isNotEmpty) ...[
