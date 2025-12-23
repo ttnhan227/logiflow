@@ -114,27 +114,70 @@ const TripCreatePage = () => {
             .replace(/\s+/g, ' ')
             .trim();
 
+        // Strip English suffixes that often harm VN geocoding (requested: remove "Street").
+        const normalizeForGeocode = (s) => {
+            let out = String(s);
+            out = out.replace(/\bstreet\b/gi, '');
+            out = out.replace(/\s+/g, ' ').trim();
+            // Clean up commas/spaces that may be left behind.
+            out = out.replace(/\s+,/g, ',');
+            out = out.replace(/,\s*,/g, ',');
+            out = out.replace(/,\s+/g, ', ');
+            out = out.replace(/^,\s*/g, '');
+            out = out.replace(/,\s*$/g, '');
+            return out;
+        };
+
+        // Some datasets match better when the English suffix "Street" is present.
+        // Only inject it when it's missing to avoid duplications.
+        const addStreetIfMissing = (s) => {
+            const raw = String(s);
+            if (/\bstreet\b/i.test(raw)) return raw;
+            // Heuristic: only try adding when the address looks like it starts with a street line.
+            if (!/\d/.test(raw)) return raw;
+            return raw.replace(/^\s*([^,]+)(\s*,\s*|\s*$)/, (_m, first, sep) => {
+                const cleanedFirst = String(first).trim();
+                if (!cleanedFirst) return raw;
+                return `${cleanedFirst} Street${sep || ''}`;
+            });
+        };
+
         const primary = ensureVN(address);
         const alt = ensureVN(sanitize(address));
-        try {
-            // Try server geocode first
-            const res = await api.get('/maps/geocode', { params: { address: primary } });
-            const data = res?.data;
-            let lat = Number(data?.latitude);
-            let lng = Number(data?.longitude);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-                const res2 = await api.get('/maps/geocode', { params: { address: alt } });
-                lat = Number(res2?.data?.latitude);
-                lng = Number(res2?.data?.longitude);
+
+        // Fallback queries if the original form doesn't geocode well.
+        const withStreetPrimary = ensureVN(addStreetIfMissing(address));
+        const withStreetAlt = ensureVN(addStreetIfMissing(sanitize(address)));
+        const fallbackPrimary = ensureVN(normalizeForGeocode(address));
+        const fallbackAlt = ensureVN(normalizeForGeocode(sanitize(address)));
+
+        const tryGeocode = async (q) => {
+            try {
+                const res = await api.get('/maps/geocode', { params: { address: q } });
+                const data = res?.data;
+                const lat = Number(data?.latitude);
+                const lng = Number(data?.longitude);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+                return { lat, lng };
+            } catch (_e) {
+                return null;
             }
-            if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                const inVN = lat >= 8.5 && lat <= 23.4 && lng >= 102.1 && lng <= 109.5;
-                return inVN ? { lat, lng } : null;
-            }
-            return null;
-        } catch (_err) {
-            return null;
+        };
+
+        const candidates = [primary, alt, withStreetPrimary, withStreetAlt, fallbackPrimary, fallbackAlt]
+            .map((s) => String(s || '').trim())
+            .filter(Boolean)
+            .filter((value, index, self) => self.indexOf(value) === index);
+
+        for (const q of candidates) {
+            const coords = await tryGeocode(q);
+            if (!coords) continue;
+            const { lat, lng } = coords;
+            const inVN = lat >= 8.5 && lat <= 23.4 && lng >= 102.1 && lng <= 109.5;
+            if (inVN) return { lat, lng };
         }
+
+        return null;
     };
 
     const autoCreateRouteFromOrder = async (order) => {
