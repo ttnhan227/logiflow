@@ -18,6 +18,7 @@ import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
+import com.logiflow.server.repositories.payment.PaymentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
@@ -41,14 +42,16 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final DriverRepository driverRepository;
     private final TripAssignmentRepository tripAssignmentRepository;
     private final com.logiflow.server.repositories.trip.TripRepository tripRepository;
+    private final PaymentRepository paymentRepository;
 
-    public AdminDashboardServiceImpl(UserRepository userRepository, 
+    public AdminDashboardServiceImpl(UserRepository userRepository,
                                     RoleRepository roleRepository,
                                     VehicleRepository vehicleRepository,
                                     OrderRepository orderRepository,
                                     DriverRepository driverRepository,
                                     TripAssignmentRepository tripAssignmentRepository,
-                                    com.logiflow.server.repositories.trip.TripRepository tripRepository) {
+                                    com.logiflow.server.repositories.trip.TripRepository tripRepository,
+                                    PaymentRepository paymentRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.vehicleRepository = vehicleRepository;
@@ -56,6 +59,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         this.driverRepository = driverRepository;
         this.tripAssignmentRepository = tripAssignmentRepository;
         this.tripRepository = tripRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     @Override
@@ -94,8 +98,17 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             ))
             .collect(Collectors.toList());
         
-        // Calculate total revenue from delivered orders
-        BigDecimal totalRevenue = orderRepository.sumShippingFeeByStatus(Order.OrderStatus.DELIVERED);
+        // Calculate total revenue from paid orders only (consistent with payment request page)
+        List<Order> deliveredOrders = orderRepository.findByOrderStatusWithoutRelations(Order.OrderStatus.DELIVERED, PageRequest.of(0, Integer.MAX_VALUE)).getContent();
+        List<com.logiflow.server.models.Payment> payments = deliveredOrders.stream()
+            .flatMap(order -> paymentRepository.findByOrder(order).stream())
+            .collect(Collectors.toList());
+
+        BigDecimal totalRevenue = payments.stream()
+            .filter(p -> com.logiflow.server.models.Payment.PaymentStatus.PAID.equals(p.getPaymentStatus()))
+            .map(com.logiflow.server.models.Payment::getAmount)
+            .filter(java.util.Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         // Get fleet overview data
         int totalVehicles = (int) vehicleRepository.count();

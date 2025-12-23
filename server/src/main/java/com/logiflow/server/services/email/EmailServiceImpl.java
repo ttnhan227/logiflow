@@ -10,6 +10,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 import org.springframework.web.util.HtmlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +58,10 @@ public class EmailServiceImpl implements EmailService {
      * Send payment confirmation email
      */
     public void sendPaymentConfirmationEmail(String to, String customerName,
-            Integer orderId, BigDecimal amount, String transactionId) {
+            Integer orderId, BigDecimal amount, String transactionId, Map<String, Object> orderDetails) {
         try {
-            String subject = "Payment Confirmation - Order #" + orderId;
-            String htmlContent = buildPaymentConfirmationEmail(customerName, orderId, amount, transactionId);
+            String subject = "Payment Confirmation & Receipt - Order #" + orderId;
+            String htmlContent = buildPaymentConfirmationEmail(customerName, orderId, amount, transactionId, orderDetails);
             sendHtmlEmail(to, subject, htmlContent);
         } catch (MessagingException e) {
             throw new RuntimeException("Failed to send payment confirmation email", e);
@@ -82,47 +83,97 @@ public class EmailServiceImpl implements EmailService {
     }
 
     private String buildPaymentConfirmationEmail(String customerName, Integer orderId,
-            BigDecimal amount, String transactionId) {
+            BigDecimal amount, String transactionId, Map<String, Object> orderDetails) {
         // Escape HTML content to prevent XSS
         String escapedCustomerName = HtmlUtils.htmlEscape(customerName != null ? customerName : "Valued Customer");
         String escapedTransactionId = HtmlUtils.htmlEscape(transactionId != null ? transactionId : "N/A");
+
+        // Extract order details with safe fallbacks
+        String pickupAddress = HtmlUtils.htmlEscape(orderDetails.getOrDefault("pickupAddress", "N/A").toString());
+        String deliveryAddress = HtmlUtils.htmlEscape(orderDetails.getOrDefault("deliveryAddress", "N/A").toString());
+        String packageDetails = orderDetails.containsKey("packageDetails") && orderDetails.get("packageDetails") != null
+            ? HtmlUtils.htmlEscape(orderDetails.get("packageDetails").toString()) : "N/A";
+        String weightInfo = orderDetails.containsKey("weightTons") && orderDetails.get("weightTons") != null
+            ? orderDetails.get("weightTons").toString() + " tons" : "N/A";
+        String driverName = orderDetails.containsKey("driverName") && orderDetails.get("driverName") != null
+            ? HtmlUtils.htmlEscape(orderDetails.get("driverName").toString()) : null;
+        String vehiclePlate = orderDetails.containsKey("vehiclePlate") && orderDetails.get("vehiclePlate") != null
+            ? HtmlUtils.htmlEscape(orderDetails.get("vehiclePlate").toString()) : null;
+
+        // Format VND amount with USD equivalent for display
+        String vndAmount = String.format("%,.0f", amount);
+        BigDecimal usdAmount = amount.divide(new BigDecimal("23000"), 2, java.math.RoundingMode.HALF_UP);
+        String usdFormatted = String.format("%.2f", usdAmount);
 
         return "<!DOCTYPE html>" +
                 "<html>" +
                 "<head>" +
                 "<meta charset='UTF-8'>" +
-                "<title>Payment Confirmation</title>" +
+                "<title>Payment Confirmation & Receipt</title>" +
                 "<style>" +
                 "body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }" +
                 ".container { max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }" +
                 ".header { text-align: center; margin-bottom: 30px; }" +
                 ".logo { font-size: 24px; font-weight: bold; color: #2c3e50; }" +
-                ".payment-info { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }" +
-                ".amount { font-size: 24px; font-weight: bold; color: #27ae60; }" +
+                ".receipt-header { background-color: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; }" +
+                ".section { margin: 20px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px; }" +
+                ".section-title { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 15px; }" +
+                ".info-row { margin: 8px 0; }" +
+                ".label { font-weight: bold; color: #555; }" +
+                ".value { color: #333; }" +
+                ".amount-highlight { font-size: 20px; font-weight: bold; color: #27ae60; }" +
+                ".success-badge { background-color: #d4edda; color: #155724; padding: 8px 12px; border-radius: 20px; display: inline-block; margin: 10px 0; }" +
                 ".footer { text-align: center; margin-top: 30px; color: #7f8c8d; font-size: 12px; }" +
-                ".button { display: inline-block; padding: 12px 24px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }" +
                 "</style>" +
                 "</head>" +
                 "<body>" +
                 "<div class='container'>" +
                 "<div class='header'>" +
                 "<div class='logo'>LogiFlow</div>" +
-                "<h2>Payment Confirmation</h2>" +
                 "</div>" +
-                "<p>Dear " + escapedCustomerName + ",</p>" +
-                "<p>We're pleased to confirm that your payment has been successfully processed.</p>" +
-                "<div class='payment-info'>" +
-                "<h3>Payment Details</h3>" +
-                "<p><strong>Order ID:</strong> #" + orderId + "</p>" +
-                "<p><strong>Amount Paid:</strong> <span class='amount'>$" + amount + "</span></p>" +
-                "<p><strong>Transaction ID:</strong> " + escapedTransactionId + "</p>" +
-                "<p><strong>Date:</strong> " + LocalDate.now() + "</p>" +
+
+                "<div class='receipt-header'>" +
+                "<h1 style='margin: 0; color: #2c3e50;'>PAYMENT RECEIPT</h1>" +
+                "<h2 style='margin: 5px 0; color: #27ae60;'>Order #" + orderId + "</h2>" +
+                "<p style='margin: 10px 0; color: #666;'>Payment processed successfully</p>" +
                 "</div>" +
-                "<p>Thank you for choosing LogiFlow for your logistics needs. Your order is now being processed and will be delivered according to the scheduled timeline.</p>" +
-                "<p>If you have any questions about this payment or your order, please don't hesitate to contact our support team.</p>" +
+
+                "<div class='section'>" +
+                "<div class='section-title'>Customer Information</div>" +
+                "<div class='info-row'><span class='label'>Name:</span> <span class='value'>" + escapedCustomerName + "</span></div>" +
+                "</div>" +
+
+                "<div class='section'>" +
+                "<div class='section-title'>Order Details</div>" +
+                "<div class='info-row'><span class='label'>From:</span> <span class='value'>" + pickupAddress + "</span></div>" +
+                "<div class='info-row'><span class='label'>To:</span> <span class='value'>" + deliveryAddress + "</span></div>" +
+                "<div class='info-row'><span class='label'>Package:</span> <span class='value'>" + packageDetails + "</span></div>" +
+                "<div class='info-row'><span class='label'>Weight:</span> <span class='value'>" + weightInfo + "</span></div>" +
+                "</div>" +
+
+                "<div class='section'>" +
+                "<div class='section-title'>Payment Information</div>" +
+                "<div class='info-row'><span class='label'>Amount Paid:</span> <span class='amount-highlight'>VND " + vndAmount + " (USD $" + usdFormatted + ")</span></div>" +
+                "<div class='info-row'><span class='label'>Transaction ID:</span> <span class='value'>" + escapedTransactionId + "</span></div>" +
+                "<div class='info-row'><span class='label'>Payment Date:</span> <span class='value'>" + LocalDate.now() + "</span></div>" +
+                "<div style='text-align: center; margin-top: 15px;'><span class='success-badge'>✓ Payment Completed Successfully</span></div>" +
+                "</div>" +
+
+                (driverName != null || vehiclePlate != null ? "<div class='section'>" +
+                "<div class='section-title'>Delivery Information</div>" +
+                (driverName != null ? "<div class='info-row'><span class='label'>Driver:</span> <span class='value'>" + driverName + "</span></div>" : "") +
+                (vehiclePlate != null ? "<div class='info-row'><span class='label'>Vehicle:</span> <span class='value'>" + vehiclePlate + "</span></div>" : "") +
+                "</div>" : "") +
+
+                "<div style='margin: 30px 0; padding: 20px; background-color: #e8f5e8; border-left: 4px solid #27ae60; border-radius: 4px;'>" +
+                "<h3 style='margin: 0 0 10px 0; color: #27ae60;'>Thank you for your payment!</h3>" +
+                "<p style='margin: 0; color: #2c3e50;'>Your order is now being processed and will be delivered according to the scheduled timeline. You will receive updates on your order status.</p>" +
+                "</div>" +
+
                 "<div class='footer'>" +
-                "<p>This email was sent by LogiFlow Logistics Management System</p>" +
+                "<p>This receipt was generated by LogiFlow Logistics Management System</p>" +
                 "<p>© 2024 LogiFlow. All rights reserved.</p>" +
+                "<p>If you have any questions about this payment or your order, please don't hesitate to contact our support team.</p>" +
                 "</div>" +
                 "</div>" +
                 "</body>" +
@@ -133,6 +184,11 @@ public class EmailServiceImpl implements EmailService {
             BigDecimal amount, String paypalPaymentLink) {
         // Escape HTML content to prevent XSS
         String escapedCustomerName = HtmlUtils.htmlEscape(customerName != null ? customerName : "Valued Customer");
+
+        // Format VND amount with USD equivalent
+        String vndAmount = String.format("%,.0f", amount);
+        BigDecimal usdAmount = amount.divide(new BigDecimal("23000"), 2, java.math.RoundingMode.HALF_UP);
+        String usdFormatted = String.format("%.2f", usdAmount);
 
         return "<!DOCTYPE html>" +
                 "<html>" +
@@ -146,9 +202,10 @@ public class EmailServiceImpl implements EmailService {
                 ".logo { font-size: 24px; font-weight: bold; color: #2c3e50; }" +
                 ".payment-info { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }" +
                 ".amount { font-size: 24px; font-weight: bold; color: #e74c3c; }" +
+                ".amount-secondary { font-size: 16px; color: #6b7280; font-weight: normal; }" +
                 ".footer { text-align: center; margin-top: 30px; color: #7f8c8d; font-size: 12px; }" +
-                ".button { display: inline-block; padding: 12px 24px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }" +
-                ".button:hover { background-color: #219a52; }" +
+                ".button { display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white !important; text-decoration: none; border-radius: 5px; margin: 10px 0; }" +
+                ".button:hover { background-color: #2563eb; color: white !important; }" +
                 "</style>" +
                 "</head>" +
                 "<body>" +
@@ -162,7 +219,7 @@ public class EmailServiceImpl implements EmailService {
                 "<div class='payment-info'>" +
                 "<h3>Payment Details</h3>" +
                 "<p><strong>Order ID:</strong> #" + orderId + "</p>" +
-                "<p><strong>Amount Due:</strong> <span class='amount'>$" + amount + "</span></p>" +
+                "<p><strong>Amount Due:</strong> <span class='amount'>VND " + vndAmount + "</span> <span class='amount-secondary'>($" + usdFormatted + ")</span></p>" +
                 "<p><strong>Due Date:</strong> " + LocalDate.now().plusDays(3) + "</p>" +
                 "</div>" +
                 "<p>To complete your payment securely, please click the button below:</p>" +

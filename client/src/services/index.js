@@ -11,13 +11,13 @@ import routeService from './admin/routeService';
 import vehicleService from './admin/vehicleService';
 import reportsService from './admin/reportsService';
 import tripsOversightService from './admin/tripsOversightService';
+import paymentRequestService from './admin/paymentRequestService';
 import orderService from './dispatch/orderService';
 import dispatchDriverService from './dispatch/driverService';
 import tripService from './dispatch/tripService';
 import dispatchReportsService from './dispatch/reportsService';
 import dispatchRouteService from './dispatch/routeService';
 import dispatchVehicleService from './dispatch/vehicleService';
-import customerOrderService from './customer/orderService';
 import paymentService from './paymentService';
 import trackingClient from './trackingClient';
 import chatService from './chatService';
@@ -37,13 +37,13 @@ export {
   vehicleService,
   reportsService,
   tripsOversightService,
+  paymentRequestService,
   orderService,
   dispatchDriverService,
   tripService,
   dispatchReportsService,
   dispatchRouteService,
   dispatchVehicleService,
-  customerOrderService,
   paymentService,
   trackingClient,
   chatService,

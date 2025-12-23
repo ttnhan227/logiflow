@@ -32,6 +32,7 @@ import AdminReportsPage from "./components/admin/AdminReportsPage";
 import AdminTripsOversightPage from "./components/admin/AdminTripsOversightPage";
 import AdminTripsOversightDetailsPage from "./components/admin/AdminTripsOversightDetailsPage";
 import AdminNotificationsPage from "./components/admin/AdminNotificationsPage";
+import AdminPaymentRequestPage from "./components/admin/AdminPaymentRequestPage";
 import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import CustomerRegisterPage from "./components/auth/CustomerRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
@@ -49,11 +50,7 @@ import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchNotificationsPage from "./components/dispatch/DispatchNotificationsPage";
 import DispatchReportsPage from "./components/dispatch/DispatchReportsPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
-import CustomerLayout from "./components/customer/CustomerLayout";
-import CustomerOrdersPage from "./components/customer/CustomerOrdersPage";
-import CustomerOrderDetailPage from "./components/customer/CustomerOrderDetailPage";
-import PaymentSuccessPage from "./components/payment/PaymentSuccessPage";
-import PaymentCancelledPage from "./components/payment/PaymentCancelledPage";
+
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -171,30 +168,6 @@ function App() {
           } />
         </Route>
 
-        {/* Customer routes with CustomerLayout */}
-        <Route element={<CustomerLayout />}>
-          <Route path="/customer/orders" element={
-            <ProtectedRoute requiredRole="CUSTOMER">
-              <CustomerOrdersPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/customer/orders/:orderId" element={
-            <ProtectedRoute requiredRole="CUSTOMER">
-              <CustomerOrderDetailPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/payment/success" element={
-            <ProtectedRoute requiredRole="CUSTOMER">
-              <PaymentSuccessPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/payment/cancelled" element={
-            <ProtectedRoute requiredRole="CUSTOMER">
-              <PaymentCancelledPage />
-            </ProtectedRoute>
-          } />
-        </Route>
-
         {/* Admin routes with AdminLayout (sidebar) */}
         <Route element={<AdminSideNav />}>
           <Route path="/admin/dashboard" element={
@@ -210,6 +183,11 @@ function App() {
           <Route path="/admin/notifications" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminNotificationsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/payment-requests" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminPaymentRequestPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users" element={

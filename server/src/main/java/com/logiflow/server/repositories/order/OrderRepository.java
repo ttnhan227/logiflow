@@ -66,6 +66,14 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
     Page<Order> findByOrderStatusAndCreatedAtDate(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
+    // Find by status without relations (for admin payment review to avoid collection fetch warnings)
+    @Query("SELECT o FROM Order o WHERE o.orderStatus = :status")
+    Page<Order> findByOrderStatusWithoutRelations(@Param("status") Order.OrderStatus orderStatus, Pageable pageable);
+
+    // Find by status and date without relations
+    @Query("SELECT o FROM Order o WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
+    Page<Order> findByOrderStatusAndCreatedAtDateWithoutRelations(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
+
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.trip t " +
            "LEFT JOIN FETCH o.customer c " +

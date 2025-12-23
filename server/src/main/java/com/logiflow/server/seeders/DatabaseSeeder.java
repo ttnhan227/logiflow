@@ -13,6 +13,7 @@ import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.system.SystemSettingRepository;
+import com.logiflow.server.repositories.payment.PaymentRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -26,7 +27,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
@@ -45,6 +48,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Autowired private DriverWorkLogRepository driverWorkLogRepository;
     @Autowired private CustomerRepository customerRepository;
     @Autowired private SystemSettingRepository systemSettingRepository;
+    @Autowired private PaymentRepository paymentRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private final Random random = new Random();
@@ -139,7 +143,15 @@ public class DatabaseSeeder implements CommandLineRunner {
         tripRepository.saveAll(allTrips);           // 1. Trips first
         tripAssignmentRepository.saveAll(allAssignments); // 2. Assignments link Trip + Driver
         orderRepository.saveAll(allOrders);         // 3. Orders link Trip + Customer
-        driverWorkLogRepository.saveAll(allWorkLogs); // 4. Logs link Trip + Driver
+
+        // Create payments for delivered orders to have realistic payment data
+        List<Payment> allPayments = createPaymentsForDeliveredOrders(allOrders, allTrips);
+        paymentRepository.saveAll(allPayments);
+
+        // Save updated orders with payment status changes
+        orderRepository.saveAll(allOrders);         // 4. Save orders again with updated payment status
+
+        driverWorkLogRepository.saveAll(allWorkLogs); // 5. Logs link Trip + Driver
 
         System.out.println("Generated: " + allTrips.size() + " trips, " + allOrders.size() + " orders.");
     }
@@ -777,5 +789,58 @@ public class DatabaseSeeder implements CommandLineRunner {
         trip.setDelayReason(delayReason);
         trip.setDelayStatus(delayStatus);
         trip.setSlaExtensionMinutes(slaExtension);
+    }
+
+    private List<Payment> createPaymentsForDeliveredOrders(List<Order> allOrders, List<Trip> allTrips) {
+        List<Payment> payments = new ArrayList<>();
+
+        // Filter for delivered orders with PENDING payment status
+        List<Order> deliveredPendingOrders = allOrders.stream()
+                .filter(order -> Order.OrderStatus.DELIVERED.equals(order.getOrderStatus()) &&
+                        Order.PaymentStatus.PENDING.equals(order.getPaymentStatus()))
+                .collect(Collectors.toList());
+
+        System.out.println("Creating payments for " + deliveredPendingOrders.size() + " delivered orders with pending payments...");
+
+        for (Order order : deliveredPendingOrders) {
+            // 80% chance of having PAID status (simulating completed payments)
+            boolean shouldBePaid = random.nextInt(100) < 80;
+
+            if (shouldBePaid) {
+                Payment payment = new Payment();
+                payment.setOrder(order);
+                payment.setAmount(order.getShippingFee());
+                payment.setPaymentStatus(Payment.PaymentStatus.PAID);
+                payment.setPaymentMethod(random.nextBoolean() ? "paypal" : "cash");
+
+                // Payment created 1-7 days after order delivery
+                LocalDateTime deliveryTime = order.getTrip().getActualArrival();
+                if (deliveryTime == null) {
+                    deliveryTime = order.getTrip().getScheduledArrival();
+                }
+                if (deliveryTime != null) {
+                    int daysAfter = 1 + random.nextInt(7);
+                    payment.setCreatedAt(deliveryTime.plusDays(daysAfter));
+                    payment.setUpdatedAt(payment.getCreatedAt());
+                } else {
+                    payment.setCreatedAt(LocalDateTime.now().minusDays(random.nextInt(30)));
+                    payment.setUpdatedAt(payment.getCreatedAt());
+                }
+
+                // Set PayPal details if payment method is paypal
+                if ("paypal".equals(payment.getPaymentMethod())) {
+                    payment.setPaypalOrderId("PAY-" + order.getOrderId() + "-" + random.nextInt(100000));
+                    payment.setPaypalTransactionId("TXN-" + order.getOrderId() + "-" + random.nextInt(100000));
+                }
+
+                payments.add(payment);
+
+                // Update order payment status to PAID
+                order.setPaymentStatus(Order.PaymentStatus.PAID);
+            }
+        }
+
+        System.out.println("Created " + payments.size() + " payments for delivered orders.");
+        return payments;
     }
 }

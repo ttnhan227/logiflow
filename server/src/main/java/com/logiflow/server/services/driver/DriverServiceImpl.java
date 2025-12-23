@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.services.admin.SystemSettingsService;
+import com.logiflow.server.services.payment.PaymentService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -37,6 +38,7 @@ public class DriverServiceImpl implements DriverService {
     private final NotificationService notificationService;
     private final DeliveryConfirmationRepository deliveryConfirmationRepository;
     private final SystemSettingsService systemSettingsService;
+    private final PaymentService paymentService;
 
     public DriverServiceImpl(UserRepository userRepository,
                          DriverRepository driverRepository,
@@ -46,7 +48,8 @@ public class DriverServiceImpl implements DriverService {
                          TripAssignmentRepository tripAssignmentRepository,
                          NotificationService notificationService,
                          DeliveryConfirmationRepository deliveryConfirmationRepository,
-                         SystemSettingsService systemSettingsService) {
+                         SystemSettingsService systemSettingsService,
+                         PaymentService paymentService) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.tripRepository = tripRepository;
@@ -56,6 +59,7 @@ public class DriverServiceImpl implements DriverService {
         this.notificationService = notificationService;
         this.deliveryConfirmationRepository = deliveryConfirmationRepository;
         this.systemSettingsService = systemSettingsService;
+        this.paymentService = paymentService;
     }
 
     private String resolveDriverUsername(Integer driverId) {
@@ -450,6 +454,32 @@ public class DriverServiceImpl implements DriverService {
             trip.getOrders().forEach(order -> {
                 order.setOrderStatus(Order.OrderStatus.DELIVERED);
             });
+        }
+
+        // Send admin notification for delivered orders that need payment review
+        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+            List<Integer> pendingPaymentOrders = trip.getOrders().stream()
+                .filter(order -> order.getPaymentStatus() == Order.PaymentStatus.PENDING)
+                .map(Order::getOrderId)
+                .toList();
+
+            if (!pendingPaymentOrders.isEmpty()) {
+                String notificationMessage = String.format(
+                    "Orders delivered and ready for payment review: %s",
+                    String.join(", ", pendingPaymentOrders.stream().map(String::valueOf).toArray(String[]::new))
+                );
+
+                // Send broadcast notification to all admin users
+                notificationService.broadcastToAdminsWithAction(
+                    "ORDERS_DELIVERED",
+                    "INFO",
+                    "Orders Delivered - Payment Review Needed",
+                    notificationMessage,
+                    "/admin/payment-handling",
+                    "Review Orders",
+                    tripId
+                );
+            }
         }
 
         // Update trip status to completed

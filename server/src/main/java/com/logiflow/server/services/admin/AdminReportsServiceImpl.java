@@ -9,6 +9,7 @@ import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
+import com.logiflow.server.repositories.payment.PaymentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,16 +36,19 @@ public class AdminReportsServiceImpl implements AdminReportsService {
     private final OrderRepository orderRepository;
     private final DriverRepository driverRepository;
     private final VehicleRepository vehicleRepository;
+    private final PaymentRepository paymentRepository;
 
     public AdminReportsServiceImpl(
             TripRepository tripRepository,
             OrderRepository orderRepository,
             DriverRepository driverRepository,
-            VehicleRepository vehicleRepository) {
+            VehicleRepository vehicleRepository,
+            PaymentRepository paymentRepository) {
         this.tripRepository = tripRepository;
         this.orderRepository = orderRepository;
         this.driverRepository = driverRepository;
         this.vehicleRepository = vehicleRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     @Override
@@ -69,16 +73,28 @@ public class AdminReportsServiceImpl implements AdminReportsService {
             .average()
             .orElse(0.0);
         
-        // Calculate revenue using dashboard approach - query DELIVERED orders directly
-        BigDecimal totalRevenue = orderRepository.sumShippingFeeByStatusAndDateRange(
+        // Calculate revenue from paid orders only (consistent with payment request page)
+        List<Order> deliveredOrders = orderRepository.findByOrderStatusAndDateRange(
             Order.OrderStatus.DELIVERED, startDateTime, endDateTime);
-        
-        List<Order> completedOrders = orderRepository.findByOrderStatusAndDateRange(
-            Order.OrderStatus.DELIVERED, startDateTime, endDateTime);
-        
-        long completedOrdersCount = completedOrders.size();
-        BigDecimal avgRevenue = completedOrdersCount > 0 
-            ? totalRevenue.divide(BigDecimal.valueOf(completedOrdersCount), 2, RoundingMode.HALF_UP)
+
+        List<com.logiflow.server.models.Payment> payments = deliveredOrders.stream()
+            .flatMap(order -> paymentRepository.findByOrder(order).stream())
+            .collect(Collectors.toList());
+
+        BigDecimal totalRevenue = payments.stream()
+            .filter(p -> com.logiflow.server.models.Payment.PaymentStatus.PAID.equals(p.getPaymentStatus()))
+            .map(com.logiflow.server.models.Payment::getAmount)
+            .filter(java.util.Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long paidOrdersCount = payments.stream()
+            .filter(p -> com.logiflow.server.models.Payment.PaymentStatus.PAID.equals(p.getPaymentStatus()))
+            .map(p -> p.getOrder())
+            .distinct()
+            .count();
+
+        BigDecimal avgRevenue = paidOrdersCount > 0
+            ? totalRevenue.divide(BigDecimal.valueOf(paidOrdersCount), 2, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
         
         // Active drivers
@@ -112,20 +128,33 @@ public class AdminReportsServiceImpl implements AdminReportsService {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
 
-        // Use dashboard approach - query DELIVERED orders directly
-        BigDecimal totalRevenue = orderRepository.sumShippingFeeByStatusAndDateRange(
+        // Calculate revenue from paid orders only (consistent with payment request page)
+        List<Order> deliveredOrders = orderRepository.findByOrderStatusAndDateRange(
             Order.OrderStatus.DELIVERED, startDateTime, endDateTime);
-        
-        long totalOrders = orderRepository.findByOrderStatusAndDateRange(
-            Order.OrderStatus.DELIVERED, startDateTime, endDateTime).size();
-        
+
+        List<com.logiflow.server.models.Payment> payments = deliveredOrders.stream()
+            .flatMap(order -> paymentRepository.findByOrder(order).stream())
+            .collect(Collectors.toList());
+
+        BigDecimal totalRevenue = payments.stream()
+            .filter(p -> com.logiflow.server.models.Payment.PaymentStatus.PAID.equals(p.getPaymentStatus()))
+            .map(com.logiflow.server.models.Payment::getAmount)
+            .filter(java.util.Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long paidOrdersCount = payments.stream()
+            .filter(p -> com.logiflow.server.models.Payment.PaymentStatus.PAID.equals(p.getPaymentStatus()))
+            .map(p -> p.getOrder())
+            .distinct()
+            .count();
+
         // Get completed trips for vehicle analysis
         List<Trip> completedTrips = tripRepository.findByStatusAndScheduledDepartureBetween(
             "completed", startDateTime, endDateTime);
         long totalTrips = completedTrips.size();
-        
-        double avgCostPerTrip = totalOrders > 0 
-            ? totalRevenue.divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP).doubleValue()
+
+        double avgCostPerTrip = paidOrdersCount > 0
+            ? totalRevenue.divide(BigDecimal.valueOf(paidOrdersCount), 2, RoundingMode.HALF_UP).doubleValue()
             : 0.0;
         
         // Vehicle statistics
@@ -336,11 +365,21 @@ public class AdminReportsServiceImpl implements AdminReportsService {
                 long completed = dayTrips.stream().filter(t -> "completed".equals(t.getStatus())).count();
                 long cancelled = dayTrips.stream().filter(t -> "cancelled".equals(t.getStatus())).count();
                 
-                // Calculate revenue from DELIVERED orders for this day
+                // Calculate revenue from paid orders only for this day
                 LocalDateTime dayStart = date.atStartOfDay();
                 LocalDateTime dayEnd = date.atTime(LocalTime.MAX);
-                BigDecimal revenue = orderRepository.sumShippingFeeByStatusAndDateRange(
+                List<Order> dayDeliveredOrders = orderRepository.findByOrderStatusAndDateRange(
                     Order.OrderStatus.DELIVERED, dayStart, dayEnd);
+
+                List<com.logiflow.server.models.Payment> dayPayments = dayDeliveredOrders.stream()
+                    .flatMap(order -> paymentRepository.findByOrder(order).stream())
+                    .collect(Collectors.toList());
+
+                BigDecimal revenue = dayPayments.stream()
+                    .filter(p -> com.logiflow.server.models.Payment.PaymentStatus.PAID.equals(p.getPaymentStatus()))
+                    .map(com.logiflow.server.models.Payment::getAmount)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
                 
                 double avgTime = dayTrips.stream()
                     .filter(t -> t.getActualArrival() != null && t.getScheduledDeparture() != null)

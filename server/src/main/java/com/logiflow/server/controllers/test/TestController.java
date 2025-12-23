@@ -11,7 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/test")
-public class NotificationTestController {
+public class TestController {
 
     @Autowired
     private NotificationService notificationService;

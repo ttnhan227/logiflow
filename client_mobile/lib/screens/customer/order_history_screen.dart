@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/customer/customer_service.dart';
 import '../../models/customer/order_history.dart';
+import 'order_receipt_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -226,70 +227,38 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                               ),
                             ),
                           ],
-                          if (order.paymentStatus != null) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                          // Payment Status with contextual messaging
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: order.paymentStatus!.toUpperCase() == 'PAID'
-                                        ? Colors.green[100]
-                                        : Colors.orange[100],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: order.paymentStatus!.toUpperCase() == 'PAID'
-                                          ? Colors.green[300]!
-                                          : Colors.orange[300]!,
-                                    ),
-                                  ),
+                                Icon(
+                                  _getPaymentStatusIcon(order.paymentStatus),
+                                  size: 20,
+                                  color: _getPaymentStatusColor(order.paymentStatus),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
                                   child: Text(
-                                    order.paymentStatus!.toUpperCase() == 'PAID' ? 'Paid' : 'Pending',
+                                    _getPaymentStatusMessage(order.paymentStatus),
                                     style: TextStyle(
                                       fontSize: 12,
+                                      color: _getPaymentStatusColor(order.paymentStatus),
                                       fontWeight: FontWeight.w500,
-                                      color: order.paymentStatus!.toUpperCase() == 'PAID'
-                                          ? Colors.green[700]
-                                          : Colors.orange[700],
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                          // Professional message for delivered orders
-                          if (order.orderStatus.toUpperCase() == 'DELIVERED') ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue[200]!),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(
-                                    Icons.email,
-                                    size: 20,
-                                    color: Colors.blue,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Please check your email for invoice, receipt, and delivery confirmation details.',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.blue,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -367,20 +336,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              TextButton.icon(
-                                onPressed: () {
-                                  // Could navigate to order detail or rate driver
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Order details coming soon',
+                              // Only show View Receipt button for paid orders
+                              if (order.orderStatus.toUpperCase() == 'DELIVERED' &&
+                                  order.paymentStatus?.toUpperCase() == 'PAID')
+                                TextButton.icon(
+                                  onPressed: () {
+                                    // Navigate to receipt screen for paid orders
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => OrderReceiptScreen(orderId: order.orderId),
                                       ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.receipt, size: 16),
-                                label: Text(_getActionText(order.orderStatus)),
-                              ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.receipt, size: 16),
+                                  label: const Text('View Receipt'),
+                                ),
                             ],
                           ),
                         ],
@@ -459,6 +430,70 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         return 'View Details';
       default:
         return 'View Details';
+    }
+  }
+
+  // Payment status helper methods
+  Color _getPaymentStatusColor(String? paymentStatus) {
+    if (paymentStatus == null) {
+      return Colors.grey;
+    }
+
+    switch (paymentStatus.toUpperCase()) {
+      case 'PAID':
+        return Colors.green;
+      case 'PENDING':
+        return Colors.blue;
+      case 'FAILED':
+        return Colors.red;
+      case 'CANCELLED':
+        return Colors.red;
+      case 'REFUNDED':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getPaymentStatusIcon(String? paymentStatus) {
+    if (paymentStatus == null) {
+      return Icons.info_outline;
+    }
+
+    switch (paymentStatus.toUpperCase()) {
+      case 'PAID':
+        return Icons.check_circle;
+      case 'PENDING':
+        return Icons.email;
+      case 'FAILED':
+        return Icons.error;
+      case 'CANCELLED':
+        return Icons.cancel;
+      case 'REFUNDED':
+        return Icons.replay;
+      default:
+        return Icons.info_outline;
+    }
+  }
+
+  String _getPaymentStatusMessage(String? paymentStatus) {
+    if (paymentStatus == null) {
+      return 'Please check your email for payment info';
+    }
+
+    switch (paymentStatus.toUpperCase()) {
+      case 'PAID':
+        return 'Payment received - your order is now complete';
+      case 'PENDING':
+        return 'Payment processed - please check your email for invoice and payment details';
+      case 'FAILED':
+        return 'Payment failed - please contact support';
+      case 'CANCELLED':
+        return 'Payment cancelled';
+      case 'REFUNDED':
+        return 'Payment refunded';
+      default:
+        return 'Please check your email for payment info';
     }
   }
 }

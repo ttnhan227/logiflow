@@ -444,7 +444,7 @@ const AdminDashboardPage = () => {
                 ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(fleetOverview.totalRevenue)
                 : '₫0'}
             </div>
-            <div className="stat-subtitle">From {shipmentStatistics?.completed || 0} completed orders</div>
+            <div className="stat-subtitle">From paid orders</div>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.payment.PaymentRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.email.EmailService;
+import com.logiflow.server.websocket.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * Send payment request email to customer with PayPal link
@@ -105,6 +109,20 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentLink
             );
 
+            // Send push notification to customer
+            try {
+                notificationService.sendOrderNotification(
+                    order.getCustomer().getUserId(),
+                    orderId,
+                    "PAYMENT_REQUEST",
+                    "Payment request sent for Order #" + orderId + ". Check your email for PayPal payment link.",
+                    "PENDING"
+                );
+            } catch (Exception notificationError) {
+                logger.warn("Failed to send payment request notification for order {}: {}", orderId, notificationError.getMessage());
+                // Don't fail the payment request if notification fails
+            }
+
         } catch (Exception e) {
             logger.error("Failed to send payment request email for order {}: {}. Payment will continue without email.", orderId, e.getMessage(), e);
             // Don't throw exception - allow payment to continue even if email fails
@@ -147,15 +165,26 @@ public class PaymentServiceImpl implements PaymentService {
             order.setPaymentUpdatedAt(LocalDateTime.now());
             orderRepository.save(order);
 
-            // Send payment confirmation email (don't fail payment if email fails)
+            // Send payment confirmation email with detailed receipt (don't fail payment if email fails)
             if (order.getCustomer() != null) {
                 try {
+                    // Gather order details for comprehensive receipt
+                    Map<String, Object> orderDetails = new java.util.HashMap<>();
+                    orderDetails.put("pickupAddress", order.getPickupAddress() != null ? order.getPickupAddress() : "N/A");
+                    orderDetails.put("deliveryAddress", order.getDeliveryAddress() != null ? order.getDeliveryAddress() : "N/A");
+                    orderDetails.put("packageDetails", order.getPackageDetails() != null ? order.getPackageDetails() : "N/A");
+                    orderDetails.put("weightTons", order.getWeightTons() != null ? order.getWeightTons() : null);
+
+                    // Note: Driver and vehicle info could be added here if available in Order model
+                    // For now, we'll focus on the core order details
+
                     emailService.sendPaymentConfirmationEmail(
                         order.getCustomer().getEmail(),
                         order.getCustomerName(),
                         orderId,
                         order.getShippingFee(),
-                        transactionId
+                        transactionId,
+                        orderDetails
                     );
                 } catch (Exception emailError) {
                     logger.error("Failed to send payment confirmation email for order {}: {}. Payment completed successfully.", orderId, emailError.getMessage(), emailError);

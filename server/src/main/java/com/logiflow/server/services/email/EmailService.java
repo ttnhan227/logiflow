@@ -2,6 +2,7 @@ package com.logiflow.server.services.email;
 
 import jakarta.mail.MessagingException;
 import java.math.BigDecimal;
+import java.util.Map;
 
 public interface EmailService {
     /**
@@ -18,7 +19,8 @@ public interface EmailService {
      * Send payment confirmation email
      */
     void sendPaymentConfirmationEmail(String to, String customerName,
-            Integer orderId, BigDecimal amount, String transactionId);
+            Integer orderId, BigDecimal amount, String transactionId,
+            Map<String, Object> orderDetails);
 
     /**
      * Send payment request email with PayPal link
