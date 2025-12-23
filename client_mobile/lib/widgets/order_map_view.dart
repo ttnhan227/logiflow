@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../services/maps/maps_service.dart';
+
 import '../models/customer/order.dart';
 import '../models/customer/order_tracking.dart';
+import '../services/maps/maps_service.dart';
 
 class OrderMapView extends StatefulWidget {
   final Order order;
@@ -20,60 +21,183 @@ class OrderMapView extends StatefulWidget {
 }
 
 class _OrderMapViewState extends State<OrderMapView> {
-  List<LatLng> routePoints = [];
-  bool _loadingRoute = true;
+  final MapController _mapController = MapController();
+
+  bool _loading = true;
+
   LatLng? _driverLocation;
   LatLng? _pickupLocation;
   LatLng? _deliveryLocation;
 
+  // follow driver
+  double _currentZoom = 15.0;
+  bool _userMovedMap = false;
+
+  String? _lastPickupAddr;
+  String? _lastDeliveryAddr;
+  bool _geocoding = false;
+
   @override
   void initState() {
     super.initState();
-    _loadOrderData();
+    _initMapData();
   }
 
   @override
-  void didUpdateWidget(OrderMapView oldWidget) {
+  void didUpdateWidget(covariant OrderMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // tracking đổi -> chỉ follow driver
     if (widget.tracking != oldWidget.tracking) {
-      _updateDriverLocation();
+      _updateDriverLocationAndFollow();
+    }
+
+    // address đổi (hiếm) -> mới geocode lại
+    if (widget.order.pickupAddress != oldWidget.order.pickupAddress ||
+        widget.order.deliveryAddress != oldWidget.order.deliveryAddress) {
+      _ensurePickupDeliveryGeocoded();
     }
   }
 
-  void _updateDriverLocation() {
-    if (widget.tracking?.currentLat != null && widget.tracking?.currentLng != null) {
-      setState(() {
-        _driverLocation = LatLng(widget.tracking!.currentLat!, widget.tracking!.currentLng!);
-      });
-    } else {
-      setState(() => _driverLocation = null);
-    }
+  Future<void> _initMapData() async {
+    _updateDriverLocationAndFollow(animate: false);
+    await _geocodePickupDelivery();
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    // sau khi có pickup/delivery/driver -> fit bounds cho đẹp
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fitBoundsIfPossible());
   }
 
   Future<void> _loadOrderData() async {
-    // For now, we'll work with addresses and show points statically
-    // In a real implementation, you'd geocode addresses to coordinates
-    // or ensure the backend provides coordinates
+    // update driver nhẹ
+    _updateDriverLocationAndFollow(animate: false);
 
-    // Update driver location from tracking
-    _updateDriverLocation();
+    // geocode pickup/delivery 1 lần (hoặc khi address đổi)
+    await _ensurePickupDeliveryGeocoded();
 
-    // If order has coordinates (if available from backend), use them
-    // For now, just focus on driver location tracking
-
-    setState(() => _loadingRoute = false);
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
-  LatLngBounds _calculateBounds() {
-    final points = <LatLng>[];
+  void _updateDriverLocationAndFollow({bool animate = true}) {
+    final lat = widget.tracking?.currentLat;
+    final lng = widget.tracking?.currentLng;
 
+    if (lat == null || lng == null) {
+      setState(() => _driverLocation = null);
+      return;
+    }
+
+    final newLoc = LatLng(lat, lng);
+    final changed = _driverLocation == null ||
+        _driverLocation!.latitude != newLoc.latitude ||
+        _driverLocation!.longitude != newLoc.longitude;
+
+    if (!changed) return;
+
+    setState(() => _driverLocation = newLoc);
+
+    // ✅ auto-follow trừ khi user đã kéo map
+    if (!_userMovedMap && animate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(newLoc, _currentZoom);
+      });
+    }
+  }
+
+  Future<void> _geocodePickupDelivery() async {
+    final pickupAddr = (widget.order.pickupAddress ?? '').trim();
+    final deliveryAddr = (widget.order.deliveryAddress ?? '').trim();
+
+    // Chống bắn lại nhiều lần
+    // Nếu đã có location rồi và address không đổi, thì bỏ qua (didUpdateWidget đã check)
+    try {
+      if (pickupAddr.isNotEmpty) {
+        final p = await mapsService.geocodeAddress(pickupAddr);
+        if (p != null) {
+          _pickupLocation = LatLng(p.latitude, p.longitude);
+        } else {
+          _pickupLocation = null;
+        }
+      } else {
+        _pickupLocation = null;
+      }
+
+      if (deliveryAddr.isNotEmpty) {
+        final d = await mapsService.geocodeAddress(deliveryAddr);
+        if (d != null) {
+          _deliveryLocation = LatLng(d.latitude, d.longitude);
+        } else {
+          _deliveryLocation = null;
+        }
+      } else {
+        _deliveryLocation = null;
+      }
+
+      if (mounted) setState(() {});
+    } catch (_) {
+      // im lặng: không để fail map
+    }
+  }
+
+  Future<void> _ensurePickupDeliveryGeocoded() async {
+    if (_geocoding) return;
+
+    final pickupAddr = (widget.order.pickupAddress ?? '').trim();
+    final deliveryAddr = (widget.order.deliveryAddress ?? '').trim();
+
+    final pickupUnchanged = pickupAddr == _lastPickupAddr;
+    final deliveryUnchanged = deliveryAddr == _lastDeliveryAddr;
+    if (pickupUnchanged && deliveryUnchanged) return;
+
+    _geocoding = true;
+    try {
+      if (!pickupUnchanged) {
+        _lastPickupAddr = pickupAddr;
+        if (pickupAddr.isNotEmpty) {
+          final p = await mapsService.geocodeAddress(pickupAddr);
+          _pickupLocation = (p != null) ? LatLng(p.latitude, p.longitude) : null;
+        } else {
+          _pickupLocation = null;
+        }
+      }
+
+      if (!deliveryUnchanged) {
+        _lastDeliveryAddr = deliveryAddr;
+        if (deliveryAddr.isNotEmpty) {
+          final d = await mapsService.geocodeAddress(deliveryAddr);
+          _deliveryLocation = (d != null) ? LatLng(d.latitude, d.longitude) : null;
+        } else {
+          _deliveryLocation = null;
+        }
+      }
+    } catch (_) {
+      // ignore
+    } finally {
+      _geocoding = false;
+    }
+
+    if (mounted) setState(() {});
+  }
+
+  void _fitBoundsIfPossible() {
+    final points = <LatLng>[];
     if (_driverLocation != null) points.add(_driverLocation!);
     if (_pickupLocation != null) points.add(_pickupLocation!);
     if (_deliveryLocation != null) points.add(_deliveryLocation!);
 
-    if (points.isEmpty) return LatLngBounds(LatLng(0, 0), LatLng(0, 0));
+    if (points.length < 2) return;
 
-    return LatLngBounds.fromPoints(points);
+    final bounds = LatLngBounds.fromPoints(points);
+    // fitCamera có trong flutter_map bản mới
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.all(30),
+      ),
+    );
   }
 
   Color _getStatusColor(String status) {
@@ -91,7 +215,7 @@ class _OrderMapViewState extends State<OrderMapView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loadingRoute) {
+    if (_loading) {
       return const Card(
         child: SizedBox(
           height: 300,
@@ -100,155 +224,164 @@ class _OrderMapViewState extends State<OrderMapView> {
       );
     }
 
+    final status =
+        widget.tracking?.orderStatus ?? widget.order.orderStatus ?? 'PENDING';
+
+    final center = _driverLocation ??
+        _pickupLocation ??
+        _deliveryLocation ??
+        const LatLng(10.762622, 106.660172);
+
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // header
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
                 const Icon(Icons.map, size: 20),
                 const SizedBox(width: 8),
-                const Text('Order Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Order Location',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(widget.order.orderStatus ?? 'PENDING'),
+                    color: _getStatusColor(status),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    widget.tracking?.orderStatus ?? widget.order.orderStatus ?? 'PENDING',
+                    status,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                 ),
               ],
             ),
           ),
+
+          // map
           SizedBox(
             height: 300,
             child: FlutterMap(
+              mapController: _mapController,
               options: MapOptions(
-                initialCenter: _driverLocation ?? LatLng(10.762622, 106.660172), // Default to Ho Chi Minh City
-                initialZoom: 12.0,
+                initialCenter: center,
+                initialZoom:
+                (_driverLocation != null || _pickupLocation != null || _deliveryLocation != null)
+                    ? 15.0
+                    : 12.0,
                 maxZoom: 18.0,
                 minZoom: 8.0,
+                onPositionChanged: (pos, hasGesture) {
+                  if (hasGesture) _userMovedMap = true;
+                  if (pos.zoom != null) _currentZoom = pos.zoom!;
+                },
               ),
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.logiflow.client_mobile',
+                  errorTileCallback: (tile, error, stackTrace) {
+                    debugPrint('TILE ERROR: $error');
+                  },
                 ),
+
                 MarkerLayer(
                   markers: [
-                    // Driver location marker (only show if tracking available)
                     if (_driverLocation != null)
                       Marker(
                         point: _driverLocation!,
                         width: 50,
                         height: 50,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.blue, width: 3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                spreadRadius: 1,
-                                blurRadius: 3,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.local_shipping,
-                            color: Colors.blue,
-                            size: 24,
-                          ),
+                        child: _circleIcon(
+                          icon: Icons.local_shipping,
+                          borderColor: Colors.blue,
+                          iconColor: Colors.blue,
                         ),
                       ),
-                    // Pickup location marker (placeholder - would need geocoding)
-                    Marker(
-                      point: LatLng(10.762622, 106.660172), // Example coordinates
-                      width: 40,
-                      height: 40,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.green, width: 2),
-                        ),
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.green,
-                          size: 20,
+
+                    if (_pickupLocation != null)
+                      Marker(
+                        point: _pickupLocation!,
+                        width: 40,
+                        height: 40,
+                        child: _circleIcon(
+                          icon: Icons.location_on,
+                          borderColor: Colors.green,
+                          iconColor: Colors.green,
                         ),
                       ),
-                    ),
-                    // Delivery location marker (placeholder - would need geocoding)
-                    Marker(
-                      point: LatLng(10.762622, 106.665172), // Example coordinates
-                      width: 40,
-                      height: 40,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.red, width: 2),
-                        ),
-                        child: const Icon(
-                          Icons.flag,
-                          color: Colors.red,
-                          size: 20,
+
+                    if (_deliveryLocation != null)
+                      Marker(
+                        point: _deliveryLocation!,
+                        width: 40,
+                        height: 40,
+                        child: _circleIcon(
+                          icon: Icons.flag,
+                          borderColor: Colors.red,
+                          iconColor: Colors.red,
                         ),
                       ),
-                    ),
                   ],
                 ),
-                if (routePoints.isNotEmpty)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: routePoints,
-                        strokeWidth: 4.0,
-                        color: Colors.blue.shade300,
-                      ),
-                    ],
-                  ),
               ],
             ),
           ),
-          if (_driverLocation != null || routePoints.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  if (_driverLocation != null) ...[
-                    const Icon(Icons.local_shipping, size: 16, color: Colors.blue),
-                    const SizedBox(width: 4),
-                    const Text('Driver location available', style: TextStyle(fontSize: 12)),
-                  ],
-                  if (routePoints.isNotEmpty) ...[
-                    const Spacer(),
-                    const Icon(Icons.route, size: 16),
-                    const SizedBox(width: 4),
-                    Text('${routePoints.length} route points', style: TextStyle(fontSize: 12)),
-                  ],
+
+          // footer info
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                if (_driverLocation != null) ...[
+                  const Icon(Icons.local_shipping, size: 16, color: Colors.blue),
+                  const SizedBox(width: 4),
+                  const Text('Driver location available',
+                      style: TextStyle(fontSize: 12)),
+                ] else ...[
+                  const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  const Expanded(
+                    child: Text(
+                      'Driver location not available yet.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
                 ],
-              ),
-            ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Text(
-              'Note: This is a preview implementation. Actual map shows real-time driver location and order points.',
-              style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
-              textAlign: TextAlign.center,
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _circleIcon({
+    required IconData icon,
+    required Color borderColor,
+    required Color iconColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: iconColor, size: 22),
     );
   }
 }

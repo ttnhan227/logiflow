@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'package:flutter/material.dart';
 import '../../services/customer/customer_service.dart';
 import '../../models/customer/order.dart';
@@ -117,249 +121,214 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error: $_error', textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refresh,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : _orders.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.inventory_2_outlined,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No orders found',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Create your first order to track it here',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            )
           : RefreshIndicator(
               onRefresh: _refresh,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _orders.length,
-                itemBuilder: (context, index) {
-                  final order = _orders[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                OrderDetailScreen(orderId: order.orderId),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Order #${order.orderId}',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '${_getStatusColor(order.orderStatus)} ${order.orderStatus}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: _getStatusTextColor(
-                                      order.orderStatus,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'From: ${order.pickupAddress}',
-                              style: TextStyle(color: Colors.grey[600]),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'To: ${order.deliveryAddress}',
-                              style: TextStyle(color: Colors.grey[600]),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 12),
-                            // Specifications Row - Keep essential only
-                            Row(
-                              children: [
-                                if (order.weightTons != null)
-                                  Expanded(
-                                    child: Text(
-                                      '${order.weightTons!.toStringAsFixed(1)}t',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                if (order.distanceKm != null)
-                                  Expanded(
-                                    child: Text(
-                                      '${order.distanceKm!.toStringAsFixed(0)}km',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                if (order.packageValue != null)
-                                  Expanded(
-                                    child: Text(
-                                      'VND ${order.packageValue!.toStringAsFixed(0)}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            // Footer Row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Created: ${_formatDate(order.createdAt)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (order.tripStatus != null &&
-                                order.estimatedDeliveryTime != null) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 16,
-                                    color: Colors.blue[600],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'ETA: ${_formatDateTime(order.estimatedDeliveryTime!)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue[600],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+              child: _error != null
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.25,
+                        ),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Error: $_error',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _refresh,
+                                child: const Text('Retry'),
                               ),
                             ],
-                            // Trip Delay Information (affects entire trip, not just this order)
-                            if (order.delayReason != null &&
-                                order.delayReason!.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange[50],
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.orange[200]!,
-                                  ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : _orders.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 160),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'No orders found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.warning_amber,
-                                          size: 16,
-                                          color: Colors.orange[700],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Create your first order to track it here',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _orders.length,
+                      itemBuilder: (context, index) {
+                        final order = _orders[index];
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      OrderDetailScreen(orderId: order.orderId),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Order #${order.orderId}',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            'Trip Delay Reported',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.orange[800],
-                                            ),
+                                      ),
+                                      Text(
+                                        '${_getStatusColor(order.orderStatus ?? '')} ${order.orderStatus ?? ''}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: _getStatusTextColor(
+                                            order.orderStatus ?? '',
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'This delay affects your entire trip. ${order.delayReason}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.orange[900],
+                                      ),
+                                    ],
+                                  ),
+
+                                  // ✅ Delay banner nên để ngay đây (customer thấy liền)
+                                  if (order.delayReason != null &&
+                                      order.delayReason!.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange[50],
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.orange[200]!,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            Icons.warning_amber,
+                                            size: 16,
+                                            color: Colors.orange[700],
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              order.delayReason!,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.orange[900],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => OrderDetailScreen(
-                                        orderId: order.orderId,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.visibility, size: 16),
-                                label: const Text('View Details'),
+
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'From: ${order.pickupAddress}',
+                                    style: TextStyle(color: Colors.grey[600]),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'To: ${order.deliveryAddress}',
+                                    style: TextStyle(color: Colors.grey[600]),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      if (order.weightTons != null)
+                                        Expanded(
+                                          child: Text(
+                                            '${order.weightTons!.toStringAsFixed(1)}t',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                      if (order.distanceKm != null)
+                                        Expanded(
+                                          child: Text(
+                                            '${order.distanceKm!.toStringAsFixed(0)}km',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                      if (order.packageValue != null)
+                                        Expanded(
+                                          child: Text(
+                                            'VND ${order.packageValue!.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
     );
   }
@@ -427,42 +396,96 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
-  late Future<dynamic> _orderFuture;
+  // Load order + initial tracking ONCE (FutureBuilder chỉ dùng lần đầu)
+  late Future<List<dynamic>> _initialFuture;
+
+  Order? _order;
+  TrackOrderResponse? _tracking;
+
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadOrderData();
+    _initialFuture = _fetchInitial();
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Follow driver screen pattern - refresh when returning to this screen
-    // Customers should see updated order tracking status
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        // Force refresh of order data when returning to screen
-        setState(() {
-          _loadOrderData();
-        });
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<List<dynamic>> _fetchInitial() async {
+    final results = await Future.wait([
+      customerService.getOrderById(widget.orderId),
+      customerService.trackOrder(widget.orderId),
+    ]);
+
+    _order = results[0] as Order;
+    _tracking = results[1] as TrackOrderResponse;
+
+    _startPollingTrackingOnly(); // ✅ chỉ poll tracking, KHÔNG reset FutureBuilder
+
+    return results;
+  }
+
+  void _startPollingTrackingOnly() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (!mounted) return;
+      try {
+        final t = await customerService.trackOrder(widget.orderId);
+        if (!mounted) return;
+        setState(() => _tracking = t);
+      } catch (_) {
+        // ignore
       }
     });
   }
 
-  void _loadOrderData() {
-    _orderFuture = Future.wait([
-      customerService.getOrderById(widget.orderId),
-      customerService.trackOrder(widget.orderId),
-    ]);
+  Future<void> _callDriver(String phone) async {
+    final raw = phone.trim();
+    if (raw.isEmpty) return;
+
+    final sanitized = raw.replaceAll(RegExp(r'[^\d+]'), '');
+    final uri = Uri(scheme: 'tel', path: sanitized);
+
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This device cannot open the dialer')),
+      );
+    }
+  }
+
+  Future<void> _copyPhone(String phone) async {
+    final trimmed = phone.trim();
+    if (trimmed.isEmpty) return;
+
+    await Clipboard.setData(ClipboardData(text: trimmed));
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Phone number copied')));
+  }
+
+  Future<void> _retry() async {
+    _pollTimer?.cancel();
+    setState(() {
+      _order = null;
+      _tracking = null;
+      _initialFuture = _fetchInitial();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Order #${widget.orderId}')),
-      body: FutureBuilder(
-        future: _orderFuture,
+      body: FutureBuilder<List<dynamic>>(
+        future: _initialFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -475,27 +498,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 children: [
                   const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
+                  Text('Error: ${snapshot.error}', textAlign: TextAlign.center),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => setState(_loadOrderData),
-                    child: const Text('Retry'),
-                  ),
+                  ElevatedButton(onPressed: _retry, child: const Text('Retry')),
                 ],
               ),
             );
           }
 
-          final data = snapshot.data as List;
-          final order = data[0] as Order;
-          final tracking = data[1] as TrackOrderResponse;
+          // ✅ Sau lần đầu: ưu tiên dùng state (_order/_tracking) để không reset map
+          final order = _order ?? snapshot.data![0] as Order;
+          final tracking = _tracking ?? snapshot.data![1] as TrackOrderResponse;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Add the order map view at the top
+                // ✅ Map dùng tracking đang poll -> marker nhúc nhích
                 OrderMapView(order: order, tracking: tracking),
                 const SizedBox(height: 16),
                 _buildOrderCard(order, tracking),
@@ -548,11 +568,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               Text(order.packageDetails!),
             ],
             const SizedBox(height: 16),
-            if (order.weightTons != null)
-              _buildInfoRow(
-                'Weight',
-                '${order.weightTons?.toStringAsFixed(1)} t',
-              ),
             if (order.packageValue != null)
               _buildInfoRow(
                 'Package Value',
@@ -570,6 +585,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildTrackingCard(TrackOrderResponse tracking) {
+    final phone = (tracking.driverPhone ?? '').trim();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -584,13 +601,37 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _buildInfoRow('Status', tracking.orderStatus),
             if (tracking.tripStatus != null)
               _buildInfoRow('Trip Status', tracking.tripStatus!),
-            if (tracking.driverName != null) ...[
+            if (tracking.driverName != null)
               _buildInfoRow('Driver', tracking.driverName!),
-              if (tracking.driverPhone != null)
-                _buildInfoRow('Driver Phone', tracking.driverPhone!),
-              if (tracking.vehiclePlate != null)
-                _buildInfoRow('Vehicle', tracking.vehiclePlate!),
+            if (phone.isNotEmpty) _buildInfoRow('Driver Phone', phone),
+            if (tracking.vehiclePlate != null)
+              _buildInfoRow('Vehicle', tracking.vehiclePlate!),
+
+            // ✅ Call + Copy
+            if (phone.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _callDriver(phone),
+                      icon: const Icon(Icons.call),
+                      label: const Text('Call Driver'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _copyPhone(phone),
+                      icon: const Icon(Icons.copy),
+                      label: const Text('Copy Phone'),
+                    ),
+                  ),
+                ],
+              ),
             ],
+
+            // Status history (nếu có)
             if (tracking.statusHistory.isNotEmpty) ...[
               const SizedBox(height: 16),
               const Text(
@@ -634,7 +675,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 110,
             child: Text(
               '$label:',
               style: const TextStyle(fontWeight: FontWeight.w500),
@@ -642,6 +683,137 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
           Expanded(child: Text(value)),
         ],
+      ),
+    );
+  }
+}
+
+class OrderCard extends StatelessWidget {
+  const OrderCard({super.key, required this.order, required this.onTap});
+
+  final OrderSummary order;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDelay =
+        order.delayReason != null && order.delayReason!.trim().isNotEmpty;
+
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 🔶 DELAY BANNER
+              if (hasDelay) ...[
+                _DelayBanner(text: order.delayReason!),
+                const SizedBox(height: 10),
+              ],
+
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Order #${order.orderId}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  _StatusPill(text: order.orderStatus),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+              Text('Pickup: ${order.pickupAddress}'),
+              const SizedBox(height: 4),
+              Text('Delivery: ${order.deliveryAddress}'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DelayBanner extends StatelessWidget {
+  const _DelayBanner({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        border: Border.all(color: Colors.orange.shade300),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.orange.shade800,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.text});
+
+  final String text;
+
+  Color _color(String s) {
+    switch (s.toUpperCase()) {
+      case 'DELIVERED':
+        return Colors.green;
+      case 'IN_TRANSIT':
+        return Colors.orange;
+      case 'ASSIGNED':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _color(text);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: c,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

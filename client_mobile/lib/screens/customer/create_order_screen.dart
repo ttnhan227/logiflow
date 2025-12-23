@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../services/customer/customer_service.dart';
 import '../../services/maps/maps_service.dart';
 import '../../models/customer/order.dart';
 import '../../models/customer/customer_profile.dart';
+import 'dart:async';
+import '../../models/picked_location.dart';
+import 'map_selection_screen.dart';
+import 'track_orders_screen.dart';
 
 class AddressSuggestion extends StatelessWidget {
   final String address;
@@ -47,6 +53,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   bool _isLoading = false;
   bool _isInitializing = true;
 
+  // Order creation success state
+  bool _orderCreated = false;
+  int? _createdOrderId;
+
   // Address suggestions state
   List<String> _pickupSuggestions = [];
   List<String> _deliverySuggestions = [];
@@ -64,6 +74,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   // Distance calculation debouncing
   bool _isDistanceCalculationInProgress = false;
+
+  Timer? _pickupDebounce;
+  Timer? _deliveryDebounce;
+
+  // Geocoding state
+  double? _pickupLat, _pickupLng;
+  double? _deliveryLat, _deliveryLng;
+
+  bool _pickupGeocoding = false;
+  bool _deliveryGeocoding = false;
+
+  // để biết đang chọn pickup hay delivery khi mở map
+  bool _pickingPickup = true;
 
   @override
   void didChangeDependencies() {
@@ -177,7 +200,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         return AlertDialog(
           title: const Text('Use Your Address?'),
           content: Text(
-            'Would you like to use your saved address as the pickup location?\n\n"${_customerProfile!.address}"'
+            'Would you like to use your saved address as the pickup location?\n\n"${_customerProfile!.address}"',
           ),
           actions: [
             TextButton(
@@ -211,7 +234,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final pickupAddress = _pickupAddressController.text.trim();
     final deliveryAddress = _deliveryAddressController.text.trim();
 
-    if (pickupAddress.isEmpty || deliveryAddress.isEmpty || _isDistanceCalculationInProgress) {
+    if (pickupAddress.isEmpty ||
+        deliveryAddress.isEmpty ||
+        _isDistanceCalculationInProgress) {
       return;
     }
 
@@ -219,7 +244,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     setState(() => _isCalculatingDistance = true);
 
     try {
-      final result = await mapsService.calculateDistance(pickupAddress, deliveryAddress);
+      final result = await mapsService.calculateDistance(
+        pickupAddress,
+        deliveryAddress,
+      );
       if (mounted && result != null) {
         setState(() {
           _calculatedDistance = result.totalDistance;
@@ -246,8 +274,117 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
+  Future<void> _setPickupAddress(String address) async {
+    _pickupAddressController.text = address;
+    _pickupAddressController.selection = TextSelection.fromPosition(
+      TextPosition(offset: address.length),
+    );
+
+    setState(() {
+      _pickupLat = null;
+      _pickupLng = null;
+      _pickupGeocoding = true;
+    });
+
+    try {
+      final geo = await mapsService.geocodeAddress(address);
+      if (!mounted) return;
+      setState(() {
+        _pickupLat = geo?.latitude;
+        _pickupLng = geo?.longitude;
+      });
+    } catch (_) {
+      // cứ để null, lát submit sẽ báo
+    } finally {
+      if (!mounted) return;
+      setState(() => _pickupGeocoding = false);
+    }
+  }
+
+  Future<void> _setDeliveryAddress(String address) async {
+    _deliveryAddressController.text = address;
+    _deliveryAddressController.selection = TextSelection.fromPosition(
+      TextPosition(offset: address.length),
+    );
+
+    setState(() {
+      _deliveryLat = null;
+      _deliveryLng = null;
+      _deliveryGeocoding = true;
+    });
+
+    try {
+      final geo = await mapsService.geocodeAddress(address);
+      if (!mounted) return;
+      setState(() {
+        _deliveryLat = geo?.latitude;
+        _deliveryLng = geo?.longitude;
+      });
+    } catch (_) {
+      // cứ để null, lát submit sẽ báo
+    } finally {
+      if (!mounted) return;
+      setState(() => _deliveryGeocoding = false);
+    }
+  }
+
+  void _openMapForPickup() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapSelectionScreen(
+          initialLat: _pickupLat ?? 10.8231, // Default to Ho Chi Minh City
+          initialLng: _pickupLng ?? 106.6297,
+          title: 'Select Pickup Location',
+        ),
+      ),
+    );
+
+    if (result != null && result is PickedLocation) {
+      setState(() {
+        _pickupLat = result.lat;
+        _pickupLng = result.lng;
+        _pickupAddressController.text = result.displayText;
+      });
+
+      // Trigger distance calculation
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _calculateDistance();
+      });
+    }
+  }
+
+  void _openMapForDelivery() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapSelectionScreen(
+          initialLat: _deliveryLat ?? 10.8231, // Default to Ho Chi Minh City
+          initialLng: _deliveryLng ?? 106.6297,
+          title: 'Select Delivery Location',
+        ),
+      ),
+    );
+
+    if (result != null && result is PickedLocation) {
+      setState(() {
+        _deliveryLat = result.lat;
+        _deliveryLng = result.lng;
+        _deliveryAddressController.text = result.displayText;
+      });
+
+      // Trigger distance calculation
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _calculateDistance();
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _pickupDebounce?.cancel();
+    _deliveryDebounce?.cancel();
+
     _customerNameController.dispose();
     _customerPhoneController.dispose();
     _pickupAddressController.dispose();
@@ -275,7 +412,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         customerPhone: _customerPhoneController.text.trim(),
         pickupAddress: _pickupAddressController.text.trim(),
         deliveryAddress: _deliveryAddressController.text.trim(),
-        packageDetails: _packageDetailsController.text.trim().isNotEmpty ? _packageDetailsController.text.trim() : null,
+        pickupLat: _pickupLat,
+        pickupLng: _pickupLng,
+        deliveryLat: _deliveryLat,
+        deliveryLng: _deliveryLng,
+        packageDetails: _packageDetailsController.text.trim().isNotEmpty
+            ? _packageDetailsController.text.trim()
+            : null,
         weightKg: weightTonnes != null ? weightTonnes * 1000 : null,
         priority: _priority,
         pickupType: _pickupType.isNotEmpty ? _pickupType : null,
@@ -295,35 +438,22 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
       final order = await customerService.createOrder(request);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Order created successfully! Check your "Track Orders" tab to track it. 🌟🚚',
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
+      if (!mounted) return;
 
-        // Clear the form for another order creation
-        _customerNameController.clear();
-        _customerPhoneController.clear();
-        _pickupAddressController.clear();
-        _containerNumberController.clear();
-        _terminalNameController.clear();
-        _warehouseNameController.clear();
-        _dockNumberController.clear();
-        _deliveryAddressController.clear();
-        _packageDetailsController.clear();
-        _weightController.clear();
-        _pickupType = '';
-        _priority = 'NORMAL';
-        _calculatedDistance = null;
-        _calculatedDuration = null;
-        _hasPromptedForAutoFill = false;
-        _formKey.currentState?.reset();
-      }
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tạo đơn thành công'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Set order created state with the order ID
+      setState(() {
+        _orderCreated = true;
+        _createdOrderId = order.orderId;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -338,6 +468,41 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _resetForm() {
+    // Reset form state
+    _formKey.currentState?.reset();
+
+    // Clear all controllers
+    _customerNameController.clear();
+    _customerPhoneController.clear();
+    _pickupAddressController.clear();
+    _containerNumberController.clear();
+    _terminalNameController.clear();
+    _warehouseNameController.clear();
+    _dockNumberController.clear();
+    _deliveryAddressController.clear();
+    _packageDetailsController.clear();
+    _weightController.clear();
+
+    // Reset state variables
+    setState(() {
+      _pickupType = '';
+      _priority = 'NORMAL';
+      _pickupLat = null;
+      _pickupLng = null;
+      _deliveryLat = null;
+      _deliveryLng = null;
+      _calculatedDistance = null;
+      _calculatedDuration = null;
+      _pickupSuggestions = [];
+      _deliverySuggestions = [];
+      _hasPromptedForAutoFill = false;
+      _isLoading = false;
+      _orderCreated = false;
+      _createdOrderId = null;
+    });
   }
 
   @override
@@ -399,8 +564,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'STANDARD', child: Text('📍 Standard Pickup')),
-                    DropdownMenuItem(value: 'PORT_TERMINAL', child: Text('🚢 Port Terminal')),
+                    DropdownMenuItem(
+                      value: 'STANDARD',
+                      child: Text('📍 Standard Pickup'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'PORT_TERMINAL',
+                      child: Text('🚢 Port Terminal'),
+                    ),
                     DropdownMenuItem(
                       value: 'WAREHOUSE',
                       child: Text('🏭 Warehouse'),
@@ -432,21 +603,38 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         decoration: InputDecoration(
                           labelText: 'Pickup Address',
                           border: const OutlineInputBorder(),
-                          suffixIcon: _isLoadingPickupSuggestions
-                              ? const SizedBox(
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isLoadingPickupSuggestions)
+                                const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                   ),
-                                )
-                              : null,
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.map),
+                                onPressed: () => _openMapForPickup(),
+                                tooltip: 'Select on map',
+                              ),
+                            ],
+                          ),
                         ),
                         maxLines: 3,
                         onChanged: (query) {
-                          _loadPickupSuggestions(query);
+                          _pickupDebounce?.cancel();
+                          _pickupDebounce = Timer(
+                            const Duration(milliseconds: 350),
+                            () {
+                              if (!mounted) return;
+                              _loadPickupSuggestions(query);
+                            },
+                          );
+
                           // Trigger distance calculation with a small delay
-                          Future.delayed(const Duration(milliseconds: 500), () {
+                          Future.delayed(const Duration(milliseconds: 600), () {
                             if (mounted) _calculateDistance();
                           });
                         },
@@ -485,9 +673,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                     _pickupSuggestions = [];
                                   });
                                   // Trigger distance calculation immediately
-                                  Future.delayed(const Duration(milliseconds: 100), () {
-                                    if (mounted) _calculateDistance();
-                                  });
+                                  Future.delayed(
+                                    const Duration(milliseconds: 100),
+                                    () {
+                                      if (mounted) _calculateDistance();
+                                    },
+                                  );
                                 },
                               );
                             },
@@ -552,21 +743,38 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         decoration: InputDecoration(
                           labelText: 'Delivery Address',
                           border: const OutlineInputBorder(),
-                          suffixIcon: _isLoadingDeliverySuggestions
-                              ? const SizedBox(
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isLoadingDeliverySuggestions)
+                                const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                   ),
-                                )
-                              : null,
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.map),
+                                onPressed: () => _openMapForDelivery(),
+                                tooltip: 'Select on map',
+                              ),
+                            ],
+                          ),
                         ),
                         maxLines: 3,
                         onChanged: (query) {
-                          _loadDeliverySuggestions(query);
+                          _deliveryDebounce?.cancel();
+                          _deliveryDebounce = Timer(
+                            const Duration(milliseconds: 350),
+                            () {
+                              if (!mounted) return;
+                              _loadDeliverySuggestions(query);
+                            },
+                          );
+
                           // Trigger distance calculation with a small delay
-                          Future.delayed(const Duration(milliseconds: 500), () {
+                          Future.delayed(const Duration(milliseconds: 600), () {
                             if (mounted) _calculateDistance();
                           });
                         },
@@ -605,9 +813,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                     _deliverySuggestions = [];
                                   });
                                   // Trigger distance calculation immediately
-                                  Future.delayed(const Duration(milliseconds: 100), () {
-                                    if (mounted) _calculateDistance();
-                                  });
+                                  Future.delayed(
+                                    const Duration(milliseconds: 100),
+                                    () {
+                                      if (mounted) _calculateDistance();
+                                    },
+                                  );
                                 },
                               );
                             },
@@ -617,7 +828,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                   const SizedBox(height: 16),
                   // Distance and Duration Display
-                  if (_isCalculatingDistance || (_calculatedDistance != null || _calculatedDuration != null))
+                  if (_isCalculatingDistance ||
+                      (_calculatedDistance != null ||
+                          _calculatedDuration != null))
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -636,14 +849,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                       SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       ),
                                       SizedBox(width: 8),
                                       Text('Calculating distance...'),
                                     ],
                                   )
                                 : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Distance: ${_calculatedDistance ?? "Unable to calculate"}',
@@ -685,7 +901,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       border: OutlineInputBorder(),
                       suffixText: 'tonnes',
                     ),
-                    keyboardType: TextInputType.numberWithOptions(
+                    keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     validator: (value) {
@@ -730,7 +946,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _createOrder,
+                      onPressed: (_orderCreated || _isLoading)
+                          ? null
+                          : _createOrder,
                       child: _isLoading
                           ? const CircularProgressIndicator()
                           : const Text('Create Order'),
@@ -741,6 +959,40 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: _orderCreated
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  OrderDetailScreen(orderId: _createdOrderId!),
+                            ),
+                          );
+                        },
+                        child: const Text('Xem đơn'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _resetForm();
+                        },
+                        child: const Text('Tạo đơn mới'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
