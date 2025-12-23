@@ -163,9 +163,6 @@ const TripCreatePage = () => {
             });
         };
 
-        const primary = ensureVN(address);
-        const alt = ensureVN(sanitize(address));
-
         // Fallback queries if the original form doesn't geocode well.
         const withStreetPrimary = ensureVN(addStreetIfMissing(address));
         const withStreetAlt = ensureVN(addStreetIfMissing(sanitize(address)));
