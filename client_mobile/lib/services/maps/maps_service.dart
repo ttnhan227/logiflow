@@ -1,4 +1,5 @@
 import '../api_client.dart';
+import '../../models/picked_location.dart';
 import 'dart:convert';
 
 class DistanceResult {
@@ -24,6 +25,35 @@ class DistanceResult {
   }
 }
 
+class GeocodeResult {
+  final String formattedAddress;
+  final double latitude;
+  final double longitude;
+
+  GeocodeResult({
+    required this.formattedAddress,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  factory GeocodeResult.fromJson(Map<String, dynamic> json) {
+    // server thường trả latitude/longitude hoặc lat/lng
+    final lat = (json['latitude'] ?? json['lat']) as num;
+    final lng = (json['longitude'] ?? json['lng'] ?? json['lon']) as num;
+
+    return GeocodeResult(
+      formattedAddress:
+          (json['formattedAddress'] ??
+                  json['displayName'] ??
+                  json['address'] ??
+                  '')
+              .toString(),
+      latitude: lat.toDouble(),
+      longitude: lng.toDouble(),
+    );
+  }
+}
+
 class MapsService {
   Future<Map<String, dynamic>?> getDirections(
     String originLat,
@@ -45,7 +75,10 @@ class MapsService {
     }
   }
 
-  Future<DistanceResult?> calculateDistance(String originAddress, String destinationAddress) async {
+  Future<DistanceResult?> calculateDistance(
+    String originAddress,
+    String destinationAddress,
+  ) async {
     try {
       final response = await apiClient.get(
         '/maps/distance?origin=${Uri.encodeComponent(originAddress)}&destination=${Uri.encodeComponent(destinationAddress)}',
@@ -63,9 +96,14 @@ class MapsService {
     }
   }
 
-  Future<List<String>?> getBasicAddressSuggestions(String query, {int limit = 10}) async {
+  Future<List<String>?> getBasicAddressSuggestions(
+    String query, {
+    int limit = 10,
+  }) async {
     try {
-      final response = await apiClient.get('/maps/suggest-addresses?query=${Uri.encodeComponent(query)}&limit=$limit');
+      final response = await apiClient.get(
+        '/maps/suggest-addresses?query=${Uri.encodeComponent(query)}&limit=$limit',
+      );
       if (response.statusCode == 200) {
         final List<dynamic> suggestions = jsonDecode(response.body);
         return suggestions.map((s) => s.toString()).toList();
@@ -73,6 +111,37 @@ class MapsService {
       return null;
     } catch (e) {
       print('Error fetching address suggestions: $e');
+      return null;
+    }
+  }
+
+  Future<GeocodeResult?> geocodeAddress(String address) async {
+    final q = address.trim();
+    if (q.isEmpty) return null;
+
+    final res = await apiClient.get(
+      '/maps/geocode?address=${Uri.encodeComponent(q)}',
+    );
+
+    // res là http.Response
+    if (res.statusCode != 200) return null;
+
+    final json = jsonDecode(res.body) as Map<String, dynamic>;
+    return GeocodeResult.fromJson(json);
+  }
+
+  Future<String?> reverseGeocode(double latitude, double longitude) async {
+    try {
+      final response = await apiClient.get(
+        '/maps/reverse-geocode?lat=$latitude&lng=$longitude',
+      );
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        return json['address'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print('Error reverse geocoding: $e');
       return null;
     }
   }
