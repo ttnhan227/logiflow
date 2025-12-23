@@ -5,9 +5,6 @@ import com.logiflow.server.dtos.admin.dashboard.UserStatsDto;
 import com.logiflow.server.dtos.admin.dashboard.FleetOverviewDto;
 import com.logiflow.server.dtos.admin.dashboard.RecentActivityDto;
 import com.logiflow.server.dtos.admin.dashboard.ActiveDriverLocationDto;
-import com.logiflow.server.dtos.admin.dashboard.ShipmentStatisticsDto;
-import com.logiflow.server.dtos.admin.dashboard.DeliveryTimeStatsDto;
-import com.logiflow.server.dtos.admin.dashboard.ComplianceAlertDto;
 import com.logiflow.server.models.Order;
 import com.logiflow.server.models.Driver;
 import com.logiflow.server.models.Trip;
@@ -121,104 +118,19 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             totalVehicles
         );
 
-        // Get shipment statistics
-        ShipmentStatisticsDto shipmentStatistics = ShipmentStatisticsDto.of(
-            (int) tripRepository.countByStatus("scheduled"),
-            (int) tripRepository.countByStatus("in_progress") + (int) tripRepository.countByStatus("arrived"),
-            (int) tripRepository.countByStatus("completed"),
-            (int) tripRepository.countByStatus("cancelled")
-        );
-
-        // Get delivery time statistics (last 30 days)
-        List<DeliveryTimeStatsDto> deliveryTimeStats = calculateDeliveryTimeStats();
-
-        // Get compliance alerts
-        List<ComplianceAlertDto> complianceAlerts = getComplianceAlerts();
-
         return AdminDashboardDto.of(
             userStats,
             recentActivities,
-            fleetOverview,
-            shipmentStatistics,
-            deliveryTimeStats,
-            complianceAlerts
+            fleetOverview
         );
     }
 
-    private List<DeliveryTimeStatsDto> calculateDeliveryTimeStats() {
-        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        List<Trip> completedTrips = tripRepository.findCompletedTripsForStats(thirtyDaysAgo);
-
-        // Group by day of week and calculate average
-        Map<DayOfWeek, List<Long>> deliveryTimesByDay = completedTrips.stream()
-            .filter(t -> t.getActualArrival() != null && t.getScheduledDeparture() != null)
-            .collect(Collectors.groupingBy(
-                t -> t.getActualArrival().getDayOfWeek(),
-                Collectors.mapping(
-                    t -> Duration.between(t.getScheduledDeparture(), t.getActualArrival()).toMinutes(),
-                    Collectors.toList()
-                )
-            ));
-
-        // Create result list for each day of week
-        List<DeliveryTimeStatsDto> result = new ArrayList<>();
-        String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-        DayOfWeek[] days = {DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, 
-                           DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY};
-
-        for (int i = 0; i < days.length; i++) {
-            List<Long> times = deliveryTimesByDay.getOrDefault(days[i], new ArrayList<>());
-            Double avgMinutes = times.isEmpty() ? 0.0 : 
-                times.stream().mapToLong(Long::longValue).average().orElse(0.0);
-            result.add(DeliveryTimeStatsDto.of(dayNames[i], avgMinutes));
-        }
-
-        return result;
-    }
 
     private int countActiveUsersByRole(Map<String, Integer> roleNameToId, String roleName) {
         return roleNameToId.containsKey(roleName) ? 
             userRepository.countByRole_RoleIdAndIsActive(roleNameToId.get(roleName), true) : 0;
     }
 
-    private List<ComplianceAlertDto> getComplianceAlerts() {
-        List<ComplianceAlertDto> alerts = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime thirtyDaysFromNow = now.plusDays(30);
-
-        // Check for vehicles needing maintenance (status = 'maintenance')
-        long maintenanceVehicles = vehicleRepository.countByStatus("maintenance");
-        if (maintenanceVehicles > 0) {
-            alerts.add(ComplianceAlertDto.of(
-                "MAINTENANCE_DUE",
-                "WARNING",
-                maintenanceVehicles + " vehicle(s) currently in maintenance",
-                "VEHICLE",
-                null,
-                "Fleet Maintenance"
-            ));
-        }
-
-        // Check for drivers with license expiring soon (within 30 days)
-        List<Driver> drivers = driverRepository.findAll();
-        long expiringLicenses = drivers.stream()
-            .filter(d -> d.getUser() != null && d.getUser().getIsActive())
-            .filter(d -> {
-                // Check if there's a related registration request with license expiry
-                // For now, we'll just do a basic check
-                return false; // Placeholder - needs actual license expiry data from Driver entity
-            })
-            .count();
-
-        // Check for overworked drivers (drivers with > 10 hours in last 24 hours)
-        // This would require work_log tracking which isn't implemented yet
-        // Placeholder for future implementation
-
-        // Check for pending registration requests
-        // This could be added if we want to show pending approvals as alerts
-
-        return alerts;
-    }
 
     @Override
     @Transactional(readOnly = true)
