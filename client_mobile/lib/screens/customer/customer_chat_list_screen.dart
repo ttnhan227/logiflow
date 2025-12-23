@@ -152,7 +152,7 @@ class _CustomerChatListScreenState extends State<CustomerChatListScreen> {
                         itemBuilder: (context, index) {
                           final order = _orders[index];
                           final statusColor = _statusColor(order.orderStatus);
-                          final customerChatId = _customerUserId;
+                          final customerChatId = order.customerUserId ?? order.customerId ?? _customerUserId;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 14),

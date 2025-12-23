@@ -273,6 +273,9 @@ class OrderSummary extends Equatable {
   final int? slaExtensionMinutes;
   final String? delayReason;
   final String? delayStatus;
+  final double deliveryFee;
+  final int? customerId;
+  final int? customerUserId;
 
   const OrderSummary({
     required this.orderId,
@@ -297,6 +300,9 @@ class OrderSummary extends Equatable {
     this.slaExtensionMinutes,
     this.delayReason,
     this.delayStatus,
+    required this.deliveryFee,
+    this.customerId,
+    this.customerUserId,
   });
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
@@ -323,6 +329,9 @@ class OrderSummary extends Equatable {
       slaExtensionMinutes: json['slaExtensionMinutes'],
       delayReason: json['delayReason'],
       delayStatus: json['delayStatus'],
+      deliveryFee: json['deliveryFee']?.toDouble() ?? 0.0,
+      customerId: json['customerId'],
+      customerUserId: json['customerUserId'],
     );
   }
 
@@ -350,5 +359,8 @@ class OrderSummary extends Equatable {
     slaExtensionMinutes,
     delayReason,
     delayStatus,
+    deliveryFee,
+    customerId,
+    customerUserId,
   ];
 }
