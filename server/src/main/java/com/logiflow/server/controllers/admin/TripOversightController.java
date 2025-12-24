@@ -24,6 +24,10 @@ public class TripOversightController {
             TripOversightDto dto = tripOversightService.getTripOversight(tripId);
             return ResponseEntity.ok(dto);
         } catch (RuntimeException ex) {
+            // Check if it's a "not found" error
+            if (ex.getMessage() != null && ex.getMessage().contains("Trip not found")) {
+                return ResponseEntity.notFound().build();
+            }
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

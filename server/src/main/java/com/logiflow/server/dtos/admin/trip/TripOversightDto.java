@@ -158,16 +158,26 @@ public class TripOversightDto {
                     DriverSummaryDto driverDto = DriverSummaryDto.fromDriver(selectedAssignment.getDriver(), new java.util.ArrayList<>());
                     // Try to get real-time GPS location from tracking system first
                     try {
-                        com.logiflow.server.controllers.maps.GpsTrackingController.LocationMessage latestLocation =
-                            com.logiflow.server.controllers.maps.GpsTrackingController.getLatestLocation(
-                                selectedAssignment.getDriver().getDriverId().toString(),
-                                trip.getTripId().toString()
-                            );
-                        if (latestLocation != null) {
-                            driverDto.setCurrentLat(BigDecimal.valueOf(latestLocation.getLatitude()));
-                            driverDto.setCurrentLng(BigDecimal.valueOf(latestLocation.getLongitude()));
+                        // Check for null IDs before calling GPS method
+                        if (selectedAssignment.getDriver().getDriverId() != null && trip.getTripId() != null) {
+                            com.logiflow.server.controllers.maps.GpsTrackingController.LocationMessage latestLocation =
+                                com.logiflow.server.controllers.maps.GpsTrackingController.getLatestLocation(
+                                    selectedAssignment.getDriver().getDriverId().toString(),
+                                    trip.getTripId().toString()
+                                );
+                            if (latestLocation != null) {
+                                driverDto.setCurrentLat(BigDecimal.valueOf(latestLocation.getLatitude()));
+                                driverDto.setCurrentLng(BigDecimal.valueOf(latestLocation.getLongitude()));
+                            } else {
+                                // Fallback to database location if GPS memory doesn't have it
+                                com.logiflow.server.models.Driver driver = selectedAssignment.getDriver();
+                                if (driver.getCurrentLocationLat() != null && driver.getCurrentLocationLng() != null) {
+                                    driverDto.setCurrentLat(driver.getCurrentLocationLat());
+                                    driverDto.setCurrentLng(driver.getCurrentLocationLng());
+                                }
+                            }
                         } else {
-                            // Fallback to database location if GPS memory doesn't have it
+                            // Fallback to database location if IDs are null
                             com.logiflow.server.models.Driver driver = selectedAssignment.getDriver();
                             if (driver.getCurrentLocationLat() != null && driver.getCurrentLocationLng() != null) {
                                 driverDto.setCurrentLat(driver.getCurrentLocationLat());
@@ -203,7 +213,8 @@ public class TripOversightDto {
                     orderDto.setCustomerName(order.getCustomerName());
                     orderDto.setCustomerPhone(order.getCustomerPhone());
                     orderDto.setPickupAddress(order.getPickupAddress());
-                    orderDto.setPickupType(order.getPickupType() != null ? order.getPickupType().name() : null);
+                    String pickupTypeStr = order.getPickupType() != null ? order.getPickupType().name() : null;
+                    orderDto.setPickupType(pickupTypeStr);
                     orderDto.setWarehouseName(order.getWarehouseName());
                     orderDto.setDockNumber(order.getDockNumber());
                     orderDto.setContainerNumber(order.getContainerNumber());
@@ -295,6 +306,9 @@ public class TripOversightDto {
 
     private static LocalDateTime calculateTripSla(Trip trip) {
         // Trip SLA is determined by the earliest urgent order SLA, or latest normal order SLA
+        if (trip.getOrders() == null || trip.getOrders().isEmpty()) {
+            return null;
+        }
         return trip.getOrders().stream()
             .map(TripOversightDto::calculateOrderSla)
             .filter(sla -> sla != null)

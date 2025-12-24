@@ -23,6 +23,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = :status")
     int countByOrderStatus(@Param("status") Order.OrderStatus status);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = :orderStatus AND o.paymentStatus = :paymentStatus")
+    int countByOrderStatusAndPaymentStatus(@Param("orderStatus") Order.OrderStatus orderStatus, @Param("paymentStatus") Order.PaymentStatus paymentStatus);
     
     @Query("SELECT COALESCE(SUM(o.shippingFee), 0) FROM Order o WHERE o.orderStatus = :status")
     java.math.BigDecimal sumShippingFeeByStatus(@Param("status") Order.OrderStatus status);

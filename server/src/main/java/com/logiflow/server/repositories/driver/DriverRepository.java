@@ -22,4 +22,34 @@ public interface DriverRepository extends JpaRepository<Driver, Integer> {
 
     @Query("SELECT DISTINCT d FROM Driver d JOIN FETCH d.user ORDER BY d.driverId")
     List<Driver> findAllDriversWithUser();
+
+    /**
+     * Calculate average driver rating
+     */
+    @Query("SELECT AVG(d.rating) FROM Driver d WHERE d.rating IS NOT NULL")
+    Double getAverageDriverRating();
+
+    /**
+     * Count drivers with valid licenses (not expired)
+     */
+    @Query("SELECT COUNT(d) FROM Driver d WHERE d.licenseExpiryDate > CURRENT_DATE")
+    long countDriversWithValidLicenses();
+
+    /**
+     * Count drivers with licenses expiring within next 30 days
+     */
+    @Query(value = "SELECT COUNT(*) FROM drivers WHERE license_expiry > CURRENT_DATE AND license_expiry <= CURRENT_DATE + INTERVAL '30 days'", nativeQuery = true)
+    long countDriversWithExpiringLicenses();
+
+    /**
+     * Count drivers with compliance issues (based on health status and license validity)
+     */
+    @Query("SELECT COUNT(d) FROM Driver d WHERE d.healthStatus != 'FIT' OR d.licenseExpiryDate <= CURRENT_DATE")
+    long countDriversWithComplianceIssues();
+
+    /**
+     * Count drivers with recent violations (simplified - would need violation tracking table)
+     */
+    @Query("SELECT COUNT(d) FROM Driver d WHERE d.rating < 3.0")
+    long countDriversWithLowRating();
 }

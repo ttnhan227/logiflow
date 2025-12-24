@@ -36,6 +36,14 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
            "WHERE t.tripId = :id")
     Optional<Trip> findByIdWithRelations(@Param("id") Integer id);
 
+    // Admin oversight - separate method to avoid MultipleBagFetchException
+    @Query("SELECT DISTINCT t FROM Trip t " +
+           "LEFT JOIN FETCH t.vehicle " +
+           "LEFT JOIN FETCH t.route " +
+           "LEFT JOIN FETCH t.orders " +
+           "WHERE t.tripId = :id")
+    Optional<Trip> findByIdForAdminOversight(@Param("id") Integer id);
+
     @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route")
     List<Trip> findAllWithRelations();
 
@@ -159,6 +167,42 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("from") LocalDateTime from,
             @Param("to")   LocalDateTime to
     );
+
+    /**
+     * Count completed trips without delay reasons (on-time deliveries)
+     */
+    @Query("SELECT COUNT(t) FROM Trip t WHERE t.status = 'completed' AND (t.delayReason IS NULL OR t.delayReason = '')")
+    long countCompletedTripsWithoutDelay();
+
+    /**
+     * Count completed trips without delay reasons since a specific date
+     */
+    @Query("SELECT COUNT(t) FROM Trip t WHERE t.status = 'completed' AND t.actualArrival >= :since AND (t.delayReason IS NULL OR t.delayReason = '')")
+    long countCompletedTripsWithoutDelay(@Param("since") LocalDateTime since);
+
+    /**
+     * Count trips with delay reasons
+     */
+    @Query("SELECT COUNT(t) FROM Trip t WHERE t.delayReason IS NOT NULL AND t.delayReason != ''")
+    long countTripsWithDelayReason();
+
+    /**
+     * Count critical alerts (overdue trips or trips with critical delay reasons)
+     */
+    @Query("SELECT COUNT(t) FROM Trip t WHERE t.status = 'overdue' OR (t.delayReason IS NOT NULL AND LOWER(t.delayReason) LIKE '%critical%')")
+    long countCriticalAlerts();
+
+    /**
+     * Count trips that need driver assignment (scheduled but no accepted assignments)
+     */
+    @Query("SELECT COUNT(DISTINCT t) FROM Trip t LEFT JOIN t.tripAssignments ta WHERE t.status = 'scheduled' AND (ta IS NULL OR ta.status != 'accepted')")
+    long countTripsNeedingAssignment();
+
+    /**
+     * Count urgent trips needing assignment (high priority orders)
+     */
+    @Query("SELECT COUNT(DISTINCT t) FROM Trip t LEFT JOIN t.tripAssignments ta JOIN t.orders o WHERE t.status = 'scheduled' AND (ta IS NULL OR ta.status != 'accepted') AND o.priorityLevel = 'URGENT'")
+    long countUrgentTripsNeedingAssignment();
 
 
 }

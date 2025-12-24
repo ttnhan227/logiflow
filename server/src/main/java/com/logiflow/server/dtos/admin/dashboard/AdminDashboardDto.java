@@ -7,30 +7,43 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * DTO for admin dashboard data.            
+ * DTO for comprehensive admin dashboard data.
  */
 @Data
 @Builder
 @AllArgsConstructor
 public class AdminDashboardDto {
-    // User Statistics
+    // Core Statistics
     private final UserStatsDto userStats;
-    
-    // Fleet Overview
-    private final FleetOverviewDto fleetOverview;
-    
-    // Recent Activities
     private final List<RecentActivityDto> recentActivities;
+
+    // Enhanced Dashboard Sections
+    private final OperationsOverviewDto operationsOverview;
+    private final FleetLifecycleDto fleetLifecycle;
+    private final ComplianceStatusDto complianceStatus;
+    private final FinancialPerformanceDto financialPerformance;
+    private final ActiveOperationsDto activeOperations;
+    private final SystemHealthDto systemHealth;
 
     // Static factory method for better readability
     public static AdminDashboardDto of(
             UserStatsDto userStats,
             List<RecentActivityDto> recentActivities,
-            FleetOverviewDto fleetOverview) {
+            OperationsOverviewDto operationsOverview,
+            FleetLifecycleDto fleetLifecycle,
+            ComplianceStatusDto complianceStatus,
+            FinancialPerformanceDto financialPerformance,
+            ActiveOperationsDto activeOperations,
+            SystemHealthDto systemHealth) {
         return AdminDashboardDto.builder()
             .userStats(userStats)
             .recentActivities(recentActivities)
-            .fleetOverview(fleetOverview)
+            .operationsOverview(operationsOverview)
+            .fleetLifecycle(fleetLifecycle)
+            .complianceStatus(complianceStatus)
+            .financialPerformance(financialPerformance)
+            .activeOperations(activeOperations)
+            .systemHealth(systemHealth)
             .build();
     }
 }

@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { tripsOversightService } from '../../services';
+import Modal from './Modal';
 import './admin.css';
 
 // Fix for default marker icons in react-leaflet
@@ -80,6 +81,8 @@ const AdminTripsOversightDetailsPage = () => {
   const [showApprovalInput, setShowApprovalInput] = useState(false);
   const [showUpdateSlaInput, setShowUpdateSlaInput] = useState(false);
   const [customSlaExtension, setCustomSlaExtension] = useState(30);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
     const loadTrip = async () => {
@@ -191,6 +194,141 @@ const AdminTripsOversightDetailsPage = () => {
 
       {/* Main Content */}
       <div className="admin-details-container">
+        {/* Orders in Trip Card - MOVED TO TOP */}
+        <div className="details-card">
+          <div className="card-header">
+            <h2>📦 Orders in Trip ({(trip.orders || []).length})</h2>
+          </div>
+          <div className="card-content">
+            {(trip.orders && trip.orders.length > 0) ? (
+              <div className="admin-table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Customer</th>
+                      <th>Pickup Type</th>
+                      <th>Package</th>
+                      <th>Priority</th>
+                      <th>SLA Due</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trip.orders.map((order) => (
+                      <tr key={order.orderId}>
+                        <td>
+                          <span style={{ fontWeight: 600 }}>{order.orderId}</span>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 500 }}>{order.customerName}</div>
+                          {order.customerPhone && (
+                            <div className="muted small">📞 {order.customerPhone}</div>
+                          )}
+                        </td>
+                        <td>
+                          {order.pickupType && order.pickupType !== 'STANDARD' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '2px 6px',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                fontWeight: '600',
+                                backgroundColor: '#e3f2fd',
+                                color: '#1976d2'
+                              }}>
+                                {order.pickupType === 'WAREHOUSE' ? '🏭' : '🚢'} {order.pickupType}
+                              </span>
+                              {order.pickupType === 'WAREHOUSE' && order.warehouseName && (
+                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
+                                  <strong>Warehouse:</strong> {order.warehouseName}
+                                  {order.dockNumber && <br />}<strong>Dock:</strong> {order.dockNumber}
+                                </div>
+                              )}
+                              {order.pickupType === 'PORT_TERMINAL' && order.containerNumber && (
+                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
+                                  <strong>Container:</strong> {order.containerNumber}
+                                  {order.terminalName && <br />}<strong>Terminal:</strong> {order.terminalName}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '2px 6px',
+                              borderRadius: '6px',
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              backgroundColor: '#f3f4f6',
+                              color: '#6b7280'
+                            }}>
+                              📍 STANDARD
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="muted small">{order.packageDetails}</div>
+                          <div className="muted small">{order.weightTon?.toFixed(1)} Tons • {order.packageValue ? `$${order.packageValue}` : 'N/A'}</div>
+                        </td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: order.priorityLevel === 'URGENT' ? '#fee2e2' : '#dbeafe',
+                            color: order.priorityLevel === 'URGENT' ? '#dc2626' : '#2563eb'
+                          }}>
+                            {order.priorityLevel || 'STANDARD'}
+                          </span>
+                        </td>
+                        <td>
+                          {order.slaDue ? (
+                            <>
+                              <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                                {new Date(order.slaDue).toLocaleDateString()}
+                              </div>
+                              <div className="muted small">
+                                {new Date(order.slaDue).toLocaleTimeString()}
+                              </div>
+                            </>
+                          ) : (
+                            <span className="muted">N/A</span>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowOrderModal(true);
+                            }}
+                            style={{ fontSize: '12px', padding: '6px 12px' }}
+                          >
+                            👁️ View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+                color: '#9ca3af'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📦</div>
+                <div style={{ fontSize: '16px', marginBottom: '8px' }}>No Orders</div>
+                <div>This trip has no orders assigned</div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Delay Information Card - Put URGENT ITEMS AT TOP */}
         {(trip.delayReason) && (
           <div className="details-card">
@@ -482,12 +620,13 @@ const AdminTripsOversightDetailsPage = () => {
           </div>
         </div>
 
-        {/* Route Information Card */}
+        {/* Combined Route Information & Map */}
         <div className="details-card">
           <div className="card-header">
-            <h2>🗺️ Route Information</h2>
+            <h2>🗺️ Route Information & Map</h2>
           </div>
           <div className="card-content">
+            {/* Route Summary */}
             <div className="route-summary" style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                 <div style={{ fontSize: '18px', fontWeight: 600 }}>📍</div>
@@ -502,7 +641,8 @@ const AdminTripsOversightDetailsPage = () => {
               </div>
             </div>
 
-            <div className="details-grid">
+            {/* Route Schedule */}
+            <div className="details-grid" style={{ marginBottom: '24px' }}>
               <div className="detail-item">
                 <label>🚀 Scheduled Departure</label>
                 <div className="detail-value">
@@ -542,15 +682,8 @@ const AdminTripsOversightDetailsPage = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Trip Route Map */}
-        <div className="details-card">
-          <div className="card-header">
-            <h2>🗺️ Trip Route Map</h2>
-          </div>
-          <div className="card-content">
+            {/* Trip Route Map */}
             <div style={{ height: '400px', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e5e7eb' }}>
               <MapContainer
                 center={[
@@ -915,127 +1048,6 @@ const AdminTripsOversightDetailsPage = () => {
           </div>
         </div>
 
-        {/* Orders in Trip Card */}
-        <div className="details-card">
-          <div className="card-header">
-            <h2>📦 Orders in Trip ({(trip.orders || []).length})</h2>
-          </div>
-          <div className="card-content">
-            {(trip.orders && trip.orders.length > 0) ? (
-              <div className="admin-table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Customer</th>
-                      <th>Pickup Type</th>
-                      <th>Package</th>
-                      <th>Priority</th>
-                      <th>SLA Due</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trip.orders.map((order) => (
-                      <tr key={order.orderId}>
-                        <td>
-                          <span style={{ fontWeight: 600 }}>{order.orderId}</span>
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 500 }}>{order.customerName}</div>
-                          {order.customerPhone && (
-                            <div className="muted small">📞 {order.customerPhone}</div>
-                          )}
-                        </td>
-                        <td>
-                          {order.pickupType && order.pickupType !== 'STANDARD' ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{
-                                display: 'inline-block',
-                                padding: '2px 6px',
-                                borderRadius: '6px',
-                                fontSize: '10px',
-                                fontWeight: '600',
-                                backgroundColor: '#e3f2fd',
-                                color: '#1976d2'
-                              }}>
-                                {order.pickupType === 'WAREHOUSE' ? '🏭' : '🚢'} {order.pickupType}
-                              </span>
-                              {order.pickupType === 'WAREHOUSE' && order.warehouseName && (
-                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
-                                  <strong>Warehouse:</strong> {order.warehouseName}
-                                  {order.dockNumber && <br />}<strong>Dock:</strong> {order.dockNumber}
-                                </div>
-                              )}
-                              {order.pickupType === 'PORT_TERMINAL' && order.containerNumber && (
-                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
-                                  <strong>Container:</strong> {order.containerNumber}
-                                  {order.terminalName && <br />}<strong>Terminal:</strong> {order.terminalName}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '2px 6px',
-                              borderRadius: '6px',
-                              fontSize: '10px',
-                              fontWeight: '600',
-                              backgroundColor: '#f3f4f6',
-                              color: '#6b7280'
-                            }}>
-                              📍 STANDARD
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <div className="muted small">{order.packageDetails}</div>
-                          <div className="muted small">{order.weightTon?.toFixed(1)} Tons • {order.packageValue ? `$${order.packageValue}` : 'N/A'}</div>
-                        </td>
-                        <td>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '2px 8px',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            backgroundColor: order.priorityLevel === 'URGENT' ? '#fee2e2' : '#dbeafe',
-                            color: order.priorityLevel === 'URGENT' ? '#dc2626' : '#2563eb'
-                          }}>
-                            {order.priorityLevel || 'STANDARD'}
-                          </span>
-                        </td>
-                        <td>
-                          {order.slaDue ? (
-                            <>
-                              <div style={{ fontSize: '13px', fontWeight: 500 }}>
-                                {new Date(order.slaDue).toLocaleDateString()}
-                              </div>
-                              <div className="muted small">
-                                {new Date(order.slaDue).toLocaleTimeString()}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="muted">N/A</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                color: '#9ca3af'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📦</div>
-                <div style={{ fontSize: '16px', marginBottom: '8px' }}>No Orders</div>
-                <div>This trip has no orders assigned</div>
-              </div>
-            )}
-          </div>
-        </div>
 
 
       </div>
@@ -1049,6 +1061,189 @@ const AdminTripsOversightDetailsPage = () => {
           ← Back to Trips Oversight
         </button>
       </div>
+
+      {/* Order Detail Modal */}
+      {showOrderModal && selectedOrder && (
+        <Modal
+          isOpen={showOrderModal}
+          onClose={() => {
+            setShowOrderModal(false);
+            setSelectedOrder(null);
+          }}
+          title={`📦 Order #${selectedOrder.orderId} Details`}
+          size="large"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Order Overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>👤 Customer Information</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div><strong>Name:</strong> {selectedOrder.customerName}</div>
+                  {selectedOrder.customerPhone && <div><strong>Phone:</strong> {selectedOrder.customerPhone}</div>}
+                </div>
+              </div>
+
+              <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>📊 Order Status</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div><strong>Status:</strong>
+                    <span style={{
+                      display: 'inline-block',
+                      marginLeft: '8px',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backgroundColor: statusColor[selectedOrder.orderStatus] || '#f3f4f6',
+                      color: '#111827'
+                    }}>
+                      {selectedOrder.orderStatus || 'UNKNOWN'}
+                    </span>
+                  </div>
+                  <div><strong>Priority:</strong>
+                    <span style={{
+                      display: 'inline-block',
+                      marginLeft: '8px',
+                      padding: '2px 8px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      backgroundColor: selectedOrder.priorityLevel === 'URGENT' ? '#fee2e2' : '#dbeafe',
+                      color: selectedOrder.priorityLevel === 'URGENT' ? '#dc2626' : '#2563eb'
+                    }}>
+                      {selectedOrder.priorityLevel || 'STANDARD'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pickup Type Specific Information */}
+            <div style={{ padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '2px solid #bae6fd' }}>
+              <h3 style={{ margin: '0 0 16px 0', color: '#0369a1', fontSize: '18px' }}>
+                📍 Pickup Information
+              </h3>
+
+              {selectedOrder.pickupType === 'STANDARD' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      backgroundColor: '#f3f4f6',
+                      color: '#6b7280'
+                    }}>
+                      📍 STANDARD PICKUP
+                    </span>
+                  </div>
+                  <p style={{ margin: '0', color: '#374151' }}>
+                    Standard pickup from the customer's specified address.
+                  </p>
+                </div>
+              )}
+
+              {selectedOrder.pickupType === 'WAREHOUSE' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      backgroundColor: '#e3f2fd',
+                      color: '#1976d2'
+                    }}>
+                      🏭 WAREHOUSE PICKUP
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div>
+                      <strong>Warehouse Name:</strong><br />
+                      <span style={{ fontSize: '16px', color: '#1e40af' }}>{selectedOrder.warehouseName || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <strong>Dock Number:</strong><br />
+                      <span style={{ fontSize: '16px', color: '#1e40af', fontFamily: 'monospace' }}>{selectedOrder.dockNumber || 'N/A'}</span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '12px', padding: '12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                    <strong>Instructions:</strong> Driver must arrive at the specified warehouse and dock for pickup. Contact warehouse staff upon arrival.
+                  </div>
+                </div>
+              )}
+
+              {selectedOrder.pickupType === 'PORT_TERMINAL' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      backgroundColor: '#e3f2fd',
+                      color: '#1976d2'
+                    }}>
+                      🚢 PORT TERMINAL PICKUP
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div>
+                      <strong>Container Number:</strong><br />
+                      <span style={{ fontSize: '16px', color: '#1e40af', fontFamily: 'monospace', fontWeight: 'bold' }}>{selectedOrder.containerNumber || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <strong>Terminal Name:</strong><br />
+                      <span style={{ fontSize: '16px', color: '#1e40af' }}>{selectedOrder.terminalName || 'N/A'}</span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '12px', padding: '12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                    <strong>Instructions:</strong> Driver must arrive at the port terminal and locate the specified container. Terminal staff will assist with loading procedures. Security clearance may be required.
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                <strong>Pickup Address:</strong><br />
+                <span style={{ color: '#374151' }}>{selectedOrder.pickupAddress}</span>
+              </div>
+            </div>
+
+            {/* Package Details */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>� Package Information</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div><strong>Description:</strong> {selectedOrder.packageDetails || 'No description provided'}</div>
+                  <div><strong>Weight:</strong> {selectedOrder.weightTon ? `${selectedOrder.weightTon.toFixed(2)} tons` : 'N/A'}</div>
+                  <div><strong>Value:</strong> {selectedOrder.packageValue ? `$${selectedOrder.packageValue}` : 'N/A'}</div>
+                </div>
+              </div>
+
+              <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>⏰ Delivery Timeline</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div><strong>SLA Due:</strong> {selectedOrder.slaDue ? new Date(selectedOrder.slaDue).toLocaleString() : 'N/A'}</div>
+                  <div><strong>ETA:</strong> {selectedOrder.eta ? new Date(selectedOrder.eta).toLocaleString() : 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Address */}
+            <div style={{ padding: '16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ margin: '0 0 12px 0', color: '#92400e', fontSize: '16px' }}>🏠 Delivery Address</h3>
+              <div style={{ fontSize: '16px', color: '#92400e', fontWeight: '500' }}>
+                {selectedOrder.deliveryAddress}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

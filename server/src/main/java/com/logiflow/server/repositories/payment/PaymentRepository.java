@@ -50,4 +50,16 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      * Find failed payments for retry
      */
     List<Payment> findByPaymentStatusAndCreatedAtBefore(Payment.PaymentStatus status, LocalDateTime before);
+
+    /**
+     * Calculate total revenue in date range
+     */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.paymentStatus = 'PAID' AND p.createdAt >= :startDate AND p.createdAt < :endDate")
+    BigDecimal getTotalRevenueInDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Calculate total revenue for completed trips in date range
+     */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p JOIN p.order o JOIN o.trip t WHERE p.paymentStatus = 'PAID' AND t.status = 'completed' AND p.createdAt >= :startDate AND p.createdAt < :endDate")
+    BigDecimal getRevenueFromCompletedTrips(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

@@ -64,7 +64,7 @@ public class TripOversightServiceImpl implements TripOversightService {
 
     @Override
     public TripOversightDto getTripOversight(Integer tripId) {
-        Trip trip = tripRepository.findByIdWithRelations(tripId)
+        Trip trip = tripRepository.findByIdForAdminOversight(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
         return TripOversightDto.fromTrip(trip);
     }

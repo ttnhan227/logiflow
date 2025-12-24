@@ -20,11 +20,20 @@ public class DriverSummaryDto {
 
     public static DriverSummaryDto fromDriver(com.logiflow.server.models.Driver driver, java.util.List<String> flags) {
         if (driver == null) return null;
+
+        // Null-safe access to user data
+        String fullName = null;
+        String phone = null;
+        if (driver.getUser() != null) {
+            fullName = driver.getUser().getFullName();
+            phone = driver.getUser().getPhone();
+        }
+
         return new DriverSummaryDto(
             driver.getDriverId(),
-            driver.getUser().getFullName(),
+            fullName,
             driver.getLicenseType(),
-            driver.getUser().getPhone(),
+            phone,
             driver.getCurrentLocationLat(),
             driver.getCurrentLocationLng()
         );
