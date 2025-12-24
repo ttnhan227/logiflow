@@ -15,7 +15,6 @@ LogiFlow is an intelligent logistics management system designed to automate and 
 - **Dispatcher**: Intelligent trip assignment, order management, real-time monitoring, route optimization, and communication
 - **Driver (Mobile)**: Trip management, real-time navigation, delay reporting, compliance tracking, and delivery confirmation
 - **Customer (Web/Mobile)**: B2B order placement, real-time tracking, company management, and delivery history
-- **Manager**: Operational monitoring, performance analytics, and fleet optimization
 
 ### 2. Intelligent Driver-Vehicle Assignment
 - **OCR-Based Verification**: Automated license and document extraction using Tesseract OCR
@@ -134,7 +133,7 @@ LogiFlow is an intelligent logistics management system designed to automate and 
 
 The system uses PostgreSQL with the following key entities:
 
-- **Users & Roles**: Authentication and role-based access (Admin, Dispatcher, Driver, Customer, Manager)
+- **Users & Roles**: Authentication and role-based access (Admin, Dispatcher, Driver, Customer)
 - **Customers**: B2B company accounts with delivery addresses
 - **Drivers**: Driver profiles, licenses, work logs, and performance metrics
 - **Vehicles**: Fleet management with tonnage capacity and maintenance records
