@@ -20,6 +20,8 @@ class OrderHistory extends Equatable {
   final DateTime? deliveredAt;
   final String? driverName;
   final int? driverRating;
+  final String? delayReason;
+  final String? delayStatus;
 
   const OrderHistory({
     required this.orderId,
@@ -41,6 +43,8 @@ class OrderHistory extends Equatable {
     this.deliveredAt,
     this.driverName,
     this.driverRating,
+    this.delayReason,
+    this.delayStatus,
   });
 
   factory OrderHistory.fromJson(Map<String, dynamic> json) {
@@ -66,6 +70,8 @@ class OrderHistory extends Equatable {
           : null,
       driverName: json['driverName'],
       driverRating: json['driverRating'],
+      delayReason: json['delayReason'],
+      delayStatus: json['delayStatus'],
     );
   }
 
@@ -88,6 +94,8 @@ class OrderHistory extends Equatable {
       'deliveredAt': deliveredAt?.toIso8601String(),
       'driverName': driverName,
       'driverRating': driverRating,
+      'delayReason': delayReason,
+      'delayStatus': delayStatus,
     };
   }
 
@@ -112,5 +120,7 @@ class OrderHistory extends Equatable {
     deliveredAt,
     driverName,
     driverRating,
+    delayReason,
+    delayStatus,
   ];
 }

@@ -2,7 +2,10 @@ package com.logiflow.server.controllers.admin;
 
 import com.logiflow.server.dtos.admin.reports.*;
 import com.logiflow.server.services.admin.AdminReportsService;
+import com.logiflow.server.services.admin.AdminReportPdfService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +22,12 @@ import java.util.List;
 public class AdminReportsController {
 
     private final AdminReportsService adminReportsService;
+    private final AdminReportPdfService adminReportPdfService;
 
-    public AdminReportsController(AdminReportsService adminReportsService) {
+    public AdminReportsController(AdminReportsService adminReportsService,
+                                 AdminReportPdfService adminReportPdfService) {
         this.adminReportsService = adminReportsService;
+        this.adminReportPdfService = adminReportPdfService;
     }
 
     /**
@@ -70,5 +76,23 @@ public class AdminReportsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return ResponseEntity.ok(adminReportsService.getDriverPerformance(startDate, endDate));
+    }
+
+    /**
+     * Download comprehensive business intelligence report as PDF
+     * @param startDate Start date for the report
+     * @param endDate End date for the report
+     */
+    @GetMapping("/comprehensive/pdf")
+    public ResponseEntity<byte[]> downloadComprehensiveReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        byte[] pdf = adminReportPdfService.generateComprehensiveReport(startDate, endDate);
+        String filename = "logiflow_business_intelligence_report_" + startDate + "_to_" + endDate + ".pdf";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${reportTitle}">LogiFlow Business Intelligence Report</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 180px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .company-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1f2937;
+            margin: 10px 0;
+        }
+        .report-title {
+            font-size: 22px;
+            color: #6b7280;
+            margin: 10px 0;
+        }
+        .date-info {
+            font-size: 14px;
+            color: #374151;
+            margin: 5px 0;
+            font-weight: 500;
+        }
+        .section {
+            margin-bottom: 35px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 25px;
+            page-break-inside: avoid;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #2563eb;
+            border-radius: 2px;
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .metric-card.cost { border-left-color: #059669; }
+        .metric-card.compliance { border-left-color: #dc2626; }
+        .metric-card.performance { border-left-color: #7c3aed; }
+        .metric-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        .metric-subtext {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .data-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .data-table tr:hover {
+            background-color: #f3f4f6;
+        }
+        .status-good {
+            color: #059669;
+            font-weight: 600;
+            background: #ecfdf5;
+            padding: 4px 8px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .status-warning {
+            color: #d97706;
+            font-weight: 600;
+            background: #fffbeb;
+            padding: 4px 8px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .status-danger {
+            color: #dc2626;
+            font-weight: 600;
+            background: #fef2f2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .chart-placeholder {
+            height: 180px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-style: italic;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .footer {
+            margin-top: 50px;
+            padding-top: 25px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        .executive-summary {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .executive-summary h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+        }
+        .currency {
+            color: #059669;
+            font-weight: bold;
+        }
+        .percentage {
+            font-weight: 600;
+        }
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <img th:if="${logoBase64 != ''}" th:src="${logoBase64}" alt="LogiFlow Logo" class="logo">
+            <div class="company-name">LogiFlow</div>
+            <div class="report-title" th:text="${reportTitle}">Business Intelligence Report</div>
+            <div class="date-info">📅 Report Period: <span th:text="${#temporals.format(startDate, 'MMM dd, yyyy')}"></span> - <span th:text="${#temporals.format(endDate, 'MMM dd, yyyy')}"></span></div>
+            <div class="date-info">📊 Generated: <span th:text="${#temporals.format(generatedDate, 'MMM dd, yyyy')}"></span> at <span th:text="${#temporals.format(generatedTime, 'HH:mm:ss')}"></span></div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="executive-summary">
+            <h3>📈 Executive Summary</h3>
+            <p>This comprehensive business intelligence report provides a complete overview of LogiFlow's operational performance, financial metrics, compliance status, and driver performance for the selected period. Key highlights include <strong th:text="${report.totalTrips}">0</strong> total trips completed with an overall on-time delivery rate of <strong th:text="${report.onTimeDeliveryRate + '%'}">0%</strong>.</p>
+        </div>
+
+        <!-- Performance Overview -->
+        <div class="section">
+            <div class="section-title">🚚 Performance Overview</div>
+            <div class="metric-grid">
+                <div class="metric-card performance">
+                    <div class="metric-label">Total Trips</div>
+                    <div class="metric-value" th:text="${report.totalTrips}">0</div>
+                    <div class="metric-subtext" th:text="${report.completedTrips + ' completed'}">0 completed</div>
+                </div>
+                <div class="metric-card performance">
+                    <div class="metric-label">On-Time Delivery Rate</div>
+                    <div class="metric-value" th:text="${report.onTimeDeliveryRate + '%'}">0%</div>
+                    <div class="metric-subtext">Industry standard</div>
+                </div>
+                <div class="metric-card performance">
+                    <div class="metric-label">Fleet Utilization</div>
+                    <div class="metric-value" th:text="${report.fleetUtilizationRate + '%'}">0%</div>
+                    <div class="metric-subtext" th:text="${report.activeVehicles + '/' + report.totalVehicles + ' vehicles active'}">0/0 vehicles</div>
+                </div>
+                <div class="metric-card performance">
+                    <div class="metric-label">Average Delivery Time</div>
+                    <div class="metric-value" th:text="${report.averageDeliveryTimeMinutes + 'm'}">0m</div>
+                    <div class="metric-subtext">Per trip</div>
+                </div>
+                <div class="metric-card performance">
+                    <div class="metric-label">Customer Satisfaction</div>
+                    <div class="metric-value" th:text="${report.customerSatisfactionScore + '/5'}">0/5</div>
+                    <div class="metric-subtext">Average rating</div>
+                </div>
+                <div class="metric-card performance">
+                    <div class="metric-label">Active Drivers</div>
+                    <div class="metric-value" th:text="${report.totalActiveDrivers}">0</div>
+                    <div class="metric-subtext" th:text="${report.averageTripsPerDriver + ' trips/driver'}">0 trips/driver</div>
+                </div>
+            </div>
+
+            <div class="chart-placeholder">
+                📈 Performance Trends Chart - Daily trip volume and efficiency metrics over time
+            </div>
+        </div>
+
+        <!-- Financial Analysis -->
+        <div class="section">
+            <div class="section-title">💰 Financial Analysis</div>
+            <div class="metric-grid">
+                <div class="metric-card cost">
+                    <div class="metric-label">Total Revenue</div>
+                    <div class="metric-value"><span class="currency" th:text="${#numbers.formatDecimal(report.totalRevenue, 0, 'COMMA', 0, 'POINT')}">0</span></div>
+                    <div class="metric-subtext">Gross revenue</div>
+                </div>
+                <div class="metric-card cost">
+                    <div class="metric-label">Total Costs</div>
+                    <div class="metric-value"><span class="currency" th:text="${#numbers.formatDecimal(report.totalCosts, 0, 'COMMA', 0, 'POINT')}">0</span></div>
+                    <div class="metric-subtext">Operational expenses</div>
+                </div>
+                <div class="metric-card cost">
+                    <div class="metric-label">Net Profit</div>
+                    <div class="metric-value"><span class="currency" th:text="${#numbers.formatDecimal(report.netProfit, 0, 'COMMA', 0, 'POINT')}">0</span></div>
+                    <div class="metric-subtext">Revenue minus costs</div>
+                </div>
+                <div class="metric-card cost">
+                    <div class="metric-label">Profit Margin</div>
+                    <div class="metric-value" th:text="${report.profitMarginPercentage + '%'}">0%</div>
+                    <div class="metric-subtext">Net profit percentage</div>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Vehicle Type</th>
+                        <th>Total Vehicles</th>
+                        <th>Active Vehicles</th>
+                        <th>Trips Completed</th>
+                        <th>Utilization Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="vehicle : ${report.vehicleTypeCosts}">
+                        <td th:text="${vehicle.vehicleType}">Type</td>
+                        <td th:text="${vehicle.totalVehicles}">0</td>
+                        <td th:text="${vehicle.activeVehicles}">0</td>
+                        <td th:text="${vehicle.tripsCompleted}">0</td>
+                        <td th:text="${vehicle.utilizationRate + '%'}">0%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Compliance & Safety -->
+        <div class="section">
+            <div class="section-title">🛡️ Compliance & Safety</div>
+            <div class="metric-grid">
+                <div class="metric-card compliance">
+                    <div class="metric-label">Overall Compliance Rate</div>
+                    <div class="metric-value" th:text="${report.overallComplianceRate + '%'}">0%</div>
+                    <div class="metric-subtext">Regulatory compliance</div>
+                </div>
+                <div class="metric-card compliance">
+                    <div class="metric-label">Working Hours Violations</div>
+                    <div class="metric-value" th:text="${report.workingHoursViolations}">0</div>
+                    <div class="metric-subtext">Driver fatigue alerts</div>
+                </div>
+                <div class="metric-card compliance">
+                    <div class="metric-label">License Expirations (30 days)</div>
+                    <div class="metric-value" th:text="${report.upcomingLicenseExpirations}">0</div>
+                    <div class="metric-subtext">Require attention</div>
+                </div>
+                <div class="metric-card compliance">
+                    <div class="metric-label">Rest Period Violations</div>
+                    <div class="metric-value" th:text="${report.restPeriodViolations}">0</div>
+                    <div class="metric-subtext">Safety concerns</div>
+                </div>
+            </div>
+
+            <h4 style="margin: 25px 0 15px 0; color: #374151;">Driver License Status</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Valid Licenses</td>
+                        <td th:text="${report.driversWithValidLicense}">0</td>
+                        <td th:text="${report.totalDrivers > 0 ? (report.driversWithValidLicense * 100 / report.totalDrivers) + '%' : '0%'}">0%</td>
+                    </tr>
+                    <tr>
+                        <td>Expired Licenses</td>
+                        <td th:text="${report.driversWithExpiredLicense}">0</td>
+                        <td th:text="${report.totalDrivers > 0 ? (report.driversWithExpiredLicense * 100 / report.totalDrivers) + '%' : '0%'}">0%</td>
+                    </tr>
+                    <tr>
+                        <td>Expiring Soon (30 days)</td>
+                        <td th:text="${report.driversWithExpiringSoonLicense}">0</td>
+                        <td th:text="${report.totalDrivers > 0 ? (report.driversWithExpiringSoonLicense * 100 / report.totalDrivers) + '%' : '0%'}">0%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Driver Performance Rankings -->
+        <div class="section page-break">
+            <div class="section-title">👥 Driver Performance Rankings</div>
+            <div class="metric-card">
+                <div class="metric-label">Total Drivers in Report</div>
+                <div class="metric-value" th:text="${report.totalDriverCount}">0</div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Driver Name</th>
+                        <th>Trips Completed</th>
+                        <th>On-Time Rate</th>
+                        <th>Customer Rating</th>
+                        <th>Performance Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="driver, iterStat : ${report.driverPerformanceRankings}">
+                        <td><span style="font-weight: bold; color: #2563eb;" th:text="${iterStat.index + 1}">#</span></td>
+                        <td th:text="${driver.driverName}">Driver Name</td>
+                        <td th:text="${driver.totalTripsCompleted}">0</td>
+                        <td th:text="${driver.onTimeDeliveryRate + '%'}">0%</td>
+                        <td><span style="color: #f59e0b; font-weight: 600;" th:text="${driver.customerRating + ' ★'}">0 ★</span></td>
+                        <td>
+                            <span th:class="${driver.performanceScore >= 80 ? 'status-good' : driver.performanceScore >= 60 ? 'status-warning' : 'status-danger'}"
+                                  th:text="${driver.performanceScore}">0</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Recommendations & Insights -->
+        <div class="section">
+            <div class="section-title">🎯 Key Insights & Recommendations</div>
+
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #0369a1;">📈 Performance Insights</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #0369a1;">
+                    <li>On-time delivery rate of <strong th:text="${report.onTimeDeliveryRate + '%'}">0%</strong> indicates <span th:text="${report.onTimeDeliveryRate >= 75 ? 'excellent' : report.onTimeDeliveryRate >= 60 ? 'good' : 'needs improvement'}">performance level</span> operational efficiency</li>
+                    <li>Fleet utilization at <strong th:text="${report.fleetUtilizationRate + '%'}">0%</strong> suggests <span th:text="${report.fleetUtilizationRate >= 80 ? 'optimal' : report.fleetUtilizationRate >= 60 ? 'good' : 'underutilization'}">resource usage</span></li>
+                    <li>Customer satisfaction score of <strong th:text="${report.customerSatisfactionScore + '/5'}">0/5</strong> reflects service quality standards</li>
+                </ul>
+            </div>
+
+            <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #92400e;">⚠️ Areas for Attention</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #92400e;">
+                    <li th:if="${report.workingHoursViolations > 0}">Working hours violations detected: <strong th:text="${report.workingHoursViolations}">0</strong> incidents requiring immediate review</li>
+                    <li th:if="${report.upcomingLicenseExpirations > 0}">License expirations approaching: <strong th:text="${report.upcomingLicenseExpirations}">0</strong> drivers need license renewal</li>
+                    <li th:if="${report.restPeriodViolations > 0}">Rest period violations: <strong th:text="${report.restPeriodViolations}">0</strong> safety concerns identified</li>
+                    <li th:if="${report.onTimeDeliveryRate < 75}">On-time delivery rate below target - focus on route optimization and driver training</li>
+                </ul>
+            </div>
+
+            <div style="background: #ecfdf5; border: 1px solid #86efac; border-radius: 8px; padding: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #166534;">🚀 Recommended Actions</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #166534;">
+                    <li>Implement driver recognition program for top performers</li>
+                    <li>Schedule maintenance for vehicles with low utilization rates</li>
+                    <li>Conduct refresher training on safety and compliance protocols</li>
+                    <li>Review pricing strategy to optimize profit margins</li>
+                    <li>Investigate causes of delivery delays and implement corrective measures</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>LogiFlow Business Intelligence Report</strong></p>
+            <p>This comprehensive report was generated automatically by the LogiFlow Logistics Management System.</p>
+            <p>For questions or support, please contact the system administrator.</p>
+            <p style="margin-top: 10px; font-size: 11px; color: #9ca3af;">
+                Report generated on <span th:text="${#temporals.format(generatedDate, 'MMMM dd, yyyy')}"></span> at <span th:text="${#temporals.format(generatedTime, 'HH:mm:ss')}"></span>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${reportTitle}">Cost Analysis Report</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: white; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo { max-width: 200px; height: auto; margin-bottom: 10px; }
+        .company-name { font-size: 28px; font-weight: bold; color: #333; margin: 10px 0; }
+        .report-title { font-size: 24px; color: #666; margin: 10px 0; }
+        .date-info { font-size: 14px; color: #888; margin: 5px 0; }
+        .section { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
+        .section-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .metric-card { background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745; }
+        .metric-label { font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #333; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .data-table th, .data-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        .data-table th { background-color: #f8f9fa; font-weight: bold; color: #333; }
+        .data-table tr:nth-child(even) { background-color: #f8f9fa; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; font-size: 12px; color: #666; }
+        .currency { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img th:if="${logoBase64 != ''}" th:src="${logoBase64}" alt="LogiFlow Logo" class="logo">
+            <div class="company-name">LogiFlow</div>
+            <div class="report-title" th:text="${reportTitle}">Cost Analysis Report</div>
+            <div class="date-info">Report Period: <span th:text="${#temporals.format(startDate, 'yyyy-MM-dd')}"></span> to <span th:text="${#temporals.format(endDate, 'yyyy-MM-dd')}"></span></div>
+            <div class="date-info">Generated: <span th:text="${#temporals.format(generatedDate, 'yyyy-MM-dd')}"></span> at <span th:text="${#temporals.format(generatedTime, 'HH:mm:ss')}"></span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Cost Summary</div>
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Revenue</div>
+                    <div class="metric-value"><span class="currency" th:text="${#numbers.formatDecimal(report.totalRevenue, 0, 'COMMA', 0, 'POINT')}">0</span> VND</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Costs</div>
+                    <div class="metric-value"><span class="currency" th:text="${#numbers.formatDecimal(report.totalCosts, 0, 'COMMA', 0, 'POINT')}">0</span> VND</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Net Profit</div>
+                    <div class="metric-value"><span class="currency" th:text="${#numbers.formatDecimal(report.netProfit, 0, 'COMMA', 0, 'POINT')}">0</span> VND</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Profit Margin</div>
+                    <div class="metric-value" th:text="${report.profitMarginPercentage + '%'}">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Cost Breakdown by Category</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Cost Category</th>
+                        <th>Amount (VND)</th>
+                        <th>Percentage of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="cost : ${report.costBreakdownByCategory}">
+                        <td th:text="${cost.category}">Category</td>
+                        <td th:text="${#numbers.formatDecimal(cost.amount, 0, 'COMMA', 0, 'POINT')}">0</td>
+                        <td th:text="${cost.percentageOfTotal + '%'}">0%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Vehicle Type Cost Analysis</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Vehicle Type</th>
+                        <th>Operating Cost (VND)</th>
+                        <th>Fuel Cost (VND)</th>
+                        <th>Maintenance Cost (VND)</th>
+                        <th>Total Cost (VND)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="vehicleCost : ${report.vehicleTypeCosts}">
+                        <td th:text="${vehicleCost.vehicleType}">Type</td>
+                        <td th:text="${#numbers.formatDecimal(vehicleCost.operatingCost, 0, 'COMMA', 0, 'POINT')}">0</td>
+                        <td th:text="${#numbers.formatDecimal(vehicleCost.fuelCost, 0, 'COMMA', 0, 'POINT')}">0</td>
+                        <td th:text="${#numbers.formatDecimal(vehicleCost.maintenanceCost, 0, 'COMMA', 0, 'POINT')}">0</td>
+                        <td th:text="${#numbers.formatDecimal(vehicleCost.totalCost, 0, 'COMMA', 0, 'POINT')}">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>This report was generated automatically by LogiFlow Logistics Management System.</p>
+            <p>For questions or concerns, please contact the system administrator.</p>
+        </div>
+    </div>
+</body>
+</html>
