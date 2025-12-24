@@ -76,8 +76,8 @@ const TripCreatePage = () => {
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9\s]/g, ' ') // keep alphanumerics
-            .replace(/\s+/g, ' ') // compress spaces
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim();
     };
 
@@ -140,7 +140,6 @@ const TripCreatePage = () => {
             let out = String(s);
             out = out.replace(/\bstreet\b/gi, '');
             out = out.replace(/\s+/g, ' ').trim();
-            // Clean up commas/spaces that may be left behind.
             out = out.replace(/\s+,/g, ',');
             out = out.replace(/,\s*,/g, ',');
             out = out.replace(/,\s+/g, ', ');
@@ -149,12 +148,9 @@ const TripCreatePage = () => {
             return out;
         };
 
-        // Some datasets match better when the English suffix "Street" is present.
-        // Only inject it when it's missing to avoid duplications.
         const addStreetIfMissing = (s) => {
             const raw = String(s);
             if (/\bstreet\b/i.test(raw)) return raw;
-            // Heuristic: only try adding when the address looks like it starts with a street line.
             if (!/\d/.test(raw)) return raw;
             return raw.replace(/^\s*([^,]+)(\s*,\s*|\s*$)/, (_m, first, sep) => {
                 const cleanedFirst = String(first).trim();

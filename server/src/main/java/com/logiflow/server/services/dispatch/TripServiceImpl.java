@@ -151,10 +151,21 @@ public class TripServiceImpl implements TripService {
         }
 
         // Load relations for the trips in this page
-        List<TripDto> tripDtos = tripPage.getContent().stream()
-                .map(t -> tripRepository.findByIdWithRelations(t.getTripId()).orElse(t))
-                .map(TripDto::fromTrip)
-                .collect(Collectors.toList());
+        // NOTE: We must not FETCH JOIN multiple List collections on Trip (Hibernate MultipleBagFetchException).
+        // So we load tripAssignments via TripRepository, and load orders via a separate OrderRepository query.
+        List<Integer> tripIds = tripPage.getContent().stream()
+            .map(Trip::getTripId)
+            .collect(Collectors.toList());
+
+        Map<Integer, List<Order>> ordersByTripId = orderRepository.findByTripIdsWithRelations(tripIds).stream()
+            .collect(Collectors.groupingBy(o -> o.getTrip() != null ? o.getTrip().getTripId() : null));
+
+        List<TripDto> tripDtos = tripIds.stream()
+            .map(id -> tripRepository.findByIdWithRelations(id).orElse(null))
+            .filter(java.util.Objects::nonNull)
+            .peek(t -> t.setOrders(ordersByTripId.getOrDefault(t.getTripId(), new java.util.ArrayList<>())))
+            .map(TripDto::fromTrip)
+            .collect(Collectors.toList());
 
         // Summary: keep same behavior as before (counts from ALL trips with/without status filter)
         List<Trip> summaryTrips;
@@ -185,6 +196,8 @@ public class TripServiceImpl implements TripService {
     public TripDto getTripById(Integer tripId) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+        List<Order> orders = orderRepository.findByTripIdsWithRelations(java.util.List.of(tripId));
+        trip.setOrders(orders != null ? orders : new java.util.ArrayList<>());
         return TripDto.fromTrip(trip);
     }
 

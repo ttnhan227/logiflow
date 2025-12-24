@@ -101,6 +101,14 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.orderId IN :orderIds")
     List<Order> findByIdsWithRelations(@Param("orderIds") List<Integer> orderIds);
 
+    // Fetch orders for trips (dispatch trips list/details) without triggering multiple-bag fetch on Trip
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH o.customer " +
+           "WHERE t.tripId IN :tripIds")
+    List<Order> findByTripIdsWithRelations(@Param("tripIds") List<Integer> tripIds);
+
     // Customer-specific queries
     @Query("SELECT o FROM Order o WHERE o.customer.userId = :customerId ORDER BY o.createdAt DESC")
     List<Order> findByCustomerId(@Param("customerId") Integer customerId);

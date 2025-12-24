@@ -31,8 +31,6 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
            "LEFT JOIN FETCH t.tripAssignments ta " +
            "LEFT JOIN FETCH ta.driver d " +
            "LEFT JOIN FETCH d.user " +
-           "LEFT JOIN FETCH t.orders o " +
-           "LEFT JOIN FETCH o.createdBy " +
            "WHERE t.tripId = :id")
     Optional<Trip> findByIdWithRelations(@Param("id") Integer id);
 
