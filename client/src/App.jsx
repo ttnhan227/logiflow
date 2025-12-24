@@ -32,6 +32,7 @@ import AdminReportsPage from "./components/admin/AdminReportsPage";
 import AdminTripsOversightPage from "./components/admin/AdminTripsOversightPage";
 import AdminTripsOversightDetailsPage from "./components/admin/AdminTripsOversightDetailsPage";
 import AdminNotificationsPage from "./components/admin/AdminNotificationsPage";
+import AdminPaymentRequestPage from "./components/admin/AdminPaymentRequestPage";
 import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import CustomerRegisterPage from "./components/auth/CustomerRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
@@ -49,6 +50,7 @@ import TripAssignPage from "./components/dispatch/TripAssignPage";
 import DispatchNotificationsPage from "./components/dispatch/DispatchNotificationsPage";
 import DispatchReportsPage from "./components/dispatch/DispatchReportsPage";
 import DispatchLayout from "./components/dispatch/DispatchLayout";
+
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -72,7 +74,6 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   // Check if route requires specific role
   // Allow ADMIN users to access all role-specific pages
   if (requiredRole && authState.user.role !== 'ADMIN' && authState.user.role !== requiredRole) {
-    // Show unauthorized page if user doesn't have required role and is not admin
     return <UnauthorizedPage />;
   }
 
@@ -82,12 +83,16 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 // Handle redirection after login based on user role
 const AuthRedirect = () => {
   const user = authService.getCurrentUser();
-  return user?.role === 'ADMIN' ? 
-    <Navigate to="/admin/dashboard" replace /> : 
-    <Navigate to="/" replace />;
+  if (user?.role === 'ADMIN') {
+    return <Navigate to="/admin/dashboard" replace />;
+  } else if (user?.role === 'CUSTOMER') {
+    return <Navigate to="/track" replace />;
+  } else if (user?.role === 'DISPATCHER') {
+    return <Navigate to="/dispatch/orders" replace />;
+  } else {
+    return <Navigate to="/" replace />;
+  }
 };
-
-
 
 function App() {
   return (
@@ -182,6 +187,11 @@ function App() {
           <Route path="/admin/notifications" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminNotificationsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/payment-requests" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminPaymentRequestPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users" element={

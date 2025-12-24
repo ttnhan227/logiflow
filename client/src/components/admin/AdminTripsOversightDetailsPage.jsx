@@ -656,7 +656,6 @@ const AdminTripsOversightDetailsPage = () => {
                 <span>🚗 Driver Location {trip.driver && trip.driver.currentLat && trip.driver.currentLng ?
                   `(${parseFloat(trip.driver.currentLat).toFixed(6)}, ${parseFloat(trip.driver.currentLng).toFixed(6)})` :
                   '(Blue - if available)'}</span>
-                <span>🔵 Route Path</span>
               </div>
             </div>
           </div>
@@ -929,6 +928,7 @@ const AdminTripsOversightDetailsPage = () => {
                     <tr>
                       <th>Order ID</th>
                       <th>Customer</th>
+                      <th>Pickup Type</th>
                       <th>Package</th>
                       <th>Priority</th>
                       <th>SLA Due</th>
@@ -944,6 +944,47 @@ const AdminTripsOversightDetailsPage = () => {
                           <div style={{ fontWeight: 500 }}>{order.customerName}</div>
                           {order.customerPhone && (
                             <div className="muted small">📞 {order.customerPhone}</div>
+                          )}
+                        </td>
+                        <td>
+                          {order.pickupType && order.pickupType !== 'STANDARD' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '2px 6px',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                fontWeight: '600',
+                                backgroundColor: '#e3f2fd',
+                                color: '#1976d2'
+                              }}>
+                                {order.pickupType === 'WAREHOUSE' ? '🏭' : '🚢'} {order.pickupType}
+                              </span>
+                              {order.pickupType === 'WAREHOUSE' && order.warehouseName && (
+                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
+                                  <strong>Warehouse:</strong> {order.warehouseName}
+                                  {order.dockNumber && <br />}<strong>Dock:</strong> {order.dockNumber}
+                                </div>
+                              )}
+                              {order.pickupType === 'PORT_TERMINAL' && order.containerNumber && (
+                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
+                                  <strong>Container:</strong> {order.containerNumber}
+                                  {order.terminalName && <br />}<strong>Terminal:</strong> {order.terminalName}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '2px 6px',
+                              borderRadius: '6px',
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              backgroundColor: '#f3f4f6',
+                              color: '#6b7280'
+                            }}>
+                              📍 STANDARD
+                            </span>
                           )}
                         </td>
                         <td>

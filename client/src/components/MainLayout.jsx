@@ -124,16 +124,18 @@ const MainLayout = () => {
                 >
                   📦 Delivery Services
                 </Link>
-                <Link
-                  to="/track"
-                  className="dropdown-item"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    setDropdownOpen(null);
-                  }}
-                >
-                  🔍 Track Package
-                </Link>
+                {(!user || user.role === 'CUSTOMER') && (
+                  <Link
+                    to="/track"
+                    className="dropdown-item"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setDropdownOpen(null);
+                    }}
+                  >
+                    🔍 Track Package
+                  </Link>
+                )}
                 <Link
                   to="/coverage"
                   className="dropdown-item"

@@ -53,7 +53,7 @@ class AuthService {
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Connection') ||
           e.toString().contains('Network')) {
-        throw Exception('Network error. Please check your internet connection and try again.');
+        throw Exception('Service temporarily unavailable. Please try again later or contact support.');
       } else if (e.toString().contains('TimeoutException')) {
         throw Exception('Connection timeout. Please try again.');
       } else {

@@ -13,6 +13,7 @@ import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.system.SystemSettingRepository;
+import com.logiflow.server.repositories.payment.PaymentRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -26,7 +27,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
@@ -45,6 +48,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Autowired private DriverWorkLogRepository driverWorkLogRepository;
     @Autowired private CustomerRepository customerRepository;
     @Autowired private SystemSettingRepository systemSettingRepository;
+    @Autowired private PaymentRepository paymentRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private final Random random = new Random();
@@ -139,7 +143,15 @@ public class DatabaseSeeder implements CommandLineRunner {
         tripRepository.saveAll(allTrips);           // 1. Trips first
         tripAssignmentRepository.saveAll(allAssignments); // 2. Assignments link Trip + Driver
         orderRepository.saveAll(allOrders);         // 3. Orders link Trip + Customer
-        driverWorkLogRepository.saveAll(allWorkLogs); // 4. Logs link Trip + Driver
+
+        // Create payments for delivered orders to have realistic payment data
+        List<Payment> allPayments = createPaymentsForDeliveredOrders(allOrders, allTrips);
+        paymentRepository.saveAll(allPayments);
+
+        // Save updated orders with payment status changes
+        orderRepository.saveAll(allOrders);         // 4. Save orders again with updated payment status
+
+        driverWorkLogRepository.saveAll(allWorkLogs); // 5. Logs link Trip + Driver
 
         System.out.println("Generated: " + allTrips.size() + " trips, " + allOrders.size() + " orders.");
     }
@@ -254,10 +266,45 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         // Addresses come from Trip Route
         order.setPickupAddress(trip.getRoute().getOriginAddress());
-        order.setPickupType(Order.PickupType.WAREHOUSE);
-        order.setWarehouseName("Seed Warehouse");
-        order.setDockNumber("D-01");
         order.setDeliveryAddress(trip.getRoute().getDestinationAddress());
+
+        // Randomly assign pickup types: 40% STANDARD, 30% WAREHOUSE, 30% PORT_TERMINAL
+        int pickupTypeRandom = random.nextInt(100);
+        Order.PickupType pickupType;
+
+        if (pickupTypeRandom < 40) {
+            pickupType = Order.PickupType.STANDARD;
+        } else if (pickupTypeRandom < 70) {
+            pickupType = Order.PickupType.WAREHOUSE;
+        } else {
+            pickupType = Order.PickupType.PORT_TERMINAL;
+        }
+
+        order.setPickupType(pickupType);
+
+        // Set fields based on pickup type
+        if (pickupType == Order.PickupType.WAREHOUSE) {
+            // Warehouse pickup - set warehouse and dock info
+            String[] warehouseNames = {"HCM Warehouse", "Da Nang Logistics Center", "Hai Phong Distribution Hub", "Can Tho Storage Facility"};
+            order.setWarehouseName(warehouseNames[random.nextInt(warehouseNames.length)]);
+
+            String[] dockPrefixes = {"D-", "L-", "B-", "G-"}; // Dock, Loading, Bay, Gate
+            int dockNumber = 1 + random.nextInt(20);
+            order.setDockNumber(dockPrefixes[random.nextInt(dockPrefixes.length)] + dockNumber);
+
+        } else if (pickupType == Order.PickupType.PORT_TERMINAL) {
+            // Port terminal pickup - set container and terminal info
+            // Generate realistic container number (MSCU, MAEU, etc. prefixes)
+            String[] containerPrefixes = {"MSCU", "MAEU", "OOLU", "COSU", "HLCU", "YMLU"};
+            String prefix = containerPrefixes[random.nextInt(containerPrefixes.length)];
+            String serial = String.format("%06d", random.nextInt(999999));
+            String checkDigit = String.valueOf(random.nextInt(9));
+            order.setContainerNumber(prefix + serial + "-" + checkDigit);
+
+            String[] terminalNames = {"Saigon Port Terminal 1", "Da Nang Port Terminal", "Hai Phong Port Terminal", "Can Tho River Port"};
+            order.setTerminalName(terminalNames[random.nextInt(terminalNames.length)]);
+        }
+        // For STANDARD pickup type, no additional fields needed
 
         // Synch Order status with Trip status
         if ("completed".equals(tripStatus)) {
@@ -268,13 +315,36 @@ public class DatabaseSeeder implements CommandLineRunner {
             order.setOrderStatus(Order.OrderStatus.ASSIGNED);
         }
 
-        // Random cargo details
+        // Random cargo details with weights in tons for heavy logistics
         String[] items = {"Electronics", "Office Furniture", "Legal Documents", "Ind. Machinery", "Textiles", "Fresh Produce"};
         String item = items[random.nextInt(items.length)];
-        int weight = 5 + random.nextInt(45);
 
-        // Set weight field (convert to toones)
-        order.setWeightTons(new BigDecimal(weight).divide(new BigDecimal(1000), 3, java.math.RoundingMode.HALF_UP));
+        // Weight ranges in tons appropriate for heavy logistics
+        BigDecimal weightTons;
+        switch (item.toLowerCase()) {
+            case "electronics":
+                weightTons = new BigDecimal("0.5").add(new BigDecimal(random.nextInt(15)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.5-2.0 tons
+                break;
+            case "office furniture":
+                weightTons = new BigDecimal("1.0").add(new BigDecimal(random.nextInt(20)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 1.0-3.0 tons
+                break;
+            case "legal documents":
+                weightTons = new BigDecimal("0.05").add(new BigDecimal(random.nextInt(15)).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP)); // 0.05-0.20 tons
+                break;
+            case "ind. machinery":
+                weightTons = new BigDecimal("2.0").add(new BigDecimal(random.nextInt(30)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 2.0-5.0 tons
+                break;
+            case "textiles":
+                weightTons = new BigDecimal("0.8").add(new BigDecimal(random.nextInt(17)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.8-2.5 tons
+                break;
+            case "fresh produce":
+                weightTons = new BigDecimal("0.3").add(new BigDecimal(random.nextInt(17)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.3-2.0 tons
+                break;
+            default:
+                weightTons = new BigDecimal("1.0").add(new BigDecimal(random.nextInt(20)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 1.0-3.0 tons default
+        }
+
+        order.setWeightTons(weightTons);
 
         // Set package value based on item type and weight (realistic pricing)
         BigDecimal baseValuePerToon;
@@ -310,7 +380,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 detailedDescription = "Miscellaneous goods safely packaged for transportation";
         }
 
-        BigDecimal packageValue = baseValuePerToon.multiply(new BigDecimal(weight)).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal packageValue = baseValuePerToon.multiply(weightTons).setScale(2, java.math.RoundingMode.HALF_UP);
         order.setPackageValue(packageValue);
 
         order.setPackageDetails(detailedDescription);
@@ -501,7 +571,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(3), "Vo Thanh Nhung", "+84-907-777-777", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(30), now.minusDays(7)),
                 createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(3), "Bui Duc Phong", "+84-908-888-888", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(25), now.minusDays(8)),
                 createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(3), "Do Thi Huong", "+84-909-999-999", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(20), now.minusDays(9)),
-                createUserWithRole("ly.son", "ly.son@gmail.com", "123", roles.get(3), "Ly Ngoc Son", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
+                createUserWithRole("ttnhan227", "ttnhan227@gmail.com", "123", roles.get(3), "Tran Trong Nhan", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
         );
         userRepository.saveAll(users);
         System.out.println("Seeded 25 users with roles");
@@ -754,5 +824,74 @@ public class DatabaseSeeder implements CommandLineRunner {
         trip.setDelayReason(delayReason);
         trip.setDelayStatus(delayStatus);
         trip.setSlaExtensionMinutes(slaExtension);
+    }
+
+    private List<Payment> createPaymentsForDeliveredOrders(List<Order> allOrders, List<Trip> allTrips) {
+        List<Payment> payments = new ArrayList<>();
+
+        // Filter for delivered orders with PENDING payment status
+        List<Order> deliveredPendingOrders = allOrders.stream()
+                .filter(order -> Order.OrderStatus.DELIVERED.equals(order.getOrderStatus()) &&
+                        Order.PaymentStatus.PENDING.equals(order.getPaymentStatus()))
+                .collect(Collectors.toList());
+
+        System.out.println("Creating payments for " + deliveredPendingOrders.size() + " delivered orders with pending payments...");
+
+        // Group orders by customer to ensure each customer has at least one pending order
+        Map<Integer, List<Order>> ordersByCustomer = deliveredPendingOrders.stream()
+                .collect(Collectors.groupingBy(order -> order.getCustomer().getUserId()));
+
+        for (Map.Entry<Integer, List<Order>> entry : ordersByCustomer.entrySet()) {
+            List<Order> customerOrders = entry.getValue();
+            boolean hasPendingForCustomer = false;
+
+            for (Order order : customerOrders) {
+                // 70% chance of having PAID status, but ensure at least one per customer stays pending
+                boolean shouldBePaid = random.nextInt(100) < 70;
+
+                // If this is the last order for this customer and none are pending yet, force it to stay pending
+                if (!shouldBePaid && !hasPendingForCustomer) {
+                    // This order will stay pending
+                    hasPendingForCustomer = true;
+                    continue;
+                }
+
+                if (shouldBePaid) {
+                    Payment payment = new Payment();
+                    payment.setOrder(order);
+                    payment.setAmount(order.getShippingFee());
+                    payment.setPaymentStatus(Payment.PaymentStatus.PAID);
+                    payment.setPaymentMethod(random.nextBoolean() ? "paypal" : "cash");
+
+                    // Payment created 1-7 days after order delivery
+                    LocalDateTime deliveryTime = order.getTrip().getActualArrival();
+                    if (deliveryTime == null) {
+                        deliveryTime = order.getTrip().getScheduledArrival();
+                    }
+                    if (deliveryTime != null) {
+                        int daysAfter = 1 + random.nextInt(7);
+                        payment.setCreatedAt(deliveryTime.plusDays(daysAfter));
+                        payment.setUpdatedAt(payment.getCreatedAt());
+                    } else {
+                        payment.setCreatedAt(LocalDateTime.now().minusDays(random.nextInt(30)));
+                        payment.setUpdatedAt(payment.getCreatedAt());
+                    }
+
+                    // Set PayPal details if payment method is paypal
+                    if ("paypal".equals(payment.getPaymentMethod())) {
+                        payment.setPaypalOrderId("PAY-" + order.getOrderId() + "-" + random.nextInt(100000));
+                        payment.setPaypalTransactionId("TXN-" + order.getOrderId() + "-" + random.nextInt(100000));
+                    }
+
+                    payments.add(payment);
+
+                    // Update order payment status to PAID
+                    order.setPaymentStatus(Order.PaymentStatus.PAID);
+                }
+            }
+        }
+
+        System.out.println("Created " + payments.size() + " payments for delivered orders.");
+        return payments;
     }
 }

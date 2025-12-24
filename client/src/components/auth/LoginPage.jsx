@@ -23,11 +23,26 @@ const LoginPage = () => {
       // Redirect based on user role
       if (response.role === 'ADMIN') {
         navigate('/admin/dashboard');
+      } else if (response.role === 'DISPATCHER') {
+        navigate('/dispatch/orders');
+      } else if (response.role === 'CUSTOMER') {
+        navigate('/track');
       } else {
         navigate('/');
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      // Check if it's a network/server error vs actual bad credentials
+      // Network errors don't have response property, authentication errors do
+      if (!err.response) {
+        // No response means network/server error
+        setError('Service temporarily unavailable. Please try again later or contact support.');
+      } else if (err.response?.status === 401 || err.response?.status === 400) {
+        // Authentication errors
+        setError('Invalid credentials. Please check your username and password.');
+      } else {
+        // Other server errors
+        setError(err.message || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

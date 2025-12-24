@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/customer/customer_service.dart';
 import '../../models/customer/order_history.dart';
+import 'order_receipt_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -134,6 +135,69 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          // Pickup Type Information
+                          if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.blue[200]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Pickup Type: ${order.pickupType}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  // Show specific fields based on pickup type
+                                  if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                                    Text(
+                                      'Warehouse: ${order.warehouseName}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                  if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                                    Text(
+                                      'Dock: ${order.dockNumber}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                  if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                                    Text(
+                                      'Container: ${order.containerNumber}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                  if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                                    Text(
+                                      'Terminal: ${order.terminalName}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                           // Package Details
                           if (order.packageDetails != null &&
                               order.packageDetails!.isNotEmpty) ...[
@@ -152,7 +216,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                               if (order.weightTons != null)
                                 Expanded(
                                   child: Text(
-                                    'Weight: ${order.weightTons!.toStringAsFixed(1)}t',
+                                    'Weight: ${order.weightTons} tons',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey,
@@ -180,6 +244,83 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   ),
                                 ),
                             ],
+                          ),
+                          // Payment Information
+                          if (order.shippingFee != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue[200]!),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Shipping Fee:',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'VND ${order.shippingFee!.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                      Text(
+                                        '(\$${(order.shippingFee! / 23000).toStringAsFixed(2)})',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          // Payment Status with contextual messaging
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _getPaymentStatusIcon(order.paymentStatus),
+                                  size: 20,
+                                  color: _getPaymentStatusColor(order.paymentStatus),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _getPaymentStatusMessage(order.paymentStatus),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _getPaymentStatusColor(order.paymentStatus),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -258,20 +399,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              TextButton.icon(
-                                onPressed: () {
-                                  // Could navigate to order detail or rate driver
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Order details coming soon',
+                              // Only show View Receipt button for paid orders
+                              if (order.orderStatus.toUpperCase() == 'DELIVERED' &&
+                                  order.paymentStatus?.toUpperCase() == 'PAID')
+                                TextButton.icon(
+                                  onPressed: () {
+                                    // Navigate to receipt screen for paid orders
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => OrderReceiptScreen(orderId: order.orderId),
                                       ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.receipt, size: 16),
-                                label: Text(_getActionText(order.orderStatus)),
-                              ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.receipt, size: 16),
+                                  label: const Text('View Receipt'),
+                                ),
                             ],
                           ),
                         ],
@@ -350,6 +493,70 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         return 'View Details';
       default:
         return 'View Details';
+    }
+  }
+
+  // Payment status helper methods
+  Color _getPaymentStatusColor(String? paymentStatus) {
+    if (paymentStatus == null) {
+      return Colors.grey;
+    }
+
+    switch (paymentStatus.toUpperCase()) {
+      case 'PAID':
+        return Colors.green;
+      case 'PENDING':
+        return Colors.blue;
+      case 'FAILED':
+        return Colors.red;
+      case 'CANCELLED':
+        return Colors.red;
+      case 'REFUNDED':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getPaymentStatusIcon(String? paymentStatus) {
+    if (paymentStatus == null) {
+      return Icons.info_outline;
+    }
+
+    switch (paymentStatus.toUpperCase()) {
+      case 'PAID':
+        return Icons.check_circle;
+      case 'PENDING':
+        return Icons.email;
+      case 'FAILED':
+        return Icons.error;
+      case 'CANCELLED':
+        return Icons.cancel;
+      case 'REFUNDED':
+        return Icons.replay;
+      default:
+        return Icons.info_outline;
+    }
+  }
+
+  String _getPaymentStatusMessage(String? paymentStatus) {
+    if (paymentStatus == null) {
+      return 'Please check your email for payment info';
+    }
+
+    switch (paymentStatus.toUpperCase()) {
+      case 'PAID':
+        return 'Payment received - your order is now complete';
+      case 'PENDING':
+        return 'Payment processed - please check your email for invoice and payment details';
+      case 'FAILED':
+        return 'Payment failed - please contact support';
+      case 'CANCELLED':
+        return 'Payment cancelled';
+      case 'REFUNDED':
+        return 'Payment refunded';
+      default:
+        return 'Please check your email for payment info';
     }
   }
 }

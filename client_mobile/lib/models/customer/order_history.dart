@@ -13,7 +13,9 @@ class OrderHistory extends Equatable {
   final double? weightTons;
   final double? packageValue;
   final double? distanceKm;
+  final double? shippingFee;
   final String orderStatus;
+  final String? paymentStatus;
   final DateTime createdAt;
   final DateTime? deliveredAt;
   final String? driverName;
@@ -32,7 +34,9 @@ class OrderHistory extends Equatable {
     this.weightTons,
     this.packageValue,
     this.distanceKm,
+    this.shippingFee,
     required this.orderStatus,
+    this.paymentStatus,
     required this.createdAt,
     this.deliveredAt,
     this.driverName,
@@ -53,7 +57,9 @@ class OrderHistory extends Equatable {
       weightTons: json['weightTons']?.toDouble(),
       packageValue: json['packageValue']?.toDouble(),
       distanceKm: json['distanceKm']?.toDouble(),
+      shippingFee: json['shippingFee']?.toDouble(),
       orderStatus: json['orderStatus'],
+      paymentStatus: json['paymentStatus'],
       createdAt: DateTime.parse(json['createdAt']),
       deliveredAt: json['deliveredAt'] != null
           ? DateTime.parse(json['deliveredAt'])
@@ -99,7 +105,9 @@ class OrderHistory extends Equatable {
     weightTons,
     packageValue,
     distanceKm,
+    shippingFee,
     orderStatus,
+    paymentStatus,
     createdAt,
     deliveredAt,
     driverName,

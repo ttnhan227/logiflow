@@ -8,6 +8,11 @@ class Order extends Equatable {
   final int? customerId;
   final int? customerUserId;
   final String? pickupAddress;
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
   final String? deliveryAddress;
   final String? packageDetails;
   final double? weightKg;
@@ -34,6 +39,11 @@ class Order extends Equatable {
     this.customerId,
     this.customerUserId,
     this.pickupAddress,
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
     this.deliveryAddress,
     this.packageDetails,
     this.weightKg,
@@ -64,9 +74,14 @@ class Order extends Equatable {
       customerId: json['customerId'],
       customerUserId: json['customerUserId'],
       pickupAddress: json['pickupAddress'],
+      pickupType: json['pickupType'],
+      containerNumber: json['containerNumber'],
+      terminalName: json['terminalName'],
+      warehouseName: json['warehouseName'],
+      dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
-      weightKg: json['weightKg']?.toDouble(),
+      weightKg: json['weightTons'] != null ? (json['weightTons'] as num).toDouble() * 1000 : null,
       packageValue: json['packageValue']?.toDouble(),
       distanceKm: json['distanceKm']?.toDouble(),
       priorityLevel: json['priorityLevel'],
@@ -80,7 +95,7 @@ class Order extends Equatable {
       driverName: json['driverName'],
       driverPhone: json['driverPhone'],
       vehiclePlate: json['vehiclePlate'],
-      deliveryFee: json['deliveryFee']?.toDouble(),
+      deliveryFee: json['shippingFee']?.toDouble(),
     );
   }
 
@@ -93,6 +108,11 @@ class Order extends Equatable {
       'customerId': customerId,
       'customerUserId': customerUserId,
       'pickupAddress': pickupAddress,
+      'pickupType': pickupType,
+      'containerNumber': containerNumber,
+      'terminalName': terminalName,
+      'warehouseName': warehouseName,
+      'dockNumber': dockNumber,
       'deliveryAddress': deliveryAddress,
       'packageDetails': packageDetails,
       'weightKg': weightKg,
@@ -122,6 +142,11 @@ class Order extends Equatable {
     customerId,
     customerUserId,
     pickupAddress,
+    pickupType,
+    containerNumber,
+    terminalName,
+    warehouseName,
+    dockNumber,
     deliveryAddress,
     packageDetails,
     weightKg,
@@ -192,7 +217,7 @@ class CreateOrderRequest extends Equatable {
       'pickupLng': pickupLng,
       'deliveryLat': deliveryLat,
       'deliveryLng': deliveryLng,
-      'weightKg': weightKg,
+      'weightTonnes': weightKg != null ? weightKg! / 1000 : null,
       'packageValue': packageValue,
       'priority': priority,
       'pickupType': pickupType,
@@ -227,85 +252,115 @@ class CreateOrderRequest extends Equatable {
 
 class OrderSummary extends Equatable {
   final int orderId;
+  final String customerName;
   final String pickupAddress;
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
   final String deliveryAddress;
   final String? packageDetails;
-  final double? weightKg;
+  final double? weightTons;
   final double? packageValue;
   final double? distanceKm;
+  final double? shippingFee;
   final String orderStatus;
+  final String? paymentStatus;
   final String? tripStatus;
   final DateTime createdAt;
   final DateTime? estimatedDeliveryTime;
-  final double deliveryFee;
-  final int? customerId;
-  final int? customerUserId;
   final int? slaExtensionMinutes;
   final String? delayReason;
   final String? delayStatus;
+  final double deliveryFee;
+  final int? customerId;
+  final int? customerUserId;
 
   const OrderSummary({
     required this.orderId,
+    required this.customerName,
     required this.pickupAddress,
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
     required this.deliveryAddress,
     this.packageDetails,
-    this.weightKg,
+    this.weightTons,
     this.packageValue,
     this.distanceKm,
+    this.shippingFee,
     required this.orderStatus,
+    this.paymentStatus,
     this.tripStatus,
     required this.createdAt,
     this.estimatedDeliveryTime,
-    required this.deliveryFee,
-    this.customerId,
-    this.customerUserId,
     this.slaExtensionMinutes,
     this.delayReason,
     this.delayStatus,
+    required this.deliveryFee,
+    this.customerId,
+    this.customerUserId,
   });
-
-  double? get weightTons => weightKg != null ? weightKg! / 1000 : null;
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     return OrderSummary(
       orderId: json['orderId'],
+      customerName: json['customerName'],
       pickupAddress: json['pickupAddress'],
+      pickupType: json['pickupType'],
+      containerNumber: json['containerNumber'],
+      terminalName: json['terminalName'],
+      warehouseName: json['warehouseName'],
+      dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
-      weightKg: json['weightKg']?.toDouble(),
+      weightTons: json['weightTons']?.toDouble(),
       packageValue: json['packageValue']?.toDouble(),
       distanceKm: json['distanceKm']?.toDouble(),
+      shippingFee: json['shippingFee']?.toDouble(),
       orderStatus: json['orderStatus'],
+      paymentStatus: json['paymentStatus'],
       tripStatus: json['tripStatus'],
       createdAt: DateTime.parse(json['createdAt']),
       estimatedDeliveryTime: json['estimatedDeliveryTime'] != null ? DateTime.parse(json['estimatedDeliveryTime']) : null,
-      deliveryFee: json['deliveryFee']?.toDouble() ?? 0.0,
-      customerId: json['customerId'],
-      customerUserId: json['customerUserId'],
       slaExtensionMinutes: json['slaExtensionMinutes'],
       delayReason: json['delayReason'],
       delayStatus: json['delayStatus'],
+      deliveryFee: json['deliveryFee']?.toDouble() ?? 0.0,
+      customerId: json['customerId'],
+      customerUserId: json['customerUserId'],
     );
   }
 
   @override
   List<Object?> get props => [
     orderId,
+    customerName,
     pickupAddress,
+    pickupType,
+    containerNumber,
+    terminalName,
+    warehouseName,
+    dockNumber,
     deliveryAddress,
     packageDetails,
-    weightKg,
+    weightTons,
     packageValue,
     distanceKm,
+    shippingFee,
     orderStatus,
+    paymentStatus,
     tripStatus,
     createdAt,
     estimatedDeliveryTime,
-    deliveryFee,
-    customerId,
-    customerUserId,
     slaExtensionMinutes,
     delayReason,
     delayStatus,
+    deliveryFee,
+    customerId,
+    customerUserId,
   ];
 }

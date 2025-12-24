@@ -330,4 +330,30 @@ public class NotificationService {
         TripNotificationDto notification = new TripNotificationDto(type, message, orderId, orderStatus);
         messagingTemplate.convertAndSend(destination, notification);
     }
+
+    /**
+     * Send order delivery notification to customer (websocket + database)
+     */
+    public void notifyOrderDelivered(Integer customerId, Integer orderId, String customerName, String deliveryAddress) {
+        // Send websocket notification to customer
+        sendOrderNotification(customerId, orderId, "ORDER_DELIVERED", 
+            "Your order #" + orderId + " has been delivered to " + deliveryAddress, 
+            "DELIVERED");
+
+        // Store in database for persistence
+        User customer = userRepository.findById(customerId).orElse(null);
+        if (customer != null) {
+            Notification dbNotification = new Notification(
+                Notification.NotificationType.ORDER_DELIVERED,
+                "INFO",
+                "Order Delivered",
+                "Your order #" + orderId + " has been successfully delivered to " + deliveryAddress,
+                "/customer/orders/" + orderId,
+                "View Order",
+                orderId,
+                customer
+            );
+            notificationRepository.save(dbNotification);
+        }
+    }
 }

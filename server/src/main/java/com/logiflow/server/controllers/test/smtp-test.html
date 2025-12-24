@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP Test - LogiFlow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result.info {
+            background-color: #cce7ff;
+            border: 1px solid #99d3ff;
+            color: #004085;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .smtp-config {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .smtp-config h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .smtp-config p {
+            margin: 8px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .smtp-config strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="header">
+            <h1>🔧 SMTP Test Tool</h1>
+            <p>Test email functionality for LogiFlow</p>
+        </div>
+
+        <div class="smtp-config">
+            <h3>Current SMTP Configuration</h3>
+            <p><strong>Host:</strong> smtp.gmail.com</p>
+            <p><strong>Port:</strong> 587 (TLS)</p>
+            <p><strong>Username:</strong> ttnhan227@gmail.com</p>
+            <p><strong>Authentication:</strong> Required</p>
+            <p><strong>Status:</strong> <span style="color: #dc3545;">Authentication Failed</span></p>
+        </div>
+
+        <form id="smtpTestForm">
+            <div class="form-group">
+                <label for="toEmail">Recipient Email:</label>
+                <input type="email" id="toEmail" value="test@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="subject">Subject:</label>
+                <input type="text" id="subject" value="SMTP Test - LogiFlow" required>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Message:</label>
+                <textarea id="message" placeholder="Enter your test message here..." required>This is a test email from LogiFlow SMTP test tool.
+
+If you receive this email, the SMTP configuration is working correctly!
+
+Sent at: ${new Date().toLocaleString()}</textarea>
+            </div>
+
+            <button type="submit" class="btn" id="sendBtn">
+                <span id="btnText">Send Test Email</span>
+            </button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('smtpTestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const sendBtn = document.getElementById('sendBtn');
+            const btnText = document.getElementById('btnText');
+            const resultDiv = document.getElementById('result');
+
+            // Get form data
+            const formData = {
+                toEmail: document.getElementById('toEmail').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value
+            };
+
+            // Disable button and show loading
+            sendBtn.disabled = true;
+            btnText.innerHTML = '<span class="loader"></span>Sending...';
+            resultDiv.style.display = 'none';
+
+            try {
+                // Make API call to test SMTP
+                const response = await fetch('http://localhost:8080/api/test/send-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                // Show result
+                resultDiv.style.display = 'block';
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ Email Sent Successfully!</strong><br>
+                        Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ Email Failed</strong><br>
+                        Error: ${data.message || 'Unknown error'}<br>
+                        Status: ${response.status}
+                    `;
+                }
+
+            } catch (error) {
+                // Network or other error
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ Network Error</strong><br>
+                    Could not connect to server. Make sure the backend is running on port 8080.<br>
+                    Error: ${error.message}
+                `;
+            } finally {
+                // Re-enable button
+                sendBtn.disabled = false;
+                btnText.innerHTML = 'Send Test Email';
+            }
+        });
+
+        // Update timestamp in message when page loads
+        document.getElementById('message').value = document.getElementById('message').value.replace('${new Date().toLocaleString()}', new Date().toLocaleString());
+    </script>
+</body>
+</html>
