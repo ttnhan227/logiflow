@@ -25,6 +25,23 @@ const TripCreatePage = () => {
     const [loadingOrders, setLoadingOrders] = useState(false);
     const [creatingRoute, setCreatingRoute] = useState(false);
 
+    const toLocalDateTimeInputValue = (date) => {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        const yyyy = date.getFullYear();
+        const mm = pad(date.getMonth() + 1);
+        const dd = pad(date.getDate());
+        const hh = pad(date.getHours());
+        const min = pad(date.getMinutes());
+        return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    };
+
+    const nowMin = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
+    const arrivalMin = useMemo(() => {
+        if (scheduledDeparture) return scheduledDeparture;
+        return nowMin;
+    }, [scheduledDeparture, nowMin]);
+
     useEffect(() => {
         const loadData = async () => {
             setLoadingOrders(true);
@@ -413,11 +430,21 @@ const TripCreatePage = () => {
                     </div>
                     <div className="form-group">
                         <label>Scheduled Departure</label>
-                        <input type="datetime-local" value={scheduledDeparture} onChange={e => setScheduledDeparture(e.target.value)} />
+                        <input
+                            type="datetime-local"
+                            value={scheduledDeparture}
+                            min={nowMin}
+                            onChange={e => setScheduledDeparture(e.target.value)}
+                        />
                     </div>
                     <div className="form-group">
                         <label>Scheduled Arrival</label>
-                        <input type="datetime-local" value={scheduledArrival} onChange={e => setScheduledArrival(e.target.value)} />
+                        <input
+                            type="datetime-local"
+                            value={scheduledArrival}
+                            min={arrivalMin}
+                            onChange={e => setScheduledArrival(e.target.value)}
+                        />
                     </div>
                 </div>
 
