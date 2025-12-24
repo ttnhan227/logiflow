@@ -97,6 +97,4 @@ public class CustomerController {
         customerService.markAllNotificationsAsRead(authentication.getName());
         return ResponseEntity.ok().build();
     }
-
-
 }

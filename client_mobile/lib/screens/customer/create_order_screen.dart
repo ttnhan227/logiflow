@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import '../../services/customer/customer_service.dart';
 import '../../services/maps/maps_service.dart';
 import '../../models/customer/order.dart';
@@ -45,10 +43,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _deliveryAddressController = TextEditingController();
   final _packageDetailsController = TextEditingController();
   final _weightController = TextEditingController();
+  final _containerCountController = TextEditingController();
   final LayerLink _pickupLink = LayerLink();
   final LayerLink _deliveryLink = LayerLink();
 
-  String _pickupType = '';
+  String _pickupType = 'STANDARD'; // STANDARD | PORT_TERMINAL | WAREHOUSE
+
   String _priority = 'NORMAL';
   bool _isLoading = false;
   bool _isInitializing = true;
@@ -395,6 +395,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     _deliveryAddressController.dispose();
     _packageDetailsController.dispose();
     _weightController.dispose();
+    _containerCountController.dispose();
     super.dispose();
   }
 
@@ -402,6 +403,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    final containerCount = int.tryParse(_containerCountController.text.trim());
 
     setState(() => _isLoading = true);
 
@@ -422,16 +424,23 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         weightKg: weightTonnes != null ? weightTonnes * 1000 : null,
         priority: _priority,
         pickupType: _pickupType.isNotEmpty ? _pickupType : null,
-        containerNumber: _containerNumberController.text.trim().isNotEmpty
+        // ✅ PORT_TERMINAL: bắt buộc container + terminalName
+        containerNumber: _pickupType == 'PORT_TERMINAL' &&
+            _containerNumberController.text.trim().isNotEmpty
             ? _containerNumberController.text.trim()
             : null,
-        terminalName: _terminalNameController.text.trim().isNotEmpty
+        terminalName: _pickupType == 'PORT_TERMINAL' &&
+            _terminalNameController.text.trim().isNotEmpty
             ? _terminalNameController.text.trim()
             : null,
-        warehouseName: _warehouseNameController.text.trim().isNotEmpty
+
+        // ✅ WAREHOUSE: bắt buộc warehouseName, dock optional
+        warehouseName: _pickupType == 'WAREHOUSE' &&
+            _warehouseNameController.text.trim().isNotEmpty
             ? _warehouseNameController.text.trim()
             : null,
-        dockNumber: _dockNumberController.text.trim().isNotEmpty
+        dockNumber: _pickupType == 'WAREHOUSE' &&
+            _dockNumberController.text.trim().isNotEmpty
             ? _dockNumberController.text.trim()
             : null,
       );
@@ -485,6 +494,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     _deliveryAddressController.clear();
     _packageDetailsController.clear();
     _weightController.clear();
+    _containerCountController.clear();
 
     // Reset state variables
     setState(() {
@@ -578,8 +588,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ),
                   ],
                   onChanged: (value) {
-                    setState(() => _pickupType = value ?? '');
-                    // Prompt to auto-fill pickup address from profile when pickup type is selected
+                    setState(() {
+                      _pickupType = value ?? '';
+
+                      // 🔴 CLEAR FIELD PHỤ KHI ĐỔI PICKUP TYPE
+                      _containerNumberController.clear();
+                      _terminalNameController.clear();
+                      _warehouseNameController.clear();
+                      _dockNumberController.clear();
+                    });
+
+                    // giữ nguyên logic cũ
                     if (value != null && value.isNotEmpty) {
                       Future.delayed(const Duration(milliseconds: 200), () {
                         if (mounted) _promptAutoFillPickupAddress();
@@ -623,6 +642,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           ),
                         ),
                         maxLines: 3,
+                        // onChanged của Pickup Address
                         onChanged: (query) {
                           _pickupDebounce?.cancel();
                           _pickupDebounce = Timer(
@@ -689,42 +709,55 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   const SizedBox(height: 16),
                   // Conditional fields based on pickup type
                   if (_pickupType == 'PORT_TERMINAL') ...[
+                    // Container Number
                     TextFormField(
                       controller: _containerNumberController,
                       decoration: const InputDecoration(
                         labelText: 'Container Number',
                         border: OutlineInputBorder(),
-                        hintText: 'Enter container number (e.g., ABC123456)',
+                        hintText: 'e.g. MSCU1234567-8',
                       ),
+                      validator: (v) {
+                        if (_pickupType == 'PORT_TERMINAL' && (v == null || v.trim().isEmpty)) {
+                          return 'Container number is required for port pickup';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
+                    // Terminal Name
                     TextFormField(
                       controller: _terminalNameController,
                       decoration: const InputDecoration(
                         labelText: 'Terminal Name',
                         border: OutlineInputBorder(),
-                        hintText: 'Enter port terminal name',
+                        hintText: 'e.g. Saigon Port',
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _dockNumberController,
-                      decoration: const InputDecoration(
-                        labelText: 'Dock Number',
-                        border: OutlineInputBorder(),
-                        hintText: 'Enter dock/gate number',
-                      ),
+                      validator: (v) {
+                        if (_pickupType == 'PORT_TERMINAL' && (v == null || v.trim().isEmpty)) {
+                          return 'Terminal name is required';
+                        }
+                        return null;
+                      },
                     ),
                   ] else if (_pickupType == 'WAREHOUSE') ...[
+                    // Warehouse Name
                     TextFormField(
                       controller: _warehouseNameController,
                       decoration: const InputDecoration(
                         labelText: 'Warehouse Name',
                         border: OutlineInputBorder(),
-                        hintText: 'Enter warehouse name',
+                        hintText: 'e.g. HCM Warehouse',
                       ),
+                      validator: (v) {
+                        if (_pickupType == 'WAREHOUSE' && (v == null || v.trim().isEmpty)) {
+                          return 'Warehouse name is required';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
+                    // Dock Number (optional)
                     TextFormField(
                       controller: _dockNumberController,
                       decoration: const InputDecoration(
@@ -763,6 +796,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           ),
                         ),
                         maxLines: 3,
+                        // onChanged của Delivery Address
                         onChanged: (query) {
                           _deliveryDebounce?.cancel();
                           _deliveryDebounce = Timer(
@@ -918,6 +952,23 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       return null;
                     },
                   ),
+                  // const SizedBox(height: 16),
+                  // TextFormField(
+                  //   controller: _containerCountController,
+                  //   decoration: const InputDecoration(
+                  //     labelText: 'Number of Containers',
+                  //     border: OutlineInputBorder(),
+                  //     hintText: 'e.g. 1',
+                  //   ),
+                  //   keyboardType: TextInputType.number,
+                  //   validator: (v) {
+                  //     final s = (v ?? '').trim();
+                  //     if (s.isEmpty) return 'Please enter number of containers';
+                  //     final n = int.tryParse(s);
+                  //     if (n == null || n <= 0) return 'Container quantity must be > 0';
+                  //     return null;
+                  //   },
+                  // ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: _priority,
@@ -935,6 +986,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         child: Text('⚡ Urgent Delivery'),
                       ),
                     ],
+                    // onChanged của Priority
                     onChanged: (value) {
                       setState(() => _priority = value ?? 'NORMAL');
                     },

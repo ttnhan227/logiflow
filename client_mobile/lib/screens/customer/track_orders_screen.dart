@@ -16,9 +16,18 @@ class TrackOrdersScreen extends StatefulWidget {
 }
 
 class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
-  List<OrderSummary> _orders = [];
+  // DATA
+  List<OrderSummary> _allOrders = [];     // dữ liệu gốc từ API
+  List<OrderSummary> _visibleOrders = []; // dữ liệu sau search/filter/sort
+
+// UI STATE
   bool _isLoading = true;
   String? _error;
+
+// SEARCH / FILTER / SORT
+  String _searchQuery = '';
+  String _selectedStatus = 'ALL'; // ALL | IN_TRANSIT | ASSIGNED | PENDING
+  String _sortOption = 'STATUS';  // STATUS | DISTANCE
 
   @override
   void initState() {
@@ -43,50 +52,131 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
     });
   }
 
-  Future<void> _loadOrders() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+  @override
+  void _applyFilters() {
+    List<OrderSummary> list = List.from(_allOrders);
 
-      final allOrders = await customerService.getMyOrders();
-      // Filter to show only ACTIVE orders (PENDING, ASSIGNED, IN_TRANSIT)
-      // Follow driver screen pattern for status checking
-      final activeOrders = allOrders.where((order) {
-        final orderStatus = order.orderStatus?.toUpperCase() ?? '';
-        return orderStatus == 'PENDING' ||
-            orderStatus == 'ASSIGNED' ||
-            orderStatus == 'IN_TRANSIT';
-      }).toList();
-
-      // Sort: IN_TRANSIT first, then ASSIGNED, then PENDING
-      activeOrders.sort((a, b) {
-        final statusA = a.orderStatus?.toUpperCase() ?? '';
-        final statusB = b.orderStatus?.toUpperCase() ?? '';
-
-        int getStatusPriority(String status) {
-          switch (status) {
-            case 'IN_TRANSIT':
-              return 1; // Highest priority
-            case 'ASSIGNED':
-              return 2;
-            case 'PENDING':
-              return 3;
-            default:
-              return 4;
-          }
-        }
-
-        return getStatusPriority(statusA).compareTo(getStatusPriority(statusB));
-      });
-
-      setState(() => _orders = activeOrders);
-    } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      setState(() => _isLoading = false);
+    // SEARCH
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((o) =>
+      o.orderId.toString().contains(q) ||
+          o.pickupAddress.toLowerCase().contains(q) ||
+          o.deliveryAddress.toLowerCase().contains(q)
+      ).toList();
     }
+
+    // FILTER STATUS
+    if (_selectedStatus != 'ALL') {
+      list = list.where((o) => o.orderStatus == _selectedStatus).toList();
+    }
+
+    // SORT
+    if (_sortOption == 'STATUS') {
+      const priority = {
+        'IN_TRANSIT': 1,
+        'ASSIGNED': 2,
+        'PENDING': 3,
+      };
+      list.sort((a, b) =>
+          (priority[a.orderStatus] ?? 99)
+              .compareTo(priority[b.orderStatus] ?? 99)
+      );
+    } else if (_sortOption == 'DISTANCE') {
+      list.sort((a, b) =>
+          (b.distanceKm ?? 0).compareTo(a.distanceKm ?? 0)
+      );
+    }
+
+    setState(() {
+      _visibleOrders = list;
+    });
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final orders = await customerService.getMyOrders();
+
+      // 1. Lấy các đơn đang chạy
+      _allOrders = orders.where((o) =>
+      o.orderStatus == 'IN_TRANSIT' ||
+          o.orderStatus == 'ASSIGNED' ||
+          o.orderStatus == 'PENDING'
+      ).toList();
+
+      // 2. Áp dụng search / filter / sort
+      _applyFilters();
+
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load orders';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  Widget _buildFiltersHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search order / pickup / delivery...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (v) {
+              _searchQuery = v;
+              _applyFilters();
+            },
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: ['ALL', 'IN_TRANSIT', 'ASSIGNED', 'PENDING'].map((s) {
+              return ChoiceChip(
+                label: Text(s),
+                selected: _selectedStatus == s,
+                onSelected: (_) {
+                  _selectedStatus = s;
+                  _applyFilters();
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Sort: '),
+              const SizedBox(width: 8),
+              DropdownButton<String>(
+                value: _sortOption,
+                items: const [
+                  DropdownMenuItem(value: 'STATUS', child: Text('Status priority')),
+                  DropdownMenuItem(value: 'DISTANCE', child: Text('Distance (desc)')),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  _sortOption = v;
+                  _applyFilters();
+                },
+              ),
+            ],
+          ),
+          const Divider(height: 16),
+        ],
+      ),
+    );
   }
 
   Future<void> _refresh() async {
@@ -154,7 +244,7 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                         ),
                       ],
                     )
-                  : _orders.isEmpty
+                  : _visibleOrders.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: const [
@@ -186,13 +276,19 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                         ),
                       ],
                     )
+
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
-                      itemCount: _orders.length,
+                      itemCount: _visibleOrders.length + 1,
                       itemBuilder: (context, index) {
-                        final order = _orders[index];
+                        // HEADER ở vị trí đầu
+                        if (index == 0) {
+                          return _buildFiltersHeader();
+                        }
 
+                        // Các item còn lại
+                        final order = _visibleOrders[index - 1];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           child: InkWell(
@@ -330,6 +426,55 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                       },
                     ),
             ),
+    );
+  }
+
+  Widget _buildFilteredEmptyState() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.inventory_2_outlined,
+                size: 72,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No orders found',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Try changing filters or view all orders',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+
+              // 👉 NÚT QUAY LẠI TRACK ORDERS
+              OutlinedButton.icon(
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Back to all orders'),
+                onPressed: () {
+                  setState(() {
+                    _selectedStatus = 'ALL';
+                    _applyFilters();
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
