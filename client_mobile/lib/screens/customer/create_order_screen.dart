@@ -976,7 +976,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             ),
                           );
                         },
-                        child: const Text('Xem đơn'),
+                        child: const Text('View Order'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -985,7 +985,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         onPressed: () {
                           _resetForm();
                         },
-                        child: const Text('Tạo đơn mới'),
+                        child: const Text('Create New Order'),
                       ),
                     ),
                   ],

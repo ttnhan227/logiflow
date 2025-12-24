@@ -111,6 +111,25 @@ const DispatchReportsPage = () => {
               onChange={(e) => setDateRange((p) => ({ ...p, endDate: e.target.value }))}
             />
           </div>
+          <button
+            onClick={() => reportsService.downloadDailyReportPdf(dateRange.startDate, dateRange.endDate)}
+            style={{
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: 6,
+              padding: '8px 16px',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+            disabled={loading}
+          >
+            📄 Download PDF
+          </button>
         </div>
       </div>
 
