@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, tripService, orderService, dispatchVehicleService, dispatchRouteService, routeService as adminRouteService } from '../../services';
+import { api, tripService, orderService, dispatchVehicleService, dispatchRouteService} from '../../services';
 import RouteMapCard from './RouteMapCard';
 import './dispatch.css';
 import './modern-dispatch.css';
@@ -119,6 +119,18 @@ const TripCreatePage = () => {
         return (pickupSim * 0.6) + (deliverySim * 0.4);
     };
 
+    // Haversine distance calculation (same as mobile app)
+    const calculateHaversineDistance = (lat1, lng1, lat2, lng2) => {
+        const R = 6371; // Earth's radius in kilometers
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
     const geocodeAddressVN = async (address) => {
         if (!address) return null;
         // Prefer backend geocode to avoid client-side rate limits and ensure auth
@@ -215,32 +227,41 @@ const TripCreatePage = () => {
         if (creatingRoute) return null;
         setCreatingRoute(true);
         try {
-            const origin = await geocodeAddressVN(order.pickupAddress);
-            const dest = await geocodeAddressVN(order.deliveryAddress);
-            if (!origin || !dest) {
-                setError('Không thể tự động tạo route: không geocode được địa chỉ trong Việt Nam.');
+            // Debug: Check coordinates
+            console.log('Order coordinates:', {
+                pickupLat: order.pickupLat,
+                pickupLng: order.pickupLng,
+                deliveryLat: order.deliveryLat,
+                deliveryLng: order.deliveryLng
+            });
+
+            // Use existing coordinates and distance from the order (already calculated in mobile app)
+            const origin = {
+                lat: order.pickupLat || 0,
+                lng: order.pickupLng || 0
+            };
+            const dest = {
+                lat: order.deliveryLat || 0,
+                lng: order.deliveryLng || 0
+            };
+
+            // Validate coordinates are in Vietnam bounds
+            const VIETNAM_BOUNDS = { minLat: 8.5, maxLat: 23.4, minLng: 102.1, maxLng: 109.5 };
+            const originInVietnam = origin.lat >= VIETNAM_BOUNDS.minLat && origin.lat <= VIETNAM_BOUNDS.maxLat &&
+                                  origin.lng >= VIETNAM_BOUNDS.minLng && origin.lng <= VIETNAM_BOUNDS.maxLng;
+            const destInVietnam = dest.lat >= VIETNAM_BOUNDS.minLat && dest.lat <= VIETNAM_BOUNDS.maxLat &&
+                                dest.lng >= VIETNAM_BOUNDS.minLng && dest.lng <= VIETNAM_BOUNDS.maxLng;
+
+            console.log('Vietnam validation:', { originInVietnam, destInVietnam });
+
+            if (!originInVietnam || !destInVietnam) {
+                setError(`Coordinates validation failed. Origin: ${origin.lat},${origin.lng} (${originInVietnam ? 'OK' : 'OUTSIDE VN'}), Dest: ${dest.lat},${dest.lng} (${destInVietnam ? 'OK' : 'OUTSIDE VN'})`);
                 return null;
             }
-            // Fetch distance/duration via OSRM (best effort)
-            let distanceKm = undefined;
-            let durationHours = undefined;
-            try {
-                const coords = `${origin.lng},${origin.lat};${dest.lng},${dest.lat}`;
-                const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 6000);
-                const res = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await res.json();
-                if (data && data.code === 'Ok' && data.routes && data.routes[0]) {
-                    const dMeters = data.routes[0].distance;
-                    const dSeconds = data.routes[0].duration;
-                    if (Number.isFinite(dMeters)) distanceKm = Number((dMeters / 1000).toFixed(2));
-                    if (Number.isFinite(dSeconds)) durationHours = Number((dSeconds / 3600).toFixed(2));
-                }
-            } catch (_e) {
-                // ignore OSRM errors; server may compute later
-            }
+
+            // Use the distance and fee already calculated in the order
+            const distanceKm = order.distanceKm || calculateHaversineDistance(origin.lat, origin.lng, dest.lat, dest.lng);
+
             const routeData = {
                 routeName: `${order.pickupAddress} → ${order.deliveryAddress}`.slice(0, 180),
                 originAddress: order.pickupAddress,
@@ -250,9 +271,10 @@ const TripCreatePage = () => {
                 destinationLat: dest.lat,
                 destinationLng: dest.lng,
                 distanceKm,
-                estimatedDurationHours: durationHours,
+                estimatedDurationHours: undefined, // Let server calculate if needed
                 routeType: 'standard'
             };
+
             // Prefer dispatcher endpoint; it shouldn't require admin role
             let created = null;
             try {
@@ -282,7 +304,7 @@ const TripCreatePage = () => {
         } catch (_err) {
             const status = _err?.response?.status;
             if (status === 403) {
-                setError('No permission to auto-create route (403). Please use an admin account or ask an admin to add the route.');
+                setError('No permission to auto-create route (403). Please use an account with permission or add the route manually.');
             } else {
                 setError('Unable to auto-create route. Please add a route manually.');
             }
@@ -291,6 +313,23 @@ const TripCreatePage = () => {
             setCreatingRoute(false);
         }
     };
+
+    const selectedOrdersData = useMemo(() => {
+        const selected = pendingOrders.filter(o => selectedOrderIds.includes(o.orderId));
+        if (selected.length === 0) return null;
+
+        // Calculate totals for all selected orders
+        const totalDistance = selected.reduce((sum, order) => sum + (order.distanceKm || 0), 0);
+        const totalFee = selected.reduce((sum, order) => sum + (order.shippingFee || 0), 0);
+        const orderCount = selected.length;
+
+        return {
+            orders: selected,
+            totalDistance,
+            totalFee,
+            orderCount
+        };
+    }, [selectedOrderIds, pendingOrders]);
 
     const primarySelectedOrder = useMemo(() => {
         if (selectedOrderIds.length === 0) return null;
@@ -448,24 +487,41 @@ const TripCreatePage = () => {
                     </div>
                 </div>
 
-                {selectedRoute && (
-                    <>
-                        <div className="info-pill" style={{ marginTop: '0.25rem' }}>
-                            selected route: {selectedRoute.routeName}
+                {selectedOrdersData && selectedOrdersData.orders.length > 0 && (
+                    <div style={{ marginTop: '0.5rem' }}>
+                        <div className="info-pill" style={{ marginBottom: '0.5rem' }}>
+                            Selected Orders: {selectedOrdersData.orderCount}
                         </div>
-                        <RouteMapCard routeId={selectedRoute.routeId} feePerKm={12} onDistanceChange={handleDistanceChange} />
-                    </>
-                )}
-                {!selectedRoute && primarySelectedOrder && (
-                    <div className="info-pill" style={{ marginTop: '0.25rem' }}>
-                        Using order #{primarySelectedOrder.orderId} addresses to select/create a route.
+                        <div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+                            {selectedOrdersData.orders.map(order => (
+                                <div key={order.orderId} className="info-pill" style={{
+                                    backgroundColor: '#f0f9ff',
+                                    border: '1px solid #0ea5e9',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    fontSize: '13px'
+                                }}>
+                                    <div>
+                                        <strong>#{order.orderId}</strong> - {order.customerName}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                        <span>📍 {order.distanceKm ? `${order.distanceKm.toFixed(1)}km` : '—'}</span>
+                                        <span>💰 {order.shippingFee ? formatMoney(order.shippingFee) : '—'}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div className="info-pill" style={{ backgroundColor: '#065f46', color: 'white' }}>
+                                Total Distance: {selectedOrdersData.totalDistance > 0 ? `${selectedOrdersData.totalDistance.toFixed(1)} km` : '—'}
+                            </div>
+                            <div className="info-pill" style={{ backgroundColor: '#065f46', color: 'white' }}>
+                                Total Fee: {selectedOrdersData.totalFee > 0 ? formatMoney(selectedOrdersData.totalFee) : '—'}
+                            </div>
+                        </div>
                     </div>
                 )}
-
-                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div className="info-pill">Estimated Distance: {distanceEstimate != null ? `${distanceEstimate} km` : '—'}</div>
-                    <div className="info-pill">Estimated Fee: {formatMoney(feeEstimate)}</div>
-                </div>
 
                 <div className="detail-card" style={{ marginTop: '1rem', padding: '1rem' }}>
                     <h3 style={{ marginBottom: '0.75rem' }}>Select Pending Orders</h3>
@@ -530,6 +586,23 @@ const TripCreatePage = () => {
                         </div>
                     )}
                 </div>
+
+                {selectedOrdersData && selectedOrdersData.orders.length > 0 && (
+                    <>
+                        <div className="info-pill" style={{ marginTop: '1rem' }}>
+                            Trip Route: {selectedOrdersData.orders.length} order{selectedOrdersData.orders.length > 1 ? 's' : ''} selected
+                        </div>
+                        <RouteMapCard
+                            orders={selectedOrdersData.orders}
+                            onDistanceChange={handleDistanceChange}
+                        />
+                    </>
+                )}
+                {!selectedRoute && primarySelectedOrder && (
+                    <div className="info-pill" style={{ marginTop: '1rem' }}>
+                        Using order #{primarySelectedOrder.orderId} addresses to select/create a route.
+                    </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                     <button className="btn-primary" type="submit" disabled={loading}>

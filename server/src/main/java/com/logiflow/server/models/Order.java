@@ -50,6 +50,18 @@ public class Order {
     @Column(name = "delivery_address", length = 255, nullable = false)
     private String deliveryAddress;
 
+    @Column(name = "pickup_lat", precision = 10, scale = 8, nullable = true)
+    private BigDecimal pickupLat;
+
+    @Column(name = "pickup_lng", precision = 11, scale = 8, nullable = true)
+    private BigDecimal pickupLng;
+
+    @Column(name = "delivery_lat", precision = 10, scale = 8, nullable = true)
+    private BigDecimal deliveryLat;
+
+    @Column(name = "delivery_lng", precision = 11, scale = 8, nullable = true)
+    private BigDecimal deliveryLng;
+
     @Column(name = "package_details", length = 500, nullable = true)
     private String packageDetails;
 

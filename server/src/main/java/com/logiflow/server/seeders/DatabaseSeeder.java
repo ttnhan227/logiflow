@@ -393,10 +393,10 @@ public class DatabaseSeeder implements CommandLineRunner {
         // Created 1 day before trip departure
         order.setCreatedAt(trip.getScheduledDeparture().minusDays(1));
 
-        // Calculate Shipping Fee (distance + weight based)
-        BigDecimal shippingFee = trip.getRoute().getDistanceKm().multiply(new BigDecimal("2500")) // Distance fee (2500 VND per km)
-                .add(order.getWeightTons().multiply(new BigDecimal("2000000"))) // Weight fee (2000000 VND per ton)
-                .add(new BigDecimal("50000")); // Base shipping fee
+        // Calculate Shipping Fee (distance + weight based) - Updated for local delivery pricing
+        BigDecimal shippingFee = trip.getRoute().getDistanceKm().multiply(new BigDecimal("1500")) // Distance fee (1500 VND per km)
+                .add(order.getWeightTons().multiply(new BigDecimal("700000"))) // Weight fee (700000 VND per ton)
+                .add(new BigDecimal("30000")); // Base shipping fee
         if (order.getPriorityLevel() == Order.PriorityLevel.URGENT) shippingFee = shippingFee.multiply(new BigDecimal("1.3"));
         order.setShippingFee(shippingFee);
 

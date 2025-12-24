@@ -18,7 +18,11 @@ public class OrderDto {
     private String customerName;
     private String customerPhone;
     private String pickupAddress;
+    private java.math.BigDecimal pickupLat;
+    private java.math.BigDecimal pickupLng;
     private String deliveryAddress;
+    private java.math.BigDecimal deliveryLat;
+    private java.math.BigDecimal deliveryLng;
     private String packageDetails;
     private java.math.BigDecimal distanceKm;
     private java.math.BigDecimal weightTons;
@@ -42,7 +46,11 @@ public class OrderDto {
         dto.setCustomerName(order.getCustomerName());
         dto.setCustomerPhone(order.getCustomerPhone());
         dto.setPickupAddress(order.getPickupAddress());
+        dto.setPickupLat(order.getPickupLat());
+        dto.setPickupLng(order.getPickupLng());
         dto.setDeliveryAddress(order.getDeliveryAddress());
+        dto.setDeliveryLat(order.getDeliveryLat());
+        dto.setDeliveryLng(order.getDeliveryLng());
         dto.setPackageDetails(order.getPackageDetails());
         dto.setDistanceKm(order.getDistanceKm());
         dto.setWeightTons(order.getWeightTons());

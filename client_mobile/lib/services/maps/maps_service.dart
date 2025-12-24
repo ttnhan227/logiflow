@@ -91,7 +91,6 @@ class MapsService {
       }
       return null;
     } catch (e) {
-      print('Error calculating distance: $e');
       return null;
     }
   }

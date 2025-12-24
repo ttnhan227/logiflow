@@ -8,6 +8,7 @@ import '../../models/customer/customer_profile.dart';
 import 'dart:async';
 import '../../models/picked_location.dart';
 import 'map_selection_screen.dart';
+import 'order_confirmation_screen.dart';
 import 'track_orders_screen.dart';
 
 class AddressSuggestion extends StatelessWidget {
@@ -45,17 +46,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _deliveryAddressController = TextEditingController();
   final _packageDetailsController = TextEditingController();
   final _weightController = TextEditingController();
+  final _packageValueController = TextEditingController();
   final LayerLink _pickupLink = LayerLink();
   final LayerLink _deliveryLink = LayerLink();
 
   String _pickupType = '';
   String _priority = 'NORMAL';
-  bool _isLoading = false;
   bool _isInitializing = true;
-
-  // Order creation success state
-  bool _orderCreated = false;
-  int? _createdOrderId;
 
   // Address suggestions state
   List<String> _pickupSuggestions = [];
@@ -68,9 +65,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String? _calculatedDuration;
   bool _isCalculatingDistance = false;
 
-  // Auto-fill pickup address state
+  // Customer profile for map selection
   CustomerProfile? _customerProfile;
-  bool _hasPromptedForAutoFill = false;
 
   // Distance calculation debouncing
   bool _isDistanceCalculationInProgress = false;
@@ -186,51 +182,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
-  Future<void> _promptAutoFillPickupAddress() async {
-    if (_customerProfile?.address == null ||
-        _customerProfile!.address!.isEmpty ||
-        _hasPromptedForAutoFill ||
-        _pickupAddressController.text.isNotEmpty) {
-      return;
-    }
 
-    final shouldAutoFill = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Use Your Address?'),
-          content: Text(
-            'Would you like to use your saved address as the pickup location?\n\n"${_customerProfile!.address}"',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('No, thanks'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Yes, use it'),
-            ),
-          ],
-        );
-      },
-    );
 
-    if (shouldAutoFill == true && mounted) {
-      setState(() {
-        _pickupAddressController.text = _customerProfile!.address!;
-        _hasPromptedForAutoFill = true;
-      });
-      // Trigger distance calculation
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) _calculateDistance();
-      });
-    } else {
-      setState(() => _hasPromptedForAutoFill = true);
-    }
-  }
-
-  void _calculateDistance() async {
+  Future<void> _calculateDistance() async {
     final pickupAddress = _pickupAddressController.text.trim();
     final deliveryAddress = _deliveryAddressController.text.trim();
 
@@ -248,6 +202,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         pickupAddress,
         deliveryAddress,
       );
+
       if (mounted && result != null) {
         setState(() {
           _calculatedDistance = result.totalDistance;
@@ -328,54 +283,46 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
-  void _openMapForPickup() async {
+  void _openDualPointSelection() async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MapSelectionScreen(
-          initialLat: _pickupLat ?? 10.8231, // Default to Ho Chi Minh City
-          initialLng: _pickupLng ?? 106.6297,
-          title: 'Select Pickup Location',
+          initialLat: 10.8231, // Default to Ho Chi Minh City
+          initialLng: 106.6297,
+          title: 'Select Pickup & Delivery Locations',
+          allowDualSelection: true, // Enable dual-point selection
+          customerProfile: _customerProfile, // Pass customer profile for default address
         ),
       ),
     );
 
-    if (result != null && result is PickedLocation) {
+    if (result != null &&
+        result is PickedLocation &&
+        result.routeData != null) {
+      // Extract route data from dual selection
+      final routeData = result.routeData!;
+      final pickupData = routeData['pickup'] as Map<String, dynamic>;
+      final deliveryData = routeData['delivery'] as Map<String, dynamic>;
+
       setState(() {
-        _pickupLat = result.lat;
-        _pickupLng = result.lng;
-        _pickupAddressController.text = result.displayText;
-      });
+        // Set pickup location
+        _pickupLat = pickupData['lat'] as double;
+        _pickupLng = pickupData['lng'] as double;
+        _pickupAddressController.text =
+            pickupData['address'] as String? ?? 'Selected pickup location';
 
-      // Trigger distance calculation
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) _calculateDistance();
-      });
-    }
-  }
+        // Set delivery location
+        _deliveryLat = deliveryData['lat'] as double;
+        _deliveryLng = deliveryData['lng'] as double;
+        _deliveryAddressController.text =
+            deliveryData['address'] as String? ?? 'Selected delivery location';
 
-  void _openMapForDelivery() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MapSelectionScreen(
-          initialLat: _deliveryLat ?? 10.8231, // Default to Ho Chi Minh City
-          initialLng: _deliveryLng ?? 106.6297,
-          title: 'Select Delivery Location',
-        ),
-      ),
-    );
-
-    if (result != null && result is PickedLocation) {
-      setState(() {
-        _deliveryLat = result.lat;
-        _deliveryLng = result.lng;
-        _deliveryAddressController.text = result.displayText;
-      });
-
-      // Trigger distance calculation
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) _calculateDistance();
+        // Set calculated distance from route data
+        _calculatedDistance = routeData['distanceText'] as String?;
+        _calculatedDuration = routeData['distanceKm'] != null
+            ? '${routeData['distanceKm']} km'
+            : null;
       });
     }
   }
@@ -398,76 +345,67 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     super.dispose();
   }
 
-  Future<void> _createOrder() async {
+  void _navigateToConfirmation() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    setState(() => _isLoading = true);
+    // Ensure distance calculation is complete before proceeding
+    final pickupAddress = _pickupAddressController.text.trim();
+    final deliveryAddress = _deliveryAddressController.text.trim();
 
-    try {
-      final weightTonnes = double.tryParse(_weightController.text.trim());
-      final request = CreateOrderRequest(
-        customerName: _customerNameController.text.trim(),
-        customerPhone: _customerPhoneController.text.trim(),
-        pickupAddress: _pickupAddressController.text.trim(),
-        deliveryAddress: _deliveryAddressController.text.trim(),
-        pickupLat: _pickupLat,
-        pickupLng: _pickupLng,
-        deliveryLat: _deliveryLat,
-        deliveryLng: _deliveryLng,
-        packageDetails: _packageDetailsController.text.trim().isNotEmpty
-            ? _packageDetailsController.text.trim()
-            : null,
-        weightKg: weightTonnes != null ? weightTonnes * 1000 : null,
-        priority: _priority,
-        pickupType: _pickupType.isNotEmpty ? _pickupType : null,
-        containerNumber: _containerNumberController.text.trim().isNotEmpty
-            ? _containerNumberController.text.trim()
-            : null,
-        terminalName: _terminalNameController.text.trim().isNotEmpty
-            ? _terminalNameController.text.trim()
-            : null,
-        warehouseName: _warehouseNameController.text.trim().isNotEmpty
-            ? _warehouseNameController.text.trim()
-            : null,
-        dockNumber: _dockNumberController.text.trim().isNotEmpty
-            ? _dockNumberController.text.trim()
-            : null,
-      );
-
-      final order = await customerService.createOrder(request);
-
-      if (!mounted) return;
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tạo đơn thành công'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // Set order created state with the order ID
-      setState(() {
-        _orderCreated = true;
-        _createdOrderId = order.orderId;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to create order: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (pickupAddress.isNotEmpty &&
+        deliveryAddress.isNotEmpty &&
+        (_calculatedDistance == null || _calculatedDuration == null) &&
+        !_isDistanceCalculationInProgress) {
+      // Trigger final distance calculation if not already calculated
+      await _calculateDistance();
     }
+
+    final weightTonnes = double.tryParse(_weightController.text.trim());
+    final packageValue = double.tryParse(_packageValueController.text.trim().replaceAll(',', ''));
+    final request = CreateOrderRequest(
+      customerName: _customerNameController.text.trim(),
+      customerPhone: _customerPhoneController.text.trim(),
+      pickupAddress: _pickupAddressController.text.trim(),
+      deliveryAddress: _deliveryAddressController.text.trim(),
+      pickupLat: _pickupLat,
+      pickupLng: _pickupLng,
+      deliveryLat: _deliveryLat,
+      deliveryLng: _deliveryLng,
+      packageDetails: _packageDetailsController.text.trim().isNotEmpty
+          ? _packageDetailsController.text.trim()
+          : null,
+      weightKg: weightTonnes != null ? weightTonnes * 1000 : null,
+      packageValue: packageValue,
+      priority: _priority,
+      pickupType: _pickupType.isNotEmpty ? _pickupType : null,
+      containerNumber: _containerNumberController.text.trim().isNotEmpty
+          ? _containerNumberController.text.trim()
+          : null,
+      terminalName: _terminalNameController.text.trim().isNotEmpty
+          ? _terminalNameController.text.trim()
+          : null,
+      warehouseName: _warehouseNameController.text.trim().isNotEmpty
+          ? _warehouseNameController.text.trim()
+          : null,
+      dockNumber: _dockNumberController.text.trim().isNotEmpty
+          ? _dockNumberController.text.trim()
+          : null,
+    );
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderConfirmationScreen(
+          orderRequest: request,
+          calculatedDistance: _calculatedDistance,
+          calculatedDuration: _calculatedDuration,
+        ),
+      ),
+    );
   }
 
   void _resetForm() {
@@ -498,10 +436,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       _calculatedDuration = null;
       _pickupSuggestions = [];
       _deliverySuggestions = [];
-      _hasPromptedForAutoFill = false;
-      _isLoading = false;
-      _orderCreated = false;
-      _createdOrderId = null;
     });
   }
 
@@ -579,12 +513,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ],
                   onChanged: (value) {
                     setState(() => _pickupType = value ?? '');
-                    // Prompt to auto-fill pickup address from profile when pickup type is selected
-                    if (value != null && value.isNotEmpty) {
-                      Future.delayed(const Duration(milliseconds: 200), () {
-                        if (mounted) _promptAutoFillPickupAddress();
-                      });
-                    }
                   },
                 ),
                 const SizedBox(height: 24),
@@ -616,8 +544,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 ),
                               IconButton(
                                 icon: const Icon(Icons.map),
-                                onPressed: () => _openMapForPickup(),
-                                tooltip: 'Select on map',
+                                onPressed: () => _openDualPointSelection(),
+                                tooltip: 'Select pickup & delivery on map',
                               ),
                             ],
                           ),
@@ -756,8 +684,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 ),
                               IconButton(
                                 icon: const Icon(Icons.map),
-                                onPressed: () => _openMapForDelivery(),
-                                tooltip: 'Select on map',
+                                onPressed: () => _openDualPointSelection(),
+                                tooltip: 'Select pickup & delivery on map',
                               ),
                             ],
                           ),
@@ -826,62 +754,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  // Distance and Duration Display
-                  if (_isCalculatingDistance ||
-                      (_calculatedDistance != null ||
-                          _calculatedDuration != null))
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.route, color: Colors.blue),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _isCalculatingDistance
-                                ? const Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text('Calculating distance...'),
-                                    ],
-                                  )
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Distance: ${_calculatedDistance ?? "Unable to calculate"}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Estimated duration: ${_calculatedDuration ?? "Unable to calculate"}',
-                                        style: const TextStyle(
-                                          color: Colors.blue,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 16),
+
                   TextFormField(
                     controller: _packageDetailsController,
                     decoration: const InputDecoration(
@@ -919,6 +792,30 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  // Package Value (for insurance)
+                  TextFormField(
+                    controller: _packageValueController,
+                    decoration: const InputDecoration(
+                      labelText: 'Package Value (VND)',
+                      border: OutlineInputBorder(),
+                      hintText: 'Declared value for insurance (optional)',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return null; // Package value is optional
+                      }
+                      final packageValue = double.tryParse(value);
+                      if (packageValue == null) {
+                        return 'Please enter a valid amount';
+                      }
+                      if (packageValue < 0) {
+                        return 'Value cannot be negative';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: _priority,
                     decoration: const InputDecoration(
@@ -946,12 +843,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: (_orderCreated || _isLoading)
-                          ? null
-                          : _createOrder,
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text('Create Order'),
+                      onPressed: _navigateToConfirmation,
+                      child: const Text('Review Order'),
                     ),
                   ),
               ],
@@ -959,40 +852,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: _orderCreated
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  OrderDetailScreen(orderId: _createdOrderId!),
-                            ),
-                          );
-                        },
-                        child: const Text('View Order'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _resetForm();
-                        },
-                        child: const Text('Create New Order'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : null,
     );
   }
 }

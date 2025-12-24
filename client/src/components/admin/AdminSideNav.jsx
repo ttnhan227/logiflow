@@ -42,7 +42,6 @@ const AdminSideNav = () => {
     { path: '/admin/registration-requests', icon: '📋', label: 'Registration Requests' },
     { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
     { path: '/admin/payment-requests', icon: '💳', label: 'Payment Requests' },
-    { path: '/admin/routes', icon: '🗺️', label: 'Routes' },
     { path: '/admin/vehicles', icon: '🚗', label: 'Vehicles' },
     {
       label: 'System',

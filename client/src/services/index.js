@@ -7,7 +7,6 @@ import uploadService from './upload/uploadService';
 import profileService from './profile/profileService';
 import settingsService from './admin/settingsService';
 import dashboardService from './admin/dashboardService';
-import routeService from './admin/routeService';
 import vehicleService from './admin/vehicleService';
 import reportsService from './admin/reportsService';
 import tripsOversightService from './admin/tripsOversightService';
@@ -33,7 +32,6 @@ export {
   profileService,
   settingsService,
   dashboardService,
-  routeService,
   vehicleService,
   reportsService,
   tripsOversightService,

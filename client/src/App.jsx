@@ -26,7 +26,6 @@ import AdminSystemOverviewPage from "./components/admin/AdminSystemOverviewPage"
 import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
 import AdminRegistrationRequestsPage from "./components/admin/AdminRegistrationRequestsPage";
 import AdminRegistrationRequestDetailsPage from "./components/admin/AdminRegistrationRequestDetailsPage";
-import AdminRoutesPage from "./components/admin/AdminRoutesPage";
 import AdminVehiclesPage from "./components/admin/AdminVehiclesPage";
 import AdminReportsPage from "./components/admin/AdminReportsPage";
 import AdminTripsOversightPage from "./components/admin/AdminTripsOversightPage";
@@ -242,11 +241,6 @@ function App() {
           <Route path="/admin/registration-requests/:requestId" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminRegistrationRequestDetailsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/routes" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminRoutesPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/vehicles" element={

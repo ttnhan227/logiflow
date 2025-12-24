@@ -74,8 +74,13 @@ public class CustomerServiceImpl implements CustomerService {
         order.setWarehouseName(request.getWarehouseName());
         order.setDockNumber(request.getDockNumber());
         order.setDeliveryAddress(request.getDeliveryAddress());
+        order.setPickupLat(request.getPickupLat());
+        order.setPickupLng(request.getPickupLng());
+        order.setDeliveryLat(request.getDeliveryLat());
+        order.setDeliveryLng(request.getDeliveryLng());
         order.setPackageDetails(request.getPackageDetails());
         order.setWeightTons(request.getWeightTonnes());
+        order.setPackageValue(request.getPackageValue()); // For insurance calculation
         order.setCreatedBy(customer);
         order.setCustomer(customer);
 
@@ -334,6 +339,7 @@ public class CustomerServiceImpl implements CustomerService {
                     history.setPackageValue(order.getPackageValue());
                     history.setDistanceKm(order.getDistanceKm());
                     history.setShippingFee(order.getShippingFee());
+                    history.setPriorityLevel(order.getPriorityLevel().name()); // Add priority level
                     history.setOrderStatus(order.getOrderStatus().name());
                     history.setPaymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING");
                     history.setCreatedAt(order.getCreatedAt());
@@ -370,6 +376,10 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setDockNumber(order.getDockNumber());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
+        dto.setPickupLat(order.getPickupLat());
+        dto.setPickupLng(order.getPickupLng());
+        dto.setDeliveryLat(order.getDeliveryLat());
+        dto.setDeliveryLng(order.getDeliveryLng());
         dto.setWeightTons(order.getWeightTons());
         dto.setPackageValue(order.getPackageValue());
         dto.setDistanceKm(order.getDistanceKm());
@@ -416,6 +426,10 @@ public class CustomerServiceImpl implements CustomerService {
         dto.setDockNumber(order.getDockNumber());
         dto.setDeliveryAddress(order.getDeliveryAddress());
         dto.setPackageDetails(order.getPackageDetails());
+        dto.setPickupLat(order.getPickupLat());
+        dto.setPickupLng(order.getPickupLng());
+        dto.setDeliveryLat(order.getDeliveryLat());
+        dto.setDeliveryLng(order.getDeliveryLng());
         dto.setWeightTons(order.getWeightTons());
         dto.setPackageValue(order.getPackageValue());
         dto.setDistanceKm(order.getDistanceKm());
@@ -441,64 +455,120 @@ public class CustomerServiceImpl implements CustomerService {
 
     /**
      * Calculate the distance and shipping fee for an order
+     * Prioritizes coordinate-based calculation over address-based geocoding
      */
     private void calculateOrderDistanceAndFee(Order order) {
         try {
-            // Try to calculate distance using MapsService
-            DistanceResultDto distanceResult = mapsService.calculateDistance(
-                order.getPickupAddress(),
-                order.getDeliveryAddress()
-            );
+            BigDecimal distanceKm = null;
 
-            if (distanceResult != null) {
-                // Set distance in toones (convert from meters)
-                BigDecimal distanceKm = BigDecimal.valueOf(distanceResult.getDistanceMeters())
-                    .divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP);
+            // Option 1: Use coordinates if available (from map selection)
+            if (order.getPickupLat() != null && order.getPickupLng() != null &&
+                order.getDeliveryLat() != null && order.getDeliveryLng() != null) {
+
+                // Calculate distance using Haversine formula with coordinates
+                double distance = calculateHaversineDistance(
+                    order.getPickupLat().doubleValue(), order.getPickupLng().doubleValue(),
+                    order.getDeliveryLat().doubleValue(), order.getDeliveryLng().doubleValue()
+                );
+                distanceKm = BigDecimal.valueOf(distance);
+                System.out.println("Calculated distance using coordinates: " + distanceKm + " km");
+            }
+            // Option 2: Fallback to address-based geocoding if coordinates not available
+            else if (order.getPickupAddress() != null && !order.getPickupAddress().trim().isEmpty() &&
+                     order.getDeliveryAddress() != null && !order.getDeliveryAddress().trim().isEmpty()) {
+
+                DistanceResultDto distanceResult = mapsService.calculateDistance(
+                    order.getPickupAddress(),
+                    order.getDeliveryAddress()
+                );
+
+                if (distanceResult != null) {
+                    // Convert meters to km
+                    distanceKm = BigDecimal.valueOf(distanceResult.getDistanceMeters())
+                        .divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP);
+                    System.out.println("Calculated distance using addresses: " + distanceKm + " km");
+                } else {
+                    System.err.println("Failed to geocode addresses for distance calculation: " +
+                        order.getPickupAddress() + " -> " + order.getDeliveryAddress());
+                }
+            }
+
+            // Calculate shipping fee if we have distance
+            if (distanceKm != null) {
                 order.setDistanceKm(distanceKm);
 
-                // Calculate shipping fee
                 BigDecimal fee = calculateShippingFee(
                     distanceKm,
                     order.getWeightTons() != null ? order.getWeightTons() : BigDecimal.ZERO,
-                    order.getPriorityLevel()
+                    order
                 );
                 order.setShippingFee(fee);
+                System.out.println("Calculated shipping fee: " + fee + " VND");
             } else {
-                // Only log if addresses are not empty (avoid spam for empty orders)
-                if (order.getPickupAddress() != null && !order.getPickupAddress().trim().isEmpty() &&
-                    order.getDeliveryAddress() != null && !order.getDeliveryAddress().trim().isEmpty()) {
-                    System.err.println("Failed to calculate distance for order between: " +
-                        order.getPickupAddress() + " -> " + order.getDeliveryAddress());
-                }
-                // Set default values or leave null
+                // No distance calculation possible
                 order.setDistanceKm(null);
                 order.setShippingFee(null);
+                System.err.println("No distance calculation method available for order");
             }
+
         } catch (Exception e) {
             System.err.println("Error calculating distance and fee: " + e.getMessage());
+            e.printStackTrace();
             // Leave distance and fee as null if calculation fails
+            order.setDistanceKm(null);
+            order.setShippingFee(null);
         }
     }
 
     /**
-     * Calculate shipping fee based on distance, weight, and priority
-     * Now uses tons as the primary unit
+     * Calculate Haversine distance between two coordinate points
+     * @param lat1 Latitude of first point
+     * @param lng1 Longitude of first point
+     * @param lat2 Latitude of second point
+     * @param lng2 Longitude of second point
+     * @return Distance in kilometers
      */
-    private BigDecimal calculateShippingFee(BigDecimal distanceKm, BigDecimal weightTons, Order.PriorityLevel priority) {
+    private double calculateHaversineDistance(double lat1, double lng1, double lat2, double lng2) {
+        final int R = 6371; // Earth's radius in kilometers
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lngDistance = Math.toRadians(lng2 - lng1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
+
+    /**
+     * Calculate shipping fee based on distance, weight, package value, and priority
+     * Includes insurance premium for declared package value
+     */
+    private BigDecimal calculateShippingFee(BigDecimal distanceKm, BigDecimal weightTons, Order order) {
         // Rate constants (should match frontend calculations)
-        BigDecimal baseFee = BigDecimal.valueOf(50000); // VND base fee
-        BigDecimal distanceRate = BigDecimal.valueOf(2500); // VND per km
-        BigDecimal weightRatePerTon = BigDecimal.valueOf(2000000); // VND per ton
+        BigDecimal baseFee = BigDecimal.valueOf(30000); // VND base fee (reduced for local delivery)
+        BigDecimal distanceRate = BigDecimal.valueOf(1500); // VND per km (reduced for local delivery)
+        BigDecimal weightRatePerTon = BigDecimal.valueOf(700000); // VND per ton (reduced from 2M to 700k for local delivery)
+        BigDecimal insuranceRate = BigDecimal.valueOf(0.005); // 0.5% insurance premium on declared value
 
         // Calculate distance and weight components
         BigDecimal distanceFee = distanceKm.multiply(distanceRate);
         BigDecimal weightFee = weightTons.multiply(weightRatePerTon);
 
+        // Calculate insurance premium if package value is declared
+        BigDecimal insurancePremium = BigDecimal.ZERO;
+        if (order.getPackageValue() != null && order.getPackageValue().compareTo(BigDecimal.ZERO) > 0) {
+            insurancePremium = order.getPackageValue().multiply(insuranceRate);
+        }
+
         // Total fee before priority multiplier
-        BigDecimal totalFee = baseFee.add(distanceFee).add(weightFee);
+        BigDecimal totalFee = baseFee.add(distanceFee).add(weightFee).add(insurancePremium);
 
         // Apply urgent multiplier if needed
-        if (priority == Order.PriorityLevel.URGENT) {
+        if (order.getPriorityLevel() == Order.PriorityLevel.URGENT) {
             totalFee = totalFee.multiply(BigDecimal.valueOf(1.3));
         }
 
