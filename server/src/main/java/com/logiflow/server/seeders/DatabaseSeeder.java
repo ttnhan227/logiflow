@@ -959,7 +959,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createUserWithRole("vo.nhung", "vo.nhung@gmail.com", "123", roles.get(3), "Vo Thanh Nhung", "+84-907-777-777", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(30), now.minusDays(7)),
                 createUserWithRole("bui.phong", "bui.phong@gmail.com", "123", roles.get(3), "Bui Duc Phong", "+84-908-888-888", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(25), now.minusDays(8)),
                 createUserWithRole("do.huong", "do.huong@gmail.com", "123", roles.get(3), "Do Thi Huong", "+84-909-999-999", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(20), now.minusDays(9)),
-                createUserWithRole("ttnhan227", "ttnhan227@gmail.com", "123", roles.get(3), "Tran Trong Nhan", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
+                createUserWithRole("hai.bui", "hai.bui@gmail.com", "123", roles.get(3), "Tran Hai Bui", "+84-910-000-000", PLACEHOLDER_PROFILE_IMAGE_URL, now.minusDays(15), now.minusDays(10))
         );
         userRepository.saveAll(users);
         System.out.println("Seeded 25 users with roles");
