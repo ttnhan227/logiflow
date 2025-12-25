@@ -53,12 +53,6 @@ public class DriverDtos {
         private LocalDateTime actualArrival;
 
         private String routeName;
-        private String originAddress;
-        private String destinationAddress;
-        private BigDecimal originLat;
-        private BigDecimal originLng;
-        private BigDecimal destinationLat;
-        private BigDecimal destinationLng;
 
         private String vehicleType;
         private String vehiclePlate;
@@ -79,6 +73,10 @@ public class DriverDtos {
         private String customerPhone;
         private String pickupAddress;
         private String deliveryAddress;
+        private BigDecimal pickupLat;
+        private BigDecimal pickupLng;
+        private BigDecimal deliveryLat;
+        private BigDecimal deliveryLng;
         private String packageDetails;
         private BigDecimal weightTons;
         private BigDecimal packageValue;

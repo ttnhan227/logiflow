@@ -16,6 +16,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
@@ -73,12 +74,16 @@ public class TripOversightDto {
         private String customerName;
         private String customerPhone;
         private String pickupAddress;
+        private BigDecimal pickupLat;
+        private BigDecimal pickupLng;
         private String pickupType;
         private String warehouseName;
         private String dockNumber;
         private String containerNumber;
         private String terminalName;
         private String deliveryAddress;
+        private BigDecimal deliveryLat;
+        private BigDecimal deliveryLng;
         private String packageDetails;
         private BigDecimal weightTon;
         private BigDecimal packageValue;
@@ -109,14 +114,52 @@ public class TripOversightDto {
         // Route information - with null checks
         if (trip.getRoute() != null) {
             Route route = trip.getRoute();
-            dto.setOriginAddress(route.getOriginAddress());
-            dto.setDestinationAddress(route.getDestinationAddress());
-            dto.setOriginCity(extractCity(route.getOriginAddress()));
-            dto.setDestinationCity(extractCity(route.getDestinationAddress()));
-            dto.setOriginLat(route.getOriginLat());
-            dto.setOriginLng(route.getOriginLng());
-            dto.setDestinationLat(route.getDestinationLat());
-            dto.setDestinationLng(route.getDestinationLng());
+
+            if (route.getIsTripRoute() != null && route.getIsTripRoute()) {
+                // For trip routes, derive origin/destination from waypoints
+                try {
+                    List<Map<String, Object>> waypoints = new com.fasterxml.jackson.databind.ObjectMapper()
+                        .readValue(route.getWaypoints(),
+                                 new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {});
+
+                    if (!waypoints.isEmpty()) {
+                        // Use first and last waypoints for origin/destination
+                        Map<String, Object> firstWaypoint = waypoints.get(0);
+                        Map<String, Object> lastWaypoint = waypoints.get(waypoints.size() - 1);
+
+                        dto.setOriginAddress((String) firstWaypoint.get("address"));
+                        dto.setDestinationAddress((String) lastWaypoint.get("address"));
+                        dto.setOriginCity(extractCity((String) firstWaypoint.get("address")));
+                        dto.setDestinationCity(extractCity((String) lastWaypoint.get("address")));
+                        dto.setOriginLat(java.math.BigDecimal.valueOf(((Number) firstWaypoint.get("lat")).doubleValue()));
+                        dto.setOriginLng(java.math.BigDecimal.valueOf(((Number) firstWaypoint.get("lng")).doubleValue()));
+                        dto.setDestinationLat(java.math.BigDecimal.valueOf(((Number) lastWaypoint.get("lat")).doubleValue()));
+                        dto.setDestinationLng(java.math.BigDecimal.valueOf(((Number) lastWaypoint.get("lng")).doubleValue()));
+                    }
+                } catch (Exception e) {
+                    // Fallback: use order addresses if waypoint parsing fails
+                    if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+                        Order firstOrder = trip.getOrders().get(0);
+                        Order lastOrder = trip.getOrders().get(trip.getOrders().size() - 1);
+
+                        dto.setOriginAddress(firstOrder.getPickupAddress());
+                        dto.setDestinationAddress(lastOrder.getDeliveryAddress());
+                        dto.setOriginCity(extractCity(firstOrder.getPickupAddress()));
+                        dto.setDestinationCity(extractCity(lastOrder.getDeliveryAddress()));
+                        dto.setOriginLat(firstOrder.getPickupLat());
+                        dto.setOriginLng(firstOrder.getPickupLng());
+                        dto.setDestinationLat(lastOrder.getDeliveryLat());
+                        dto.setDestinationLng(lastOrder.getDeliveryLng());
+                    }
+                }
+            } else {
+                // No legacy single routes in new system
+                dto.setOriginAddress("Multi-stop Route");
+                dto.setDestinationAddress("Multi-stop Route");
+                dto.setOriginCity("Multiple");
+                dto.setDestinationCity("Multiple");
+            }
+
             dto.setEta(trip.getScheduledArrival()); // Use scheduled arrival as ETA
         }
 
@@ -158,16 +201,26 @@ public class TripOversightDto {
                     DriverSummaryDto driverDto = DriverSummaryDto.fromDriver(selectedAssignment.getDriver(), new java.util.ArrayList<>());
                     // Try to get real-time GPS location from tracking system first
                     try {
-                        com.logiflow.server.controllers.maps.GpsTrackingController.LocationMessage latestLocation =
-                            com.logiflow.server.controllers.maps.GpsTrackingController.getLatestLocation(
-                                selectedAssignment.getDriver().getDriverId().toString(),
-                                trip.getTripId().toString()
-                            );
-                        if (latestLocation != null) {
-                            driverDto.setCurrentLat(BigDecimal.valueOf(latestLocation.getLatitude()));
-                            driverDto.setCurrentLng(BigDecimal.valueOf(latestLocation.getLongitude()));
+                        // Check for null IDs before calling GPS method
+                        if (selectedAssignment.getDriver().getDriverId() != null && trip.getTripId() != null) {
+                            com.logiflow.server.controllers.maps.GpsTrackingController.LocationMessage latestLocation =
+                                com.logiflow.server.controllers.maps.GpsTrackingController.getLatestLocation(
+                                    selectedAssignment.getDriver().getDriverId().toString(),
+                                    trip.getTripId().toString()
+                                );
+                            if (latestLocation != null) {
+                                driverDto.setCurrentLat(BigDecimal.valueOf(latestLocation.getLatitude()));
+                                driverDto.setCurrentLng(BigDecimal.valueOf(latestLocation.getLongitude()));
+                            } else {
+                                // Fallback to database location if GPS memory doesn't have it
+                                com.logiflow.server.models.Driver driver = selectedAssignment.getDriver();
+                                if (driver.getCurrentLocationLat() != null && driver.getCurrentLocationLng() != null) {
+                                    driverDto.setCurrentLat(driver.getCurrentLocationLat());
+                                    driverDto.setCurrentLng(driver.getCurrentLocationLng());
+                                }
+                            }
                         } else {
-                            // Fallback to database location if GPS memory doesn't have it
+                            // Fallback to database location if IDs are null
                             com.logiflow.server.models.Driver driver = selectedAssignment.getDriver();
                             if (driver.getCurrentLocationLat() != null && driver.getCurrentLocationLng() != null) {
                                 driverDto.setCurrentLat(driver.getCurrentLocationLat());
@@ -203,12 +256,17 @@ public class TripOversightDto {
                     orderDto.setCustomerName(order.getCustomerName());
                     orderDto.setCustomerPhone(order.getCustomerPhone());
                     orderDto.setPickupAddress(order.getPickupAddress());
-                    orderDto.setPickupType(order.getPickupType() != null ? order.getPickupType().name() : null);
+                    orderDto.setPickupLat(order.getPickupLat());
+                    orderDto.setPickupLng(order.getPickupLng());
+                    String pickupTypeStr = order.getPickupType() != null ? order.getPickupType().name() : null;
+                    orderDto.setPickupType(pickupTypeStr);
                     orderDto.setWarehouseName(order.getWarehouseName());
                     orderDto.setDockNumber(order.getDockNumber());
                     orderDto.setContainerNumber(order.getContainerNumber());
                     orderDto.setTerminalName(order.getTerminalName());
                     orderDto.setDeliveryAddress(order.getDeliveryAddress());
+                    orderDto.setDeliveryLat(order.getDeliveryLat());
+                    orderDto.setDeliveryLng(order.getDeliveryLng());
                     orderDto.setPackageDetails(order.getPackageDetails());
                     orderDto.setWeightTon(order.getWeightTons());
                     orderDto.setPackageValue(order.getPackageValue());
@@ -295,6 +353,9 @@ public class TripOversightDto {
 
     private static LocalDateTime calculateTripSla(Trip trip) {
         // Trip SLA is determined by the earliest urgent order SLA, or latest normal order SLA
+        if (trip.getOrders() == null || trip.getOrders().isEmpty()) {
+            return null;
+        }
         return trip.getOrders().stream()
             .map(TripOversightDto::calculateOrderSla)
             .filter(sla -> sla != null)

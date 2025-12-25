@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${reportTitle}">Driver Performance Report</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: white; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo { max-width: 200px; height: auto; margin-bottom: 10px; }
+        .company-name { font-size: 28px; font-weight: bold; color: #333; margin: 10px 0; }
+        .report-title { font-size: 24px; color: #666; margin: 10px 0; }
+        .date-info { font-size: 14px; color: #888; margin: 5px 0; }
+        .section { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 5px; padding: 20px; }
+        .section-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .metric-card { background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #17a2b8; margin-bottom: 15px; }
+        .metric-label { font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #333; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .data-table th, .data-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        .data-table th { background-color: #f8f9fa; font-weight: bold; color: #333; }
+        .data-table tr:nth-child(even) { background-color: #f8f9fa; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; font-size: 12px; color: #666; }
+        .rating { color: #ffc107; font-weight: bold; }
+        .rank { font-size: 18px; font-weight: bold; color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img th:if="${logoBase64 != ''}" th:src="${logoBase64}" alt="LogiFlow Logo" class="logo">
+            <div class="company-name">LogiFlow</div>
+            <div class="report-title" th:text="${reportTitle}">Driver Performance Report</div>
+            <div class="date-info">Report Period: <span th:text="${#temporals.format(startDate, 'yyyy-MM-dd')}"></span> to <span th:text="${#temporals.format(endDate, 'yyyy-MM-dd')}"></span></div>
+            <div class="date-info">Generated: <span th:text="${#temporals.format(generatedDate, 'yyyy-MM-dd')}"></span> at <span th:text="${#temporals.format(generatedTime, 'HH:mm:ss')}"></span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Driver Performance Summary</div>
+            <div class="metric-card">
+                <div class="metric-label">Total Drivers in Report</div>
+                <div class="metric-value" th:text="${totalDrivers}">0</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Driver Performance Rankings</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Driver Name</th>
+                        <th>License Type</th>
+                        <th>Trips Completed</th>
+                        <th>On-Time Delivery Rate</th>
+                        <th>Customer Rating</th>
+                        <th>Experience (Years)</th>
+                        <th>Performance Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="driver, iterStat : ${drivers}">
+                        <td><span class="rank" th:text="${iterStat.index + 1}">#</span></td>
+                        <td th:text="${driver.driverName}">Driver Name</td>
+                        <td th:text="${driver.licenseType}">License Type</td>
+                        <td th:text="${driver.tripsCompleted}">0</td>
+                        <td th:text="${driver.onTimeDeliveryRate + '%'}">0%</td>
+                        <td><span class="rating" th:text="${driver.customerRating + '/5'}">0/5</span></td>
+                        <td th:text="${driver.yearsExperience}">0</td>
+                        <td th:text="${driver.performanceScore}">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Performance Insights</div>
+            <div th:if="${totalDrivers > 0}">
+                <p>The driver performance rankings are calculated based on a combination of on-time delivery rates, customer satisfaction scores, trip completion rates, and compliance with safety regulations.</p>
+                <p>Top performers demonstrate consistent reliability, excellent customer service, and adherence to all operational protocols.</p>
+            </div>
+            <div th:if="${totalDrivers == 0}">
+                <p>No driver performance data available for the selected time period.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This report was generated automatically by LogiFlow Logistics Management System.</p>
+            <p>For questions or concerns, please contact the system administrator.</p>
+        </div>
+    </div>
+</body>
+</html>

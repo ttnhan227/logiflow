@@ -16,10 +16,13 @@ class OrderHistory extends Equatable {
   final double? shippingFee;
   final String orderStatus;
   final String? paymentStatus;
+  final String? priorityLevel; // Add priority level
   final DateTime createdAt;
   final DateTime? deliveredAt;
   final String? driverName;
   final int? driverRating;
+  final String? delayReason;
+  final String? delayStatus;
 
   const OrderHistory({
     required this.orderId,
@@ -37,10 +40,13 @@ class OrderHistory extends Equatable {
     this.shippingFee,
     required this.orderStatus,
     this.paymentStatus,
+    this.priorityLevel, // Add priority level
     required this.createdAt,
     this.deliveredAt,
     this.driverName,
     this.driverRating,
+    this.delayReason,
+    this.delayStatus,
   });
 
   factory OrderHistory.fromJson(Map<String, dynamic> json) {
@@ -60,12 +66,15 @@ class OrderHistory extends Equatable {
       shippingFee: json['shippingFee']?.toDouble(),
       orderStatus: json['orderStatus'],
       paymentStatus: json['paymentStatus'],
+      priorityLevel: json['priorityLevel'], // Add priority level
       createdAt: DateTime.parse(json['createdAt']),
       deliveredAt: json['deliveredAt'] != null
           ? DateTime.parse(json['deliveredAt'])
           : null,
       driverName: json['driverName'],
       driverRating: json['driverRating'],
+      delayReason: json['delayReason'],
+      delayStatus: json['delayStatus'],
     );
   }
 
@@ -88,6 +97,8 @@ class OrderHistory extends Equatable {
       'deliveredAt': deliveredAt?.toIso8601String(),
       'driverName': driverName,
       'driverRating': driverRating,
+      'delayReason': delayReason,
+      'delayStatus': delayStatus,
     };
   }
 
@@ -112,5 +123,7 @@ class OrderHistory extends Equatable {
     deliveredAt,
     driverName,
     driverRating,
+    delayReason,
+    delayStatus,
   ];
 }

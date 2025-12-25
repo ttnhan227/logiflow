@@ -1,17 +1,16 @@
 package com.logiflow.server.services.dispatch;
 
-import com.logiflow.server.dtos.admin.route.CreateRouteDto;
-import com.logiflow.server.dtos.admin.route.RouteDto;
-import com.logiflow.server.dtos.maps.DirectionsResultDto;
-import com.logiflow.server.dtos.maps.GeocodeResultDto;
+import com.logiflow.server.dtos.dispatch.RouteDto;
+import com.logiflow.server.models.Order;
 import com.logiflow.server.models.Route;
 import com.logiflow.server.repositories.route.RouteRepository;
-import com.logiflow.server.services.maps.MapsService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,123 +19,94 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
     @Autowired
     private RouteRepository routeRepository;
 
-    @Autowired
-    private MapsService mapsService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public RouteDto getRouteById(Integer routeId) {
         Route route = routeRepository.findById(routeId)
                 .orElseThrow(() -> new RuntimeException("Route not found with id: " + routeId));
-
-        int totalTrips = route.getTrips() != null ? route.getTrips().size() : 0;
-        int activeTrips = route.getTrips() != null ?
-                (int) route.getTrips().stream()
-                        .filter(t -> isActiveStatus(t.getStatus()))
-                        .count()
-                : 0;
-
-        return new RouteDto(
-                route.getRouteId(),
-                route.getRouteName(),
-                route.getOriginAddress(),
-                route.getOriginLat(),
-                route.getOriginLng(),
-                route.getDestinationAddress(),
-                route.getDestinationLat(),
-                route.getDestinationLng(),
-                route.getDistanceKm(),
-                route.getEstimatedDurationHours(),
-                route.getRouteType(),
-                totalTrips,
-                activeTrips
-        );
+        return RouteDto.fromRoute(route);
     }
 
     @Override
-    public List<?> getAllRoutes() {
+    public List<RouteDto> getAllRoutes() {
         return routeRepository.findAll().stream()
-                .map(r -> new SimpleRouteDto(r.getRouteId(), r.getRouteName()))
+                .map(RouteDto::fromRoute)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public RouteDto createRoute(CreateRouteDto request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Request cannot be null");
+    public RouteDto createTripRoute(List<Order> orders, String routeName) {
+        if (orders == null || orders.isEmpty()) {
+            throw new IllegalArgumentException("Orders cannot be null or empty");
         }
 
-        // Ensure coordinates: if missing, geocode addresses
-        BigDecimal oLat = request.getOriginLat();
-        BigDecimal oLng = request.getOriginLng();
-        BigDecimal dLat = request.getDestinationLat();
-        BigDecimal dLng = request.getDestinationLng();
+        // Create waypoints from all order coordinates
+        List<Map<String, Object>> waypoints = new ArrayList<>();
+        BigDecimal totalFee = BigDecimal.ZERO;
+        List<String> orderIds = new ArrayList<>();
 
-        if (oLat == null || oLng == null) {
-            GeocodeResultDto origin = mapsService.geocodeAddress(request.getOriginAddress());
-            if (origin == null) throw new IllegalArgumentException("Failed to geocode origin address");
-            oLat = BigDecimal.valueOf(origin.getLatitude());
-            oLng = BigDecimal.valueOf(origin.getLongitude());
-        }
-        if (dLat == null || dLng == null) {
-            GeocodeResultDto dest = mapsService.geocodeAddress(request.getDestinationAddress());
-            if (dest == null) throw new IllegalArgumentException("Failed to geocode destination address");
-            dLat = BigDecimal.valueOf(dest.getLatitude());
-            dLng = BigDecimal.valueOf(dest.getLongitude());
+        // Sort orders by ID for consistent sequence
+        orders.sort(Comparator.comparing(Order::getOrderId));
+
+        for (Order order : orders) {
+            // Add pickup waypoint
+            if (order.getPickupLat() != null && order.getPickupLng() != null) {
+                Map<String, Object> pickupPoint = new HashMap<>();
+                pickupPoint.put("lat", order.getPickupLat());
+                pickupPoint.put("lng", order.getPickupLng());
+                pickupPoint.put("type", "pickup");
+                pickupPoint.put("orderId", order.getOrderId());
+                pickupPoint.put("address", order.getPickupAddress());
+                pickupPoint.put("customerName", order.getCustomerName());
+                waypoints.add(pickupPoint);
+            }
+
+            // Add delivery waypoint
+            if (order.getDeliveryLat() != null && order.getDeliveryLng() != null) {
+                Map<String, Object> deliveryPoint = new HashMap<>();
+                deliveryPoint.put("lat", order.getDeliveryLat());
+                deliveryPoint.put("lng", order.getDeliveryLng());
+                deliveryPoint.put("type", "delivery");
+                deliveryPoint.put("orderId", order.getOrderId());
+                deliveryPoint.put("address", order.getDeliveryAddress());
+                deliveryPoint.put("customerName", order.getCustomerName());
+                waypoints.add(deliveryPoint);
+            }
+
+            // Accumulate fees
+            if (order.getShippingFee() != null) {
+                totalFee = totalFee.add(order.getShippingFee());
+            }
+
+            orderIds.add(order.getOrderId().toString());
         }
 
-        // Compute distance/duration if missing using OSRM
-        BigDecimal distanceKm = request.getDistanceKm();
-        BigDecimal durationHours = request.getEstimatedDurationHours();
-        if (distanceKm == null || durationHours == null) {
-            DirectionsResultDto dir = mapsService.getDirections(
-                    oLat.toString(), oLng.toString(), dLat.toString(), dLng.toString(), false);
-            if (dir != null) {
-                double km = dir.getDistanceMeters() / 1000.0;
-                double hours = dir.getDurationSeconds() / 3600.0;
-                distanceKm = BigDecimal.valueOf(Math.round(km * 100.0) / 100.0);
-                durationHours = BigDecimal.valueOf(Math.round(hours * 100.0) / 100.0);
-            } else {
-                // fallback minimal values to satisfy not-null constraints
-                distanceKm = BigDecimal.valueOf(1.00);
-                durationHours = BigDecimal.valueOf(0.50);
+        // Calculate total distance (sum of all individual order distances)
+        BigDecimal totalDistance = BigDecimal.ZERO;
+        for (Order order : orders) {
+            if (order.getDistanceKm() != null) {
+                totalDistance = totalDistance.add(order.getDistanceKm());
             }
         }
 
-        String routeType = request.getRouteType() != null ? request.getRouteType() : "standard";
-        String routeName = request.getRouteName() != null ? request.getRouteName() : "Auto Route";
+        // Create route entity
+        Route route = new Route();
+        route.setRouteName(routeName != null ? routeName : "Trip Route");
+        route.setRouteType("trip");
+        route.setDistanceKm(totalDistance); // Total distance from all orders
 
-        Route entity = new Route();
-        entity.setRouteName(routeName);
-        entity.setOriginAddress(request.getOriginAddress());
-        entity.setOriginLat(oLat);
-        entity.setOriginLng(oLng);
-        entity.setDestinationAddress(request.getDestinationAddress());
-        entity.setDestinationLat(dLat);
-        entity.setDestinationLng(dLng);
-        entity.setDistanceKm(distanceKm);
-        entity.setEstimatedDurationHours(durationHours);
-        entity.setRouteType(routeType);
-
-        Route saved = routeRepository.save(entity);
-        return getRouteById(saved.getRouteId());
-    }
-
-    private boolean isActiveStatus(String status) {
-        if (status == null) return false;
-        String s = status.toUpperCase();
-        return s.equals("PENDING") || s.equals("ASSIGNED") || s.equals("IN_PROGRESS") || s.equals("SCHEDULED");
-    }
-
-    public static class SimpleRouteDto {
-        private Integer routeId;
-        private String routeName;
-
-        public SimpleRouteDto(Integer routeId, String routeName) {
-            this.routeId = routeId;
-            this.routeName = routeName;
+        try {
+            route.setWaypoints(objectMapper.writeValueAsString(waypoints));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize waypoints", e);
         }
 
-        public Integer getRouteId() { return routeId; }
-        public String getRouteName() { return routeName; }
+        route.setTotalFee(totalFee); // Total fee from all orders
+        route.setOrderIds(String.join(",", orderIds));
+        route.setIsTripRoute(true);
+
+        Route saved = routeRepository.save(route);
+        return RouteDto.fromRoute(saved);
     }
 }

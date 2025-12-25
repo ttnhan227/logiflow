@@ -16,18 +16,9 @@ class TrackOrdersScreen extends StatefulWidget {
 }
 
 class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
-  // DATA
-  List<OrderSummary> _allOrders = [];     // dữ liệu gốc từ API
-  List<OrderSummary> _visibleOrders = []; // dữ liệu sau search/filter/sort
-
-// UI STATE
+  List<OrderSummary> _orders = [];
   bool _isLoading = true;
   String? _error;
-
-// SEARCH / FILTER / SORT
-  String _searchQuery = '';
-  String _selectedStatus = 'ALL'; // ALL | IN_TRANSIT | ASSIGNED | PENDING
-  String _sortOption = 'STATUS';  // STATUS | DISTANCE
 
   @override
   void initState() {
@@ -52,131 +43,50 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
     });
   }
 
-  @override
-  void _applyFilters() {
-    List<OrderSummary> list = List.from(_allOrders);
-
-    // SEARCH
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      list = list.where((o) =>
-      o.orderId.toString().contains(q) ||
-          o.pickupAddress.toLowerCase().contains(q) ||
-          o.deliveryAddress.toLowerCase().contains(q)
-      ).toList();
-    }
-
-    // FILTER STATUS
-    if (_selectedStatus != 'ALL') {
-      list = list.where((o) => o.orderStatus == _selectedStatus).toList();
-    }
-
-    // SORT
-    if (_sortOption == 'STATUS') {
-      const priority = {
-        'IN_TRANSIT': 1,
-        'ASSIGNED': 2,
-        'PENDING': 3,
-      };
-      list.sort((a, b) =>
-          (priority[a.orderStatus] ?? 99)
-              .compareTo(priority[b.orderStatus] ?? 99)
-      );
-    } else if (_sortOption == 'DISTANCE') {
-      list.sort((a, b) =>
-          (b.distanceKm ?? 0).compareTo(a.distanceKm ?? 0)
-      );
-    }
-
-    setState(() {
-      _visibleOrders = list;
-    });
-  }
-
   Future<void> _loadOrders() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
     try {
-      final orders = await customerService.getMyOrders();
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
 
-      // 1. Lấy các đơn đang chạy
-      _allOrders = orders.where((o) =>
-      o.orderStatus == 'IN_TRANSIT' ||
-          o.orderStatus == 'ASSIGNED' ||
-          o.orderStatus == 'PENDING'
-      ).toList();
+      final allOrders = await customerService.getMyOrders();
+      // Filter to show only ACTIVE orders (PENDING, ASSIGNED, IN_TRANSIT)
+      // Follow driver screen pattern for status checking
+      final activeOrders = allOrders.where((order) {
+        final orderStatus = order.orderStatus?.toUpperCase() ?? '';
+        return orderStatus == 'PENDING' ||
+            orderStatus == 'ASSIGNED' ||
+            orderStatus == 'IN_TRANSIT';
+      }).toList();
 
-      // 2. Áp dụng search / filter / sort
-      _applyFilters();
+      // Sort: PENDING first, then ASSIGNED, then IN_TRANSIT
+      activeOrders.sort((a, b) {
+        final statusA = a.orderStatus?.toUpperCase() ?? '';
+        final statusB = b.orderStatus?.toUpperCase() ?? '';
 
+        int getStatusPriority(String status) {
+          switch (status) {
+            case 'PENDING':
+              return 1; // Highest priority - pending orders first
+            case 'ASSIGNED':
+              return 2;
+            case 'IN_TRANSIT':
+              return 3;
+            default:
+              return 4;
+          }
+        }
+
+        return getStatusPriority(statusA).compareTo(getStatusPriority(statusB));
+      });
+
+      setState(() => _orders = activeOrders);
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load orders';
-      });
+      setState(() => _error = e.toString());
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
-  }
-  Widget _buildFiltersHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search order / pickup / delivery...',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-            onChanged: (v) {
-              _searchQuery = v;
-              _applyFilters();
-            },
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            children: ['ALL', 'IN_TRANSIT', 'ASSIGNED', 'PENDING'].map((s) {
-              return ChoiceChip(
-                label: Text(s),
-                selected: _selectedStatus == s,
-                onSelected: (_) {
-                  _selectedStatus = s;
-                  _applyFilters();
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Text('Sort: '),
-              const SizedBox(width: 8),
-              DropdownButton<String>(
-                value: _sortOption,
-                items: const [
-                  DropdownMenuItem(value: 'STATUS', child: Text('Status priority')),
-                  DropdownMenuItem(value: 'DISTANCE', child: Text('Distance (desc)')),
-                ],
-                onChanged: (v) {
-                  if (v == null) return;
-                  _sortOption = v;
-                  _applyFilters();
-                },
-              ),
-            ],
-          ),
-          const Divider(height: 16),
-        ],
-      ),
-    );
   }
 
   Future<void> _refresh() async {
@@ -244,7 +154,7 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                         ),
                       ],
                     )
-                  : _visibleOrders.isEmpty
+                  : _orders.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: const [
@@ -276,19 +186,13 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                         ),
                       ],
                     )
-
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
-                      itemCount: _visibleOrders.length + 1,
+                      itemCount: _orders.length,
                       itemBuilder: (context, index) {
-                        // HEADER ở vị trí đầu
-                        if (index == 0) {
-                          return _buildFiltersHeader();
-                        }
+                        final order = _orders[index];
 
-                        // Các item còn lại
-                        final order = _visibleOrders[index - 1];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 16),
                           child: InkWell(
@@ -367,6 +271,70 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                     ),
                                   ],
 
+                                  // Pickup Type Information
+                                  if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[50],
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.blue[200]!),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Pickup Type: ${order.pickupType}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          // Show specific fields based on pickup type
+                                          if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                                            Text(
+                                              'Warehouse: ${order.warehouseName}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ],
+                                          if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                                            Text(
+                                              'Dock: ${order.dockNumber}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ],
+                                          if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                                            Text(
+                                              'Container: ${order.containerNumber}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ],
+                                          if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                                            Text(
+                                              'Terminal: ${order.terminalName}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+
                                   const SizedBox(height: 8),
                                   Text(
                                     'From: ${order.pickupAddress}',
@@ -426,55 +394,6 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                       },
                     ),
             ),
-    );
-  }
-
-  Widget _buildFilteredEmptyState() {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.inventory_2_outlined,
-                size: 72,
-                color: Colors.grey,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No orders found',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Try changing filters or view all orders',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-
-              // 👉 NÚT QUAY LẠI TRACK ORDERS
-              OutlinedButton.icon(
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Back to all orders'),
-                onPressed: () {
-                  setState(() {
-                    _selectedStatus = 'ALL';
-                    _applyFilters();
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -697,6 +616,71 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
             Text(order.pickupAddress ?? 'N/A'),
+
+            // Pickup Type Information
+            if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pickup Type: ${order.pickupType}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Show specific fields based on pickup type
+                    if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                      Text(
+                        'Warehouse: ${order.warehouseName}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                    if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                      Text(
+                        'Dock: ${order.dockNumber}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                    if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                      Text(
+                        'Container: ${order.containerNumber}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                    if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                      Text(
+                        'Terminal: ${order.terminalName}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 8),
             const Text(
               'Delivery Address:',

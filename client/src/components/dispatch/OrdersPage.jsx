@@ -68,11 +68,12 @@ const OrdersPage = () => {
       o.orderId?.toString().includes(searchTerm)
     )
     .filter(o => !pickupTypeFilter || o.pickupType === pickupTypeFilter)
-    // Hard-coded rule: urgent hauls on top, then newest first
+    // Backend now handles sorting: pending orders first, then newest first
+    // Client-side sorting kept as fallback for search/filtering
     .sort((a, b) => {
-      const aUrgent = a.priorityLevel === 'URGENT' ? 1 : 0;
-      const bUrgent = b.priorityLevel === 'URGENT' ? 1 : 0;
-      if (aUrgent !== bUrgent) return bUrgent - aUrgent;
+      const aPending = a.orderStatus === 'PENDING' ? 1 : 0;
+      const bPending = b.orderStatus === 'PENDING' ? 1 : 0;
+      if (aPending !== bPending) return bPending - aPending;
 
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -157,9 +158,11 @@ const OrdersPage = () => {
                   <th>Pickup</th>
                   <th>Delivery</th>
                   <th>Pickup Type</th>
+                  <th>Weight</th>
+                  <th>Distance</th>
+                  <th>Fee</th>
                   <th>Status</th>
                   <th>Priority</th>
-                  <th>Fee</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -173,11 +176,17 @@ const OrdersPage = () => {
                     <td className="cell-text cell-address">{order.deliveryAddress}</td>
                     <td className="cell-text">
                       {order.pickupType ? (
-                        <span 
+                        <span
                           className="status-badge"
-                          style={{ 
-                            backgroundColor: order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' : '#dbeafe',
-                            color: order.pickupType === 'PORT_TERMINAL' ? '#92400e' : '#0c4a6e'
+                          style={{
+                            backgroundColor:
+                              order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
+                              order.pickupType === 'WAREHOUSE' ? '#dbeafe' :
+                              order.pickupType === 'STANDARD' ? '#f0fdf4' : '#f9fafb',
+                            color:
+                              order.pickupType === 'PORT_TERMINAL' ? '#92400e' :
+                              order.pickupType === 'WAREHOUSE' ? '#0c4a6e' :
+                              order.pickupType === 'STANDARD' ? '#166534' : '#6b7280'
                           }}
                         >
                           {order.pickupType}
@@ -190,9 +199,18 @@ const OrdersPage = () => {
                         <span style={{ marginLeft: 6, fontSize: 12, color: '#334155' }}>🏭 {order.dockInfo}</span>
                       )}
                     </td>
+                    <td className="cell-text">
+                      {order.weightTons ? `${order.weightTons} t` : '—'}
+                    </td>
+                    <td className="cell-text">
+                      {order.distanceKm ? `${order.distanceKm} km` : '—'}
+                    </td>
+                    <td className="cell-price">
+                      {order.shippingFee ? `${order.shippingFee.toLocaleString()} VND` : 'TBD'}
+                    </td>
                     <td className="cell-status">
-                      <span 
-                        className="status-badge" 
+                      <span
+                        className="status-badge"
                         style={{ backgroundColor: getStatusColor(order.orderStatus) }}
                       >
                         {order.orderStatus}
@@ -200,8 +218,8 @@ const OrdersPage = () => {
                     </td>
                     <td className="cell-priority">
                       {order.priorityLevel === 'URGENT' ? (
-                        <span 
-                          className="priority-badge" 
+                        <span
+                          className="priority-badge"
                           style={{ backgroundColor: getPriorityColor(order.priorityLevel) }}
                         >
                           ⚡ URGENT
@@ -209,9 +227,6 @@ const OrdersPage = () => {
                       ) : (
                         <span className="priority-normal">Normal</span>
                       )}
-                    </td>
-                    <td className="cell-price">
-                      {order.shippingFee ? `${order.shippingFee.toLocaleString()} VND` : 'TBD'}
                     </td>
                     <td className="cell-action">
                       <Link to={`/dispatch/orders/${order.orderId}`} className="btn-view">

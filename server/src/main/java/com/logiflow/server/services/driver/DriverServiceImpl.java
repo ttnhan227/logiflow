@@ -6,6 +6,7 @@ import com.logiflow.server.models.*;
 import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
+import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
@@ -32,6 +33,7 @@ public class DriverServiceImpl implements DriverService {
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
     private final TripRepository tripRepository;
+    private final OrderRepository orderRepository;
     private final DriverWorkLogRepository driverWorkLogRepository;
     private final MapsService mapsService;
     private final TripAssignmentRepository tripAssignmentRepository;
@@ -43,6 +45,7 @@ public class DriverServiceImpl implements DriverService {
     public DriverServiceImpl(UserRepository userRepository,
                          DriverRepository driverRepository,
                          TripRepository tripRepository,
+                         OrderRepository orderRepository,
                          DriverWorkLogRepository driverWorkLogRepository,
                          MapsService mapsService,
                          TripAssignmentRepository tripAssignmentRepository,
@@ -53,6 +56,7 @@ public class DriverServiceImpl implements DriverService {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.tripRepository = tripRepository;
+        this.orderRepository = orderRepository;
         this.driverWorkLogRepository = driverWorkLogRepository;
         this.mapsService = mapsService;
         this.tripAssignmentRepository = tripAssignmentRepository;
@@ -172,7 +176,7 @@ public class DriverServiceImpl implements DriverService {
         
         switch (status) {
             case "in_progress":
-                validTransition = currentStatus.equals("scheduled");
+                validTransition = currentStatus.equals("scheduled") || currentStatus.equals("assigned");
                 if (validTransition) {
                     trip.setActualDeparture(LocalDateTime.now());
                 }
@@ -237,23 +241,24 @@ public class DriverServiceImpl implements DriverService {
         // Add route info using MapsService if possible
         if (trip.getRoute() != null) {
             try {
-                // Use coordinates if available, else skip
                 var route = trip.getRoute();
-                if (route.getOriginLat() != null && route.getOriginLng() != null &&
-                    route.getDestinationLat() != null && route.getDestinationLng() != null) {
-                    var directions = mapsService.getDirections(
-                        route.getOriginLat().toString(),
-                        route.getOriginLng().toString(),
-                        route.getDestinationLat().toString(),
-                        route.getDestinationLng().toString(),
-                        false // don't include geometry by default
-                    );
-                    if (directions != null) {
-                        // Optionally, you can extend TripDetailDto to include these fields
-                        // For now, add as transient fields or log for debugging
-                        // Example: log.info("Trip {}: {} km, {} min", tripId, directions.getTotalDistance(), directions.getTotalDuration());
-                        // If you want to expose this, add fields to TripDetailDto and set here
+                BigDecimal startLat = null, startLng = null, endLat = null, endLng = null;
+
+                if (route.getIsTripRoute() != null && route.getIsTripRoute()) {
+                    // For trip routes, use first and last waypoints
+                    if (route.getWaypoints() != null && !route.getWaypoints().isEmpty()) {
+                        // Parse waypoints JSON to get start and end coordinates
+                        try {
+                            // For now, skip complex waypoint parsing - just use total distance
+                            // TODO: Implement waypoint parsing for detailed directions
+                        } catch (Exception e) {
+                            // Fallback: use stored total distance
+                        }
                     }
+                } else {
+                    // For single routes, use origin/destination (if they existed)
+                    // Since we removed them, this branch won't execute for new routes
+                    // TODO: Handle legacy single routes if any exist
                 }
             } catch (Exception e) {
                 // Log or handle error, but don't fail the request
@@ -352,12 +357,6 @@ public class DriverServiceImpl implements DriverService {
 
         if (t.getRoute() != null) {
             dto.setRouteName(t.getRoute().getRouteName());
-            dto.setOriginAddress(t.getRoute().getOriginAddress());
-            dto.setDestinationAddress(t.getRoute().getDestinationAddress());
-            dto.setOriginLat(t.getRoute().getOriginLat());
-            dto.setOriginLng(t.getRoute().getOriginLng());
-            dto.setDestinationLat(t.getRoute().getDestinationLat());
-            dto.setDestinationLng(t.getRoute().getDestinationLng());
         }
         if (t.getVehicle() != null) {
             dto.setVehicleType(t.getVehicle().getVehicleType());
@@ -377,6 +376,10 @@ public class DriverServiceImpl implements DriverService {
                 brief.setCustomerPhone(o.getCustomerPhone());
                 brief.setPickupAddress(o.getPickupAddress());
                 brief.setDeliveryAddress(o.getDeliveryAddress());
+                brief.setPickupLat(o.getPickupLat());
+                brief.setPickupLng(o.getPickupLng());
+                brief.setDeliveryLat(o.getDeliveryLat());
+                brief.setDeliveryLng(o.getDeliveryLng());
                 brief.setPackageDetails(o.getPackageDetails());
                 brief.setWeightTons(o.getWeightTons());
                 brief.setPackageValue(o.getPackageValue());
@@ -449,56 +452,68 @@ public class DriverServiceImpl implements DriverService {
 
         deliveryConfirmationRepository.save(confirmation);
 
-        // Update all orders in this trip to 'DELIVERED' status
+        // Check if all orders are delivered before completing the trip
+        boolean allOrdersDelivered = true;
         if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
-            trip.getOrders().forEach(order -> {
-                order.setOrderStatus(Order.OrderStatus.DELIVERED);
-            });
+            allOrdersDelivered = trip.getOrders().stream()
+                .allMatch(order -> order.getOrderStatus() == Order.OrderStatus.DELIVERED);
         }
 
-        // Send admin notification for delivered orders that need payment review
-        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
-            List<Integer> pendingPaymentOrders = trip.getOrders().stream()
-                .filter(order -> order.getPaymentStatus() == Order.PaymentStatus.PENDING)
-                .map(Order::getOrderId)
-                .toList();
+        // Only complete the trip if all orders are delivered
+        if (allOrdersDelivered) {
+            // Send admin notification for delivered orders that need payment review
+            if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+                List<Integer> pendingPaymentOrders = trip.getOrders().stream()
+                    .filter(order -> order.getPaymentStatus() == Order.PaymentStatus.PENDING)
+                    .map(Order::getOrderId)
+                    .toList();
 
-            if (!pendingPaymentOrders.isEmpty()) {
-                String notificationMessage = String.format(
-                    "Orders delivered and ready for payment review: %s",
-                    String.join(", ", pendingPaymentOrders.stream().map(String::valueOf).toArray(String[]::new))
-                );
+                if (!pendingPaymentOrders.isEmpty()) {
+                    String notificationMessage = String.format(
+                        "Orders delivered and ready for payment review: %s",
+                        String.join(", ", pendingPaymentOrders.stream().map(String::valueOf).toArray(String[]::new))
+                    );
 
-                // Send broadcast notification to all admin users
-                notificationService.broadcastToAdminsWithAction(
-                    "ORDERS_DELIVERED",
-                    "INFO",
-                    "Orders Delivered - Payment Review Needed",
-                    notificationMessage,
-                    "/admin/payment-handling",
-                    "Review Orders",
-                    tripId
-                );
+                    // Send broadcast notification to all admin users
+                    notificationService.broadcastToAdminsWithAction(
+                        "ORDERS_DELIVERED",
+                        "INFO",
+                        "Orders Delivered - Payment Review Needed",
+                        notificationMessage,
+                        "/admin/payment-handling",
+                        "Review Orders",
+                        tripId
+                    );
+                }
             }
+
+            // Update trip status to completed
+            trip.setStatus("completed");
+            trip.setActualArrival(LocalDateTime.now());
+
+            // Update assignment status to completed
+            tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "completed");
+
+            // Send notification
+            notificationService.sendTripNotification(
+                    driverId,
+                    tripId,
+                    "DELIVERY_CONFIRMED",
+                    "Delivery for trip #" + tripId + " has been confirmed",
+                    "completed"
+            );
+        } else {
+            // Send notification that trip confirmation was received but not all orders are delivered
+            notificationService.sendTripNotification(
+                    driverId,
+                    tripId,
+                    "DELIVERY_CONFIRMED",
+                    "Trip confirmation received. Please ensure all orders are marked as delivered.",
+                    trip.getStatus()
+            );
         }
-
-        // Update trip status to completed
-        trip.setStatus("completed");
-        trip.setActualArrival(LocalDateTime.now());
-
-        // Update assignment status to completed
-        tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "completed");
 
         tripRepository.save(trip);
-
-        // Send notification
-        notificationService.sendTripNotification(
-                driverId,
-                tripId,
-                "DELIVERY_CONFIRMED",
-                "Delivery for trip #" + tripId + " has been confirmed",
-                "completed"
-        );
     }
 
     @Override
@@ -548,6 +563,75 @@ public class DriverServiceImpl implements DriverService {
         // Calculate average delivery time from completed trips
         // For now, return 0 until proper calculation is implemented
         return BigDecimal.ZERO;
+    }
+
+    @Override
+    public void updateOrderStatus(Integer driverId, Integer tripId, Integer orderId, String status) {
+        // Verify the trip belongs to this driver
+        Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
+
+        // Find the order in this trip
+        Order order = trip.getOrders().stream()
+                .filter(o -> o.getOrderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Order not found in this trip"));
+
+        // Debug logging
+        System.out.println("DEBUG: updateOrderStatus - orderId: " + orderId + ", currentStatus: " + order.getOrderStatus() + ", requestedStatus: " + status);
+
+        // Validate status transitions
+        Order.OrderStatus currentStatus = order.getOrderStatus();
+        Order.OrderStatus newStatus;
+
+        try {
+            newStatus = Order.OrderStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid order status: " + status + ". Valid values: PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED");
+        }
+
+        // Validate allowed transitions
+        boolean validTransition = false;
+        switch (currentStatus) {
+            case ASSIGNED:
+                validTransition = newStatus == Order.OrderStatus.IN_TRANSIT || newStatus == Order.OrderStatus.DELIVERED;
+                break;
+            case IN_TRANSIT:
+                validTransition = newStatus == Order.OrderStatus.DELIVERED;
+                break;
+            case DELIVERED:
+                // Allow re-delivery if needed (e.g., for corrections)
+                validTransition = newStatus == Order.OrderStatus.DELIVERED;
+                break;
+            default:
+                validTransition = false;
+        }
+
+        if (!validTransition) {
+            throw new RuntimeException("Invalid status transition from " + currentStatus + " to " + newStatus + ". ASSIGNED->IN_TRANSIT/DELIVERED, IN_TRANSIT->DELIVERED only.");
+        }
+
+        // Update order status
+        order.setOrderStatus(newStatus);
+
+        // If order is delivered and has payment status PENDING, trigger payment notification
+        if (newStatus == Order.OrderStatus.DELIVERED && order.getPaymentStatus() == Order.PaymentStatus.PENDING) {
+            // Send payment request to customer
+            if (order.getCustomer() != null) {
+                try {
+                    paymentService.sendPaymentRequest(order.getOrderId());
+                } catch (Exception e) {
+                    // Log error but don't fail the order update
+                    System.err.println("Failed to send payment request for order #" + orderId + ": " + e.getMessage());
+                }
+            }
+        }
+
+        orderRepository.save(order);
+
+        // Send notification to driver about order status change
+        String notificationMessage = "Order #" + orderId + " status updated to " + newStatus.name();
+        notifyDriver(driverId, "ORDER_STATUS_UPDATE", notificationMessage);
     }
 
     @Override

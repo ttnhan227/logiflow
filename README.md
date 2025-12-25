@@ -1,141 +1,165 @@
-# LogiFlow - Smart Logistics Management System
+# LogiFlow - Intelligent Heavy Logistics Management System
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Java](https://img.shields.io/badge/Java-17%2B-blue)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.0%2B-brightgreen)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-18%2B-61DAFB)](https://reactjs.org/)
+[![Java](https://img.shields.io/badge/Java-21%2B-blue)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6%2B-brightgreen)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-19.1.1%2B-61DAFB)](https://reactjs.org/)
+[![Flutter](https://img.shields.io/badge/Flutter-3.9.2%2B-02569B)](https://flutter.dev/)
 
-LogiFlow is an intelligent logistics management system designed to automate and optimize driver and vehicle assignment for delivery operations. The system streamlines logistics operations, reduces manual work, and improves delivery efficiency through smart algorithms and real-time tracking.
+LogiFlow is an intelligent logistics management system designed to automate and optimize heavy freight transportation operations. The system specializes in managing containers and heavy cargo with smart driver assignment, real-time tracking, and comprehensive compliance monitoring.
 
-## 🚀 Key Features
+## 🚀 Quick Start
 
-### 1. Smart Driver-Vehicle Assignment
-- **License & Experience Matching**: Automatically assigns drivers to vehicles based on their license types (B2, C, D, E, FC) and experience
-- **Health & Rest Monitoring**: Tracks driver working hours and enforces mandatory rest periods
-- **Proximity-Based Dispatch**: Prioritizes drivers closest to the vehicle or pickup location
-
-### 2. Intelligent Route Planning
-- **Route Optimization**: Implements Vehicle Routing Problem (VRP) algorithms
-- **Multi-Stop Support**: Efficiently handles multiple delivery points
-- **Real-time Tracking**: Monitors vehicle and driver locations in real-time
-
-### 3. Comprehensive Fleet Management
-- **Vehicle Tracking**: Real-time monitoring of all fleet vehicles
-- **Maintenance Scheduling**: Tracks vehicle maintenance and service history
-- **Driver Rotation**: Implements fair shift rotation and workload balancing
-
-### 4. Order Management
-- **Order Assignment**: Links multiple orders to trips
-- **Status Tracking**: Real-time order status updates
-- **Customer Management**: Stores and manages customer information
-
-## 🛠️ Tech Stack
-
-### Backend (Spring Boot)
-- **Java 21** - Core programming language
-- **Spring Boot 3.5.6** - Backend framework
-- **Spring Data JPA** - Database access and ORM
-- **Spring Security** - Authentication and authorization
-- **Spring Web** - REST API development
-- **Spring Validation** - Request validation
-- **Spring Mail** - Email notification services
-- **Lombok** - Reduces boilerplate code with annotations
-- **PostgreSQL** - Primary database (logiflow)
-- **Spring Boot DevTools** - Development tools and auto-restart
-
-### Frontend (React)
-- **React 19.1.1** - Frontend library
-- **Vite** - Build tool and development server
-- **React DOM** - React rendering for the web
-- **ESLint** - Code linting
-
-## 🏗️ Database Schema
-
-The system uses a relational database with the following key tables:
-
-- **Users & Roles**: Authentication and authorization
-- **Drivers**: Driver profiles, licenses, and status
-- **Vehicles**: Fleet management and tracking
-- **Routes**: Route planning and optimization
-- **Trips**: Trip management and scheduling
-- **Trip Assignments**: Links drivers to trips with role assignments (primary/backup)
-- **Orders**: Order tracking and management
-- **Work Logs**: Driver working hours and rest periods
-
-## 🚀 Getting Started
+This project consists of three main components that must be set up in order:
 
 ### Prerequisites
-- **Java 21** - For backend development
-- **Node.js 18+** - For frontend development
-- **PostgreSQL** - Database server (logiflow)
-  - Tested with PostgreSQL 17
-  - Should work with PostgreSQL 13+ (fully supported)
-  - May work with PostgreSQL 11-12 (not officially tested)
-  - Ensure your version is compatible with Spring Boot 3.5.6
-- **Maven 3.6+** - Java dependency management and build tool
+- **Java 21+** - For backend development
+- **Node.js 18+** - For web frontend development
+- **Flutter SDK 3.9.2+** - For mobile app development
+- **PostgreSQL 15+** - Database server (with PostGIS extension recommended)
+- **IntelliJ IDEA** - For Spring Boot backend
+- **Android Studio** - For Flutter mobile development
 
-### Backend Setup
-1. Clone the repository
-2. Configure database in `application.properties`
-3. Build and run with Maven:
-   ```bash
-   mvn spring-boot:run
-   ```
+## 🛠️ Installation & Setup
 
-### Frontend Setup
-1. Navigate to the client directory
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+### 1. Backend (Spring Boot) - IntelliJ IDEA
 
-## 📊 System Architecture
+**Requirements:**
+- Java 21+
+- PostgreSQL 15+ with PostGIS
+- Maven 3.6+
+
+**Setup Steps:**
+1. Open the `server` directory in IntelliJ IDEA
+2. Configure database connection in `server/src/main/resources/application.properties`
+3. Ensure PostgreSQL is running and database is created
+4. Run the application using IntelliJ's Spring Boot run configuration
+
+**Database Configuration:**
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/logiflow
+spring.datasource.username=your_db_username
+spring.datasource.password=your_db_password
+spring.jpa.hibernate.ddl-auto=create
+```
+
+**Additional Required Settings:**
+Before running the application, configure these settings in `application.properties`:
+
+```properties
+# Cloudinary Configuration (for file uploads)
+cloudinary.cloud-name=your_cloud_name
+cloudinary.api-key=your_api_key
+cloudinary.api-secret=your_api_secret
+
+# OCR Configuration (Tesseract)
+ocr.tessdata.path=C:/Program Files/Tesseract-OCR/tessdata
+
+# Mistral AI Configuration
+spring.ai.mistralai.api-key=your_mistral_api_key
+
+# Email Configuration (SMTP)
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_app_password
+
+# PayPal Configuration (Sandbox)
+paypal.client.id=your_paypal_client_id
+paypal.client.secret=your_paypal_client_secret
+```
+
+**OCR Setup (Tesseract):**
+The application uses Tesseract OCR for document processing. Install Tesseract OCR:
+1. Download from: https://github.com/UB-Mannheim/tesseract/wiki
+2. Install to default location: `C:\Program Files\Tesseract-OCR\`
+3. Download language data files (`eng` and `vie`) to the `tessdata` folder
+4. Verify the path in `application.properties` matches your installation
+
+### 2. Web Frontend (React) - Command Prompt
+
+**Requirements:**
+- Node.js 18+
+- npm or yarn
+
+**Setup Steps:**
+1. Open Command Prompt and navigate to the `client` directory
+2. Install dependencies: `npm install`
+3. Start development server: `npm run dev`
+4. Open browser to `http://localhost:5173`
+
+**Available Scripts:**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+
+### 3. Mobile App (Flutter) - Android Studio
+
+**Requirements:**
+- Flutter SDK 3.9.2+
+- Dart SDK 3.9.2+
+- Android Studio with Flutter plugin
+- Android device/emulator or iOS device/simulator
+
+**Setup Steps:**
+1. Open the `client_mobile` directory in Android Studio
+2. Update API configuration: Open `lib/services/api_client.dart` and change the `baseUrl` to your computer's IP address (replace `192.168.1.60` with your IP)
+3. Ensure Flutter SDK is properly configured
+4. Run `flutter pub get` to install dependencies
+5. Connect Android device or start emulator
+6. Run the app from Android Studio
+
+**API Configuration:**
+The mobile app connects to the backend API. Update the IP address in `lib/services/api_client.dart`:
+```dart
+static const String baseUrl = 'http://YOUR_IP_ADDRESS:8080/api';
+```
+To find your IP address, run `ipconfig` in Command Prompt and use your network adapter's IPv4 address.
+
+**Development Commands:**
+- `flutter pub get` - Install dependencies
+- `flutter run` - Run on connected device/emulator
+- `flutter build apk` - Build Android APK
+
+## 📱 Usage
+
+### Backend API
+- Base URL: `http://localhost:8080`
+- API documentation available at `/swagger-ui.html`
+- Authentication required for most endpoints
+
+### Web Application
+- Access at `http://localhost:5173`
+- Login with appropriate user credentials
+- Different dashboards for Admin, Dispatcher, Driver, and Customer roles
+
+### Mobile Application
+- Install on Android/iOS device
+- Login with driver or customer account
+- Real-time GPS tracking and notifications
+
+## 🏗️ Project Structure
 
 ```
 logiflow/
 ├── server/                      # Backend (Spring Boot)
+│   ├── src/main/java/com/logiflow/server/
+│   │   ├── controllers/         # REST API endpoints
+│   │   ├── services/           # Business logic
+│   │   ├── models/             # JPA entities
+│   │   └── repositories/       # Data access layer
+│   └── src/main/resources/application.properties
+├── client/                      # Web Frontend (React + Vite)
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/logiflow/
-│   │   │   │   ├── configs/     # Configuration classes
-│   │   │   │   ├── controllers/  # REST controllers
-│   │   │   │   ├── models/       # Entity models
-│   │   │   │   ├── dtos/         # Data Transfer Objects
-│   │   │   │   ├── repositories/ # Data access layer
-│   │   │   │   ├── services/     # Business logic
-│   │   │   │   └── LogiFlowApplication.java  # Main application class
-│   │   │   └── resources/
-│   │   │       ├── application.properties    # Application configuration
-│   │   │       └── static/                  # Static resources
-│   │   └── test/                            # Test files
-│   └── pom.xml                              # Maven configuration
-│
-└── client/                      # Frontend (Vite + React)
-    ├── public/                  # Static files
-    ├── src/
-    │   ├── assets/             # Static assets like images, fonts
-    │   ├── components/         # Reusable UI components
-    │   ├── App.jsx             # Root component
-    │   ├── App.css             # Styles for App component
-    │   ├── main.jsx            # Application entry point
-    │   └── index.css           # Global styles
-    ├── index.html              # Main HTML template
-    ├── vite.config.js          # Vite configuration
-    └── package.json            # Project dependencies and scripts
+│   │   ├── components/         # React components
+│   │   └── services/           # API services
+│   └── package.json
+└── client_mobile/              # Mobile App (Flutter)
+    ├── lib/
+    │   ├── screens/           # UI screens
+    │   ├── services/          # API services
+    │   └── models/            # Data models
+    └── pubspec.yaml
 ```
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our contributing guidelines to get started.
-
-## 📧 Contact
-
-For any inquiries, please open an issue or contact the project maintainers.

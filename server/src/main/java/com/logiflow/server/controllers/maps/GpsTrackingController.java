@@ -46,8 +46,8 @@ public class GpsTrackingController {
     public LocationMessage receiveLocation(LocationMessage message, SimpMessageHeaderAccessor headerAccessor) {
         System.out.println("DEBUG: GPS WebSocket message received: " + message);
 
-        // Get authenticated driverId from session attributes
-        String driverId = (String) headerAccessor.getSessionAttributes().get("driverId");
+        // Get authenticated driverId from session attributes (set by JwtHandshakeInterceptor as "userId")
+        String driverId = (String) headerAccessor.getSessionAttributes().get("userId");
         System.out.println("DEBUG: Authenticated driverId from session: " + driverId);
 
         if (driverId != null && message != null && message.getTripId() != null) {
@@ -126,6 +126,7 @@ public class GpsTrackingController {
             this.latitude = latitude;
             this.longitude = longitude;
         }
+
         public String getDriverId() { return driverId; }
         public void setDriverId(String driverId) { this.driverId = driverId; }
         public String getTripId() { return tripId; }
@@ -134,5 +135,15 @@ public class GpsTrackingController {
         public void setLatitude(double latitude) { this.latitude = latitude; }
         public double getLongitude() { return longitude; }
         public void setLongitude(double longitude) { this.longitude = longitude; }
+
+        @Override
+        public String toString() {
+            return "LocationMessage{" +
+                    "driverId='" + driverId + '\'' +
+                    ", tripId='" + tripId + '\'' +
+                    ", latitude=" + latitude +
+                    ", longitude=" + longitude +
+                    '}';
+        }
     }
 }

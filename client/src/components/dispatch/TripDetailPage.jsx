@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { tripService, trackingClient } from '../../services';
-import dispatchRouteService from '../../services/dispatch/routeService';
 import RouteMapCard from './RouteMapCard';
 import ChatPopup from '../common/ChatPopup';
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
@@ -13,9 +12,9 @@ import './modern-dispatch.css';
 const formatMoney = (amount) => {
   if (amount == null) return 'N/A';
   try {
-    return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+    return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 });
   } catch (e) {
-    return `${amount} USD`;
+    return `${amount} VND`;
   }
 };
 
@@ -53,28 +52,14 @@ const TripDetailPage = () => {
   const [liveLocation, setLiveLocation] = useState(null); // {latitude, longitude, driverId, tripId}
   const [actionError, setActionError] = useState(null);
   const [cancelling, setCancelling] = useState(false);
-  const [rerouting, setRerouting] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [newRouteId, setNewRouteId] = useState('');
   const [routeWaypoints, setRouteWaypoints] = useState([]);
-  const [routes, setRoutes] = useState([]);
+  const [delayInfo, setDelayInfo] = useState(null);
+  const [delayLoading, setDelayLoading] = useState(false);
 
   useEffect(() => {
     loadTrip();
   }, [tripId, location.state]);
-
-  // Fetch all routes for the reroute dropdown
-  useEffect(() => {
-    const fetchRoutes = async () => {
-      try {
-        const routeList = await dispatchRouteService.getAllRoutes();
-        setRoutes(routeList || []);
-      } catch (err) {
-        console.error('Failed to load routes', err);
-      }
-    };
-    fetchRoutes();
-  }, []);
 
   // Connect + subscribe to trip-scoped live location topic
   useEffect(() => {
@@ -144,12 +129,35 @@ const TripDetailPage = () => {
       }
       
       // Try to load route waypoints if route data is available
-      if (t?.route?.waypoints) {
+      if (t?.route?.waypoints && Array.isArray(t.route.waypoints)) {
         setRouteWaypoints(t.route.waypoints);
-      } else if (t?.routeId) {
-        // If waypoints aren't in the trip data, they might be loaded separately in RouteMapCard
-        // For now, we'll set an empty array and let the user see the route in RouteMapCard
+      } else {
+        // If waypoints aren't available or not an array, set empty array
         setRouteWaypoints([]);
+      }
+
+      // Load delay information if available
+      setDelayInfo(null);
+      if (t?.delayReason || t?.delayStatus) {
+        setDelayInfo({
+          delayReason: t.delayReason,
+          delayStatus: t.delayStatus,
+          slaExtensionMinutes: t.slaExtensionMinutes
+        });
+      } else {
+        // Try to fetch delay info separately if not in trip data
+        try {
+          setDelayLoading(true);
+          const delayData = await tripService.getTripDelayInfo(Number(tripId));
+          if (delayData) {
+            setDelayInfo(delayData);
+          }
+        } catch (e) {
+          // Delay info not available, continue without it
+          console.log('No delay information available for this trip');
+        } finally {
+          setDelayLoading(false);
+        }
       }
     } catch (err) {
       console.error('Failed to load trip', err);
@@ -294,24 +302,7 @@ const TripDetailPage = () => {
     }
   };
 
-  const handleReroute = async () => {
-    setActionError(null);
-    const rid = Number(newRouteId);
-    if (!rid) {
-      setActionError('Please enter a valid routeId');
-      return;
-    }
-    setRerouting(true);
-    try {
-      await tripService.rerouteTrip(Number(tripId), { routeId: rid });
-      setNewRouteId('');
-      await loadTrip();
-    } catch (e) {
-      setActionError(e?.response?.data?.error || 'Failed to reroute trip');
-    } finally {
-      setRerouting(false);
-    }
-  };
+
 
   if (error || !trip) {
     return (
@@ -334,23 +325,9 @@ const TripDetailPage = () => {
         </div>
         <div className="header-actions">
           {trip.status?.toUpperCase() !== 'COMPLETED' && trip.status?.toUpperCase() !== 'CANCELLED' && trip.status?.toUpperCase() !== 'ARRIVED' && (
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button className="btn-secondary" onClick={handleCancel} disabled={cancelling}>
-                {cancelling ? 'Cancelling...' : '✖ Cancel'}
-              </button>
-              <button className="btn-secondary" onClick={handleReroute} disabled={rerouting}>
-                {rerouting ? 'Rerouting...' : '↪ Reroute'}
-              </button>
-            </div>
-          )}
-
-          {!trip.driverName && trip.status?.toUpperCase() !== 'COMPLETED' && trip.status?.toUpperCase() !== 'CANCELLED' && trip.status?.toUpperCase() !== 'ARRIVED' && (
-            <Link 
-              to={`/dispatch/trips/${trip.tripId}/assign`} 
-              className="btn-primary"
-            >
-              👥 Assign Driver
-            </Link>
+            <button className="btn-secondary" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? 'Cancelling...' : '✖ Cancel'}
+            </button>
           )}
           <Link to="/dispatch/trips" className="btn-secondary">
             ← Back to Trips
@@ -362,53 +339,95 @@ const TripDetailPage = () => {
         <div className="error" style={{ marginBottom: '1rem' }}>{actionError}</div>
       )}
 
-      {(trip.status?.toUpperCase() !== 'COMPLETED' && trip.status?.toUpperCase() !== 'CANCELLED' && trip.status?.toUpperCase() !== 'ARRIVED') && (
-        <div className="detail-card full-width" style={{ marginBottom: '1rem' }}>
-          <div className="card-header">
-            <h2 className="card-title">Actions</h2>
-          </div>
-          <div className="card-body" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 260px' }}>
-              <div className="detail-label">Cancel reason</div>
-              <input
-                className="input"
-                style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="e.g. Customer request / vehicle issue"
-              />
-            </div>
-            <div style={{ flex: '1 1 260px' }}>
-              <div className="detail-label">New Route</div>
-              <select
-                style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                value={newRouteId}
-                onChange={(e) => setNewRouteId(e.target.value)}
-              >
-                <option value="">-- Select Route --</option>
-                {routes.map(route => (
-                  <option key={route.routeId} value={route.routeId}>
-                    {route.routeName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <div className="detail-grid">
+        {trip.orders && trip.orders.length > 0 && (
+          <>
+            <div className="detail-card full-width">
+              <div className="card-header">
+                <h2 className="card-title">Trip Orders ({trip.orders.length})</h2>
+              </div>
+
+              <div className="card-body">
+                <div className="info-pill" style={{ marginBottom: '1rem' }}>
+                  Trip Summary: {trip.orders.length} order{trip.orders.length > 1 ? 's' : ''} •
+                  Total Weight: {trip.orders.reduce((sum, o) => sum + (o.weightTons || 0), 0).toFixed(1)} tons •
+                  Total Distance: {trip.orders.reduce((sum, order) => sum + (order.distanceKm || 0), 0).toFixed(1)} km •
+                  Total Fee: {formatMoney(trip.orders.reduce((sum, order) => sum + (order.shippingFee || 0), 0))}
+                </div>
+
+                <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+                  {trip.orders.map(order => (
+                    <div key={order.orderId} className="info-pill" style={{
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '13px',
+                      padding: '1rem'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <strong style={{ fontSize: '14px' }}>#{order.orderId}</strong>
+                          <span style={{
+                            backgroundColor: order.orderStatus === 'DELIVERED' ? '#dcfce7' :
+                                           order.orderStatus === 'IN_TRANSIT' ? '#dbeafe' :
+                                           order.orderStatus === 'ASSIGNED' ? '#fef3c7' : '#fee2e2',
+                            color: order.orderStatus === 'DELIVERED' ? '#166534' :
+                                   order.orderStatus === 'IN_TRANSIT' ? '#1e40af' :
+                                   order.orderStatus === 'ASSIGNED' ? '#92400e' : '#dc2626',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontWeight: '600',
+                            fontSize: '11px'
+                          }}>
+                            {order.orderStatus}
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{order.customerName}</div>
+                        <div style={{ color: '#64748b', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div>📍 <strong>Pickup:</strong> {order.pickupAddress}</div>
+                          <div>🎯 <strong>Delivery:</strong> {order.deliveryAddress}</div>
+                          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
+                            <span>⚖️ {order.weightTons ? `${order.weightTons} t` : 'N/A'}</span>
+                            <span>📏 {order.distanceKm ? `${order.distanceKm} km` : 'N/A'}</span>
+                            <span>💰 {order.shippingFee ? formatMoney(order.shippingFee) : 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Trip Route Map - similar to TripCreatePage */}
+            <div className="detail-card full-width" style={{ marginTop: '1rem' }}>
+              <div className="card-header">
+                <h2 className="card-title">Trip Route & Orders</h2>
+                <p className="page-subtitle" style={{ margin: 0 }}>Complete route with all order waypoints</p>
+              </div>
+              <RouteMapCard
+                orders={trip.orders}
+                onDistanceChange={(km, fee) => { setDistanceEstimate(km); setFeeEstimate(fee); }}
+              />
+            </div>
+          </>
+        )}
+
         <div className="detail-card main-card">
           <div className="card-header">
             <h2 className="card-title">Trip Information</h2>
-            <span 
-              className="badge" 
+            <span
+              className="badge"
               style={{ backgroundColor: getStatusColor(trip.status) }}
             >
               {trip.status}
             </span>
           </div>
-          
+
           <div className="card-body">
             <div className="detail-section">
               <div className="detail-row">
@@ -457,16 +476,26 @@ const TripDetailPage = () => {
                 <div className="detail-item">
                   <div className="detail-icon">📏</div>
                   <div>
-                    <div className="detail-label">Estimated Distance</div>
-                    <div className="detail-value">{distanceEstimate != null ? `${distanceEstimate} km` : 'N/A'}</div>
+                    <div className="detail-label">Total Distance</div>
+                    <div className="detail-value">
+                      {trip.orders?.length > 0
+                        ? `${trip.orders.reduce((sum, order) => sum + (order.distanceKm || 0), 0).toFixed(2)} km`
+                        : (trip.route?.distanceKm ? `${trip.route.distanceKm.toFixed(2)} km` : 'N/A')
+                      }
+                    </div>
                   </div>
                 </div>
 
                 <div className="detail-item">
                   <div className="detail-icon">💵</div>
                   <div>
-                    <div className="detail-label">Estimated Fee</div>
-                    <div className="detail-value">{feeEstimate != null ? formatMoney(feeEstimate) : 'N/A'}</div>
+                    <div className="detail-label">Total Fee</div>
+                    <div className="detail-value">
+                      {trip.orders?.length > 0
+                        ? formatMoney(trip.orders.reduce((sum, order) => sum + (order.shippingFee || 0), 0))
+                        : (trip.route?.totalFee ? formatMoney(trip.route.totalFee) : 'N/A')
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
@@ -478,7 +507,7 @@ const TripDetailPage = () => {
           <div className="card-header">
             <h2 className="card-title">Assignment</h2>
           </div>
-          
+
           <div className="card-body">
             <div className="assignment-section">
               <div className="assignment-item">
@@ -506,12 +535,12 @@ const TripDetailPage = () => {
               </div>
 
               {!trip.driverName && trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' && (
-                <Link 
-                  to={`/dispatch/trips/${trip.tripId}/assign`} 
+                <Link
+                  to={`/dispatch/trips/${trip.tripId}/assign`}
                   className="btn-action primary"
                   style={{ marginTop: '1rem', width: '100%' }}
                 >
-                  👥 Assign Driver & Vehicle
+                  👥 Assign Driver
                 </Link>
               )}
             </div>
@@ -556,13 +585,7 @@ const TripDetailPage = () => {
           </div>
         )}
 
-        {trip.routeId && (
-          <RouteMapCard 
-            routeId={trip.routeId} 
-            feePerKm={12} 
-            onDistanceChange={(km, fee) => { setDistanceEstimate(km); setFeeEstimate(fee); }}
-          />
-        )}
+
 
         <div className="detail-card full-width">
           <div className="card-header">
@@ -589,33 +612,39 @@ const TripDetailPage = () => {
           </div>
         </div>
 
-        {renderPOD()}
-
-        {trip.orders && trip.orders.length > 0 && (
-          <div className="detail-card full-width">
+        {delayInfo && (
+          <div className="detail-card full-width" style={{ marginTop: '1rem' }}>
             <div className="card-header">
-              <h2 className="card-title">Orders ({trip.orders.length})</h2>
+              <h2 className="card-title">Delay Information</h2>
+              <span
+                className="badge"
+                style={{
+                  backgroundColor: delayInfo.delayStatus === 'APPROVED' ? '#10b981' :
+                                   delayInfo.delayStatus === 'PENDING' ? '#f59e0b' : '#ef4444'
+                }}
+              >
+                {delayInfo.delayStatus}
+              </span>
             </div>
-            
             <div className="card-body">
-              <div className="orders-list">
-                {trip.orders.map((order, idx) => (
-                  <div key={idx} className="order-item-compact">
-                    <div className="order-number">#{order.orderId || idx + 1}</div>
-                    <div className="order-info">
-                      <div className="order-customer">{order.customerName}</div>
-                      <div className="order-route-compact">
-                        <span className="pickup-compact">📍 {order.pickupAddress}</span>
-                        <span className="arrow">→</span>
-                        <span className="delivery-compact">🎯 {order.deliveryAddress}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <div className="detail-label">Delay Reason</div>
+                  <div className="detail-value">{delayInfo.delayReason}</div>
+
+                  {delayInfo.slaExtensionMinutes && (
+                    <>
+                      <div className="detail-label" style={{ marginTop: '0.75rem' }}>SLA Extension</div>
+                      <div className="detail-value">{delayInfo.slaExtensionMinutes} minutes</div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         )}
+
+        {renderPOD()}
       </div>
 
       {/* Floating Chat Popup */}

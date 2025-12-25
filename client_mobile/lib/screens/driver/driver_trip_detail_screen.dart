@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'widgets/trip_map_view.dart';
 import 'delivery_confirmation_screen.dart';
 import 'driver_chat_screen.dart';
+import '../../models/driver/trip.dart';
 
 class DriverTripDetailScreen extends StatefulWidget {
   final int tripId;
@@ -127,6 +128,10 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
       if (response.statusCode == 200) {
         final newTripDetail = jsonDecode(response.body);
 
+        // DEBUG: Log the full response
+        print('DEBUG: Full trip response: $newTripDetail');
+        print('DEBUG: Orders in response: ${newTripDetail['orders']}');
+
         // Check if trip status changed and handle GPS tracking accordingly
         final previousStatus = _tripDetail?['status'];
         final newStatus = newTripDetail['status'];
@@ -233,6 +238,15 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
       default:
         return Colors.grey;
     }
+  }
+
+  bool _areAllOrdersDelivered() {
+    if (_tripDetail!['orders'] == null || _tripDetail!['orders'] is! List) {
+      return false;
+    }
+    final orders = _tripDetail!['orders'] as List;
+    return orders.every((order) =>
+        (order['orderStatus'] ?? order['status'])?.toString().toUpperCase() == 'DELIVERED');
   }
 
   Widget _buildDetailRow(
@@ -454,8 +468,8 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           }
         };
       }
-    } else if (_tripDetail!['status'] == 'scheduled' &&
-        _tripDetail!['assignmentStatus'] == 'accepted') {
+    } else if (_tripDetail!['assignmentStatus'] == 'accepted' &&
+        (_tripDetail!['status'] == 'scheduled' || _tripDetail!['status'] == 'assigned')) {
       buttonText = 'START TRIP';
       action = () async {
         setState(() => _isLoading = true);
@@ -475,29 +489,8 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           ).showSnackBar(SnackBar(content: Text('Failed to start trip: $e')));
         }
       };
-    } else if (_tripDetail!['status'] == 'in_progress') {
-      buttonText = 'ARRIVED';
-      action = () async {
-        setState(() => _isLoading = true);
-        try {
-          await driverService.updateTripStatus(
-            _tripDetail!['tripId'],
-            'arrived',
-          );
-          await _fetchTripDetail();
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Marked as arrived.')));
-        } catch (e) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to mark as arrived: $e')),
-          );
-        }
-      };
-    } else if (_tripDetail!['status'] == 'arrived' ||
-        _tripDetail!['status'] == 'in_progress') {
-      buttonText = 'DELIVER';
+    } else if (_tripDetail!['status'] == 'in_progress' && _areAllOrdersDelivered()) {
+      buttonText = 'COMPLETE TRIP';
       action = () async {
         final confirmed = await Navigator.of(context).push(
           MaterialPageRoute(
@@ -550,6 +543,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                           child: TripMapView(
                             tripDetail: _tripDetail!,
                             compact: true,
+                            orders: _tripDetail!['orders'] as List<dynamic>?,
                           ),
                         ),
                       ),
@@ -707,28 +701,27 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
                             const SizedBox(height: 16),
 
-                            // Route Info Card
-                            if (_tripDetail!['routeName'] != null ||
-                                _tripDetail!['originAddress'] != null ||
-                                _tripDetail!['destinationAddress'] != null)
+                            // Trip Route Waypoints Card
+                            if (_tripDetail!['orders'] != null &&
+                                _tripDetail!['orders'] is List &&
+                                _tripDetail!['orders'].isNotEmpty)
                               Card(
                                 elevation: 4,
                                 child: Padding(
                                   padding: const EdgeInsets.all(20),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Row(
+                                      Row(
                                         children: [
-                                          Icon(
+                                          const Icon(
                                             Icons.route,
                                             color: Colors.green,
                                           ),
-                                          SizedBox(width: 8),
+                                          const SizedBox(width: 8),
                                           Text(
-                                            'ROUTE INFORMATION',
-                                            style: TextStyle(
+                                            'TRIP WAYPOINTS (${(_tripDetail!['orders'] as List).length} stops)',
+                                            style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                               color: Colors.green,
@@ -737,8 +730,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 16),
-                                      if (_tripDetail!['routeName'] !=
-                                          null) ...[
+                                      if (_tripDetail!['routeName'] != null) ...[
                                         Row(
                                           children: [
                                             const Text(
@@ -758,45 +750,240 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 12),
+                                        const SizedBox(height: 16),
                                       ],
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.location_on,
-                                            color: Colors.green,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'FROM: ${_tripDetail!['originAddress'] ?? 'N/A'}',
-                                              style: const TextStyle(
-                                                fontSize: 14,
+                                      // Sequential Waypoint Route
+                                      ...() {
+                                        final orders = _tripDetail!['orders'] as List;
+                                        final List<Widget> routeWidgets = [];
+
+                                        for (int i = 0; i < orders.length; i++) {
+                                          final order = orders[i] as Map<String, dynamic>;
+                                          final orderStatus = (order['orderStatus'] ?? order['status'])?.toString().toUpperCase();
+                                          final isCompleted = orderStatus == 'DELIVERED';
+
+                                          // Add pickup waypoint
+                                          routeWidgets.add(
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: isCompleted ? Colors.grey.shade100 : Colors.green.shade50,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: isCompleted ? Colors.grey.shade300 : Colors.green.shade200),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    width: 24,
+                                                    height: 24,
+                                                    decoration: BoxDecoration(
+                                                      color: isCompleted ? Colors.grey : Colors.green,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Center(
+                                                      child: isCompleted
+                                                        ? const Icon(
+                                                            Icons.check,
+                                                            color: Colors.white,
+                                                            size: 14,
+                                                          )
+                                                        : Text(
+                                                            '${i + 1}P',
+                                                            style: const TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Icon(
+                                                    Icons.store,
+                                                    color: isCompleted ? Colors.grey : Colors.green,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            Text(
+                                                              'Order ${i + 1} Pickup',
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w600,
+                                                                color: isCompleted ? Colors.grey : Colors.green,
+                                                              ),
+                                                            ),
+                                                            if (isCompleted) ...[
+                                                              const SizedBox(width: 8),
+                                                              Container(
+                                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                                decoration: BoxDecoration(
+                                                                  color: Colors.green.shade100,
+                                                                  borderRadius: BorderRadius.circular(8),
+                                                                ),
+                                                                child: const Text(
+                                                                  'DONE',
+                                                                  style: TextStyle(
+                                                                    fontSize: 8,
+                                                                    color: Colors.green,
+                                                                    fontWeight: FontWeight.bold,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        ),
+                                                        Text(
+                                                          order['pickupAddress'] ?? 'N/A',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color: isCompleted ? Colors.grey.shade600 : Colors.black87,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.flag,
-                                            color: Colors.red,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'TO: ${_tripDetail!['destinationAddress'] ?? 'N/A'}',
-                                              style: const TextStyle(
-                                                fontSize: 14,
+                                          );
+
+                                          // Add arrow to delivery
+                                          routeWidgets.add(
+                                            Container(
+                                              margin: const EdgeInsets.symmetric(vertical: 4),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.arrow_downward,
+                                                    color: Colors.blue.shade400,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    'Deliver to Order ${i + 1}',
+                                                    style: TextStyle(
+                                                      color: Colors.blue.shade600,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Icon(
+                                                    Icons.arrow_downward,
+                                                    color: Colors.blue.shade400,
+                                                    size: 20,
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                          );
+
+                                          // Add delivery waypoint
+                                          routeWidgets.add(
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.red.shade50,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: Colors.red.shade200),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    width: 24,
+                                                    height: 24,
+                                                    decoration: const BoxDecoration(
+                                                      color: Colors.red,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        '${i + 1}D',
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  const Icon(
+                                                    Icons.home,
+                                                    color: Colors.red,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          'Order ${i + 1} Delivery',
+                                                          style: const TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: Colors.red,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          order['deliveryAddress'] ?? 'N/A',
+                                                          style: const TextStyle(
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+
+                                          // Add arrow to next order (if not last)
+                                          if (i < orders.length - 1) {
+                                            routeWidgets.add(
+                                              Container(
+                                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Container(
+                                                      height: 2,
+                                                      width: 40,
+                                                      color: Colors.grey.shade400,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      'Next Order',
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade600,
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      height: 2,
+                                                      width: 40,
+                                                      color: Colors.grey.shade400,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+
+                                        return routeWidgets;
+                                      }(),
                                     ],
                                   ),
                                 ),
@@ -1193,19 +1380,47 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                     MainAxisAlignment
                                                         .spaceBetween,
                                                 children: [
-                                                  Text(
-                                                    'Order #${order['orderId']}',
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                                  Expanded(
+                                                    child: Row(
+                                                      children: [
+                                                        Flexible(
+                                                          child: Text(
+                                                            'Order #${order['orderId']}',
+                                                            style: const TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight.bold,
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 6),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                            horizontal: 4,
+                                                            vertical: 1,
+                                                          ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.blue.shade100,
+                                                            borderRadius: BorderRadius.circular(8),
+                                                          ),
+                                                          child: Text(
+                                                            'WP${((_tripDetail!['orders'] as List).indexOf(order) + 1)}',
+                                                            style: TextStyle(
+                                                              fontSize: 9,
+                                                              color: Colors.blue.shade800,
+                                                              fontWeight: FontWeight.w600,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                   Container(
                                                     padding:
                                                         const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4,
+                                                          horizontal: 6,
+                                                          vertical: 3,
                                                         ),
                                                     decoration: BoxDecoration(
                                                       color: _getOrderStatusColor(
@@ -1214,7 +1429,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                       ),
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                            12,
+                                                            10,
                                                           ),
                                                     ),
                                                     child: Text(
@@ -1223,7 +1438,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                           'N/A',
                                                       style: const TextStyle(
                                                         color: Colors.white,
-                                                        fontSize: 12,
+                                                        fontSize: 10,
                                                         fontWeight:
                                                             FontWeight.bold,
                                                       ),
@@ -1409,6 +1624,133 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                           color: Colors.orange,
                                                           fontWeight:
                                                               FontWeight.bold,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+
+                                              // Order Status Update Buttons - Only show when trip is in progress
+                                              if (_tripDetail!['status'] == 'in_progress' ||
+                                                  _tripDetail!['status'] == 'arrived') ...[
+                                                const SizedBox(height: 12),
+                                                Row(
+                                                  children: [
+                                                    if (order['orderStatus'] == 'ASSIGNED') ...[
+                                                      Expanded(
+                                                        child: ElevatedButton.icon(
+                                                          onPressed: () async {
+                                                            setState(() => _isLoading = true);
+                                                            try {
+                                                              await driverService.updateOrderStatus(
+                                                                _tripDetail!['tripId'],
+                                                                order['orderId'],
+                                                                'IN_TRANSIT',
+                                                              );
+                                                              await _fetchTripDetail();
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                const SnackBar(content: Text('Order marked as In Transit')),
+                                                              );
+                                                            } catch (e) {
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                SnackBar(content: Text('Failed to update order: $e')),
+                                                              );
+                                                            } finally {
+                                                              setState(() => _isLoading = false);
+                                                            }
+                                                          },
+                                                          icon: const Icon(Icons.local_shipping, size: 16),
+                                                          label: const Text('START DELIVERY', style: TextStyle(fontSize: 12)),
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: Colors.blue,
+                                                            foregroundColor: Colors.white,
+                                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ] else if (order['orderStatus'] == 'IN_TRANSIT') ...[
+                                                      Expanded(
+                                                        child: ElevatedButton.icon(
+                                                          onPressed: () async {
+                                                            setState(() => _isLoading = true);
+                                                            try {
+                                                              await driverService.updateOrderStatus(
+                                                                _tripDetail!['tripId'],
+                                                                order['orderId'],
+                                                                'DELIVERED',
+                                                              );
+                                                              await _fetchTripDetail();
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                const SnackBar(content: Text('Order marked as Delivered')),
+                                                              );
+                                                            } catch (e) {
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                SnackBar(content: Text('Failed to update order: $e')),
+                                                              );
+                                                            } finally {
+                                                              setState(() => _isLoading = false);
+                                                            }
+                                                          },
+                                                          icon: const Icon(Icons.check_circle, size: 16),
+                                                          label: const Text('MARK DELIVERED', style: TextStyle(fontSize: 12)),
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: Colors.green,
+                                                            foregroundColor: Colors.white,
+                                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ] else if (order['orderStatus'] == 'DELIVERED') ...[
+                                                      Expanded(
+                                                        child: Container(
+                                                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.green.shade50,
+                                                            borderRadius: BorderRadius.circular(6),
+                                                            border: Border.all(color: Colors.green.shade200),
+                                                          ),
+                                                          child: const Row(
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            children: [
+                                                              Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                                              SizedBox(width: 8),
+                                                              Text(
+                                                                'DELIVERED',
+                                                                style: TextStyle(
+                                                                  color: Colors.green,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  fontSize: 12,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ] else if (_tripDetail!['status'] == 'scheduled' ||
+                                                          _tripDetail!['status'] == 'assigned') ...[
+                                                const SizedBox(height: 12),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey.shade100,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: Colors.grey.shade300),
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(Icons.info_outline, color: Colors.grey, size: 16),
+                                                      SizedBox(width: 8),
+                                                      Text(
+                                                        'Start trip to begin deliveries',
+                                                        style: TextStyle(
+                                                          color: Colors.grey,
+                                                          fontStyle: FontStyle.italic,
                                                           fontSize: 12,
                                                         ),
                                                       ),

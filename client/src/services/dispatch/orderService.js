@@ -39,6 +39,16 @@ const updateOrder = async (orderId, payload) => {
   return response.data;
 };
 
+const getOrderTracking = async (orderId) => {
+  const response = await api.get(`${basePath}/orders/${orderId}/tracking`);
+  return response.data;
+};
+
+const updateOrderStatus = async (orderId, payload) => {
+  const response = await api.put(`${basePath}/orders/${orderId}/status`, payload);
+  return response.data;
+};
+
 const orderService = {
   getOrders,
   createOrder,
@@ -46,6 +56,8 @@ const orderService = {
   downloadTemplate,
   getOrderById,
   updateOrder,
+  getOrderTracking,
+  updateOrderStatus,
 };
 
 export default orderService;

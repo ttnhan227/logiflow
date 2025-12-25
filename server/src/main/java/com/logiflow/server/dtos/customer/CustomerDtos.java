@@ -28,6 +28,7 @@ public class CustomerDtos {
         private BigDecimal deliveryLat;
         private BigDecimal deliveryLng;
         private BigDecimal weightTonnes;
+        private BigDecimal packageValue; // For insurance calculation
         private String priority; // "NORMAL" or "URGENT"
     }
 
@@ -45,6 +46,10 @@ public class CustomerDtos {
         private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
+        private BigDecimal pickupLat;
+        private BigDecimal pickupLng;
+        private BigDecimal deliveryLat;
+        private BigDecimal deliveryLng;
         private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
@@ -75,6 +80,10 @@ public class CustomerDtos {
         private String dockNumber;
         private String deliveryAddress;
         private String packageDetails;
+        private BigDecimal pickupLat;
+        private BigDecimal pickupLng;
+        private BigDecimal deliveryLat;
+        private BigDecimal deliveryLng;
         private BigDecimal weightTons;
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
@@ -129,6 +138,7 @@ public class CustomerDtos {
         private BigDecimal packageValue;
         private BigDecimal distanceKm;
         private BigDecimal shippingFee;
+        private String priorityLevel; // Add priority level to history
         private String orderStatus;
         private String paymentStatus;
         private LocalDateTime createdAt;

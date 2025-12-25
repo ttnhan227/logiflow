@@ -50,7 +50,7 @@ const MapController = ({ center, zoom }) => {
   return null;
 };
 
-const AdminRegionalMap = ({ activeDrivers = [], onRegionClick }) => {
+const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick }) => {
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [mapView, setMapView] = useState({ center: [15.8, 107.0], zoom: 6 });
 
@@ -161,17 +161,24 @@ const AdminRegionalMap = ({ activeDrivers = [], onRegionClick }) => {
               </Polygon>
             ))}
 
-            {activeDrivers.map((driver) => (
-              <Marker 
-                key={driver.driverId} 
-                position={[driver.latitude, driver.longitude]}
-                icon={createCustomIcon(driver.tripStatus === 'in_progress' ? COLORS.central : '#94a3b8')}
-              >
-                <Popup>
-                  <DriverPopup driver={driver} />
-                </Popup>
-              </Marker>
-            ))}
+            {activeDrivers.map((driver) => {
+              // Find the corresponding trip for this driver
+              const driverTrip = activeTrips.find(trip =>
+                trip.driver && trip.driver.name === driver.driverName
+              );
+
+              return (
+                <Marker
+                  key={driver.driverId}
+                  position={[driver.latitude, driver.longitude]}
+                  icon={createCustomIcon(driver.tripStatus === 'in_progress' ? COLORS.central : '#94a3b8')}
+                >
+                  <Popup>
+                    <DriverPopup driver={driver} trip={driverTrip} />
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
 
           {/* Floating Legend */}
@@ -207,9 +214,12 @@ const StatCard = ({ title, value, color, onClick }) => (
   </div>
 );
 
-const DriverPopup = ({ driver }) => (
-  <div style={{ minWidth: '180px', padding: '5px' }}>
-    <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>{driver.driverName}</div>
+const DriverPopup = ({ driver, trip }) => (
+  <div style={{ minWidth: '250px', padding: '8px', maxWidth: '300px' }}>
+    <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
+      {driver.driverName}
+    </div>
+
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ color: '#64748b' }}>Plate:</span>
@@ -217,11 +227,42 @@ const DriverPopup = ({ driver }) => (
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ color: '#64748b' }}>Status:</span>
-        <span style={{ 
+        <span style={{
           color: driver.tripStatus === 'in_progress' ? '#059669' : '#475569',
-          fontWeight: 'bold' 
+          fontWeight: 'bold'
         }}>{driver.tripStatus?.replace('_', ' ')}</span>
       </div>
+
+      {trip && (
+        <>
+          <div style={{ borderTop: '1px solid #e5e7eb', margin: '8px 0', paddingTop: '8px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '5px' }}>
+              Trip #{trip.tripId}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <span style={{ color: '#64748b' }}>Route:</span>
+              <span style={{ fontSize: '11px' }}>{trip.originCity} → {trip.destinationCity}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <span style={{ color: '#64748b' }}>ETA:</span>
+              <span style={{ fontSize: '11px' }}>
+                {trip.eta ? new Date(trip.eta).toLocaleTimeString() : 'N/A'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+              <span style={{ color: '#64748b' }}>Orders:</span>
+              <span style={{ fontSize: '11px' }}>{trip.orders?.length || 0} items</span>
+            </div>
+            {trip.delayReason && (
+              <div style={{ marginTop: '5px', padding: '3px', backgroundColor: '#fef2f2', borderRadius: '3px', border: '1px solid #fecaca' }}>
+                <span style={{ color: '#dc2626', fontSize: '10px', fontWeight: 'bold' }}>
+                  🚨 {trip.delayReason}
+                </span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   </div>
 );

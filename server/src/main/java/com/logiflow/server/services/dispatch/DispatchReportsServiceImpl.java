@@ -1,26 +1,36 @@
 package com.logiflow.server.services.dispatch;
 
+import com.itextpdf.html2pdf.ConverterProperties;
+import com.itextpdf.html2pdf.HtmlConverter;
 import com.logiflow.server.dtos.dispatch.reports.DispatchDailyReportItemDto;
 import com.logiflow.server.models.Trip;
 import com.logiflow.server.repositories.trip.DailyTripStatusCounts;
 import com.logiflow.server.repositories.trip.TripRepository;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.Base64;
 
 @Service
 public class DispatchReportsServiceImpl implements DispatchReportsService {
 
     private final TripRepository tripRepository;
+    private final TemplateEngine templateEngine;
 
-    public DispatchReportsServiceImpl(TripRepository tripRepository) {
+    public DispatchReportsServiceImpl(TripRepository tripRepository, TemplateEngine templateEngine) {
         this.tripRepository = tripRepository;
+        this.templateEngine = templateEngine;
     }
 
     @Override
@@ -137,5 +147,118 @@ public class DispatchReportsServiceImpl implements DispatchReportsService {
         int slaExt = (t.getSlaExtensionMinutes() != null) ? t.getSlaExtensionMinutes() : 0;
         long raw = minutesBetween - slaExt;
         return (int) Math.max(0, raw);
+    }
+
+    /**
+     * Generate dispatch daily report PDF
+     */
+    public byte[] generateDispatchReportPdf(LocalDate startDate, LocalDate endDate) {
+        List<DispatchDailyReportItemDto> reportData = getDailyReport(startDate, endDate);
+
+        // Calculate summary statistics
+        DispatchReportSummary summary = calculateSummaryStatistics(reportData);
+
+        Context context = createDispatchReportContext(startDate, endDate, reportData, summary);
+        String html = templateEngine.process("dispatch/reports/dispatch-daily-report", context);
+        return convertHtmlToPdf(html, "dispatch_daily_report_" + startDate + "_to_" + endDate);
+    }
+
+    private DispatchReportSummary calculateSummaryStatistics(List<DispatchDailyReportItemDto> reportData) {
+        if (reportData.isEmpty()) {
+            return new DispatchReportSummary(0, 0, 0, 0, 0, 0, 0);
+        }
+
+        int totalTrips = reportData.stream().mapToInt(DispatchDailyReportItemDto::getTotalTrips).sum();
+        int completedTrips = reportData.stream().mapToInt(DispatchDailyReportItemDto::getCompletedTrips).sum();
+        int cancelledTrips = reportData.stream().mapToInt(DispatchDailyReportItemDto::getCancelledTrips).sum();
+        int delayedTrips = reportData.stream().mapToInt(DispatchDailyReportItemDto::getDelayedStatusTrips).sum();
+        int lateTrips = reportData.stream().mapToInt(DispatchDailyReportItemDto::getLateTrips).sum();
+
+        double avgOnTimeRate = reportData.stream()
+            .filter(r -> r.getCompletedTripsWithActualArrival() > 0)
+            .mapToDouble(DispatchDailyReportItemDto::getOnTimeRatePercent)
+            .average().orElse(0.0);
+
+        double avgDelayMinutes = reportData.stream()
+            .filter(r -> r.getCompletedTripsWithActualArrival() > 0)
+            .mapToDouble(DispatchDailyReportItemDto::getAvgDelayMinutes)
+            .average().orElse(0.0);
+
+        return new DispatchReportSummary(totalTrips, completedTrips, cancelledTrips,
+                                       delayedTrips, lateTrips, avgOnTimeRate, avgDelayMinutes);
+    }
+
+    private Context createDispatchReportContext(LocalDate startDate, LocalDate endDate,
+                                              List<DispatchDailyReportItemDto> reportData,
+                                              DispatchReportSummary summary) {
+        Context context = new Context();
+        context.setVariable("reportTitle", "Dispatch Daily Report");
+        context.setVariable("startDate", startDate);
+        context.setVariable("endDate", endDate);
+        context.setVariable("generatedDate", LocalDate.now());
+        context.setVariable("reportData", reportData);
+        context.setVariable("summary", summary);
+
+        // Load and encode logo image as base64
+        try {
+            ClassPathResource logoResource = new ClassPathResource("static/images/logiflow-smarter_logistics-seamless_flow.png");
+            if (logoResource.exists()) {
+                byte[] logoBytes = logoResource.getInputStream().readAllBytes();
+                String logoBase64 = Base64.getEncoder().encodeToString(logoBytes);
+                context.setVariable("logoBase64", "data:image/png;base64," + logoBase64);
+            } else {
+                context.setVariable("logoBase64", "");
+            }
+        } catch (IOException e) {
+            context.setVariable("logoBase64", "");
+        }
+
+        return context;
+    }
+
+    /**
+     * Convert HTML to PDF using iText
+     */
+    private byte[] convertHtmlToPdf(String html, String filename) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            ConverterProperties converterProperties = new ConverterProperties();
+            HtmlConverter.convertToPdf(html, out, converterProperties);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate " + filename + " PDF", e);
+        }
+    }
+
+    /**
+     * Inner class for report summary statistics
+     */
+    public static class DispatchReportSummary {
+        private final int totalTrips;
+        private final int completedTrips;
+        private final int cancelledTrips;
+        private final int delayedTrips;
+        private final int lateTrips;
+        private final double avgOnTimeRate;
+        private final double avgDelayMinutes;
+
+        public DispatchReportSummary(int totalTrips, int completedTrips, int cancelledTrips,
+                                   int delayedTrips, int lateTrips, double avgOnTimeRate, double avgDelayMinutes) {
+            this.totalTrips = totalTrips;
+            this.completedTrips = completedTrips;
+            this.cancelledTrips = cancelledTrips;
+            this.delayedTrips = delayedTrips;
+            this.lateTrips = lateTrips;
+            this.avgOnTimeRate = Math.round(avgOnTimeRate * 10.0) / 10.0;
+            this.avgDelayMinutes = Math.round(avgDelayMinutes * 10.0) / 10.0;
+        }
+
+        // Getters
+        public int getTotalTrips() { return totalTrips; }
+        public int getCompletedTrips() { return completedTrips; }
+        public int getCancelledTrips() { return cancelledTrips; }
+        public int getDelayedTrips() { return delayedTrips; }
+        public int getLateTrips() { return lateTrips; }
+        public double getAvgOnTimeRate() { return avgOnTimeRate; }
+        public double getAvgDelayMinutes() { return avgDelayMinutes; }
     }
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, tripService, orderService, dispatchVehicleService, dispatchRouteService, routeService as adminRouteService } from '../../services';
+import { api, tripService, orderService, dispatchVehicleService, dispatchRouteService} from '../../services';
 import RouteMapCard from './RouteMapCard';
 import './dispatch.css';
 import './modern-dispatch.css';
@@ -8,35 +8,45 @@ import './modern-dispatch.css';
 const TripCreatePage = () => {
     const navigate = useNavigate();
     const [selectedVehicle, setSelectedVehicle] = useState(null);
-    const [selectedRoute, setSelectedRoute] = useState(null);
-    const [vehicles, setVehicles] = useState([]);
-    const [routes, setRoutes] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
     const [tripType, setTripType] = useState('delivery');
     const [scheduledDeparture, setScheduledDeparture] = useState('');
     const [scheduledArrival, setScheduledArrival] = useState('');
     const [pendingOrders, setPendingOrders] = useState([]);
     const [selectedOrderIds, setSelectedOrderIds] = useState([]);
     const [orderTypeFilter, setOrderTypeFilter] = useState(''); // '', 'PORT_TERMINAL', 'WAREHOUSE'
-    const [distanceEstimate, setDistanceEstimate] = useState(null);
-    const [feeEstimate, setFeeEstimate] = useState(null);
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [loadingOrders, setLoadingOrders] = useState(false);
-    const [creatingRoute, setCreatingRoute] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+    const toLocalDateTimeInputValue = (date) => {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        const yyyy = date.getFullYear();
+        const mm = pad(date.getMonth() + 1);
+        const dd = pad(date.getDate());
+        const hh = pad(date.getHours());
+        const min = pad(date.getMinutes());
+        return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    };
+
+    const nowMin = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
+    const arrivalMin = useMemo(() => {
+        if (scheduledDeparture) return scheduledDeparture;
+        return nowMin;
+    }, [scheduledDeparture, nowMin]);
 
     useEffect(() => {
         const loadData = async () => {
             setLoadingOrders(true);
             try {
-                const [ordersRes, vehiclesRes, routesRes] = await Promise.all([
+                const [ordersRes, vehiclesRes] = await Promise.all([
                     orderService.getOrders({ status: 'PENDING', page: 0, size: 200 }),
                     dispatchVehicleService.getAvailableVehicles(),
-                    dispatchRouteService.getAllRoutes(),
                 ]);
                 setPendingOrders(ordersRes?.orders || []);
                 setVehicles(vehiclesRes || []);
-                setRoutes(routesRes || []);
             } catch (ex) {
                 console.error(ex);
                 setError(ex?.response?.data?.error || 'Failed to load data');
@@ -55,269 +65,78 @@ const TripCreatePage = () => {
         );
     };
 
-    const handleDistanceChange = (km, fee) => {
-        setDistanceEstimate(km);
-        setFeeEstimate(fee);
-    };
-
     const formatMoney = (amount) => {
         if (amount == null) return '—';
         try {
-            return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+            return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 });
         } catch (_err) {
-            return `${amount} USD`;
+            return `${amount} VND`;
         }
     };
 
-    // --- AI route auto-selection by customer addresses ---
-    const normalizeText = (s) => {
-        if (!s) return '';
-        return String(s)
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9\s]/g, ' ') // keep alphanumerics
-            .replace(/\s+/g, ' ') // compress spaces
-            .trim();
-    };
+    const selectedOrdersData = useMemo(() => {
+        const selected = pendingOrders.filter(o => selectedOrderIds.includes(o.orderId));
+        if (selected.length === 0) return null;
 
-    const tokenSet = (s) => new Set(normalizeText(s).split(' ').filter(Boolean));
+        // Calculate totals for all selected orders
+        const totalDistance = selected.reduce((sum, order) => sum + (order.distanceKm || 0), 0);
+        const totalFee = selected.reduce((sum, order) => sum + (order.shippingFee || 0), 0);
+        const totalWeightTons = selected.reduce((sum, order) => sum + (order.weightTons || 0), 0); // Keep in tons
+        const orderCount = selected.length;
 
-    const overlapScore = (a, b) => {
-        const ta = tokenSet(a);
-        const tb = tokenSet(b);
-        if (ta.size === 0 || tb.size === 0) return 0;
-        let hit = 0;
-        for (const t of ta) {
-            if (tb.has(t)) hit += 1;
-        }
-        // Jaccard-like score
-        return hit / Math.max(ta.size, tb.size);
-    };
-
-    const computeRouteScore = (order, route) => {
-        const pickupSim = overlapScore(order.pickupAddress, route.originAddress);
-        const deliverySim = overlapScore(order.deliveryAddress, route.destinationAddress);
-        // Weighted: prefer origin match slightly
-        return (pickupSim * 0.6) + (deliverySim * 0.4);
-    };
-
-    const geocodeAddressVN = async (address) => {
-        if (!address) return null;
-        // Prefer backend geocode to avoid client-side rate limits and ensure auth
-        const ensureVN = (q) => {
-            const s = String(q);
-            if (/viet\s*nam|việt\s*nam/i.test(s)) return s;
-            return s + ', Việt Nam';
+        return {
+            orders: selected,
+            totalDistance,
+            totalFee,
+            totalWeightTons,
+            orderCount
         };
-        const sanitize = (s) => String(s)
-            .replace(/\s+/g, ' ')
-            .trim();
-
-        const primary = ensureVN(address);
-        const alt = ensureVN(sanitize(address));
-        try {
-            // Try server geocode first
-            const res = await api.get('/maps/geocode', { params: { address: primary } });
-            const data = res?.data;
-            let lat = Number(data?.latitude);
-            let lng = Number(data?.longitude);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-                const res2 = await api.get('/maps/geocode', { params: { address: alt } });
-                lat = Number(res2?.data?.latitude);
-                lng = Number(res2?.data?.longitude);
-            }
-            if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                const inVN = lat >= 8.5 && lat <= 23.4 && lng >= 102.1 && lng <= 109.5;
-                return inVN ? { lat, lng } : null;
-            }
-            return null;
-        } catch (_err) {
-            return null;
-        }
-        // Strip English suffixes that often harm VN geocoding (requested: remove "Street").
-        const normalizeForGeocode = (s) => {
-            let out = String(s);
-            out = out.replace(/\bstreet\b/gi, '');
-            out = out.replace(/\s+/g, ' ').trim();
-            // Clean up commas/spaces that may be left behind.
-            out = out.replace(/\s+,/g, ',');
-            out = out.replace(/,\s*,/g, ',');
-            out = out.replace(/,\s+/g, ', ');
-            out = out.replace(/^,\s*/g, '');
-            out = out.replace(/,\s*$/g, '');
-            return out;
-        };
-
-        // Some datasets match better when the English suffix "Street" is present.
-        // Only inject it when it's missing to avoid duplications.
-        const addStreetIfMissing = (s) => {
-            const raw = String(s);
-            if (/\bstreet\b/i.test(raw)) return raw;
-            // Heuristic: only try adding when the address looks like it starts with a street line.
-            if (!/\d/.test(raw)) return raw;
-            return raw.replace(/^\s*([^,]+)(\s*,\s*|\s*$)/, (_m, first, sep) => {
-                const cleanedFirst = String(first).trim();
-                if (!cleanedFirst) return raw;
-                return `${cleanedFirst} Street${sep || ''}`;
-            });
-        };
-
-        // Fallback queries if the original form doesn't geocode well.
-        const withStreetPrimary = ensureVN(addStreetIfMissing(address));
-        const withStreetAlt = ensureVN(addStreetIfMissing(sanitize(address)));
-        const fallbackPrimary = ensureVN(normalizeForGeocode(address));
-        const fallbackAlt = ensureVN(normalizeForGeocode(sanitize(address)));
-
-        const tryGeocode = async (q) => {
-            try {
-                const res = await api.get('/maps/geocode', { params: { address: q } });
-                const data = res?.data;
-                const lat = Number(data?.latitude);
-                const lng = Number(data?.longitude);
-                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-                return { lat, lng };
-            } catch (_e) {
-                return null;
-            }
-        };
-
-        const candidates = [primary, alt, withStreetPrimary, withStreetAlt, fallbackPrimary, fallbackAlt]
-            .map((s) => String(s || '').trim())
-            .filter(Boolean)
-            .filter((value, index, self) => self.indexOf(value) === index);
-
-        for (const q of candidates) {
-            const coords = await tryGeocode(q);
-            if (!coords) continue;
-            const { lat, lng } = coords;
-            const inVN = lat >= 8.5 && lat <= 23.4 && lng >= 102.1 && lng <= 109.5;
-            if (inVN) return { lat, lng };
-        }
-
-        return null;
-    };
-
-    const autoCreateRouteFromOrder = async (order) => {
-        if (creatingRoute) return null;
-        setCreatingRoute(true);
-        try {
-            const origin = await geocodeAddressVN(order.pickupAddress);
-            const dest = await geocodeAddressVN(order.deliveryAddress);
-            if (!origin || !dest) {
-                setError('Không thể tự động tạo route: không geocode được địa chỉ trong Việt Nam.');
-                return null;
-            }
-            // Fetch distance/duration via OSRM (best effort)
-            let distanceKm = undefined;
-            let durationHours = undefined;
-            try {
-                const coords = `${origin.lng},${origin.lat};${dest.lng},${dest.lat}`;
-                const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 6000);
-                const res = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await res.json();
-                if (data && data.code === 'Ok' && data.routes && data.routes[0]) {
-                    const dMeters = data.routes[0].distance;
-                    const dSeconds = data.routes[0].duration;
-                    if (Number.isFinite(dMeters)) distanceKm = Number((dMeters / 1000).toFixed(2));
-                    if (Number.isFinite(dSeconds)) durationHours = Number((dSeconds / 3600).toFixed(2));
-                }
-            } catch (_e) {
-                // ignore OSRM errors; server may compute later
-            }
-            const routeData = {
-                routeName: `${order.pickupAddress} → ${order.deliveryAddress}`.slice(0, 180),
-                originAddress: order.pickupAddress,
-                originLat: origin.lat,
-                originLng: origin.lng,
-                destinationAddress: order.deliveryAddress,
-                destinationLat: dest.lat,
-                destinationLng: dest.lng,
-                distanceKm,
-                estimatedDurationHours: durationHours,
-                routeType: 'standard'
-            };
-            // Prefer dispatcher endpoint; it shouldn't require admin role
-            let created = null;
-            try {
-                created = await dispatchRouteService.createRoute(routeData);
-            } catch (errCreate) {
-                // Fallback to admin endpoint if dispatcher creation not available
-                try {
-                    created = await adminRouteService.createRoute(routeData);
-                } catch (errAdmin) {
-                    const status = errAdmin?.response?.status;
-                    if (status === 403) {
-                        setError('No permission to auto-create route (403). Please use an account with permission or add the route manually.');
-                    } else {
-                        setError('Route creation failed. Please check server or permissions.');
-                    }
-                    return null;
-                }
-            }
-            if (created?.routeId) {
-                setRoutes(prev => [...prev, created]);
-                setSelectedRoute(created);
-                setError(null);
-                return created;
-            }
-            setError('Tạo route thất bại, vui lòng kiểm tra server.');
-            return null;
-        } catch (_err) {
-            const status = _err?.response?.status;
-            if (status === 403) {
-                setError('No permission to auto-create route (403). Please use an admin account or ask an admin to add the route.');
-            } else {
-                setError('Unable to auto-create route. Please add a route manually.');
-            }
-            return null;
-        } finally {
-            setCreatingRoute(false);
-        }
-    };
-
-    const primarySelectedOrder = useMemo(() => {
-        if (selectedOrderIds.length === 0) return null;
-        const first = pendingOrders.find(o => o.orderId === selectedOrderIds[0]);
-        return first || null;
     }, [selectedOrderIds, pendingOrders]);
 
-    useEffect(() => {
-        // When orders change, auto-pick best matching route or create one
-        if (!primarySelectedOrder) {
-            setSelectedRoute(null);
-            return;
+    // Calculate validation info
+    const validationInfo = useMemo(() => {
+        if (!selectedOrdersData?.totalWeightTons || vehicles.length === 0) {
+            return { maxCapacityTons: 0, exceedsAllVehicles: false };
         }
-        let best = null;
-        let bestScore = 0;
-        if (routes.length > 0) {
-            for (const r of routes) {
-                const s = computeRouteScore(primarySelectedOrder, r);
-                if (s > bestScore) {
-                    bestScore = s;
-                    best = r;
-                }
+
+        const totalWeight = selectedOrdersData.totalWeightTons;
+        const maxCapacityKg = Math.max(...vehicles.map(v => v.capacity || 0));
+        const maxCapacityTons = maxCapacityKg / 1000;
+        const exceedsAllVehicles = totalWeight > maxCapacityTons;
+
+        return { maxCapacityTons, exceedsAllVehicles };
+    }, [vehicles, selectedOrdersData?.totalWeightTons]);
+
+    // Sort vehicles based on weight capacity suitability
+    const sortedVehicles = useMemo(() => {
+        if (!selectedOrdersData?.totalWeightTons) return vehicles;
+
+        const totalWeight = selectedOrdersData.totalWeightTons;
+        return [...vehicles].sort((a, b) => {
+            const aCapacityKg = a.capacity || 0;
+            const bCapacityKg = b.capacity || 0;
+            const aCapacityTons = aCapacityKg / 1000; // Convert kg to tons
+            const bCapacityTons = bCapacityKg / 1000; // Convert kg to tons
+
+            // Vehicles that can handle the weight come first
+            const aCanHandle = aCapacityTons >= totalWeight;
+            const bCanHandle = bCapacityTons >= totalWeight;
+
+            if (aCanHandle !== bCanHandle) return bCanHandle ? 1 : -1;
+
+            // Within suitable vehicles, sort by remaining capacity (ascending = better fit)
+            if (aCanHandle && bCanHandle) {
+                const aRemaining = aCapacityTons - totalWeight;
+                const bRemaining = bCapacityTons - totalWeight;
+                return aRemaining - bRemaining;
             }
-        }
-        // Apply a minimum threshold to avoid random picks
-        if (best && bestScore >= 0.25) {
-            setSelectedRoute(best);
-            setError(null);
-        } else {
-            // Try auto-creating a route when none fits or none exist
-            (async () => {
-                const created = await autoCreateRouteFromOrder(primarySelectedOrder);
-                if (!created) {
-                    setSelectedRoute(null);
-                    // Do not override a specific error message already set inside autoCreateRouteFromOrder
-                    // Keep existing error state for clarity
-                }
-            })();
-        }
-    }, [primarySelectedOrder, routes]);
+
+            // For vehicles that can't handle, sort by how close they are to capacity
+            const aDiff = totalWeight - aCapacityTons;
+            const bDiff = totalWeight - bCapacityTons;
+            return aDiff - bDiff;
+        });
+    }, [vehicles, selectedOrdersData?.totalWeightTons]);
 
     const onSubmit = async (e) => {
         e.preventDefault();
@@ -326,11 +145,6 @@ const TripCreatePage = () => {
 
         if (!selectedVehicle || !scheduledDeparture || !scheduledArrival || selectedOrderIds.length === 0) {
             setError('Please fill all required fields and select at least one order');
-            return;
-        }
-
-        if (!selectedRoute) {
-            setError('AI could not select a suitable route from customer addresses.');
             return;
         }
 
@@ -345,29 +159,32 @@ const TripCreatePage = () => {
             if (o.pickupType === 'PORT_TERMINAL' && (!o.containerNumber || !String(o.containerNumber).trim())) {
                 invalids.push(`#${o.orderId} requires container number for port pickup`);
             }
-            if (o.pickupType === 'WAREHOUSE' && (!o.dockInfo || !String(o.dockInfo).trim())) {
-                invalids.push(`#${o.orderId} requires dock info for warehouse pickup`);
-            }
         }
         if (invalids.length > 0) {
             setError(`Some orders are incomplete: ${invalids.join('; ')}`);
             return;
         }
 
-        const payload = {
-            vehicleId: Number(selectedVehicle.vehicleId),
-            routeId: Number(selectedRoute.routeId),
-            tripType,
-            scheduledDeparture: new Date(scheduledDeparture).toISOString(),
-            scheduledArrival: new Date(scheduledArrival).toISOString(),
-            orderIds: selectedOrderIds,
-        };
-
         setLoading(true);
         try {
-            await tripService.createTrip(payload);
+            // Create trip route from selected orders
+            const route = await dispatchRouteService.createTripRoute(
+                selectedOrderIds,
+                `Trip: ${selectedOrderIds.length} orders`
+            );
+
+            const payload = {
+                vehicleId: Number(selectedVehicle.vehicleId),
+                routeId: Number(route.routeId),
+                tripType,
+                scheduledDeparture: new Date(scheduledDeparture).toISOString(),
+                scheduledArrival: new Date(scheduledArrival).toISOString(),
+                orderIds: selectedOrderIds,
+            };
+
+            const createdTrip = await tripService.createTrip(payload);
             setSuccess('Trip created successfully');
-            setTimeout(() => navigate('/dispatch/trips'), 800);
+            setTimeout(() => navigate(`/dispatch/trips/${createdTrip.tripId}`), 800);
         } catch (ex) {
             console.error(ex);
             setError(ex?.response?.data?.error || ex?.message || 'Failed to create trip');
@@ -393,18 +210,52 @@ const TripCreatePage = () => {
             <form className="detail-card" style={{ padding: '1.5rem' }} onSubmit={onSubmit}>
                 <div className="card-body" style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
                     <div className="form-group">
-                        <label>Vehicle</label>
+                        <label>Vehicle {selectedOrdersData?.totalWeightTons ? `(Total weight: ${selectedOrdersData.totalWeightTons.toLocaleString()} t)` : ''}</label>
                         <select value={selectedVehicle ? selectedVehicle.vehicleId : ''} onChange={e => {
                             const v = vehicles.find(x => x.vehicleId === Number(e.target.value));
                             setSelectedVehicle(v || null);
                         }}>
                             <option value="">-- Select Vehicle --</option>
-                            {vehicles.map(v => (
-                                <option key={v.vehicleId} value={v.vehicleId}>
-                                    {v.vehicleType} ({v.capacity} kg)
-                                </option>
-                            ))}
+                            {sortedVehicles.map(v => {
+                                const capacityKg = v.capacity || 0;
+                                const capacityTons = capacityKg / 1000; // Convert kg to tons
+                                const totalWeight = selectedOrdersData?.totalWeightTons || 0;
+                                const canHandle = capacityTons >= totalWeight;
+                                const remaining = capacityTons - totalWeight;
+
+                                return (
+                                    <option
+                                        key={v.vehicleId}
+                                        value={v.vehicleId}
+                                        disabled={!canHandle}
+                                        style={{
+                                            color: canHandle ? 'inherit' : '#9ca3af',
+                                            fontStyle: canHandle ? 'normal' : 'italic'
+                                        }}
+                                    >
+                                        {canHandle ? '✅' : '🚫'} {v.vehicleType} ({capacityTons.toLocaleString()} t)
+                                        {totalWeight > 0 && (
+                                            canHandle
+                                                ? ` - ${remaining.toLocaleString()} t remaining`
+                                                : ` - ${Math.abs(remaining).toLocaleString()} t over capacity`
+                                        )}
+                                        {v.requiredLicense && ` - License: ${v.requiredLicense}`}
+                                    </option>
+                                );
+                            })}
                         </select>
+                        {selectedOrdersData?.totalWeightTons > 0 && (
+                            <div style={{
+                                marginTop: '0.5rem',
+                                fontSize: '0.75rem',
+                                color: '#6b7280',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <span>💡 Vehicles are sorted by suitability for your cargo weight</span>
+                            </div>
+                        )}
                     </div>
                     {/* Route selection removed — AI auto-selects based on order addresses */}
                     <div className="form-group">
@@ -417,96 +268,573 @@ const TripCreatePage = () => {
                     </div>
                     <div className="form-group">
                         <label>Scheduled Departure</label>
-                        <input type="datetime-local" value={scheduledDeparture} onChange={e => setScheduledDeparture(e.target.value)} />
+                        <input
+                            type="datetime-local"
+                            value={scheduledDeparture}
+                            min={nowMin}
+                            onChange={e => setScheduledDeparture(e.target.value)}
+                        />
                     </div>
                     <div className="form-group">
                         <label>Scheduled Arrival</label>
-                        <input type="datetime-local" value={scheduledArrival} onChange={e => setScheduledArrival(e.target.value)} />
+                        <input
+                            type="datetime-local"
+                            value={scheduledArrival}
+                            min={arrivalMin}
+                            onChange={e => setScheduledArrival(e.target.value)}
+                        />
                     </div>
                 </div>
 
-                {selectedRoute && (
-                    <>
-                        <div className="info-pill" style={{ marginTop: '0.25rem' }}>
-                            selected route: {selectedRoute.routeName}
+                {selectedOrdersData && selectedOrdersData.orders.length > 0 && (
+                    <div style={{ marginTop: '1rem' }}>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.75rem'
+                        }}>
+                            <h4 style={{
+                                margin: 0,
+                                color: '#1e293b',
+                                fontSize: '1rem',
+                                fontWeight: '600'
+                            }}>
+                                Selected Orders ({selectedOrdersData.orderCount})
+                            </h4>
+                            <button
+                                onClick={() => setSelectedOrderIds([])}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    backgroundColor: '#f3f4f6',
+                                    color: '#6b7280',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Clear All
+                            </button>
                         </div>
-                        <RouteMapCard routeId={selectedRoute.routeId} feePerKm={12} onDistanceChange={handleDistanceChange} />
-                    </>
-                )}
-                {!selectedRoute && primarySelectedOrder && (
-                    <div className="info-pill" style={{ marginTop: '0.25rem' }}>
-                        Using order #{primarySelectedOrder.orderId} addresses to select/create a route.
+
+                        <div style={{
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            padding: '1rem',
+                            fontSize: '0.875rem'
+                        }}>
+                            {/* Header Row */}
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: '80px 1fr 140px 100px 100px 40px',
+                                gap: '0.75rem',
+                                padding: '0.5rem 0',
+                                borderBottom: '2px solid #e5e7eb',
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                            }}>
+                                <div>Order</div>
+                                <div>Customer</div>
+                                <div>Type</div>
+                                <div>Distance</div>
+                                <div>Fee</div>
+                                <div></div>
+                            </div>
+
+                            {/* Order Rows */}
+                            {selectedOrdersData.orders.map((order, index) => (
+                                <div key={order.orderId} style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '80px 1fr 140px 100px 100px 40px',
+                                    gap: '0.75rem',
+                                    alignItems: 'center',
+                                    padding: '0.75rem 0',
+                                    borderBottom: index < selectedOrdersData.orders.length - 1 ? '1px solid #e5e7eb' : 'none'
+                                }}>
+                                    {/* Order ID */}
+                                    <div>
+                                        <span style={{
+                                            backgroundColor: '#3b82f6',
+                                            color: 'white',
+                                            padding: '0.125rem 0.375rem',
+                                            borderRadius: '4px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: '600'
+                                        }}>
+                                            #{order.orderId}
+                                        </span>
+                                    </div>
+
+                                    {/* Customer Name */}
+                                    <div style={{
+                                        fontWeight: '500',
+                                        color: '#374151',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        {order.customerName}
+                                    </div>
+
+                                    {/* Pickup Type */}
+                                    <div>
+                                        {order.pickupType && (
+                                            <span style={{
+                                                backgroundColor:
+                                                    order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
+                                                    order.pickupType === 'WAREHOUSE' ? '#dbeafe' : '#f0fdf4',
+                                                color:
+                                                    order.pickupType === 'PORT_TERMINAL' ? '#92400e' :
+                                                    order.pickupType === 'WAREHOUSE' ? '#0c4a6e' : '#166534',
+                                                padding: '0.125rem 0.375rem',
+                                                borderRadius: '4px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '500',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.25rem',
+                                                width: 'fit-content'
+                                            }}>
+                                                <span>
+                                                    {order.pickupType === 'PORT_TERMINAL' ? '🚢' :
+                                                     order.pickupType === 'WAREHOUSE' ? '🏭' : '📦'}
+                                                </span>
+                                                <span style={{
+                                                    maxWidth: '100px',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap'
+                                                }}>
+                                                    {order.pickupType}
+                                                </span>
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Distance */}
+                                    <div style={{
+                                        color: '#6b7280',
+                                        textAlign: 'right'
+                                    }}>
+                                        📍 {order.distanceKm ? `${order.distanceKm.toFixed(1)}km` : '—'}
+                                    </div>
+
+                                    {/* Fee */}
+                                    <div style={{
+                                        color: '#059669',
+                                        fontWeight: '600',
+                                        textAlign: 'right'
+                                    }}>
+                                        {order.shippingFee ? formatMoney(order.shippingFee) : '—'}
+                                    </div>
+
+                                    {/* Remove Button */}
+                                    <div style={{ textAlign: 'center' }}>
+                                        <button
+                                            onClick={() => toggleOrder(order.orderId)}
+                                            style={{
+                                                backgroundColor: 'transparent',
+                                                border: 'none',
+                                                color: '#9ca3af',
+                                                cursor: 'pointer',
+                                                fontSize: '1.25rem',
+                                                padding: '0.25rem',
+                                                borderRadius: '4px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '24px',
+                                                height: '24px'
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Summary */}
+                            <div style={{
+                                marginTop: '1rem',
+                                paddingTop: '1rem',
+                                borderTop: '1px solid #e5e7eb',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                                gap: '1rem'
+                            }}>
+                                <span style={{
+                                    fontWeight: '600',
+                                    color: '#374151'
+                                }}>
+                                    Trip Summary:
+                                </span>
+                                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                    <span style={{ color: '#6b7280' }}>
+                                        📏 {selectedOrdersData.totalDistance > 0 ? `${selectedOrdersData.totalDistance.toFixed(1)} km` : '—'}
+                                    </span>
+                                    <span style={{
+                                        color: selectedOrdersData.totalWeightTons > 0 ? '#059669' : '#6b7280',
+                                        fontWeight: '600'
+                                    }}>
+                                        ⚖️ {selectedOrdersData.totalWeightTons > 0 ? `${selectedOrdersData.totalWeightTons.toLocaleString()} t` : '—'}
+                                    </span>
+                                    <span style={{
+                                        color: '#059669',
+                                        fontWeight: '600'
+                                    }}>
+                                        💰 {selectedOrdersData.totalFee > 0 ? formatMoney(selectedOrdersData.totalFee) : '—'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div className="info-pill">Estimated Distance: {distanceEstimate != null ? `${distanceEstimate} km` : '—'}</div>
-                    <div className="info-pill">Estimated Fee: {formatMoney(feeEstimate)}</div>
-                </div>
-
-                <div className="detail-card" style={{ marginTop: '1rem', padding: '1rem' }}>
-                    <h3 style={{ marginBottom: '0.75rem' }}>Select Pending Orders</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                        <label style={{ fontSize: 14, color: '#475569' }}>Filter by pickup type:</label>
-                        <select value={orderTypeFilter} onChange={e => setOrderTypeFilter(e.target.value)}>
-                            <option value="">All</option>
-                            <option value="PORT_TERMINAL">PORT_TERMINAL</option>
-                            <option value="WAREHOUSE">WAREHOUSE</option>
-                        </select>
+                {/* Weight Validation Warning */}
+                {validationInfo.exceedsAllVehicles && (
+                    <div style={{
+                        marginTop: '1rem',
+                        padding: '1rem',
+                        backgroundColor: '#fef2f2',
+                        border: '1px solid #fecaca',
+                        borderRadius: '8px',
+                        color: '#dc2626',
+                        fontSize: '0.875rem'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+                            <strong>Weight Limit Exceeded</strong>
+                        </div>
+                        <p style={{ margin: 0, marginBottom: '0.5rem' }}>
+                            Total selected weight ({selectedOrdersData.totalWeightTons.toLocaleString()} t) exceeds the maximum vehicle capacity ({validationInfo.maxCapacityTons.toLocaleString()} t).
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.8rem' }}>
+                            Please remove some orders or contact fleet management for larger vehicles.
+                        </p>
                     </div>
-                    {loadingOrders && <div>Loading pending orders...</div>}
-                    {!loadingOrders && pendingOrders.length === 0 && (
-                        <div>No pending orders available.</div>
+                )}
+
+                <div className="detail-card" style={{ marginTop: '1rem', padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: '600' }}>Select Pending Orders</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: '500' }}>Filter by type:</span>
+                            <select
+                                value={orderTypeFilter}
+                                onChange={e => setOrderTypeFilter(e.target.value)}
+                                style={{
+                                    padding: '0.375rem 0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    fontSize: '0.875rem',
+                                    backgroundColor: 'white',
+                                    color: '#374151',
+                                    minWidth: '140px'
+                                }}
+                            >
+                                <option value="">All Types</option>
+                                <option value="PORT_TERMINAL">🚢 Port Terminal</option>
+                                <option value="WAREHOUSE">🏭 Warehouse</option>
+                                <option value="STANDARD">📦 Standard</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {loadingOrders && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            padding: '2rem',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="spinner" style={{ width: '20px', height: '20px' }}></div>
+                                <span style={{ color: '#64748b' }}>Loading pending orders...</span>
+                            </div>
+                        </div>
                     )}
+
+                    {!loadingOrders && pendingOrders.length === 0 && (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '3rem 2rem',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0'
+                        }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📦</div>
+                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#475569' }}>No pending orders</h4>
+                            <p style={{ margin: 0, color: '#64748b' }}>All orders have been assigned or there are no available orders.</p>
+                        </div>
+                    )}
+
                     {!loadingOrders && pendingOrders.length > 0 && (
-                        <div className="orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{
+                            display: 'grid',
+                            gap: '0.75rem',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))'
+                        }}>
                             {pendingOrders
                                 .filter(o => !orderTypeFilter || o.pickupType === orderTypeFilter)
-                                .map((o) => (
-                                    <label key={o.orderId} className="order-item-compact" style={{ cursor: 'pointer' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedOrderIds.includes(o.orderId)}
-                                            onChange={() => toggleOrder(o.orderId)}
-                                            style={{ marginRight: '0.75rem' }}
-                                        />
-                                        <div className="order-info">
-                                            <div className="order-customer">#{o.orderId} — {o.customerName}</div>
-                                            <div className="order-route-compact">
-                                                <span className="pickup-compact">📍 {o.pickupAddress}</span>
-                                                <span className="arrow">→</span>
-                                                <span className="delivery-compact">🎯 {o.deliveryAddress}</span>
-                                            </div>
-                                            <div style={{ color: '#475569', fontSize: '0.85rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span>
-                        {o.weightTons ? `⚖️ ${o.weightTons} t` : (o.weightKg ? `⚖️ ${o.weightKg} kg` : '')}
-                          {o.packageDetails ? ` • ${o.packageDetails}` : ''}
-                      </span>
-                                                {o.pickupType && (
+                                .map((o) => {
+                                    const isSelected = selectedOrderIds.includes(o.orderId);
+                                    return (
+                                        <div
+                                            key={o.orderId}
+                                            onClick={() => toggleOrder(o.orderId)}
+                                            style={{
+                                                position: 'relative',
+                                                backgroundColor: isSelected ? '#eff6ff' : 'white',
+                                                border: isSelected ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                                                borderRadius: '12px',
+                                                padding: '1rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                transform: isSelected ? 'translateY(-2px)' : 'none'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isSelected) {
+                                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (!isSelected) {
+                                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                                                    e.currentTarget.style.transform = 'none';
+                                                }
+                                            }}
+                                        >
+                                            {/* Selection Checkbox */}
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '1rem',
+                                                right: '1rem',
+                                                width: '20px',
+                                                height: '20px',
+                                                borderRadius: '50%',
+                                                backgroundColor: isSelected ? '#3b82f6' : '#ffffff',
+                                                border: isSelected ? '2px solid #3b82f6' : '2px solid #d1d5db',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                                                transition: 'all 0.2s ease'
+                                            }}>
+                                                {isSelected && (
                                                     <span style={{
-                                                        backgroundColor: o.pickupType === 'PORT_TERMINAL' ? '#fef3c7' : '#dbeafe',
-                                                        color: o.pickupType === 'PORT_TERMINAL' ? '#92400e' : '#0c4a6e',
-                                                        padding: '0.1rem 0.5rem',
-                                                        borderRadius: 6,
-                                                        fontWeight: 600,
-                                                        fontSize: 12
-                                                    }}>
-                          {o.pickupType}
-                        </span>
-                                                )}
-                                                {o.pickupType === 'PORT_TERMINAL' && o.containerNumber && (
-                                                    <span style={{ fontSize: 12, color: '#334155' }}>🧾 {o.containerNumber}</span>
-                                                )}
-                                                {o.pickupType === 'WAREHOUSE' && o.dockInfo && (
-                                                    <span style={{ fontSize: 12, color: '#334155' }}>🏭 {o.dockInfo}</span>
+                                                        color: 'white',
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold',
+                                                        lineHeight: 1
+                                                    }}>✓</span>
                                                 )}
                                             </div>
+
+                                            {/* Order Header */}
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem',
+                                                marginBottom: '0.75rem'
+                                            }}>
+                                                <div style={{
+                                                    backgroundColor: '#f1f5f9',
+                                                    color: '#475569',
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: '600',
+                                                    padding: '0.25rem 0.5rem',
+                                                    borderRadius: '6px'
+                                                }}>
+                                                    #{o.orderId}
+                                                </div>
+                                                <div style={{
+                                                    fontSize: '1rem',
+                                                    fontWeight: '600',
+                                                    color: '#1e293b',
+                                                    flex: 1
+                                                }}>
+                                                    {o.customerName}
+                                                </div>
+                                            </div>
+
+                                            {/* Route Information */}
+                                            <div style={{
+                                                marginBottom: '0.75rem',
+                                                padding: '0.5rem',
+                                                backgroundColor: '#f8fafc',
+                                                borderRadius: '6px',
+                                                border: '1px solid #e2e8f0'
+                                            }}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    marginBottom: '0.25rem'
+                                                }}>
+                                                    <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>📍</span>
+                                                    <span style={{
+                                                        fontSize: '0.875rem',
+                                                        color: '#374151',
+                                                        flex: 1,
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {o.pickupAddress}
+                                                    </span>
+                                                </div>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    margin: '0.25rem 0'
+                                                }}>
+                                                    <div style={{
+                                                        width: '20px',
+                                                        height: '1px',
+                                                        backgroundColor: '#d1d5db',
+                                                        position: 'relative'
+                                                    }}>
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '-3px',
+                                                            left: '50%',
+                                                            transform: 'translateX(-50%)',
+                                                            width: '0',
+                                                            height: '0',
+                                                            borderLeft: '3px solid transparent',
+                                                            borderRight: '3px solid transparent',
+                                                            borderTop: '3px solid #d1d5db'
+                                                        }}></div>
+                                                    </div>
+                                                </div>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem'
+                                                }}>
+                                                    <span style={{ color: '#10b981', fontSize: '0.875rem' }}>🎯</span>
+                                                    <span style={{
+                                                        fontSize: '0.875rem',
+                                                        color: '#374151',
+                                                        flex: 1,
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {o.deliveryAddress}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Order Details */}
+                                            <div style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                flexWrap: 'wrap',
+                                                gap: '0.5rem'
+                                            }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                    {o.weightTons && (
+                                                        <span style={{
+                                                            backgroundColor: '#fef3c7',
+                                                            color: '#92400e',
+                                                            padding: '0.125rem 0.375rem',
+                                                            borderRadius: '4px',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: '500'
+                                                        }}>
+                                                            ⚖️ {o.weightTons}t
+                                                        </span>
+                                                    )}
+                                                    {o.pickupType && (
+                                                        <span style={{
+                                                            backgroundColor:
+                                                                o.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
+                                                                o.pickupType === 'WAREHOUSE' ? '#dbeafe' :
+                                                                '#f0fdf4',
+                                                            color:
+                                                                o.pickupType === 'PORT_TERMINAL' ? '#92400e' :
+                                                                o.pickupType === 'WAREHOUSE' ? '#0c4a6e' :
+                                                                '#166534',
+                                                            padding: '0.125rem 0.375rem',
+                                                            borderRadius: '4px',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: '600'
+                                                        }}>
+                                                            {o.pickupType === 'PORT_TERMINAL' ? '🚢' :
+                                                             o.pickupType === 'WAREHOUSE' ? '🏭' : '📦'} {o.pickupType}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{
+                                                    fontSize: '0.875rem',
+                                                    color: '#059669',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    {o.shippingFee ? formatMoney(o.shippingFee) : 'TBD'}
+                                                </div>
+                                            </div>
+
+                                            {/* Container/Warehouse Info */}
+                                            {(o.containerNumber || o.terminalName || o.warehouseName || o.dockNumber) && (
+                                                <div style={{
+                                                    marginTop: '0.5rem',
+                                                    padding: '0.375rem 0.5rem',
+                                                    backgroundColor: '#f8fafc',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid #e2e8f0',
+                                                    fontSize: '0.75rem',
+                                                    color: '#64748b'
+                                                }}>
+                                                    {o.pickupType === 'PORT_TERMINAL' && (
+                                                        <div>
+                                                            {o.containerNumber && <span>🧾 Container: {o.containerNumber}</span>}
+                                                            {o.containerNumber && o.terminalName && <span> • </span>}
+                                                            {o.terminalName && <span>⚓ Terminal: {o.terminalName}</span>}
+                                                        </div>
+                                                    )}
+                                                    {o.pickupType === 'WAREHOUSE' && (
+                                                        <div>
+                                                            {o.warehouseName && <span>🏭 Warehouse: {o.warehouseName}</span>}
+                                                            {o.warehouseName && o.dockNumber && <span> • </span>}
+                                                            {o.dockNumber && <span>🚪 Dock: {o.dockNumber}</span>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
-                                    </label>
-                                ))}
+                                    );
+                                })}
                         </div>
                     )}
                 </div>
+
+                {selectedOrdersData && selectedOrdersData.orders.length > 0 && (
+                    <>
+                        <div className="info-pill" style={{ marginTop: '1rem' }}>
+                            Trip Route: {selectedOrdersData.orders.length} order{selectedOrdersData.orders.length > 1 ? 's' : ''} selected
+                        </div>
+                        <RouteMapCard
+                            orders={selectedOrdersData.orders}
+                        />
+                    </>
+                )}
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                     <button className="btn-primary" type="submit" disabled={loading}>

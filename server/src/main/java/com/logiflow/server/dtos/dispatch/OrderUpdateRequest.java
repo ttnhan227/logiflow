@@ -39,9 +39,11 @@ public class OrderUpdateRequest {
 
     // Conditional: required if pickupType == PORT_TERMINAL
     private String containerNumber;
+    private String terminalName;
 
     // Conditional: required if pickupType == WAREHOUSE
-    private String dockInfo;
+    private String warehouseName;
+    private String dockNumber;
 
     private BigDecimal packageValue;
 }

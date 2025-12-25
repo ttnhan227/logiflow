@@ -26,6 +26,7 @@ public class TripDto {
     private String vehicleRequiredLicense;
     private Integer routeId;
     private String routeName;
+    private RouteDto route;
     private String tripType;
     private LocalDateTime scheduledDeparture;
     private LocalDateTime actualDeparture;
@@ -51,6 +52,7 @@ public class TripDto {
         dto.setVehicleRequiredLicense(trip.getVehicle() != null ? trip.getVehicle().getRequiredLicense() : null);
         dto.setRouteId(trip.getRoute() != null ? trip.getRoute().getRouteId() : null);
         dto.setRouteName(trip.getRoute() != null ? trip.getRoute().getRouteName() : null);
+        dto.setRoute(trip.getRoute() != null ? RouteDto.fromRoute(trip.getRoute()) : null);
         dto.setTripType(trip.getTripType());
         dto.setScheduledDeparture(trip.getScheduledDeparture());
         dto.setActualDeparture(trip.getActualDeparture());

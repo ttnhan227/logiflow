@@ -72,6 +72,17 @@ const AdminReportsPage = () => {
     setDateRange(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleDownloadReport = async () => {
+    try {
+      setLoading(true);
+      await reportsService.downloadComprehensiveReport(dateRange.startDate, dateRange.endDate);
+    } catch (err) {
+      setError('Failed to download comprehensive report: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -108,6 +119,29 @@ const AdminReportsPage = () => {
             <div className="reports-date-input">
               <input type="date" value={dateRange.endDate} onChange={(e) => handleDateChange('endDate', e.target.value)} />
             </div>
+
+            {/* PDF Download Button */}
+            <button
+              onClick={handleDownloadReport}
+              disabled={loading}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginLeft: '16px',
+                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+              }}
+            >
+              📊 Download Business Intelligence Report
+            </button>
           </div>
         </div>
       </div>

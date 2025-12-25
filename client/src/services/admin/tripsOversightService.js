@@ -72,8 +72,28 @@ const normalizeTrips = (trips = []) =>
     // Orders within this trip (normalized from embedded OrderSummaryDto)
     orders: (trip.orders || []).map(order => ({
       orderId: order.orderId,
-      customer: order.customerName,
+      customerName: order.customerName, // Keep original field name for modal compatibility
       customerPhone: order.customerPhone,
+      pickupAddress: order.pickupAddress, // Keep original field name for modal compatibility
+      pickupLat: order.pickupLat, // CRITICAL: Include coordinate fields for map
+      pickupLng: order.pickupLng, // CRITICAL: Include coordinate fields for map
+      deliveryAddress: order.deliveryAddress, // Keep original field name for modal compatibility
+      deliveryLat: order.deliveryLat, // CRITICAL: Include coordinate fields for map
+      deliveryLng: order.deliveryLng, // CRITICAL: Include coordinate fields for map
+      pickupType: order.pickupType,
+      warehouseName: order.warehouseName,
+      dockNumber: order.dockNumber,
+      containerNumber: order.containerNumber,
+      terminalName: order.terminalName,
+      packageDetails: order.packageDetails,
+      weightTon: order.weightTon,
+      packageValue: order.packageValue,
+      orderStatus: order.orderStatus,
+      priorityLevel: order.priorityLevel,
+      slaDue: order.slaDue,
+      eta: order.eta,
+      // Also keep the nested structure for backward compatibility
+      customer: order.customerName,
       pickup: {
         address: order.pickupAddress,
         city: extractCity(order.pickupAddress)
@@ -82,13 +102,6 @@ const normalizeTrips = (trips = []) =>
         address: order.deliveryAddress,
         city: extractCity(order.deliveryAddress)
       },
-      packageDetails: order.packageDetails,
-      weightTon: order.weightTon,
-      packageValue: order.packageValue,
-      orderStatus: order.orderStatus,
-      priorityLevel: order.priorityLevel,
-      slaDue: order.slaDue,
-      eta: order.eta,
     }))
   }));
 

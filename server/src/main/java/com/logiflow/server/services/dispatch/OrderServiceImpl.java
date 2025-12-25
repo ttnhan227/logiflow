@@ -45,10 +45,12 @@ public class OrderServiceImpl implements OrderService {
 
 
 
-    private void applyPickupInfo(Order order, Order.PickupType pickupType, String containerNumber, String dockInfo) {
+    private void applyPickupInfo(Order order, Order.PickupType pickupType, String containerNumber, String terminalName, String warehouseName, String dockNumber) {
         order.setPickupType(pickupType);
         order.setContainerNumber(containerNumber);
-        order.setDockInfo(dockInfo);
+        order.setTerminalName(terminalName);
+        order.setWarehouseName(warehouseName);
+        order.setDockNumber(dockNumber);
 
         if (pickupType == null) {
             throw new RuntimeException("pickupType is required");
@@ -58,12 +60,16 @@ public class OrderServiceImpl implements OrderService {
             if (containerNumber == null || containerNumber.trim().isEmpty()) {
                 throw new RuntimeException("containerNumber is required for PORT_TERMINAL pickup");
             }
-            order.setDockInfo(null);
-        } else if (pickupType == Order.PickupType.WAREHOUSE) {
-            if (dockInfo == null || dockInfo.trim().isEmpty()) {
-                throw new RuntimeException("dockInfo is required for WAREHOUSE pickup");
+            if (terminalName == null || terminalName.trim().isEmpty()) {
+                throw new RuntimeException("terminalName is required for PORT_TERMINAL pickup");
             }
-            order.setContainerNumber(null);
+        } else if (pickupType == Order.PickupType.WAREHOUSE) {
+            if (warehouseName == null || warehouseName.trim().isEmpty()) {
+                throw new RuntimeException("warehouseName is required for WAREHOUSE pickup");
+            }
+            if (dockNumber == null || dockNumber.trim().isEmpty()) {
+                throw new RuntimeException("dockNumber is required for WAREHOUSE pickup");
+            }
         }
     }
 
@@ -180,7 +186,7 @@ public class OrderServiceImpl implements OrderService {
         // Set distance, weight, pickup info, and package value
         order.setDistanceKm(request.getDistanceKm());
         order.setWeightTons(request.getWeightTons());
-        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
+        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
         order.setPackageValue(request.getPackageValue());
 
         // Calculate distance automatically if not provided and MapsService is available
@@ -315,7 +321,7 @@ public class OrderServiceImpl implements OrderService {
 
                 order.setDistanceKm(request.getDistanceKm());
                 order.setWeightTons(request.getWeightTons());
-                applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
+                applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
                 order.setPackageValue(request.getPackageValue());
 
 
@@ -397,7 +403,8 @@ public class OrderServiceImpl implements OrderService {
                     "Weight (tons)",
                     "Pickup Type",
                     "Container Number",
-                    "Dock Info",
+                    "Warehouse Name",
+                    "Dock Number",
                     "Package Value (VND)",
                     "Trip ID"
             });
@@ -413,6 +420,7 @@ public class OrderServiceImpl implements OrderService {
                     "12.5",
                     "PORT_TERMINAL",
                     "CONT-001",
+                    "Cat Lai Terminal",
                     "",
                     "500000",
                     ""
@@ -445,7 +453,8 @@ public class OrderServiceImpl implements OrderService {
                     "Weight (tons)",
                     "Pickup Type",
                     "Container Number",
-                    "Dock Info",
+                    "Warehouse Name",
+                    "Dock Number",
                     "Package Value (VND)",
                     "Trip ID"
             };
@@ -467,9 +476,8 @@ public class OrderServiceImpl implements OrderService {
             exampleRow.createCell(7).setCellValue(12.5); // Weight in tons
             exampleRow.createCell(8).setCellValue("PORT_TERMINAL");
             exampleRow.createCell(9).setCellValue("CONT-001");
-            exampleRow.createCell(10).setCellValue("");
-            exampleRow.createCell(11).setCellValue(500000); // Package value in VND
-            exampleRow.createCell(12).setCellValue("");
+            exampleRow.createCell(10).setCellValue(500000); // Package value in VND
+            exampleRow.createCell(11).setCellValue("");
 
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
@@ -506,7 +514,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setDistanceKm(request.getDistanceKm());
         order.setWeightTons(request.getWeightTons());
-        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getDockInfo());
+        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
         order.setPackageValue(request.getPackageValue());
 
         if (order.getDistanceKm() == null && mapsService != null) {

@@ -3,6 +3,102 @@ import '../../services/customer/customer_service.dart';
 import '../../models/customer/order_history.dart';
 import 'order_receipt_screen.dart';
 
+// Pricing Calculator (copied from order confirmation screen)
+class _PricingCalculator {
+  static const double baseFee =
+      30000; // VND base fee (reduced for local delivery)
+  static const double distanceRate =
+      1500; // VND per km (reduced for local delivery)
+  static const double weightRatePerTon =
+      700000; // VND per ton (reduced from 2M to 700k for local delivery)
+  static const double insuranceRate =
+      0.005; // 0.5% insurance premium on declared value
+  static const double urgentMultiplier = 1.3;
+
+  // Fallback distance estimation for HCMC routes when maps service fails
+  static double _estimateHcmcDistance(String origin, String destination) {
+    // Simple estimation based on common HCMC routes
+    // In a real app, this would be more sophisticated
+    final originLower = origin.toLowerCase();
+    final destLower = destination.toLowerCase();
+
+    // Check if both addresses are in HCMC
+    final hcmcKeywords = [
+      'ho chi minh',
+      'hcmc',
+      'sai gon',
+      'thành phố hồ chí minh',
+    ];
+    final isHcmcRoute = hcmcKeywords.any(
+      (keyword) => originLower.contains(keyword) && destLower.contains(keyword),
+    );
+
+    if (isHcmcRoute) {
+      // Average distance for HCMC deliveries
+      return 15.0; // 15km average
+    }
+
+    // Default fallback
+    return 10.0; // 10km default
+  }
+
+  static String calculateEstimatedFee(
+    String? distanceKm,
+    double? weightTons,
+    bool isUrgent, {
+    String? originAddress,
+    String? destAddress,
+    double? packageValue,
+  }) {
+    double distance;
+
+    if (distanceKm != null) {
+      try {
+        // Extract numeric value from strings like "24.2 km" or "15 km"
+        final numericMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(distanceKm);
+        if (numericMatch != null) {
+          distance = double.parse(numericMatch.group(1)!);
+        } else {
+          distance = _estimateHcmcDistance(
+            originAddress ?? '',
+            destAddress ?? '',
+          );
+        }
+      } catch (e) {
+        distance = _estimateHcmcDistance(
+          originAddress ?? '',
+          destAddress ?? '',
+        );
+      }
+    } else {
+      // Maps service failed - use fallback estimation
+      distance = _estimateHcmcDistance(originAddress ?? '', destAddress ?? '');
+    }
+
+    double weight = weightTons ?? 0.0;
+    double insuranceValue = packageValue ?? 0.0;
+
+    // Calculate components
+    double distanceFee = distance * distanceRate;
+    double weightFee = weight * weightRatePerTon;
+    double insurancePremium = insuranceValue * insuranceRate;
+    double totalFee = baseFee + distanceFee + weightFee + insurancePremium;
+
+    // Apply urgent multiplier
+    if (isUrgent) {
+      totalFee *= urgentMultiplier;
+    }
+
+    // Format as VND
+    final formatted = totalFee.round().toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+
+    return '$formatted VND';
+  }
+}
+
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
 
@@ -121,6 +217,42 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                               ),
                             ],
                           ),
+
+                          // Delay report banner for completed orders that had delays
+                          if (order.delayReason != null &&
+                              order.delayReason!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.orange[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orange[200]!),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber,
+                                    size: 16,
+                                    color: Colors.orange[700],
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      order.delayReason!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.orange[900],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
                           const SizedBox(height: 8),
                           Text(
                             'From: ${order.pickupAddress}',
@@ -136,7 +268,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           // Pickup Type Information
-                          if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+                          if (order.pickupType != null &&
+                              order.pickupType!.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(8),
@@ -158,7 +291,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   // Show specific fields based on pickup type
-                                  if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                                  if (order.pickupType == 'WAREHOUSE' &&
+                                      order.warehouseName != null) ...[
                                     Text(
                                       'Warehouse: ${order.warehouseName}',
                                       style: const TextStyle(
@@ -167,7 +301,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                       ),
                                     ),
                                   ],
-                                  if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                                  if (order.pickupType == 'WAREHOUSE' &&
+                                      order.dockNumber != null) ...[
                                     Text(
                                       'Dock: ${order.dockNumber}',
                                       style: const TextStyle(
@@ -176,7 +311,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                       ),
                                     ),
                                   ],
-                                  if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                                  if (order.pickupType == 'PORT_TERMINAL' &&
+                                      order.containerNumber != null) ...[
                                     Text(
                                       'Container: ${order.containerNumber}',
                                       style: const TextStyle(
@@ -185,7 +321,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                       ),
                                     ),
                                   ],
-                                  if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                                  if (order.pickupType == 'PORT_TERMINAL' &&
+                                      order.terminalName != null) ...[
                                     Text(
                                       'Terminal: ${order.terminalName}',
                                       style: const TextStyle(
@@ -245,8 +382,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 ),
                             ],
                           ),
-                          // Payment Information
-                          if (order.shippingFee != null) ...[
+                          // Price Breakdown - Always show if we have any pricing data
+                          if (order.shippingFee != null ||
+                              order.distanceKm != null ||
+                              order.weightTons != null) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(8),
@@ -255,36 +394,61 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: Colors.blue[200]!),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    'Shipping Fee:',
+                                    'Price Breakdown',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.bold,
                                       color: Colors.blue,
                                     ),
                                   ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        'VND ${order.shippingFee!.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                      Text(
-                                        '(\$${(order.shippingFee! / 23000).toStringAsFixed(2)})',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    ],
+                                  const SizedBox(height: 8),
+                                  // Add the same price breakdown as other screens
+                                  // Assume normal priority for history (we don't have priority info in OrderHistory)
+                                  _buildFeeBreakdown(
+                                    order.distanceKm != null
+                                        ? order.distanceKm!.toStringAsFixed(1) +
+                                              ' km'
+                                        : null,
+                                    order.weightTons,
+                                    order.priorityLevel ==
+                                        'URGENT', // Use actual priority level
+                                    order.pickupAddress ?? '',
+                                    order.deliveryAddress ?? '',
+                                    packageValue: order.packageValue,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            // Show debug info if no pricing data
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.orange[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orange[200]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Debug: No pricing data available',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.orange[800],
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Fee: ${order.shippingFee}, Distance: ${order.distanceKm}, Weight: ${order.weightTons}, Value: ${order.packageValue}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.orange[700],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -295,10 +459,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.1),
+                              color: _getPaymentStatusColor(
+                                order.paymentStatus,
+                              ).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.3),
+                                color: _getPaymentStatusColor(
+                                  order.paymentStatus,
+                                ).withOpacity(0.3),
                               ),
                             ),
                             child: Row(
@@ -306,15 +474,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 Icon(
                                   _getPaymentStatusIcon(order.paymentStatus),
                                   size: 20,
-                                  color: _getPaymentStatusColor(order.paymentStatus),
+                                  color: _getPaymentStatusColor(
+                                    order.paymentStatus,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    _getPaymentStatusMessage(order.paymentStatus),
+                                    _getPaymentStatusMessage(
+                                      order.paymentStatus,
+                                    ),
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: _getPaymentStatusColor(order.paymentStatus),
+                                      color: _getPaymentStatusColor(
+                                        order.paymentStatus,
+                                      ),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -400,7 +574,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 ),
                               ),
                               // Only show View Receipt button for paid orders
-                              if (order.orderStatus.toUpperCase() == 'DELIVERED' &&
+                              if (order.orderStatus.toUpperCase() ==
+                                      'DELIVERED' &&
                                   order.paymentStatus?.toUpperCase() == 'PAID')
                                 TextButton.icon(
                                   onPressed: () {
@@ -408,7 +583,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => OrderReceiptScreen(orderId: order.orderId),
+                                        builder: (context) =>
+                                            OrderReceiptScreen(
+                                              orderId: order.orderId,
+                                            ),
                                       ),
                                     );
                                   },
@@ -558,5 +736,170 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       default:
         return 'Please check your email for payment info';
     }
+  }
+
+  Widget _buildFeeBreakdown(
+    String? distanceKm,
+    double? weightTons,
+    bool isUrgent,
+    String originAddress,
+    String destAddress, {
+    double? packageValue,
+  }) {
+    // Get the distance value - handle formatted strings like "24.2 km"
+    double distance;
+    if (distanceKm != null) {
+      try {
+        // Extract numeric value from strings like "24.2 km" or "15 km"
+        final numericMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(distanceKm);
+        if (numericMatch != null) {
+          distance = double.parse(numericMatch.group(1)!);
+        } else {
+          // If no numeric value found, use fallback
+          distance = _PricingCalculator._estimateHcmcDistance(
+            originAddress,
+            destAddress,
+          );
+        }
+      } catch (e) {
+        distance = _PricingCalculator._estimateHcmcDistance(
+          originAddress,
+          destAddress,
+        );
+      }
+    } else {
+      distance = _PricingCalculator._estimateHcmcDistance(
+        originAddress,
+        destAddress,
+      );
+    }
+
+    final weight = weightTons ?? 0.0;
+    final insuranceValue = packageValue ?? 0.0;
+
+    // Calculate each component
+    final baseFee = _PricingCalculator.baseFee;
+    final distanceFee = distance * _PricingCalculator.distanceRate;
+    final weightFee = weight * _PricingCalculator.weightRatePerTon;
+    final insurancePremium = insuranceValue * _PricingCalculator.insuranceRate;
+    final subtotal = baseFee + distanceFee + weightFee + insurancePremium;
+    final urgentSurcharge = isUrgent
+        ? (subtotal * (_PricingCalculator.urgentMultiplier - 1.0))
+        : 0.0;
+    final total = subtotal + urgentSurcharge;
+
+    // Format currency helper
+    String formatCurrency(double amount) {
+      final formatted = amount.round().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]},',
+      );
+      return '$formatted VND';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        _buildFeeRow('Base fee', formatCurrency(baseFee), isBase: true),
+
+        // Distance fee
+        _buildFeeRow(
+          'Distance (${distance.toStringAsFixed(1)} km × 1.5k VND/km)',
+          formatCurrency(distanceFee),
+        ),
+
+        // Weight fee (only if weight > 0)
+        if (weight > 0)
+          _buildFeeRow(
+            'Weight (${weight.toStringAsFixed(2)}t × 700,000 VND/t)',
+            formatCurrency(weightFee),
+          ),
+
+        // Insurance premium (only if package value declared)
+        if (insuranceValue > 0)
+          _buildFeeRow(
+            'Insurance (${formatCurrency(insuranceValue)} × 0.5%)',
+            formatCurrency(insurancePremium),
+            isInsurance: true,
+          ),
+
+        // Priority multiplier
+        _buildFeeRow(
+          isUrgent ? 'Priority (Urgent × 1.3)' : 'Priority (Normal × 1.0)',
+          isUrgent ? '× 1.3' : '× 1.0',
+          isPriority: true,
+        ),
+
+        // Subtotal
+        const Divider(height: 12),
+        _buildFeeRow('Subtotal', formatCurrency(subtotal), isSubtotal: true),
+
+        // Urgent surcharge
+        if (isUrgent)
+          _buildFeeRow(
+            'Urgent surcharge',
+            formatCurrency(urgentSurcharge),
+            isUrgent: true,
+          ),
+
+        // Total
+        const Divider(height: 12, thickness: 2),
+        _buildFeeRow('Total', formatCurrency(total), isTotal: true),
+      ],
+    );
+  }
+
+  Widget _buildFeeRow(
+    String label,
+    String amount, {
+    bool isBase = false,
+    bool isSubtotal = false,
+    bool isUrgent = false,
+    bool isTotal = false,
+    bool isPriority = false,
+    bool isInsurance = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: isTotal ? 12 : 11,
+                fontWeight: isTotal || isSubtotal
+                    ? FontWeight.bold
+                    : isBase || isUrgent
+                    ? FontWeight.w500
+                    : FontWeight.normal,
+                color: isUrgent
+                    ? Colors.orange
+                    : isTotal
+                    ? Colors.green
+                    : Colors.grey[700],
+              ),
+            ),
+          ),
+          Text(
+            amount,
+            style: TextStyle(
+              fontSize: isTotal ? 12 : 11,
+              fontWeight: isTotal || isSubtotal
+                  ? FontWeight.bold
+                  : isBase || isUrgent
+                  ? FontWeight.w500
+                  : FontWeight.normal,
+              color: isUrgent
+                  ? Colors.orange
+                  : isTotal
+                  ? Colors.green
+                  : Colors.grey[700],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

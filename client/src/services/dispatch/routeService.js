@@ -8,10 +8,16 @@ const getAllRoutes = () => api.get(`${basePath}`).then(r => r.data);
 
 const createRoute = (payload) => api.post(`${basePath}`, payload).then(r => r.data);
 
+const createTripRoute = (orderIds, routeName) => api.post(`${basePath}/trip`, {
+  orderIds,
+  routeName
+}).then(r => r.data);
+
 const dispatchRouteService = {
   getRouteById,
   getAllRoutes,
   createRoute,
+  createTripRoute,
 };
 
 export default dispatchRouteService;

@@ -23,6 +23,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = :status")
     int countByOrderStatus(@Param("status") Order.OrderStatus status);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = :orderStatus AND o.paymentStatus = :paymentStatus")
+    int countByOrderStatusAndPaymentStatus(@Param("orderStatus") Order.OrderStatus orderStatus, @Param("paymentStatus") Order.PaymentStatus paymentStatus);
     
     @Query("SELECT COALESCE(SUM(o.shippingFee), 0) FROM Order o WHERE o.orderStatus = :status")
     java.math.BigDecimal sumShippingFeeByStatus(@Param("status") Order.OrderStatus status);
@@ -41,7 +44,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +
            "LEFT JOIN FETCH ta.driver " +
-           "WHERE o.orderStatus = :status")
+           "WHERE o.orderStatus = :status " +
+           "ORDER BY o.createdAt DESC")
     Page<Order> findByOrderStatus(@Param("status") Order.OrderStatus orderStatus, Pageable pageable);
 
     // Find by date only
@@ -52,7 +56,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +
            "LEFT JOIN FETCH ta.driver " +
-           "WHERE o.createdAt >= :startDate AND o.createdAt < :endDate")
+           "WHERE o.createdAt >= :startDate AND o.createdAt < :endDate " +
+           "ORDER BY CASE WHEN o.orderStatus = 'PENDING' THEN 1 ELSE 2 END, " +
+           "o.createdAt DESC")
     Page<Order> findByCreatedAtDate(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
     // Find by status and date
@@ -63,7 +69,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "LEFT JOIN FETCH t.vehicle " +
            "LEFT JOIN FETCH t.tripAssignments ta " +
            "LEFT JOIN FETCH ta.driver " +
-           "WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
+           "WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate " +
+           "ORDER BY o.createdAt DESC")
     Page<Order> findByOrderStatusAndCreatedAtDate(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
     // Find by status without relations (for admin payment review to avoid collection fetch warnings)
@@ -75,12 +82,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     Page<Order> findByOrderStatusAndCreatedAtDateWithoutRelations(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
     @Query("SELECT o FROM Order o " +
-           "LEFT JOIN FETCH o.trip t " +
-           "LEFT JOIN FETCH o.customer c " +
-           "LEFT JOIN FETCH o.createdBy " +
-           "LEFT JOIN FETCH t.vehicle " +
-           "LEFT JOIN FETCH t.tripAssignments ta " +
-           "LEFT JOIN FETCH ta.driver")
+           "ORDER BY CASE WHEN o.orderStatus = 'PENDING' THEN 1 ELSE 2 END, " +
+           "o.createdAt DESC")
     Page<Order> findAllWithRelations(Pageable pageable);
 
     // Find by ID with relations
@@ -97,6 +100,14 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     // Find by order IDs with relations (for trip creation)
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.trip LEFT JOIN FETCH o.createdBy WHERE o.orderId IN :orderIds")
     List<Order> findByIdsWithRelations(@Param("orderIds") List<Integer> orderIds);
+
+    // Fetch orders for trips (dispatch trips list/details) without triggering multiple-bag fetch on Trip
+    @Query("SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.trip t " +
+           "LEFT JOIN FETCH o.createdBy " +
+           "LEFT JOIN FETCH o.customer " +
+           "WHERE t.tripId IN :tripIds")
+    List<Order> findByTripIdsWithRelations(@Param("tripIds") List<Integer> tripIds);
 
     // Customer-specific queries
     @Query("SELECT o FROM Order o WHERE o.customer.userId = :customerId ORDER BY o.createdAt DESC")

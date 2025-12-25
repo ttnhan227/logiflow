@@ -1,3 +1,5 @@
+import 'order.dart';
+
 class DriverTrip {
   final int tripId;
   final String? routeName;
@@ -69,11 +71,12 @@ class DriverTripDetail {
   final String? actualArrival;
   final String? vehiclePlate;
   final String? vehicleType;
-  final double? distance;
-  final int? estimatedDuration;
-  final String? departureLocation;
-  final String? arrivalLocation;
-  final List<dynamic>? orders; // Could be typed further if needed
+  final int? vehicleCapacity;
+  final String? delayReason;
+  final int? slaExtensionMinutes;
+  final String? delayStatus;
+  final String? delayAdminComment;
+  final List<DriverOrder>? orders;
   final String? notes;
 
   const DriverTripDetail({
@@ -87,10 +90,11 @@ class DriverTripDetail {
     this.actualArrival,
     this.vehiclePlate,
     this.vehicleType,
-    this.distance,
-    this.estimatedDuration,
-    this.departureLocation,
-    this.arrivalLocation,
+    this.vehicleCapacity,
+    this.delayReason,
+    this.slaExtensionMinutes,
+    this.delayStatus,
+    this.delayAdminComment,
     this.orders,
     this.notes,
   });
@@ -107,11 +111,14 @@ class DriverTripDetail {
       actualArrival: json['actualArrival'],
       vehiclePlate: json['vehiclePlate'],
       vehicleType: json['vehicleType'],
-      distance: json['distance']?.toDouble(),
-      estimatedDuration: json['estimatedDuration'],
-      departureLocation: json['departureLocation'],
-      arrivalLocation: json['arrivalLocation'],
-      orders: json['orders'] as List<dynamic>?,
+      vehicleCapacity: json['vehicleCapacity'],
+      delayReason: json['delayReason'],
+      slaExtensionMinutes: json['slaExtensionMinutes'],
+      delayStatus: json['delayStatus'],
+      delayAdminComment: json['delayAdminComment'],
+      orders: json['orders'] != null
+          ? (json['orders'] as List).map((o) => DriverOrder.fromJson(o)).toList()
+          : null,
       notes: json['notes'],
     );
   }
@@ -128,11 +135,12 @@ class DriverTripDetail {
       'actualArrival': actualArrival,
       'vehiclePlate': vehiclePlate,
       'vehicleType': vehicleType,
-      'distance': distance,
-      'estimatedDuration': estimatedDuration,
-      'departureLocation': departureLocation,
-      'arrivalLocation': arrivalLocation,
-      'orders': orders,
+      'vehicleCapacity': vehicleCapacity,
+      'delayReason': delayReason,
+      'slaExtensionMinutes': slaExtensionMinutes,
+      'delayStatus': delayStatus,
+      'delayAdminComment': delayAdminComment,
+      'orders': orders?.map((o) => o.toJson()).toList(),
       'notes': notes,
     };
   }

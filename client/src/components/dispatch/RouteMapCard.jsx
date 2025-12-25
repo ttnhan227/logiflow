@@ -178,7 +178,7 @@ const FitBounds = ({ path, route }) => {
     return null;
 };
 
-const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
+const RouteMapCard = ({ routeId, orders, feePerKm = 12, onDistanceChange }) => {
     const [route, setRoute] = useState(null);
     const [path, setPath] = useState([]);
     const [distanceKm, setDistanceKm] = useState(null);
@@ -195,13 +195,91 @@ const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
         }
     };
 
+    // Handle multiple orders for trip visualization
+    const tripData = useMemo(() => {
+        if (!orders || orders.length === 0) return null;
+
+        const allPoints = [];
+        const pickupPoints = [];
+        const deliveryPoints = [];
+        let totalDistance = 0;
+
+        // Collect all pickup and delivery points
+        orders.forEach((order, index) => {
+            if (order.pickupLat && order.pickupLng) {
+                pickupPoints.push({
+                    id: `pickup-${order.orderId}`,
+                    lat: Number(order.pickupLat),
+                    lng: Number(order.pickupLng),
+                    address: order.pickupAddress,
+                    orderId: order.orderId,
+                    customerName: order.customerName,
+                    type: 'pickup'
+                });
+            }
+            if (order.deliveryLat && order.deliveryLng) {
+                deliveryPoints.push({
+                    id: `delivery-${order.orderId}`,
+                    lat: Number(order.deliveryLat),
+                    lng: Number(order.deliveryLng),
+                    address: order.deliveryAddress,
+                    orderId: order.orderId,
+                    customerName: order.customerName,
+                    type: 'delivery'
+                });
+            }
+            // Add individual order distance
+            if (order.distanceKm) {
+                totalDistance += Number(order.distanceKm);
+            }
+        });
+
+        // Create connected route path: Order1 Pickup→Delivery → Order2 Pickup→Delivery → etc.
+        const routeSegments = [];
+        const sortedOrders = [...orders].sort((a, b) => a.orderId - b.orderId); // Sort by order ID
+
+        sortedOrders.forEach((order, index) => {
+            if (order.pickupLat && order.pickupLng && order.deliveryLat && order.deliveryLng) {
+                // First order: Pickup → Delivery
+                if (index === 0) {
+                    routeSegments.push([
+                        [Number(order.pickupLat), Number(order.pickupLng)],
+                        [Number(order.deliveryLat), Number(order.deliveryLng)]
+                    ]);
+                } else {
+                    // Subsequent orders: Previous Delivery → Current Pickup → Current Delivery
+                    const prevOrder = sortedOrders[index - 1];
+                    routeSegments.push([
+                        [Number(prevOrder.deliveryLat), Number(prevOrder.deliveryLng)], // Previous delivery
+                        [Number(order.pickupLat), Number(order.pickupLng)], // Current pickup
+                        [Number(order.deliveryLat), Number(order.deliveryLng)] // Current delivery
+                    ]);
+                }
+            }
+        });
+
+        return {
+            points: [...pickupPoints, ...deliveryPoints],
+            routeSegments,
+            totalDistance,
+            orderCount: orders.length
+        };
+    }, [orders]);
+
     const mapCenter = useMemo(() => {
-        if (route?.originLat && route?.originLng) {
+        if (tripData?.points && tripData.points.length > 0) {
+            // Center on all points
+            const lats = tripData.points.map(p => p.lat);
+            const lngs = tripData.points.map(p => p.lng);
+            const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+            const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+            return [avgLat, avgLng];
+        } else if (route?.originLat && route?.originLng) {
             return [Number(route.originLat), Number(route.originLng)];
         }
         // Center of Vietnam (around Da Nang)
         return [16.0471, 108.2068];
-    }, [route]);
+    }, [route, tripData]);
 
     const feeEstimate = useMemo(() => {
         if (distanceKm == null) return null;
@@ -392,7 +470,33 @@ const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    {route && (
+                    {/* Show markers for multiple orders */}
+                    {tripData?.points && tripData.points.map(point => (
+                        <Marker
+                            key={point.id}
+                            position={[point.lat, point.lng]}
+                            icon={point.type === 'pickup' ? originIcon : destinationIcon}
+                        >
+                            <Popup>
+                                <div style={{ minWidth: '200px' }}>
+                                    <strong style={{ fontSize: '14px', color: point.type === 'pickup' ? '#10b981' : '#ef4444' }}>
+                                        {point.type === 'pickup' ? '🟢' : '🔴'} Order #{point.orderId}
+                                    </strong><br />
+                                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
+                                        {point.type === 'pickup' ? 'Pickup' : 'Delivery'}
+                                    </span><br />
+                                    <span style={{ fontSize: '12px', color: '#666' }}>{point.customerName}</span><br />
+                                    <span style={{ fontSize: '12px', color: '#666' }}>{point.address || 'No address'}</span><br />
+                                    <span style={{ fontSize: '11px', color: '#999' }}>
+                                        Lat: {point.lat.toFixed(4)}, Lng: {point.lng.toFixed(4)}
+                                    </span>
+                                </div>
+                            </Popup>
+                        </Marker>
+                    ))}
+
+                    {/* Show single route markers for backward compatibility */}
+                    {route && !tripData && (
                         <>
                             <Marker
                                 position={[Number(route.originLat), Number(route.originLng)]}
@@ -426,7 +530,22 @@ const RouteMapCard = ({ routeId, feePerKm = 12, onDistanceChange }) => {
                             </Marker>
                         </>
                     )}
-                    {path.length > 1 && (
+                    {/* Show route segments for multiple orders */}
+                    {tripData?.routeSegments && tripData.routeSegments.map((segment, index) => (
+                        <Polyline
+                            key={`segment-${index}`}
+                            positions={segment}
+                            color={index % 2 === 0 ? "#2563eb" : "#dc2626"} // Alternate colors
+                            weight={3}
+                            opacity={0.7}
+                            lineJoin="round"
+                            lineCap="round"
+                            dashArray="5, 5"
+                        />
+                    ))}
+
+                    {/* Show single route polyline for backward compatibility */}
+                    {path.length > 1 && !tripData && (
                         <Polyline
                             positions={path}
                             color="#2563eb"

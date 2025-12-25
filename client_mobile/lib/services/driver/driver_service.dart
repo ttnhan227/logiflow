@@ -97,6 +97,17 @@ class DriverService {
     }
   }
 
+  Future<void> updateOrderStatus(int tripId, int orderId, String status) async {
+    print('MOBILE DEBUG: updateOrderStatus called with tripId=$tripId, orderId=$orderId, status=$status');
+    final response = await apiClient.post(
+      '/driver/me/trips/$tripId/orders/$orderId/status',
+      body: {'status': status},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update order status: ${response.body}');
+    }
+  }
+
   Future<void> updateAssignmentStatus(int tripId, String assignmentStatus) async {
     final response = await apiClient.post(
       '/driver/me/trips/$tripId/assignment-status',

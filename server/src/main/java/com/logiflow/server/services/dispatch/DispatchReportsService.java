@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface DispatchReportsService {
     List<DispatchDailyReportItemDto> getDailyReport(LocalDate startDate, LocalDate endDate);
+    byte[] generateDispatchReportPdf(LocalDate startDate, LocalDate endDate);
 }
