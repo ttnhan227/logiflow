@@ -542,8 +542,6 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                   children: [
                     if (widget.calculatedDistance != null)
                       _buildInfoRow('Distance', widget.calculatedDistance!, icon: Icons.straighten),
-                    if (widget.calculatedDuration != null)
-                      _buildInfoRow('Estimated Time', widget.calculatedDuration!, icon: Icons.access_time),
                     if (widget.calculatedDistance == null && widget.calculatedDuration == null)
                       _buildInfoRow('Status', 'Maps service unavailable - using estimated distance', icon: Icons.info_outline),
                     // Fee breakdown section

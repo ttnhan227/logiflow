@@ -305,28 +305,25 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       final pickupData = routeData['pickup'] as Map<String, dynamic>;
       final deliveryData = routeData['delivery'] as Map<String, dynamic>;
 
-      // Set the addresses first
-      final pickupAddress = pickupData['address'] as String? ?? 'Selected pickup location';
-      final deliveryAddress = deliveryData['address'] as String? ?? 'Selected delivery location';
-
       setState(() {
         // Set pickup location
         _pickupLat = pickupData['lat'] as double;
         _pickupLng = pickupData['lng'] as double;
-        _pickupAddressController.text = pickupAddress;
+        _pickupAddressController.text =
+            pickupData['address'] as String? ?? 'Selected pickup location';
 
         // Set delivery location
         _deliveryLat = deliveryData['lat'] as double;
         _deliveryLng = deliveryData['lng'] as double;
-        _deliveryAddressController.text = deliveryAddress;
+        _deliveryAddressController.text =
+            deliveryData['address'] as String? ?? 'Selected delivery location';
 
-        // Set calculated distance from route data (temporary, will be updated by API call)
+        // Set calculated distance from route data
         _calculatedDistance = routeData['distanceText'] as String?;
-        _calculatedDuration = null; // Will be set by the API call below
+        _calculatedDuration = routeData['distanceKm'] != null
+            ? '${routeData['distanceKm']} km'
+            : null;
       });
-
-      // Now calculate proper distance and duration using the maps API
-      _calculateDistance();
     }
   }
 
