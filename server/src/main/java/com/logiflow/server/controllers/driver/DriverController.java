@@ -138,6 +138,23 @@ public class DriverController {
         return ResponseEntity.ok().build();
     }
 
+    // 8b) POST /api/driver/me/trips/{tripId}/orders/{orderId}/status
+    @PostMapping("/trips/{tripId}/orders/{orderId}/status")
+    public ResponseEntity<Void> updateOrderStatus(
+            @PathVariable Integer tripId,
+            @PathVariable Integer orderId,
+            @RequestBody java.util.Map<String, String> body,
+            Authentication authentication
+    ) {
+        String status = body.get("status");
+        if (status == null || status.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        var driver = driverService.getCurrentDriver(authentication.getName());
+        driverService.updateOrderStatus(driver.getDriverId(), tripId, orderId, status);
+        return ResponseEntity.ok().build();
+    }
+
     // 9) POST /api/driver/me/trips/{tripId}/confirm-delivery
     @PostMapping("/trips/{tripId}/confirm-delivery")
     public ResponseEntity<Void> confirmDelivery(

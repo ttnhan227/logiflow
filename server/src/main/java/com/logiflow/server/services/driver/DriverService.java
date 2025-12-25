@@ -20,6 +20,7 @@ public interface DriverService {
     void declineTripAssignment(Integer driverId, Integer tripId);
     void cancelTripAssignment(Integer driverId, Integer tripId);
     void updateTripStatus(Integer driverId, Integer tripId, String status);
+    void updateOrderStatus(Integer driverId, Integer tripId, Integer orderId, String status);
     void confirmDelivery(Integer driverId, Integer tripId, DeliveryConfirmationDto confirmationDto);
     void reportTripDelay(Integer driverId, Integer tripId, String delayReason, Integer estimatedDelayMinutes);
 

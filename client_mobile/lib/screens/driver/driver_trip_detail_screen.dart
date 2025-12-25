@@ -240,6 +240,15 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
     }
   }
 
+  bool _areAllOrdersDelivered() {
+    if (_tripDetail!['orders'] == null || _tripDetail!['orders'] is! List) {
+      return false;
+    }
+    final orders = _tripDetail!['orders'] as List;
+    return orders.every((order) =>
+        (order['orderStatus'] ?? order['status'])?.toString().toUpperCase() == 'DELIVERED');
+  }
+
   Widget _buildDetailRow(
     IconData icon,
     String label,
@@ -459,8 +468,8 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           }
         };
       }
-    } else if (_tripDetail!['status'] == 'scheduled' &&
-        _tripDetail!['assignmentStatus'] == 'accepted') {
+    } else if (_tripDetail!['assignmentStatus'] == 'accepted' &&
+        (_tripDetail!['status'] == 'scheduled' || _tripDetail!['status'] == 'assigned')) {
       buttonText = 'START TRIP';
       action = () async {
         setState(() => _isLoading = true);
@@ -480,29 +489,8 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           ).showSnackBar(SnackBar(content: Text('Failed to start trip: $e')));
         }
       };
-    } else if (_tripDetail!['status'] == 'in_progress') {
-      buttonText = 'ARRIVED';
-      action = () async {
-        setState(() => _isLoading = true);
-        try {
-          await driverService.updateTripStatus(
-            _tripDetail!['tripId'],
-            'arrived',
-          );
-          await _fetchTripDetail();
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Marked as arrived.')));
-        } catch (e) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to mark as arrived: $e')),
-          );
-        }
-      };
-    } else if (_tripDetail!['status'] == 'arrived' ||
-        _tripDetail!['status'] == 'in_progress') {
-      buttonText = 'DELIVER';
+    } else if (_tripDetail!['status'] == 'in_progress' && _areAllOrdersDelivered()) {
+      buttonText = 'COMPLETE TRIP';
       action = () async {
         final confirmed = await Navigator.of(context).push(
           MaterialPageRoute(
@@ -771,40 +759,48 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
                                         for (int i = 0; i < orders.length; i++) {
                                           final order = orders[i] as Map<String, dynamic>;
+                                          final orderStatus = (order['orderStatus'] ?? order['status'])?.toString().toUpperCase();
+                                          final isCompleted = orderStatus == 'DELIVERED';
 
                                           // Add pickup waypoint
                                           routeWidgets.add(
                                             Container(
                                               padding: const EdgeInsets.all(12),
                                               decoration: BoxDecoration(
-                                                color: Colors.green.shade50,
+                                                color: isCompleted ? Colors.grey.shade100 : Colors.green.shade50,
                                                 borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(color: Colors.green.shade200),
+                                                border: Border.all(color: isCompleted ? Colors.grey.shade300 : Colors.green.shade200),
                                               ),
                                               child: Row(
                                                 children: [
                                                   Container(
                                                     width: 24,
                                                     height: 24,
-                                                    decoration: const BoxDecoration(
-                                                      color: Colors.green,
+                                                    decoration: BoxDecoration(
+                                                      color: isCompleted ? Colors.grey : Colors.green,
                                                       shape: BoxShape.circle,
                                                     ),
                                                     child: Center(
-                                                      child: Text(
-                                                        '${i + 1}P',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 10,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
+                                                      child: isCompleted
+                                                        ? const Icon(
+                                                            Icons.check,
+                                                            color: Colors.white,
+                                                            size: 14,
+                                                          )
+                                                        : Text(
+                                                            '${i + 1}P',
+                                                            style: const TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
                                                     ),
                                                   ),
                                                   const SizedBox(width: 12),
-                                                  const Icon(
+                                                  Icon(
                                                     Icons.store,
-                                                    color: Colors.green,
+                                                    color: isCompleted ? Colors.grey : Colors.green,
                                                     size: 20,
                                                   ),
                                                   const SizedBox(width: 8),
@@ -812,18 +808,41 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                     child: Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
                                                       children: [
-                                                        Text(
-                                                          'Order ${i + 1} Pickup',
-                                                          style: const TextStyle(
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.w600,
-                                                            color: Colors.green,
-                                                          ),
+                                                        Row(
+                                                          children: [
+                                                            Text(
+                                                              'Order ${i + 1} Pickup',
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w600,
+                                                                color: isCompleted ? Colors.grey : Colors.green,
+                                                              ),
+                                                            ),
+                                                            if (isCompleted) ...[
+                                                              const SizedBox(width: 8),
+                                                              Container(
+                                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                                decoration: BoxDecoration(
+                                                                  color: Colors.green.shade100,
+                                                                  borderRadius: BorderRadius.circular(8),
+                                                                ),
+                                                                child: const Text(
+                                                                  'DONE',
+                                                                  style: TextStyle(
+                                                                    fontSize: 8,
+                                                                    color: Colors.green,
+                                                                    fontWeight: FontWeight.bold,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
                                                         ),
                                                         Text(
                                                           order['pickupAddress'] ?? 'N/A',
-                                                          style: const TextStyle(
+                                                          style: TextStyle(
                                                             fontSize: 14,
+                                                            color: isCompleted ? Colors.grey.shade600 : Colors.black87,
                                                           ),
                                                         ),
                                                       ],
@@ -1361,19 +1380,47 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                     MainAxisAlignment
                                                         .spaceBetween,
                                                 children: [
-                                                  Text(
-                                                    'Order #${order['orderId']}',
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                                  Expanded(
+                                                    child: Row(
+                                                      children: [
+                                                        Flexible(
+                                                          child: Text(
+                                                            'Order #${order['orderId']}',
+                                                            style: const TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight.bold,
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 6),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                            horizontal: 4,
+                                                            vertical: 1,
+                                                          ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.blue.shade100,
+                                                            borderRadius: BorderRadius.circular(8),
+                                                          ),
+                                                          child: Text(
+                                                            'WP${((_tripDetail!['orders'] as List).indexOf(order) + 1)}',
+                                                            style: TextStyle(
+                                                              fontSize: 9,
+                                                              color: Colors.blue.shade800,
+                                                              fontWeight: FontWeight.w600,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                   Container(
                                                     padding:
                                                         const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4,
+                                                          horizontal: 6,
+                                                          vertical: 3,
                                                         ),
                                                     decoration: BoxDecoration(
                                                       color: _getOrderStatusColor(
@@ -1382,7 +1429,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                       ),
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                            12,
+                                                            10,
                                                           ),
                                                     ),
                                                     child: Text(
@@ -1391,7 +1438,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                           'N/A',
                                                       style: const TextStyle(
                                                         color: Colors.white,
-                                                        fontSize: 12,
+                                                        fontSize: 10,
                                                         fontWeight:
                                                             FontWeight.bold,
                                                       ),
@@ -1577,6 +1624,133 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                                           color: Colors.orange,
                                                           fontWeight:
                                                               FontWeight.bold,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+
+                                              // Order Status Update Buttons - Only show when trip is in progress
+                                              if (_tripDetail!['status'] == 'in_progress' ||
+                                                  _tripDetail!['status'] == 'arrived') ...[
+                                                const SizedBox(height: 12),
+                                                Row(
+                                                  children: [
+                                                    if (order['orderStatus'] == 'ASSIGNED') ...[
+                                                      Expanded(
+                                                        child: ElevatedButton.icon(
+                                                          onPressed: () async {
+                                                            setState(() => _isLoading = true);
+                                                            try {
+                                                              await driverService.updateOrderStatus(
+                                                                _tripDetail!['tripId'],
+                                                                order['orderId'],
+                                                                'IN_TRANSIT',
+                                                              );
+                                                              await _fetchTripDetail();
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                const SnackBar(content: Text('Order marked as In Transit')),
+                                                              );
+                                                            } catch (e) {
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                SnackBar(content: Text('Failed to update order: $e')),
+                                                              );
+                                                            } finally {
+                                                              setState(() => _isLoading = false);
+                                                            }
+                                                          },
+                                                          icon: const Icon(Icons.local_shipping, size: 16),
+                                                          label: const Text('START DELIVERY', style: TextStyle(fontSize: 12)),
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: Colors.blue,
+                                                            foregroundColor: Colors.white,
+                                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ] else if (order['orderStatus'] == 'IN_TRANSIT') ...[
+                                                      Expanded(
+                                                        child: ElevatedButton.icon(
+                                                          onPressed: () async {
+                                                            setState(() => _isLoading = true);
+                                                            try {
+                                                              await driverService.updateOrderStatus(
+                                                                _tripDetail!['tripId'],
+                                                                order['orderId'],
+                                                                'DELIVERED',
+                                                              );
+                                                              await _fetchTripDetail();
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                const SnackBar(content: Text('Order marked as Delivered')),
+                                                              );
+                                                            } catch (e) {
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                SnackBar(content: Text('Failed to update order: $e')),
+                                                              );
+                                                            } finally {
+                                                              setState(() => _isLoading = false);
+                                                            }
+                                                          },
+                                                          icon: const Icon(Icons.check_circle, size: 16),
+                                                          label: const Text('MARK DELIVERED', style: TextStyle(fontSize: 12)),
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: Colors.green,
+                                                            foregroundColor: Colors.white,
+                                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ] else if (order['orderStatus'] == 'DELIVERED') ...[
+                                                      Expanded(
+                                                        child: Container(
+                                                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.green.shade50,
+                                                            borderRadius: BorderRadius.circular(6),
+                                                            border: Border.all(color: Colors.green.shade200),
+                                                          ),
+                                                          child: const Row(
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            children: [
+                                                              Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                                              SizedBox(width: 8),
+                                                              Text(
+                                                                'DELIVERED',
+                                                                style: TextStyle(
+                                                                  color: Colors.green,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  fontSize: 12,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ] else if (_tripDetail!['status'] == 'scheduled' ||
+                                                          _tripDetail!['status'] == 'assigned') ...[
+                                                const SizedBox(height: 12),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey.shade100,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: Colors.grey.shade300),
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(Icons.info_outline, color: Colors.grey, size: 16),
+                                                      SizedBox(width: 8),
+                                                      Text(
+                                                        'Start trip to begin deliveries',
+                                                        style: TextStyle(
+                                                          color: Colors.grey,
+                                                          fontStyle: FontStyle.italic,
                                                           fontSize: 12,
                                                         ),
                                                       ),

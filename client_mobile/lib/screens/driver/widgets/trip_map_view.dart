@@ -125,8 +125,10 @@ class _TripMapViewState extends State<TripMapView> {
         final pickupLng = order is Map ? order['pickupLng'] : (order as dynamic).pickupLng;
         final deliveryLat = order is Map ? order['deliveryLat'] : (order as dynamic).deliveryLat;
         final deliveryLng = order is Map ? order['deliveryLng'] : (order as dynamic).deliveryLng;
+        final orderStatus = (order is Map ? order['orderStatus'] : (order as dynamic).orderStatus)?.toString().toUpperCase();
+        final isCompleted = orderStatus == 'DELIVERED';
 
-        // Pickup location (green checkpoint)
+        // Pickup location marker
         if (pickupLat != null && pickupLng != null) {
           final lat = pickupLat is double ? pickupLat : double.parse(pickupLat.toString());
           final lng = pickupLng is double ? pickupLng : double.parse(pickupLng.toString());
@@ -144,7 +146,7 @@ class _TripMapViewState extends State<TripMapView> {
               height: 50,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.95),
+                  color: isCompleted ? Colors.grey.withOpacity(0.95) : Colors.green.withOpacity(0.95),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3),
                   boxShadow: [
@@ -156,21 +158,27 @@ class _TripMapViewState extends State<TripMapView> {
                   ],
                 ),
                 child: Center(
-                  child: Text(
-                    '${i + 1}P',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: isCompleted
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 16,
+                      )
+                    : Text(
+                        '${i + 1}P',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                 ),
               ),
             ),
           );
         }
 
-        // Delivery location (red checkpoint)
+        // Delivery location marker
         if (deliveryLat != null && deliveryLng != null) {
           final lat = deliveryLat is double ? deliveryLat : double.parse(deliveryLat.toString());
           final lng = deliveryLng is double ? deliveryLng : double.parse(deliveryLng.toString());
@@ -188,7 +196,7 @@ class _TripMapViewState extends State<TripMapView> {
               height: 50,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.95),
+                  color: isCompleted ? Colors.grey.withOpacity(0.95) : Colors.red.withOpacity(0.95),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3),
                   boxShadow: [
@@ -200,14 +208,20 @@ class _TripMapViewState extends State<TripMapView> {
                   ],
                 ),
                 child: Center(
-                  child: Text(
-                    '${i + 1}D',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: isCompleted
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 16,
+                      )
+                    : Text(
+                        '${i + 1}D',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                 ),
               ),
             ),
@@ -368,7 +382,7 @@ class _TripMapViewState extends State<TripMapView> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Text('Order Pickups', style: TextStyle(fontSize: 12)),
+                          const Text('Pending Pickups', style: TextStyle(fontSize: 12)),
                         ],
                       ),
                       Row(
@@ -393,7 +407,29 @@ class _TripMapViewState extends State<TripMapView> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Text('Order Deliveries', style: TextStyle(fontSize: 12)),
+                          const Text('Pending Deliveries', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: Colors.grey,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('Completed', style: TextStyle(fontSize: 12)),
                         ],
                       ),
                       Row(

@@ -506,11 +506,20 @@ public class DatabaseSeeder implements CommandLineRunner {
             order.setTerminalName(terminalNames[random.nextInt(terminalNames.length)]);
         }
 
-        // Synch Order status with Trip status
+        // Synch Order status with Trip status - distribute statuses realistically for active trips
         if ("completed".equals(tripStatus)) {
             order.setOrderStatus(Order.OrderStatus.DELIVERED);
         } else if ("in_progress".equals(tripStatus) || "arrived".equals(tripStatus)) {
-            order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
+            // For active trips, distribute order statuses realistically:
+            // ~40% ASSIGNED (not started), ~40% IN_TRANSIT (in progress), ~20% DELIVERED (completed)
+            int statusRandom = random.nextInt(100);
+            if (statusRandom < 40) {
+                order.setOrderStatus(Order.OrderStatus.ASSIGNED);
+            } else if (statusRandom < 80) {
+                order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
+            } else {
+                order.setOrderStatus(Order.OrderStatus.DELIVERED);
+            }
         } else {
             order.setOrderStatus(Order.OrderStatus.ASSIGNED);
         }
