@@ -22,6 +22,14 @@ const cancelTrip = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/can
 
 const getAvailableDrivers = (datetime) => api.get(`${basePath}/drivers/available`, { params: datetime ? { datetime } : {} }).then(r => r.data);
 
+const getTripProgress = (tripId) => api.get(`${basePath}/trips/${tripId}/progress`).then(r => r.data);
+
+const updateTripProgress = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/progress`, payload).then(r => r.data);
+
+const getTripDelayInfo = (tripId) => api.get(`${basePath}/trips/${tripId}/delay-info`).then(r => r.data);
+
+const updateTripDelay = (tripId, payload) => api.put(`${basePath}/trips/${tripId}/delay`, payload).then(r => r.data);
+
 const tripService = {
   getTrips,
   getTripById,
@@ -33,6 +41,10 @@ const tripService = {
   getAvailableDrivers,
   getRecommendedDrivers,
   getDeliveryConfirmation,
+  getTripProgress,
+  updateTripProgress,
+  getTripDelayInfo,
+  updateTripDelay,
 };
 
 export default tripService;

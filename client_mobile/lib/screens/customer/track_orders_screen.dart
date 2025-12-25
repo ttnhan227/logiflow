@@ -60,18 +60,18 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
             orderStatus == 'IN_TRANSIT';
       }).toList();
 
-      // Sort: IN_TRANSIT first, then ASSIGNED, then PENDING
+      // Sort: PENDING first, then ASSIGNED, then IN_TRANSIT
       activeOrders.sort((a, b) {
         final statusA = a.orderStatus?.toUpperCase() ?? '';
         final statusB = b.orderStatus?.toUpperCase() ?? '';
 
         int getStatusPriority(String status) {
           switch (status) {
-            case 'IN_TRANSIT':
-              return 1; // Highest priority
+            case 'PENDING':
+              return 1; // Highest priority - pending orders first
             case 'ASSIGNED':
               return 2;
-            case 'PENDING':
+            case 'IN_TRANSIT':
               return 3;
             default:
               return 4;

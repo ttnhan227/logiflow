@@ -113,14 +113,8 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
         ),
       );
 
-      // Navigate to order tracking
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TrackOrdersScreen(),
-        ),
-        (route) => false, // Remove all previous routes
-      );
+      // Navigate back to main layout and switch to track orders tab
+      Navigator.of(context).popUntil((route) => route.isFirst); // Go back to main layout
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

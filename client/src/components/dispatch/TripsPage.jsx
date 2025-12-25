@@ -20,6 +20,7 @@ const TripsPage = () => {
     try {
       const data = await tripService.getTrips({
         status: statusFilter || undefined,
+        search: searchTerm || undefined,
         page,
         size,
       });
@@ -34,22 +35,19 @@ const TripsPage = () => {
 
   useEffect(() => {
     setPage(0);
-  }, [statusFilter]);
+  }, [statusFilter, searchTerm]);
 
   useEffect(() => {
     fetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, page, size]);
-
-  useEffect(() => {
-    setPage(0);
-  }, [searchTerm]);
+  }, [statusFilter, searchTerm, page, size]);
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'PENDING': return '#f59e0b';
+      case 'SCHEDULED': return '#f59e0b';
       case 'ASSIGNED': return '#3b82f6';
       case 'IN_PROGRESS': return '#8b5cf6';
+      case 'DELAYED': return '#f97316';
       case 'COMPLETED': return '#10b981';
       case 'CANCELLED': return '#ef4444';
       default: return '#6b7280';
@@ -68,11 +66,12 @@ const TripsPage = () => {
     });
   };
 
-  const filteredTrips = tripsResp?.trips?.filter(t => 
-    !searchTerm || 
+  const filteredTrips = tripsResp?.trips?.filter(t =>
+    !searchTerm ||
     t.routeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.vehicleLicensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.tripId?.toString().includes(searchTerm)
+    t.tripId?.toString().includes(searchTerm) ||
+    String(t.tripId).includes(searchTerm)
   ) || [];
 
   return (
@@ -97,15 +96,16 @@ const TripsPage = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <select 
-          className="filter-select" 
+        <select
+          className="filter-select"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
+          <option value="SCHEDULED">Scheduled</option>
           <option value="ASSIGNED">Assigned</option>
           <option value="IN_PROGRESS">In Progress</option>
+          <option value="DELAYED">Delayed</option>
           <option value="COMPLETED">Completed</option>
           <option value="CANCELLED">Cancelled</option>
         </select>
@@ -153,41 +153,64 @@ const TripsPage = () => {
                 <tr>
                   <th>Trip ID</th>
                   <th>Route</th>
+                  <th>Orders</th>
+                  <th>Total Weight</th>
+                  <th>Total Distance</th>
                   <th>Vehicle</th>
                   <th>Driver</th>
                   <th>Scheduled Departure</th>
-                  <th>Actual Departure</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTrips.map(trip => (
-                  <tr key={trip.tripId} className="table-row">
-                    <td className="cell-id">#{trip.tripId}</td>
-                    <td className="cell-text">{trip.routeName}</td>
-                    <td className="cell-text">{trip.vehicleLicensePlate || 'Not assigned'}</td>
-                    <td className="cell-text">{trip.driverName || 'Not assigned'}</td>
-                    <td className="cell-datetime">{formatDateTime(trip.scheduledDeparture)}</td>
-                    <td className="cell-datetime">{trip.actualDeparture ? formatDateTime(trip.actualDeparture) : '-'}</td>
-                    <td className="cell-status">
-                      <span 
-                        className="status-badge" 
-                        style={{ backgroundColor: getStatusColor(trip.status) }}
-                      >
-                        {trip.status}
-                      </span>
-                    </td>
-                    <td className="cell-action">
-                      <Link 
-                        to={`/dispatch/trips/${trip.tripId}`} 
-                        className="btn-view"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {filteredTrips.map(trip => {
+                  const orderCount = trip.orders?.length || 0;
+                  const totalWeight = trip.orders?.reduce((sum, order) => sum + (order.weightTons || 0), 0) || 0;
+                  // Use route distance if available, otherwise sum individual order distances
+                  const totalDistance = trip.route?.distanceKm ||
+                    (trip.orders?.reduce((sum, order) => sum + (order.distanceKm || 0), 0) || 0);
+
+                  return (
+                    <tr key={trip.tripId} className="table-row">
+                      <td className="cell-id">#{trip.tripId}</td>
+                      <td className="cell-text">{trip.routeName}</td>
+                      <td className="cell-text">
+                        <span style={{
+                          backgroundColor: '#e0f2fe',
+                          color: '#0c4a6e',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.25rem',
+                          fontWeight: '600',
+                          fontSize: '12px'
+                        }}>
+                          {orderCount} order{orderCount !== 1 ? 's' : ''}
+                        </span>
+                      </td>
+                      <td className="cell-text">{totalWeight > 0 ? `${totalWeight.toFixed(1)} t` : '-'}</td>
+                      <td className="cell-text">{totalDistance > 0 ? `${totalDistance.toFixed(1)} km` : '-'}</td>
+                      <td className="cell-text">{trip.vehicleLicensePlate || 'Not assigned'}</td>
+                      <td className="cell-text">{trip.driverName || 'Not assigned'}</td>
+                      <td className="cell-datetime">{formatDateTime(trip.scheduledDeparture)}</td>
+                      <td className="cell-status">
+                        <span
+                          className="status-badge"
+                          style={{ backgroundColor: getStatusColor(trip.status) }}
+                        >
+                          {trip.status}
+                        </span>
+                      </td>
+                      <td className="cell-action">
+                        <Link
+                          to={`/dispatch/trips/${trip.tripId}`}
+                          className="btn-view"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

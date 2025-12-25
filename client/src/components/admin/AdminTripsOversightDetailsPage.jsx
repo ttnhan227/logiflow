@@ -194,127 +194,99 @@ const AdminTripsOversightDetailsPage = () => {
 
       {/* Main Content */}
       <div className="admin-details-container">
-        {/* Orders in Trip Card - MOVED TO TOP */}
+        {/* Orders in Trip Card - Minimal Display Like Dispatch */}
         <div className="details-card">
           <div className="card-header">
             <h2>📦 Orders in Trip ({(trip.orders || []).length})</h2>
           </div>
           <div className="card-content">
             {(trip.orders && trip.orders.length > 0) ? (
-              <div className="admin-table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Customer</th>
-                      <th>Pickup Type</th>
-                      <th>Package</th>
-                      <th>Priority</th>
-                      <th>SLA Due</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trip.orders.map((order) => (
-                      <tr key={order.orderId}>
-                        <td>
-                          <span style={{ fontWeight: 600 }}>{order.orderId}</span>
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 500 }}>{order.customerName}</div>
-                          {order.customerPhone && (
-                            <div className="muted small">📞 {order.customerPhone}</div>
-                          )}
-                        </td>
-                        <td>
-                          {order.pickupType && order.pickupType !== 'STANDARD' ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{
-                                display: 'inline-block',
-                                padding: '2px 6px',
-                                borderRadius: '6px',
-                                fontSize: '10px',
-                                fontWeight: '600',
-                                backgroundColor: '#e3f2fd',
-                                color: '#1976d2'
-                              }}>
-                                {order.pickupType === 'WAREHOUSE' ? '🏭' : '🚢'} {order.pickupType}
-                              </span>
-                              {order.pickupType === 'WAREHOUSE' && order.warehouseName && (
-                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
-                                  <strong>Warehouse:</strong> {order.warehouseName}
-                                  {order.dockNumber && <br />}<strong>Dock:</strong> {order.dockNumber}
-                                </div>
-                              )}
-                              {order.pickupType === 'PORT_TERMINAL' && order.containerNumber && (
-                                <div style={{ fontSize: '11px', color: '#1976d2' }}>
-                                  <strong>Container:</strong> {order.containerNumber}
-                                  {order.terminalName && <br />}<strong>Terminal:</strong> {order.terminalName}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
+              <>
+                {/* Trip Summary Line */}
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  marginBottom: '16px',
+                  fontSize: '14px'
+                }}>
+                  <strong>Trip Summary:</strong> {trip.orders.length} order{trip.orders.length > 1 ? 's' : ''} •
+                  Total Weight: {trip.orders.reduce((sum, o) => sum + (o.weightTon || 0), 0).toFixed(1)} tons •
+                  Total Distance: {trip.orders.reduce((sum, order) => sum + (order.distanceKm || 0), 0).toFixed(1)} km •
+                  Total Value: ${(trip.orders.reduce((sum, order) => sum + (order.packageValue || 0), 0)).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })}
+                </div>
+
+                {/* Compact Order Grid */}
+                <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
+                  {trip.orders.map(order => (
+                    <div key={order.orderId} style={{
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '13px'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '16px' }}>#{order.orderId}</strong>
+                          <span style={{
+                            backgroundColor: order.orderStatus === 'DELIVERED' ? '#dcfce7' :
+                                           order.orderStatus === 'IN_TRANSIT' ? '#dbeafe' :
+                                           order.orderStatus === 'ASSIGNED' ? '#fef3c7' : '#fee2e2',
+                            color: order.orderStatus === 'DELIVERED' ? '#166534' :
+                                   order.orderStatus === 'IN_TRANSIT' ? '#1e40af' :
+                                   order.orderStatus === 'ASSIGNED' ? '#92400e' : '#dc2626',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontWeight: '600',
+                            fontSize: '11px'
+                          }}>
+                            {order.orderStatus}
+                          </span>
+                          {order.priorityLevel === 'URGENT' && (
                             <span style={{
-                              display: 'inline-block',
-                              padding: '2px 6px',
-                              borderRadius: '6px',
-                              fontSize: '10px',
+                              backgroundColor: '#fee2e2',
+                              color: '#dc2626',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
                               fontWeight: '600',
-                              backgroundColor: '#f3f4f6',
-                              color: '#6b7280'
+                              fontSize: '11px'
                             }}>
-                              📍 STANDARD
+                              URGENT
                             </span>
                           )}
-                        </td>
-                        <td>
-                          <div className="muted small">{order.packageDetails}</div>
-                          <div className="muted small">{order.weightTon?.toFixed(1)} Tons • {order.packageValue ? `$${order.packageValue}` : 'N/A'}</div>
-                        </td>
-                        <td>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '2px 8px',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            backgroundColor: order.priorityLevel === 'URGENT' ? '#fee2e2' : '#dbeafe',
-                            color: order.priorityLevel === 'URGENT' ? '#dc2626' : '#2563eb'
-                          }}>
-                            {order.priorityLevel || 'STANDARD'}
-                          </span>
-                        </td>
-                        <td>
-                          {order.slaDue ? (
-                            <>
-                              <div style={{ fontSize: '13px', fontWeight: 500 }}>
-                                {new Date(order.slaDue).toLocaleDateString()}
-                              </div>
-                              <div className="muted small">
-                                {new Date(order.slaDue).toLocaleTimeString()}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="muted">N/A</span>
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            className="btn btn-primary"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowOrderModal(true);
-                            }}
-                            style={{ fontSize: '12px', padding: '6px 12px' }}
-                          >
-                            👁️ View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                        <div style={{ fontWeight: '500', marginBottom: '6px' }}>{order.customerName}</div>
+                        <div style={{ color: '#64748b', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div>📍 <strong>Pickup:</strong> {order.pickupAddress}</div>
+                          <div>🎯 <strong>Delivery:</strong> {order.deliveryAddress}</div>
+                          <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                            <span>⚖️ {order.weightTon ? `${order.weightTon.toFixed(1)} t` : 'N/A'}</span>
+                            <span>📏 {order.distanceKm ? `${order.distanceKm.toFixed(1)} km` : 'N/A'}</span>
+                            <span>💰 {order.packageValue ? `$${order.packageValue}` : 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ marginLeft: '16px' }}>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setShowOrderModal(true);
+                          }}
+                          style={{ fontSize: '12px', padding: '6px 12px' }}
+                        >
+                          👁️ Details
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <div style={{
                 textAlign: 'center',
@@ -546,98 +518,87 @@ const AdminTripsOversightDetailsPage = () => {
           </div>
         )}
 
-        {/* Trip Status Overview Card */}
-        <div className="details-card">
-          <div className="card-header">
-            <h2>🚛 Trip Status Overview</h2>
-          </div>
-          <div className="card-content">
-            <div className="details-grid">
-              <div className="detail-item">
-                <label>🚛 Trip Status</label>
-                <div className="detail-value">
-                  <span
-                    className="order-badge"
-                    style={{
-                      backgroundColor: statusColor[trip.tripStatus] || '#f3f4f6',
-                      color: '#111827',
-                    }}
-                  >
-                    {trip.tripStatus || 'UNKNOWN'}
-                  </span>
-                </div>
-              </div>
-              <div className="detail-item">
-                <label>📋 Trip Type</label>
-                <div className="detail-value">
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 12px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: '#dbeafe',
-                    color: '#2563eb'
-                  }}>
-                    {trip.tripType || 'STANDARD'}
-                  </span>
-                </div>
-              </div>
-              <div className="detail-item">
-                <label>📦 Order Count</label>
-                <div className="detail-value">
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 12px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: trip.hasUrgentOrders ? '#fee2e2' : '#dbeafe',
-                    color: trip.hasUrgentOrders ? '#dc2626' : '#2563eb'
-                  }}>
-                    {(trip.orders || []).length} orders
-                    {trip.hasUrgentOrders && ' • URGENT'}
-                  </span>
-                </div>
-              </div>
-              <div className="detail-item">
-                <label>⚖️ Total Weight</label>
-                <div className="detail-value">
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 12px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: '#e0f2fe',
-                    color: '#0369a1'
-                  }}>
-                    {(trip.totalWeightTon || 0).toFixed(1)} tons
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Combined Route Information & Map */}
         <div className="details-card">
-          <div className="card-header">
-            <h2>🗺️ Route Information & Map</h2>
+          <div className="card-header" style={{ alignItems: 'center' }}>
+            <div>
+              <h2 className="card-title">🗺️ Trip Route & Checkpoints</h2>
+              <p className="page-subtitle" style={{ margin: 0 }}>Route visualization with actual road paths</p>
+            </div>
+            {trip.totalDistanceKm != null && (
+              <div className="badge" style={{ backgroundColor: '#0ea5e9', fontSize: '14px', fontWeight: '600' }}>
+                {trip.totalDistanceKm.toFixed(1)} km
+              </div>
+            )}
           </div>
           <div className="card-content">
-            {/* Route Summary */}
-            <div className="route-summary" style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <div style={{ fontSize: '18px', fontWeight: 600 }}>📍</div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>
-                  {trip.originCity || trip.originAddress || 'Unknown'} → {trip.destinationCity || trip.destinationAddress || 'Unknown'}
+            {/* Route Summary - Combined with Trip Status */}
+            <div className="route-summary" style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '20px', fontWeight: 600 }}>📍</div>
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#1f2937', marginBottom: '4px' }}>
+                    Trip #{trip.tripId} • {(trip.orders || []).length} orders • {(trip.totalWeightTon || 0).toFixed(1)} tons
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {trip.tripType ? trip.tripType.toUpperCase() : 'STANDARD'} • {trip.vehicle ? trip.vehicle.plate : 'No vehicle'}
+                    {trip.hasUrgentOrders && (
+                      <span style={{
+                        marginLeft: '8px',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        backgroundColor: '#fee2e2',
+                        color: '#dc2626'
+                      }}>
+                        URGENT ORDERS
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Trip Status Badges */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <span style={{
+                  display: 'inline-block',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  backgroundColor: statusColor[trip.tripStatus] || '#f3f4f6',
+                  color: '#111827'
+                }}>
+                  🚛 {trip.tripStatus || 'UNKNOWN'}
+                </span>
+                <span style={{
+                  display: 'inline-block',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  backgroundColor: '#dbeafe',
+                  color: '#2563eb'
+                }}>
+                  📦 {(trip.orders || []).length} orders
+                </span>
+                <span style={{
+                  display: 'inline-block',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  backgroundColor: '#e0f2fe',
+                  color: '#0369a1'
+                }}>
+                  ⚖️ {(trip.totalWeightTon || 0).toFixed(1)} tons
+                </span>
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#6b7280' }}>
-                <span>📏 {trip.totalDistanceKm ? `${trip.totalDistanceKm} km` : 'Distance N/A'}</span>
-                <span>⚡ {trip.totalWeightTon ? `${trip.totalWeightTon.toFixed(1)} tons` : 'Weight N/A'}</span>
-                <span>🕐 {trip.tripType ? trip.tripType.toUpperCase() : 'STANDARD'}</span>
+                <span>📏 {trip.totalDistanceKm ? `${trip.totalDistanceKm.toFixed(1)} km` : 'Distance N/A'}</span>
+                <span>🏁 {trip.originCity || 'Unknown'} → {trip.destinationCity || 'Unknown'}</span>
               </div>
             </div>
 
@@ -683,94 +644,158 @@ const AdminTripsOversightDetailsPage = () => {
               </div>
             </div>
 
-            {/* Trip Route Map */}
+            {/* Trip Route Map - Order-based waypoints (like RouteMapCard) */}
             <div style={{ height: '400px', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e5e7eb' }}>
-              <MapContainer
-                center={[
-                  (parseFloat(trip.originLat || 0) + parseFloat(trip.destinationLat || 0)) / 2 || 15.8,
-                  (parseFloat(trip.originLng || 0) + parseFloat(trip.destinationLng || 0)) / 2 || 107.0
-                ]}
-                zoom={8}
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+              {(() => {
+                // Handle multiple orders for trip visualization (same as RouteMapCard.jsx)
+                const orders = trip.orders || [];
+                if (!orders || orders.length === 0) {
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9ca3af' }}>
+                      No orders to display on map
+                    </div>
+                  );
+                }
 
-                {/* Origin Marker */}
-                {trip.originLat && trip.originLng && (
-                  <Marker
-                    position={[parseFloat(trip.originLat), parseFloat(trip.originLng)]}
-                    icon={originIcon}
+                const allPoints = [];
+                const pickupPoints = [];
+                const deliveryPoints = [];
+                let totalDistance = 0;
+
+                // Collect all pickup and delivery points (same logic as RouteMapCard)
+                orders.forEach((order, index) => {
+                  if (order.pickupLat && order.pickupLng) {
+                    pickupPoints.push({
+                      id: `pickup-${order.orderId}`,
+                      lat: Number(order.pickupLat),
+                      lng: Number(order.pickupLng),
+                      address: order.pickupAddress,
+                      orderId: order.orderId,
+                      customerName: order.customerName,
+                      type: 'pickup'
+                    });
+                  }
+                  if (order.deliveryLat && order.deliveryLng) {
+                    deliveryPoints.push({
+                      id: `delivery-${order.orderId}`,
+                      lat: Number(order.deliveryLat),
+                      lng: Number(order.deliveryLng),
+                      address: order.deliveryAddress,
+                      orderId: order.orderId,
+                      customerName: order.customerName,
+                      type: 'delivery'
+                    });
+                  }
+                  // Add individual order distance
+                  if (order.distanceKm) {
+                    totalDistance += Number(order.distanceKm);
+                  }
+                });
+
+                // Create connected route path: Order1 Pickup→Delivery → Order2 Pickup→Delivery → etc.
+                const routeSegments = [];
+                const sortedOrders = [...orders].sort((a, b) => a.orderId - b.orderId); // Sort by order ID
+
+                sortedOrders.forEach((order, index) => {
+                  if (order.pickupLat && order.pickupLng && order.deliveryLat && order.deliveryLng) {
+                    // First order: Pickup → Delivery
+                    if (index === 0) {
+                      routeSegments.push([
+                        [Number(order.pickupLat), Number(order.pickupLng)],
+                        [Number(order.deliveryLat), Number(order.deliveryLng)]
+                      ]);
+                    } else {
+                      // Subsequent orders: Previous Delivery → Current Pickup → Current Delivery
+                      const prevOrder = sortedOrders[index - 1];
+                      routeSegments.push([
+                        [Number(prevOrder.deliveryLat), Number(prevOrder.deliveryLng)], // Previous delivery
+                        [Number(order.pickupLat), Number(order.pickupLng)], // Current pickup
+                        [Number(order.deliveryLat), Number(order.deliveryLng)] // Current delivery
+                      ]);
+                    }
+                  }
+                });
+
+                // Combine all points for map centering
+                const allPointsCombined = [...pickupPoints, ...deliveryPoints];
+                const mapCenter = allPointsCombined.length > 0 ? [
+                  allPointsCombined.reduce((sum, p) => sum + p.lat, 0) / allPointsCombined.length,
+                  allPointsCombined.reduce((sum, p) => sum + p.lng, 0) / allPointsCombined.length
+                ] : [15.8, 107.0]; // Vietnam center
+
+                return (
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={allPointsCombined.length > 1 ? 10 : 8}
+                    style={{ height: '100%', width: '100%' }}
                   >
-                    <Popup>
-                      <div style={{ minWidth: '200px' }}>
-                        <strong style={{ fontSize: '14px', color: '#16a34a' }}>🟢 Origin</strong><br />
-                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Departure:</span><br />
-                        <span style={{ fontSize: '12px', color: '#666' }}>{trip.originAddress || trip.originCity}</span>
-                        {trip.scheduledDeparture && (
-                          <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                            <strong>Scheduled:</strong> {new Date(trip.scheduledDeparture).toLocaleString()}
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+
+                    {/* Show markers for all order locations (same as RouteMapCard) */}
+                    {allPointsCombined.map(point => (
+                      <Marker
+                        key={point.id}
+                        position={[point.lat, point.lng]}
+                        icon={point.type === 'pickup' ? originIcon : destinationIcon}
+                      >
+                        <Popup>
+                          <div style={{ minWidth: '200px' }}>
+                            <strong style={{
+                              fontSize: '14px',
+                              color: point.type === 'pickup' ? '#10b981' : '#ef4444'
+                            }}>
+                              {point.type === 'pickup' ? '🟢' : '🔴'} Order #{point.orderId}
+                            </strong><br />
+                            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
+                              {point.type === 'pickup' ? 'Pickup' : 'Delivery'}
+                            </span><br />
+                            <span style={{ fontSize: '12px', color: '#666' }}>{point.customerName}</span><br />
+                            <span style={{ fontSize: '12px', color: '#666' }}>{point.address || 'No address'}</span><br />
+                            <span style={{ fontSize: '11px', color: '#999' }}>
+                              Lat: {point.lat.toFixed(4)}, Lng: {point.lng.toFixed(4)}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                )}
+                        </Popup>
+                      </Marker>
+                    ))}
 
-                {/* Destination Marker */}
-                {trip.destinationLat && trip.destinationLng && (
-                  <Marker
-                    position={[parseFloat(trip.destinationLat), parseFloat(trip.destinationLng)]}
-                    icon={destinationIcon}
-                  >
-                    <Popup>
-                      <div style={{ minWidth: '200px' }}>
-                        <strong style={{ fontSize: '14px', color: '#dc2626' }}>🔴 Destination</strong><br />
-                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Arrival:</span><br />
-                        <span style={{ fontSize: '12px', color: '#666' }}>{trip.destinationAddress || trip.destinationCity}</span>
-                        {trip.scheduledArrival && (
-                          <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                            <strong>Scheduled:</strong> {new Date(trip.scheduledArrival).toLocaleString()}
+                    {/* Driver Current Location (if available) */}
+                    {trip.driver && trip.driver.currentLat && trip.driver.currentLng && (
+                      <Marker
+                        position={[parseFloat(trip.driver.currentLat), parseFloat(trip.driver.currentLng)]}
+                        icon={driverIcon}
+                      >
+                        <Popup>
+                          <div style={{ minWidth: '200px' }}>
+                            <strong style={{ fontSize: '14px', color: '#2563eb' }}>🚗 Driver Location</strong><br />
+                            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Driver:</span> {trip.driver.name}<br />
+                            <span style={{ fontSize: '12px', color: '#666' }}>
+                              Last updated: {new Date().toLocaleTimeString()}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                )}
+                        </Popup>
+                      </Marker>
+                    )}
 
-                {/* Driver Current Location (if available) */}
-                {trip.driver && trip.driver.currentLat && trip.driver.currentLng && (
-                  <Marker
-                    position={[parseFloat(trip.driver.currentLat), parseFloat(trip.driver.currentLng)]}
-                    icon={driverIcon}
-                  >
-                    <Popup>
-                      <div style={{ minWidth: '200px' }}>
-                        <strong style={{ fontSize: '14px', color: '#2563eb' }}>🚗 Driver Location</strong><br />
-                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Driver:</span> {trip.driver.name}<br />
-                        <span style={{ fontSize: '12px', color: '#666' }}>
-                          Last updated: {new Date().toLocaleTimeString()}
-                        </span>
-                      </div>
-                    </Popup>
-                  </Marker>
-                )}
-
-                {/* Route Line - Direct line between origin and destination */}
-                {trip.originLat && trip.originLng && trip.destinationLat && trip.destinationLng && (
-                  <Polyline
-                    positions={[
-                      [parseFloat(trip.originLat), parseFloat(trip.originLng)],
-                      [parseFloat(trip.destinationLat), parseFloat(trip.destinationLng)]
-                    ]}
-                    color="#3b82f6"
-                    weight={3}
-                    opacity={0.7}
-                  />
-                )}
-              </MapContainer>
+                    {/* Show route segments for multiple orders (same as RouteMapCard) */}
+                    {routeSegments.map((segment, index) => (
+                      <Polyline
+                        key={`segment-${index}`}
+                        positions={segment}
+                        color={index % 2 === 0 ? "#2563eb" : "#dc2626"} // Alternate colors like RouteMapCard
+                        weight={3}
+                        opacity={0.7}
+                        lineJoin="round"
+                        lineCap="round"
+                        dashArray="5, 5"
+                      />
+                    ))}
+                  </MapContainer>
+                );
+              })()}
             </div>
 
             <div style={{
@@ -782,15 +807,41 @@ const AdminTripsOversightDetailsPage = () => {
               fontSize: '13px',
               color: '#0369a1'
             }}>
-              <div style={{ fontWeight: 600, marginBottom: '4px' }}>🗺️ Map Legend</div>
+              <div style={{ fontWeight: 600, marginBottom: '4px' }}>🗺️ Trip Waypoints Legend</div>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <span>🟢 Origin (Green)</span>
-                <span>🔴 Destination (Red)</span>
-                <span>🚗 Driver Location {trip.driver && trip.driver.currentLat && trip.driver.currentLng ?
-                  `(${parseFloat(trip.driver.currentLat).toFixed(6)}, ${parseFloat(trip.driver.currentLng).toFixed(6)})` :
-                  '(Blue - if available)'}</span>
+                <span>🟢 Order Pickups (Green)</span>
+                <span>🔴 Order Deliveries (Red)</span>
+                <span>🚗 Driver Location (Blue - if available)</span>
+                <span>🔗 Route Segments (Blue/Red connecting lines)</span>
+              </div>
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#0284c7' }}>
+                Route shows sequential path: Order1 Pickup → Delivery → Order2 Pickup → Delivery → etc.
               </div>
             </div>
+
+            {/* Distance and Fee Estimate Section (like RouteMapCard) */}
+            {trip.totalDistanceKm != null && (
+              <div style={{
+                marginTop: '12px',
+                padding: '12px 16px',
+                backgroundColor: '#f0fdf4',
+                borderRadius: '8px',
+                border: '1px solid #86efac',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <span style={{ fontSize: '18px' }}>📍</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '600', color: '#166534', fontSize: '14px' }}>
+                    Trip Route Distance
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#15803d' }}>
+                    {trip.totalDistanceKm.toFixed(1)} km • Estimated fee: ${(Math.round(trip.totalDistanceKm * 12)).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

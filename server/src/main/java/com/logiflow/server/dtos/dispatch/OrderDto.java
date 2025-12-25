@@ -28,7 +28,9 @@ public class OrderDto {
     private java.math.BigDecimal weightTons;
     private Order.PickupType pickupType;
     private String containerNumber;
-    private String dockInfo;
+    private String terminalName;
+    private String warehouseName;
+    private String dockNumber;
     private java.math.BigDecimal packageValue;
     private java.math.BigDecimal shippingFee;
     private Integer createdByUserId;
@@ -56,7 +58,9 @@ public class OrderDto {
         dto.setWeightTons(order.getWeightTons());
         dto.setPickupType(order.getPickupType());
         dto.setContainerNumber(order.getContainerNumber());
-        dto.setDockInfo(order.getDockInfo());
+        dto.setTerminalName(order.getTerminalName());
+        dto.setWarehouseName(order.getWarehouseName());
+        dto.setDockNumber(order.getDockNumber());
         dto.setPackageValue(order.getPackageValue());
         dto.setShippingFee(order.getShippingFee());
         dto.setCreatedByUserId(order.getCreatedBy() != null ? order.getCreatedBy().getUserId() : null);

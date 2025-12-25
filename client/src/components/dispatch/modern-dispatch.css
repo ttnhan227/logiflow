@@ -810,7 +810,9 @@
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95rem;
+  margin-top: 12px;
+  font-size: 13px;
+  min-width: 1200px; /* Minimum width to ensure all columns fit */
   table-layout: auto;
 }
 

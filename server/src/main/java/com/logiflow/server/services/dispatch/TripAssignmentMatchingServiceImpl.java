@@ -12,9 +12,13 @@ import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.services.maps.MapsService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -50,8 +54,35 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
         BigDecimal pickupLat = null;
         BigDecimal pickupLng = null;
         if (trip.getRoute() != null) {
-            pickupLat = trip.getRoute().getOriginLat();
-            pickupLng = trip.getRoute().getOriginLng();
+            if (trip.getRoute().getIsTripRoute() != null && trip.getRoute().getIsTripRoute()) {
+                // For trip routes, use first waypoint coordinates
+                if (trip.getRoute().getWaypoints() != null && !trip.getRoute().getWaypoints().isEmpty()) {
+                    try {
+                        // Parse first waypoint from JSON
+                        List<Map<String, Object>> waypoints = new com.fasterxml.jackson.databind.ObjectMapper()
+                            .readValue(trip.getRoute().getWaypoints(),
+                                     new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {});
+                        if (!waypoints.isEmpty()) {
+                            Map<String, Object> firstWaypoint = waypoints.get(0);
+                            pickupLat = new BigDecimal(firstWaypoint.get("lat").toString());
+                            pickupLng = new BigDecimal(firstWaypoint.get("lng").toString());
+                        }
+                    } catch (Exception e) {
+                        // Fallback: use order coordinates if available
+                        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+                            Order firstOrder = trip.getOrders().get(0);
+                            pickupLat = firstOrder.getPickupLat();
+                            pickupLng = firstOrder.getPickupLng();
+                        }
+                    }
+                }
+            } else {
+                // For legacy single routes (if any exist), use origin coordinates
+                // Since we removed these fields, this branch won't execute
+                // TODO: Handle legacy single routes if any exist
+                pickupLat = null;
+                pickupLng = null;
+            }
         }
 
         BigDecimal totalWeightTons = computeTripWeightTons(trip);

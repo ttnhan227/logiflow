@@ -75,7 +75,11 @@ const normalizeTrips = (trips = []) =>
       customerName: order.customerName, // Keep original field name for modal compatibility
       customerPhone: order.customerPhone,
       pickupAddress: order.pickupAddress, // Keep original field name for modal compatibility
+      pickupLat: order.pickupLat, // CRITICAL: Include coordinate fields for map
+      pickupLng: order.pickupLng, // CRITICAL: Include coordinate fields for map
       deliveryAddress: order.deliveryAddress, // Keep original field name for modal compatibility
+      deliveryLat: order.deliveryLat, // CRITICAL: Include coordinate fields for map
+      deliveryLng: order.deliveryLng, // CRITICAL: Include coordinate fields for map
       pickupType: order.pickupType,
       warehouseName: order.warehouseName,
       dockNumber: order.dockNumber,

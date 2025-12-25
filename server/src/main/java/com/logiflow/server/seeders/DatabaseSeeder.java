@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -65,7 +66,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             seedSystemSettings();
             seedDrivers();
             seedVehicles();
-            seedRoutes();
 
             // THE CORE LOGIC: Seeding linked operational data
             seedOperationalData();
@@ -88,7 +88,6 @@ public class DatabaseSeeder implements CommandLineRunner {
         List<Customer> customers = customerRepository.findAllCustomersWithUser();
 
         List<Vehicle> vehicles = vehicleRepository.findAll();
-        List<Route> routes = routeRepository.findAll();
 
         // Get Dispatchers safely using your existing UserRepository method
         List<User> dispatchers = userRepository.findAllUsersWithRole().stream()
@@ -96,7 +95,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .toList();
 
         // Safety checks
-        if (drivers.isEmpty() || vehicles.isEmpty() || routes.isEmpty() || customers.isEmpty() || dispatchers.isEmpty()) {
+        if (drivers.isEmpty() || vehicles.isEmpty() || customers.isEmpty() || dispatchers.isEmpty()) {
             System.out.println("WARNING: Missing basic data. Skipping operational seeding.");
             return;
         }
@@ -111,31 +110,34 @@ public class DatabaseSeeder implements CommandLineRunner {
         // Iterate through ALL drivers to ensure full coverage
         for (int i = 0; i < drivers.size(); i++) {
             Driver driver = drivers.get(i);
-            // Assign a semi-permanent vehicle to this driver for realism
-            Vehicle vehicle = vehicles.get(i % vehicles.size());
+            // Assign a license-compatible vehicle to this driver
+            Vehicle vehicle = findCompatibleVehicle(driver, vehicles);
 
             // --- 1. PAST: Two Completed Trips (For history/logs) ---
             // 10 days ago
-            generateFullTripScenario(driver, vehicle, routes, dispatchers, customers,
+            generateFullTripScenario(driver, vehicle, dispatchers, customers,
                     now.minusDays(10), "completed", allTrips, allAssignments, allOrders, allWorkLogs);
 
             // 3 days ago
-            generateFullTripScenario(driver, vehicle, routes, dispatchers, customers,
+            generateFullTripScenario(driver, vehicle, dispatchers, customers,
                     now.minusDays(3), "completed", allTrips, allAssignments, allOrders, allWorkLogs);
 
             // --- 2. PRESENT: One Active Trip ---
-            // Driver 0, 2, 4... are In Progress. Driver 1, 3, 5... have Arrived.
-            String activeStatus = (i % 2 == 0) ? "in_progress" : "arrived";
-            generateFullTripScenario(driver, vehicle, routes, dispatchers, customers,
-                    now, activeStatus, allTrips, allAssignments, allOrders, allWorkLogs);
+            // Only drivers 0, 2, 4 have active trips (to leave some drivers available for testing)
+            if (i % 3 == 0) { // Every 3rd driver (0, 3, 6, 9) has active trip
+                String activeStatus = (i % 6 == 0) ? "in_progress" : "arrived"; // Alternate between in_progress and arrived
+                generateFullTripScenario(driver, vehicle, dispatchers, customers,
+                        now, activeStatus, allTrips, allAssignments, allOrders, allWorkLogs);
+            }
+            // Other drivers (1, 2, 4, 5, 7, 8, 10) remain available
 
             // --- 3. FUTURE: Two Scheduled Trips ---
             // Tomorrow
-            generateFullTripScenario(driver, vehicle, routes, dispatchers, customers,
+            generateFullTripScenario(driver, vehicle, dispatchers, customers,
                     now.plusDays(1), "scheduled", allTrips, allAssignments, allOrders, allWorkLogs);
 
             // Next Week (spread out)
-            generateFullTripScenario(driver, vehicle, routes, dispatchers, customers,
+            generateFullTripScenario(driver, vehicle, dispatchers, customers,
                     now.plusDays(4 + (i % 3)), "scheduled", allTrips, allAssignments, allOrders, allWorkLogs);
         }
 
@@ -144,6 +146,9 @@ public class DatabaseSeeder implements CommandLineRunner {
         tripAssignmentRepository.saveAll(allAssignments); // 2. Assignments link Trip + Driver
         orderRepository.saveAll(allOrders);         // 3. Orders link Trip + Customer
 
+        // Update trip routes with real order IDs now that orders are saved
+        updateTripRoutesWithRealOrderIds(allTrips, allOrders);
+
         // Create payments for delivered orders to have realistic payment data
         List<Payment> allPayments = createPaymentsForDeliveredOrders(allOrders, allTrips);
         paymentRepository.saveAll(allPayments);
@@ -151,30 +156,115 @@ public class DatabaseSeeder implements CommandLineRunner {
         // Save updated orders with payment status changes
         orderRepository.saveAll(allOrders);         // 4. Save orders again with updated payment status
 
+        // Seed some standalone pending orders (not assigned to any trip)
+        List<Order> pendingOrders = seedPendingOrders(dispatchers, customers);
+        orderRepository.saveAll(pendingOrders);
+
         driverWorkLogRepository.saveAll(allWorkLogs); // 5. Logs link Trip + Driver
 
-        System.out.println("Generated: " + allTrips.size() + " trips, " + allOrders.size() + " orders.");
+        System.out.println("Generated: " + allTrips.size() + " trips, " + allOrders.size() + " orders, " + pendingOrders.size() + " pending orders.");
     }
 
-    private void generateFullTripScenario(Driver driver, Vehicle vehicle, List<Route> routes,
+    private void updateTripRoutesWithRealOrderIds(List<Trip> allTrips, List<Order> allOrders) {
+        System.out.println("Updating trip routes with real order IDs...");
+
+        List<Route> routesToUpdate = new ArrayList<>();
+
+        for (Trip trip : allTrips) {
+            Route route = trip.getRoute();
+            if (route.getIsTripRoute() && !route.getWaypoints().isEmpty()) {
+                try {
+                    // Parse existing waypoints
+                    List<Map<String, Object>> waypoints = new com.fasterxml.jackson.databind.ObjectMapper()
+                            .readValue(route.getWaypoints(), new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {});
+
+                    // Get orders for this trip
+                    List<Order> tripOrders = allOrders.stream()
+                            .filter(order -> trip.equals(order.getTrip()))
+                            .sorted((o1, o2) -> Integer.compare(o1.getOrderId(), o2.getOrderId()))
+                            .collect(Collectors.toList());
+
+                    // Create mapping from temp ID to real ID and update waypoints
+                    List<String> realOrderIds = new ArrayList<>();
+
+                    for (int i = 0; i < tripOrders.size(); i++) {
+                        Order order = tripOrders.get(i);
+                        String tempId = String.valueOf(i);
+                        String realId = String.valueOf(order.getOrderId());
+
+                        // Update waypoints with real orderId
+                        for (Map<String, Object> waypoint : waypoints) {
+                            if (tempId.equals(waypoint.get("orderId"))) {
+                                waypoint.put("orderId", realId);
+                            }
+                        }
+
+                        realOrderIds.add(realId);
+                    }
+
+                    // Update route with new waypoints and orderIds
+                    route.setWaypoints(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(waypoints));
+                    route.setOrderIds(String.join(",", realOrderIds));
+
+                    routesToUpdate.add(route);
+
+                } catch (Exception e) {
+                    System.out.println("Error updating route for trip: " + e.getMessage());
+                }
+            }
+        }
+
+        // Save updated routes
+        if (!routesToUpdate.isEmpty()) {
+            routeRepository.saveAll(routesToUpdate);
+            System.out.println("Updated " + routesToUpdate.size() + " trip routes with real order IDs.");
+        }
+    }
+
+    private void generateFullTripScenario(Driver driver, Vehicle vehicle,
                                           List<User> dispatchers, List<Customer> customers,
                                           LocalDateTime baseTime, String status,
                                           List<Trip> tripsList, List<TripAssignment> assignsList,
                                           List<Order> ordersList, List<DriverWorkLog> logsList) {
 
-        // A. Trip Setup
-        Route route = routes.get(random.nextInt(routes.size()));
-        String tripType = (random.nextBoolean()) ? "freight" : "mixed"; // Random trip type
+        // A. Create Orders First (1 to 3 orders per trip)
+        int orderCount = 1 + random.nextInt(3);
+        User dispatcher = dispatchers.get(random.nextInt(dispatchers.size()));
+        List<Order> tripOrders = new ArrayList<>();
+
+        // Pre-create orders to get their coordinates for trip route
+        for (int k = 0; k < orderCount; k++) {
+            Customer customer = customers.get(random.nextInt(customers.size()));
+            Order order = createOrderPrototype(customer, dispatcher, status, baseTime);
+            tripOrders.add(order);
+        }
+
+        // B. Create Trip Route from Orders (all trips get trip routes)
+        Route tripRoute = createTripRouteFromOrders(tripOrders, baseTime);
+        routeRepository.save(tripRoute);
+
+        // C. Trip Setup
+        String tripType = (random.nextBoolean()) ? "freight" : "mixed";
 
         Trip trip = new Trip();
         trip.setVehicle(vehicle);
-        trip.setRoute(route);
+        trip.setRoute(tripRoute);
         trip.setTripType(tripType);
-        trip.setStatus(status);
+
+        // Set status based on whether driver will be assigned and trip timing
+        if ("scheduled".equals(status)) {
+            trip.setStatus("scheduled"); // Future trips with no driver assigned
+        } else if ("in_progress".equals(status) || "arrived".equals(status)) {
+            trip.setStatus("assigned"); // Will be changed to in_progress/arrived after assignment
+        } else {
+            trip.setStatus(status);
+        }
+
         trip.setCreatedAt(baseTime.minusDays(5)); // Trip was planned 5 days before
 
         // Configure Scheduled vs Actual times
-        configureTripTimes(trip, baseTime, status, route.getEstimatedDurationHours());
+        BigDecimal durationHours = tripRoute.getIsTripRoute() ? calculateTripRouteDuration(tripRoute) : new BigDecimal("2.0");
+        configureTripTimes(trip, baseTime, status, durationHours);
 
         // Add delay information to some active trips for demo
         if ("in_progress".equals(status) || "arrived".equals(status)) {
@@ -186,34 +276,41 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         tripsList.add(trip);
 
-        // B. Assignment Setup
-        TripAssignment assignment = new TripAssignment();
-        assignment.setTrip(trip);
-        assignment.setDriver(driver);
-        assignment.setRole("primary");
-        assignment.setAssignedAt(trip.getCreatedAt().plusDays(1)); // Driver accepted 1 day after creation
-
-        if ("completed".equals(status)) {
-            assignment.setStatus("completed");
-            assignment.setStartedAt(trip.getActualDeparture());
-            assignment.setCompletedAt(trip.getActualArrival());
-            // Create Work Log only for completed trips
-            createWorkLog(driver, trip, trip.getActualDeparture(), trip.getActualArrival(), logsList);
-        } else if ("in_progress".equals(status) || "arrived".equals(status)) {
-            assignment.setStatus("accepted");
-            assignment.setStartedAt(trip.getActualDeparture());
-        } else {
-            assignment.setStatus("assigned");
+        // D. Save Orders with Trip Reference
+        for (Order order : tripOrders) {
+            order.setTrip(trip);
+            // Set distance from trip route (total for trip routes, individual for single routes)
+            if (tripRoute.getIsTripRoute()) {
+                // For trip routes, keep individual order distances
+                order.setDistanceKm(order.getDistanceKm());
+            } else {
+                // For single routes, use route distance
+                order.setDistanceKm(tripRoute.getDistanceKm());
+            }
+            ordersList.add(order);
         }
-        assignsList.add(assignment);
 
-        // C. Order Setup (1 to 3 orders per trip)
-        int orderCount = 1 + random.nextInt(3);
-        User dispatcher = dispatchers.get(random.nextInt(dispatchers.size()));
+        // E. Assignment Setup - Only assign drivers to non-scheduled trips
+        if (!"scheduled".equals(status)) {
+            TripAssignment assignment = new TripAssignment();
+            assignment.setTrip(trip);
+            assignment.setDriver(driver);
+            assignment.setRole("primary");
+            assignment.setAssignedAt(trip.getCreatedAt().plusDays(1)); // Driver accepted 1 day after creation
 
-        for (int k = 0; k < orderCount; k++) {
-            Customer customer = customers.get(random.nextInt(customers.size()));
-            createOrderForTrip(trip, customer, dispatcher, status, ordersList);
+            if ("completed".equals(status)) {
+                assignment.setStatus("completed");
+                assignment.setStartedAt(trip.getActualDeparture());
+                assignment.setCompletedAt(trip.getActualArrival());
+                // Create Work Log only for completed trips
+                createWorkLog(driver, trip, trip.getActualDeparture(), trip.getActualArrival(), logsList);
+            } else if ("in_progress".equals(status) || "arrived".equals(status)) {
+                assignment.setStatus("accepted");
+                assignment.setStartedAt(trip.getActualDeparture());
+            } else {
+                assignment.setStatus("assigned");
+            }
+            assignsList.add(assignment);
         }
     }
 
@@ -254,9 +351,8 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
-    private void createOrderForTrip(Trip trip, Customer customer, User dispatcher, String tripStatus, List<Order> ordersList) {
+    private Order createOrderPrototype(Customer customer, User dispatcher, String tripStatus, LocalDateTime baseTime) {
         Order order = new Order();
-        order.setTrip(trip);
         order.setCustomer(customer.getUser()); // Link User entity
         order.setCreatedBy(dispatcher);
 
@@ -264,9 +360,292 @@ public class DatabaseSeeder implements CommandLineRunner {
         order.setCustomerName(customer.getUser().getFullName());
         order.setCustomerPhone(customer.getUser().getPhone());
 
-        // Addresses come from Trip Route
-        order.setPickupAddress(trip.getRoute().getOriginAddress());
-        order.setDeliveryAddress(trip.getRoute().getDestinationAddress());
+        // Generate realistic order details
+        generateOrderDetails(order, customer, tripStatus, baseTime);
+
+        return order;
+    }
+
+    private void generateOrderDetails(Order order, Customer customer, String tripStatus, LocalDateTime baseTime) {
+        // Random cargo details with weights in tons for heavy logistics
+        String[] items = {"Electronics", "Office Furniture", "Legal Documents", "Ind. Machinery", "Textiles", "Fresh Produce"};
+        String item = items[random.nextInt(items.length)];
+
+        // Weight ranges in tons appropriate for heavy logistics
+        BigDecimal weightTons;
+        switch (item.toLowerCase()) {
+            case "electronics":
+                weightTons = new BigDecimal("0.5").add(new BigDecimal(random.nextInt(15)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.5-2.0 tons
+                break;
+            case "office furniture":
+                weightTons = new BigDecimal("1.0").add(new BigDecimal(random.nextInt(20)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 1.0-3.0 tons
+                break;
+            case "legal documents":
+                weightTons = new BigDecimal("0.05").add(new BigDecimal(random.nextInt(15)).divide(new BigDecimal(100), 2, java.math.RoundingMode.HALF_UP)); // 0.05-0.20 tons
+                break;
+            case "ind. machinery":
+                weightTons = new BigDecimal("2.0").add(new BigDecimal(random.nextInt(30)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 2.0-5.0 tons
+                break;
+            case "textiles":
+                weightTons = new BigDecimal("0.8").add(new BigDecimal(random.nextInt(17)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.8-2.5 tons
+                break;
+            case "fresh produce":
+                weightTons = new BigDecimal("0.3").add(new BigDecimal(random.nextInt(17)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 0.3-2.0 tons
+                break;
+            default:
+                weightTons = new BigDecimal("1.0").add(new BigDecimal(random.nextInt(20)).divide(new BigDecimal(10), 1, java.math.RoundingMode.HALF_UP)); // 1.0-3.0 tons default
+        }
+
+        order.setWeightTons(weightTons);
+
+        // Generate realistic addresses in HCMC
+        String[] pickupAddresses = {
+            "105 Tran Hung Dao, Ward 1, Go Vap, Ho Chi Minh City",
+            "237 Đê thủy Lợi Ấp 3, Thành phố Hồ Chí Minh, Vietnam",
+            "456 Nguyen Hue, District 1, Ho Chi Minh City",
+            "789 Le Hong Phong, District 10, Ho Chi Minh City",
+            "321 Vo Van Tan, District 3, Ho Chi Minh City"
+        };
+
+        String[] deliveryAddresses = {
+            "160a Đ. Số 14, Thành phố Hồ Chí Minh, Vietnam",
+            "MPJC+9R2 Phước Kiểng Bridge, Thành phố Hồ Chí Minh, Vietnam",
+            "Ben Thanh Market, District 1, Ho Chi Minh City",
+            "Tan Son Nhat Airport, Ho Chi Minh City",
+            "Saigon River Port, District 4, Ho Chi Minh City"
+        };
+
+        order.setPickupAddress(pickupAddresses[random.nextInt(pickupAddresses.length)]);
+        order.setDeliveryAddress(deliveryAddresses[random.nextInt(deliveryAddresses.length)]);
+
+        // Set random coordinates for HCMC area
+        // HCMC coordinates roughly: 10.7-11.2°N, 106.5-107.0°E
+        BigDecimal pickupLat = new BigDecimal("10.7").add(new BigDecimal(random.nextInt(50)).divide(new BigDecimal(100), 4, java.math.RoundingMode.HALF_UP));
+        BigDecimal pickupLng = new BigDecimal("106.5").add(new BigDecimal(random.nextInt(50)).divide(new BigDecimal(100), 4, java.math.RoundingMode.HALF_UP));
+        BigDecimal deliveryLat = new BigDecimal("10.7").add(new BigDecimal(random.nextInt(50)).divide(new BigDecimal(100), 4, java.math.RoundingMode.HALF_UP));
+        BigDecimal deliveryLng = new BigDecimal("106.5").add(new BigDecimal(random.nextInt(50)).divide(new BigDecimal(100), 4, java.math.RoundingMode.HALF_UP));
+
+        order.setPickupLat(pickupLat);
+        order.setPickupLng(pickupLng);
+        order.setDeliveryLat(deliveryLat);
+        order.setDeliveryLng(deliveryLng);
+
+        // Calculate distance using Haversine
+        BigDecimal distance = calculateHaversineDistance(pickupLat, pickupLng, deliveryLat, deliveryLng);
+        order.setDistanceKm(distance);
+
+        // Set package value based on item type and weight
+        BigDecimal baseValuePerTon;
+        String detailedDescription;
+
+        switch (item.toLowerCase()) {
+            case "electronics":
+                baseValuePerTon = new BigDecimal("500000");
+                detailedDescription = "High-quality electronic devices including tablets, laptops, and accessories carefully packed for safe transport";
+                break;
+            case "office furniture":
+                baseValuePerTon = new BigDecimal("80000");
+                detailedDescription = "Professional office furniture set including desks, chairs, and storage units requiring special handling";
+                break;
+            case "legal documents":
+                baseValuePerTon = new BigDecimal("10000000");
+                detailedDescription = "Confidential legal documents and corporate records in secure, climate-controlled packaging";
+                break;
+            case "ind. machinery":
+                baseValuePerTon = new BigDecimal("300000");
+                detailedDescription = "Industrial machinery and equipment components with specialized packaging and handling requirements";
+                break;
+            case "textiles":
+                baseValuePerTon = new BigDecimal("150000");
+                detailedDescription = "Premium textile products and clothing materials requiring moisture-resistant packaging";
+                break;
+            case "fresh produce":
+                baseValuePerTon = new BigDecimal("25000");
+                detailedDescription = "Fresh agricultural produce and perishable goods maintained at optimal temperature during transport";
+                break;
+            default:
+                baseValuePerTon = new BigDecimal("100000");
+                detailedDescription = "Miscellaneous goods safely packaged for transportation";
+        }
+
+        BigDecimal packageValue = baseValuePerTon.multiply(weightTons).setScale(2, java.math.RoundingMode.HALF_UP);
+        order.setPackageValue(packageValue);
+        order.setPackageDetails(detailedDescription);
+
+        // Randomly assign pickup types
+        int pickupTypeRandom = random.nextInt(100);
+        Order.PickupType pickupType;
+
+        if (pickupTypeRandom < 40) {
+            pickupType = Order.PickupType.STANDARD;
+        } else if (pickupTypeRandom < 70) {
+            pickupType = Order.PickupType.WAREHOUSE;
+        } else {
+            pickupType = Order.PickupType.PORT_TERMINAL;
+        }
+
+        order.setPickupType(pickupType);
+
+        // Set fields based on pickup type
+        if (pickupType == Order.PickupType.WAREHOUSE) {
+            String[] warehouseNames = {"HCM Warehouse", "Da Nang Logistics Center", "Hai Phong Distribution Hub", "Can Tho Storage Facility"};
+            order.setWarehouseName(warehouseNames[random.nextInt(warehouseNames.length)]);
+
+            String[] dockPrefixes = {"D-", "L-", "B-", "G-"};
+            int dockNumber = 1 + random.nextInt(20);
+            order.setDockNumber(dockPrefixes[random.nextInt(dockPrefixes.length)] + dockNumber);
+
+        } else if (pickupType == Order.PickupType.PORT_TERMINAL) {
+            String[] containerPrefixes = {"MSCU", "MAEU", "OOLU", "COSU", "HLCU", "YMLU"};
+            String prefix = containerPrefixes[random.nextInt(containerPrefixes.length)];
+            String serial = String.format("%06d", random.nextInt(999999));
+            String checkDigit = String.valueOf(random.nextInt(9));
+            order.setContainerNumber(prefix + serial + "-" + checkDigit);
+
+            String[] terminalNames = {"Saigon Port Terminal 1", "Da Nang Port Terminal", "Hai Phong Port Terminal", "Can Tho River Port"};
+            order.setTerminalName(terminalNames[random.nextInt(terminalNames.length)]);
+        }
+
+        // Synch Order status with Trip status
+        if ("completed".equals(tripStatus)) {
+            order.setOrderStatus(Order.OrderStatus.DELIVERED);
+        } else if ("in_progress".equals(tripStatus) || "arrived".equals(tripStatus)) {
+            order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
+        } else {
+            order.setOrderStatus(Order.OrderStatus.ASSIGNED);
+        }
+
+        order.setPriorityLevel(random.nextBoolean() ? Order.PriorityLevel.NORMAL : Order.PriorityLevel.URGENT);
+
+        // Calculate Shipping Fee
+        BigDecimal shippingFee = distance.multiply(new BigDecimal("1500")) // Distance fee (1500 VND per km)
+                .add(order.getWeightTons().multiply(new BigDecimal("700000"))) // Weight fee (700000 VND per ton)
+                .add(new BigDecimal("30000")); // Base shipping fee
+        if (order.getPriorityLevel() == Order.PriorityLevel.URGENT) shippingFee = shippingFee.multiply(new BigDecimal("1.3"));
+        order.setShippingFee(shippingFee);
+
+        // Set realistic creation dates based on trip timing
+        LocalDateTime orderCreatedAt;
+        if ("completed".equals(tripStatus)) {
+            // For completed trips, orders were created 7-14 days before trip
+            orderCreatedAt = baseTime.minusDays(7 + random.nextInt(8));
+        } else if ("in_progress".equals(tripStatus) || "arrived".equals(tripStatus)) {
+            // For active trips, orders were created 2-5 days before trip
+            orderCreatedAt = baseTime.minusDays(2 + random.nextInt(4));
+        } else {
+            // For scheduled trips, orders were created 1-3 days ago
+            orderCreatedAt = LocalDateTime.now().minusDays(1 + random.nextInt(3));
+        }
+        order.setCreatedAt(orderCreatedAt);
+    }
+
+
+
+    private Route createTripRouteFromOrders(List<Order> orders, LocalDateTime baseTime) {
+        // Create waypoints from all order coordinates
+        List<Map<String, Object>> waypoints = new ArrayList<>();
+        BigDecimal totalFee = BigDecimal.ZERO;
+        List<String> orderIds = new ArrayList<>();
+
+        for (int i = 0; i < orders.size(); i++) {
+            Order order = orders.get(i);
+            // Use order index as temporary ID since real IDs don't exist yet
+            String tempOrderId = String.valueOf(i);
+
+            // Add pickup waypoint
+            if (order.getPickupLat() != null && order.getPickupLng() != null) {
+                Map<String, Object> pickupPoint = new HashMap<>();
+                pickupPoint.put("lat", order.getPickupLat());
+                pickupPoint.put("lng", order.getPickupLng());
+                pickupPoint.put("type", "pickup");
+                pickupPoint.put("orderId", tempOrderId);
+                pickupPoint.put("address", order.getPickupAddress());
+                pickupPoint.put("customerName", order.getCustomerName());
+                waypoints.add(pickupPoint);
+            }
+
+            // Add delivery waypoint
+            if (order.getDeliveryLat() != null && order.getDeliveryLng() != null) {
+                Map<String, Object> deliveryPoint = new HashMap<>();
+                deliveryPoint.put("lat", order.getDeliveryLat());
+                deliveryPoint.put("lng", order.getDeliveryLng());
+                deliveryPoint.put("type", "delivery");
+                deliveryPoint.put("orderId", tempOrderId);
+                deliveryPoint.put("address", order.getDeliveryAddress());
+                deliveryPoint.put("customerName", order.getCustomerName());
+                waypoints.add(deliveryPoint);
+            }
+
+            // Accumulate fees
+            if (order.getShippingFee() != null) {
+                totalFee = totalFee.add(order.getShippingFee());
+            }
+
+            // Collect temporary order IDs
+            orderIds.add(tempOrderId);
+        }
+
+        // Calculate total distance (sum of all individual order distances)
+        BigDecimal totalDistance = BigDecimal.ZERO;
+        for (Order order : orders) {
+            if (order.getDistanceKm() != null) {
+                totalDistance = totalDistance.add(order.getDistanceKm());
+            }
+        }
+
+        // Create route entity
+        Route route = new Route();
+        route.setRouteName("Trip: " + orders.size() + " orders - " + baseTime.toLocalDate());
+        route.setRouteType("trip");
+
+        try {
+            route.setWaypoints(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(waypoints));
+        } catch (Exception e) {
+            // Fallback simple waypoints
+            route.setWaypoints("[]");
+        }
+
+        route.setDistanceKm(totalDistance);
+        route.setTotalFee(totalFee);
+        route.setOrderIds(""); // Will be set after orders are saved with IDs
+        route.setIsTripRoute(true);
+
+        return route;
+    }
+
+    private BigDecimal calculateTripRouteDuration(Route route) {
+        // Estimate duration based on total distance
+        // Assume average speed of 40 km/h for urban delivery
+        if (route.getDistanceKm() != null) {
+            return route.getDistanceKm().divide(new BigDecimal("40"), 2, java.math.RoundingMode.HALF_UP);
+        }
+        return new BigDecimal("2.0"); // Default 2 hours
+    }
+
+    private BigDecimal calculateHaversineDistance(BigDecimal lat1, BigDecimal lng1, BigDecimal lat2, BigDecimal lng2) {
+        double lat1Rad = Math.toRadians(lat1.doubleValue());
+        double lat2Rad = Math.toRadians(lat2.doubleValue());
+        double lng1Rad = Math.toRadians(lng1.doubleValue());
+        double lng2Rad = Math.toRadians(lng2.doubleValue());
+
+        double dLat = lat2Rad - lat1Rad;
+        double dLng = lng2Rad - lng1Rad;
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                   Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double distance = 6371 * c; // Earth's radius in km
+
+        return new BigDecimal(distance).setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private void createOrderForTrip(Trip trip, Customer customer, User dispatcher, String tripStatus, List<Order> ordersList) {
+        Order order = new Order();
+        order.setTrip(trip);
+        order.setCustomer(customer.getUser()); // Link User entity
+        order.setCreatedBy(dispatcher);
 
         // Randomly assign pickup types: 40% STANDARD, 30% WAREHOUSE, 30% PORT_TERMINAL
         int pickupTypeRandom = random.nextInt(100);
@@ -682,36 +1061,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedRoutes() {
-        List<Route> routes = Arrays.asList(
-                createRoute("Hanoi-HCM City", "Hanoi Old Quarter", new BigDecimal("21.0285"), new BigDecimal("105.8542"), "Ben Thanh Market", new BigDecimal("10.7726"), new BigDecimal("106.6980"), new BigDecimal("1729.50"), new BigDecimal("24.0"), "long_haul"),
-                createRoute("Hanoi-Da Nang", "My Dinh Bus Station", new BigDecimal("21.0293"), new BigDecimal("105.7799"), "Da Nang Airport", new BigDecimal("16.0544"), new BigDecimal("108.2022"), new BigDecimal("764.0"), new BigDecimal("12.5"), "long_haul"),
-                createRoute("HCM City-Nha Trang", "Tan Son Nhat Airport", new BigDecimal("10.8184"), new BigDecimal("106.6519"), "Nha Trang Center", new BigDecimal("12.2388"), new BigDecimal("109.1967"), new BigDecimal("448.0"), new BigDecimal("7.5"), "long_haul"),
-                createRoute("Da Nang-Hoi An", "Dragon Bridge", new BigDecimal("16.0609"), new BigDecimal("108.2278"), "Hoi An", new BigDecimal("15.8790"), new BigDecimal("108.3272"), new BigDecimal("30.5"), new BigDecimal("0.75"), "intercity"),
-                createRoute("Haiphong-Hanoi", "Cat Bi Airport", new BigDecimal("20.8197"), new BigDecimal("106.7242"), "Noi Bai Airport", new BigDecimal("21.2212"), new BigDecimal("105.8073"), new BigDecimal("102.0"), new BigDecimal("2.0"), "intercity"),
-                createRoute("Bac Ninh-Hanoi", "Kinh Bac Center", new BigDecimal("21.1861"), new BigDecimal("106.0763"), "Hanoi Station", new BigDecimal("21.0245"), new BigDecimal("105.8412"), new BigDecimal("31.0"), new BigDecimal("1.0"), "intercity"),
-                createRoute("Hanoi City Loop", "Hoan Kiem Lake", new BigDecimal("21.0285"), new BigDecimal("105.8542"), "West Lake", new BigDecimal("21.0583"), new BigDecimal("105.8191"), new BigDecimal("7.5"), new BigDecimal("0.33"), "intracity"),
-                createRoute("HCM D1-D7", "Notre Dame Cathedral", new BigDecimal("10.7798"), new BigDecimal("106.6990"), "Phu My Hung", new BigDecimal("10.7295"), new BigDecimal("106.7189"), new BigDecimal("12.0"), new BigDecimal("0.5"), "intracity"),
-                createRoute("Can Tho River", "Ninh Kieu Wharf", new BigDecimal("10.0378"), new BigDecimal("105.7833"), "Cai Rang Market", new BigDecimal("10.0525"), new BigDecimal("105.7450"), new BigDecimal("6.5"), new BigDecimal("0.25"), "intracity"),
-                createRoute("Nha Trang Beach", "Nha Trang Beach", new BigDecimal("12.2388"), new BigDecimal("109.1967"), "Vinpearl Station", new BigDecimal("12.2166"), new BigDecimal("109.1942"), new BigDecimal("4.2"), new BigDecimal("0.17"), "intracity")
-        );
-        routeRepository.saveAll(routes);
-        System.out.println("Seeded 10 routes");
+        // Legacy routes removed - new system creates trip routes dynamically from orders
+        // Trip routes are created per trip based on order pickup/delivery coordinates
+        System.out.println("Legacy routes seeding skipped - using dynamic trip routes");
     }
 
-    private Route createRoute(String name, String originAddr, BigDecimal originLat, BigDecimal originLng, String destAddr, BigDecimal destLat, BigDecimal destLng, BigDecimal distance, BigDecimal duration, String type) {
-        Route route = new Route();
-        route.setRouteName(name);
-        route.setOriginAddress(originAddr);
-        route.setOriginLat(originLat);
-        route.setOriginLng(originLng);
-        route.setDestinationAddress(destAddr);
-        route.setDestinationLat(destLat);
-        route.setDestinationLng(destLng);
-        route.setDistanceKm(distance);
-        route.setEstimatedDurationHours(duration);
-        route.setRouteType(type);
-        return route;
-    }
+
 
     private void seedSystemSettings() {
         List<SystemSetting> settings = Arrays.asList(
@@ -893,5 +1248,69 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         System.out.println("Created " + payments.size() + " payments for delivered orders.");
         return payments;
+    }
+
+    private List<Order> seedPendingOrders(List<User> dispatchers, List<Customer> customers) {
+        System.out.println("Seeding pending orders (not assigned to any trip)...");
+
+        List<Order> pendingOrders = new ArrayList<>();
+        int numberOfPendingOrders = 5 + random.nextInt(11); // 5-15 pending orders
+
+        for (int i = 0; i < numberOfPendingOrders; i++) {
+            Customer customer = customers.get(random.nextInt(customers.size()));
+            User dispatcher = dispatchers.get(random.nextInt(dispatchers.size()));
+
+            Order order = new Order();
+            order.setCustomer(customer.getUser()); // Link User entity
+            order.setCreatedBy(dispatcher);
+
+            // Populate snapshot details to make the order look real
+            order.setCustomerName(customer.getUser().getFullName());
+            order.setCustomerPhone(customer.getUser().getPhone());
+
+            // Generate realistic order details
+            generateOrderDetails(order, customer, "pending", LocalDateTime.now()); // Pass "pending" as trip status and current time
+
+            // Explicitly set order status to PENDING
+            order.setOrderStatus(Order.OrderStatus.PENDING);
+
+            // Set created date to recent (within last 7 days)
+            order.setCreatedAt(LocalDateTime.now().minusDays(random.nextInt(7) + 1));
+
+            // No trip assigned (trip remains null)
+            pendingOrders.add(order);
+        }
+
+        System.out.println("Created " + pendingOrders.size() + " pending orders.");
+        return pendingOrders;
+    }
+
+    private Vehicle findCompatibleVehicle(Driver driver, List<Vehicle> vehicles) {
+        String driverLicense = driver.getLicenseType();
+        if (driverLicense == null) {
+            // If no license, assign a vehicle with no license requirement
+            return vehicles.stream()
+                    .filter(v -> v.getRequiredLicense() == null || v.getRequiredLicense().trim().isEmpty())
+                    .findFirst()
+                    .orElse(vehicles.get(0)); // Fallback to first vehicle
+        }
+
+        // Find vehicles that this driver can operate
+        List<Vehicle> compatibleVehicles = vehicles.stream()
+                .filter(vehicle -> {
+                    String requiredLicense = vehicle.getRequiredLicense();
+                    if (requiredLicense == null || requiredLicense.trim().isEmpty()) {
+                        return true; // No license requirement
+                    }
+                    return driverLicense.trim().equalsIgnoreCase(requiredLicense.trim());
+                })
+                .collect(Collectors.toList());
+
+        if (!compatibleVehicles.isEmpty()) {
+            return compatibleVehicles.get(random.nextInt(compatibleVehicles.size()));
+        }
+
+        // Fallback: return any vehicle if no compatible ones found
+        return vehicles.get(0);
     }
 }

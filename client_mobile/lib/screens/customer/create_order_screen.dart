@@ -634,15 +634,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         hintText: 'Enter port terminal name',
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _dockNumberController,
-                      decoration: const InputDecoration(
-                        labelText: 'Dock Number',
-                        border: OutlineInputBorder(),
-                        hintText: 'Enter dock/gate number',
-                      ),
-                    ),
                   ] else if (_pickupType == 'WAREHOUSE') ...[
                     TextFormField(
                       controller: _warehouseNameController,

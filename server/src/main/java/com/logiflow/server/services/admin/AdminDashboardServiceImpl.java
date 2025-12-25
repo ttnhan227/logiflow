@@ -425,11 +425,24 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 // Get route from trip route relationship
                 String route = "Unknown → Unknown";
                 if (trip.getRoute() != null) {
-                    String originCity = trip.getRoute().getOriginAddress() != null ?
-                        trip.getRoute().getOriginAddress().split(",")[0] : "Unknown";
-                    String destCity = trip.getRoute().getDestinationAddress() != null ?
-                        trip.getRoute().getDestinationAddress().split(",")[0] : "Unknown";
-                    route = originCity + " → " + destCity;
+                    if (trip.getRoute().getIsTripRoute() != null && trip.getRoute().getIsTripRoute()) {
+                        // For trip routes, derive from waypoints or orders
+                        try {
+                            if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+                                String originCity = trip.getOrders().get(0).getPickupAddress();
+                                String destCity = trip.getOrders().get(trip.getOrders().size() - 1).getDeliveryAddress();
+                                route = (originCity != null ? originCity.split(",")[0] : "Unknown") + " → " +
+                                       (destCity != null ? destCity.split(",")[0] : "Unknown");
+                            } else {
+                                route = "Multi-stop Route";
+                            }
+                        } catch (Exception e) {
+                            route = "Multi-stop Route";
+                        }
+                    } else {
+                        // For legacy single routes (none should exist in new system)
+                        route = "Single Route";
+                    }
                 }
 
                 // Use scheduled arrival as ETA

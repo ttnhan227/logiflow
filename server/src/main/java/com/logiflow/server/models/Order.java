@@ -80,11 +80,7 @@ public class Order {
     private BigDecimal weightTons;
 
 
-    /**
-     * Required when pickupType = WAREHOUSE.
-     */
-    @Column(name = "dock_info", length = 100, nullable = true)
-    private String dockInfo;
+
 
     @Column(name = "package_value", precision = 15, scale = 2, nullable = true)
     private BigDecimal packageValue;

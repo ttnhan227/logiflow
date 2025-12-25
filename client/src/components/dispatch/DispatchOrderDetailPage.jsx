@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { orderService } from '../../services';
-import OrderChatPopup from './OrderChatPopup';
 import './dispatch.css';
 import './modern-dispatch.css';
 
@@ -73,10 +72,13 @@ const DispatchOrderDetailPage = () => {
       pickupAddress: order.pickupAddress || '',
       deliveryAddress: order.deliveryAddress || '',
       packageDetails: order.packageDetails || '',
+      packageValue: order.packageValue ?? '',
       priorityLevel: order.priorityLevel || 'NORMAL',
       pickupType: order.pickupType || 'PORT_TERMINAL',
       containerNumber: order.containerNumber || '',
-      dockInfo: order.dockInfo || '',
+      terminalName: order.terminalName || '',
+      warehouseName: order.warehouseName || '',
+      dockNumber: order.dockNumber || '',
       weightTons: order.weightTons ?? '',
     });
   };
@@ -155,8 +157,13 @@ const DispatchOrderDetailPage = () => {
           ) : (
             <>
               {order.orderStatus === 'PENDING' && (
+                <Link to="/dispatch/trips/create" className="btn-primary">
+                  🚐 Assign to a trip
+                </Link>
+              )}
+              {order.orderStatus === 'PENDING' && (
                 <button
-                  className="btn-primary"
+                  className="btn-secondary"
                   onClick={handleEdit}
                 >
                   ✏️ Edit Order
@@ -310,6 +317,50 @@ const DispatchOrderDetailPage = () => {
                 </div>
 
                 <div className="detail-item">
+                  <div className="detail-icon">📏</div>
+                  <div>
+                    <div className="detail-label">Distance</div>
+                    <div className="detail-value">
+                      {order.distanceKm != null ? `${order.distanceKm} km` : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-row">
+                <div className="detail-item">
+                  <div className="detail-icon">💰</div>
+                  <div>
+                    <div className="detail-label">Package Value</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          type="number"
+                          value={formData.packageValue}
+                          onChange={(e) => handleInputChange('packageValue', e.target.value)}
+                          className="edit-input"
+                          placeholder="Package value (VND)"
+                        />
+                      ) : (
+                        order.packageValue != null ? `${order.packageValue.toLocaleString()} VND` : 'N/A'
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-icon">💵</div>
+                  <div>
+                    <div className="detail-label">Shipping Fee</div>
+                    <div className="detail-value">
+                      {order.shippingFee != null ? `${order.shippingFee.toLocaleString()} VND` : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-row">
+                <div className="detail-item">
                   <div className="detail-icon">🚚</div>
                   <div>
                     <div className="detail-label">Pickup Type</div>
@@ -322,17 +373,39 @@ const DispatchOrderDetailPage = () => {
                         >
                           <option value="PORT_TERMINAL">PORT_TERMINAL</option>
                           <option value="WAREHOUSE">WAREHOUSE</option>
+                          <option value="STANDARD">STANDARD</option>
                         </select>
                       ) : (
-                        order.pickupType || 'N/A'
+                        order.pickupType ? (
+                          <span
+                            className="status-badge"
+                            style={{
+                              backgroundColor:
+                                order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
+                                order.pickupType === 'WAREHOUSE' ? '#dbeafe' :
+                                order.pickupType === 'STANDARD' ? '#f0fdf4' : '#f9fafb',
+                              color:
+                                order.pickupType === 'PORT_TERMINAL' ? '#92400e' :
+                                order.pickupType === 'WAREHOUSE' ? '#0c4a6e' :
+                                order.pickupType === 'STANDARD' ? '#166534' : '#6b7280',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '4px',
+                              fontSize: '0.875rem',
+                              fontWeight: '600'
+                            }}
+                          >
+                            {order.pickupType}
+                          </span>
+                        ) : 'N/A'
                       )}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="detail-row">
-                {((editMode && formData.pickupType === 'PORT_TERMINAL') || (!editMode && order.pickupType === 'PORT_TERMINAL')) && (
+              {/* PORT_TERMINAL Fields */}
+              {((editMode && formData.pickupType === 'PORT_TERMINAL') || (!editMode && order.pickupType === 'PORT_TERMINAL')) && (
+                <div className="detail-row">
                   <div className="detail-item">
                     <div className="detail-icon">🧾</div>
                     <div>
@@ -352,30 +425,71 @@ const DispatchOrderDetailPage = () => {
                       </div>
                     </div>
                   </div>
-                )}
-
-                {((editMode && formData.pickupType === 'WAREHOUSE') || (!editMode && order.pickupType === 'WAREHOUSE')) && (
                   <div className="detail-item">
-                    <div className="detail-icon">🏭</div>
+                    <div className="detail-icon">⚓</div>
                     <div>
-                      <div className="detail-label">Dock Info</div>
+                      <div className="detail-label">Terminal Name</div>
                       <div className="detail-value">
                         {editMode ? (
                           <input
                             type="text"
-                            value={formData.dockInfo}
-                            onChange={(e) => handleInputChange('dockInfo', e.target.value)}
+                            value={formData.terminalName}
+                            onChange={(e) => handleInputChange('terminalName', e.target.value)}
                             className="edit-input"
-                            placeholder="e.g., Dock 3 / Gate B"
+                            placeholder="e.g., Cat Lai Terminal"
                           />
                         ) : (
-                          order.dockInfo || 'N/A'
+                          order.terminalName || 'N/A'
                         )}
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* WAREHOUSE Fields */}
+              {((editMode && formData.pickupType === 'WAREHOUSE') || (!editMode && order.pickupType === 'WAREHOUSE')) && (
+                <div className="detail-row">
+                  <div className="detail-item">
+                    <div className="detail-icon">🏭</div>
+                    <div>
+                      <div className="detail-label">Warehouse Name</div>
+                      <div className="detail-value">
+                        {editMode ? (
+                          <input
+                            type="text"
+                            value={formData.warehouseName}
+                            onChange={(e) => handleInputChange('warehouseName', e.target.value)}
+                            className="edit-input"
+                            placeholder="e.g., ABC Logistics Warehouse"
+                          />
+                        ) : (
+                          order.warehouseName || 'N/A'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-icon">🚪</div>
+                    <div>
+                      <div className="detail-label">Dock Number</div>
+                      <div className="detail-value">
+                        {editMode ? (
+                          <input
+                            type="text"
+                            value={formData.dockNumber}
+                            onChange={(e) => handleInputChange('dockNumber', e.target.value)}
+                            className="edit-input"
+                            placeholder="e.g., Dock 3"
+                          />
+                        ) : (
+                          order.dockNumber || 'N/A'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {editMode && (
                 <div className="detail-row">
@@ -462,14 +576,7 @@ const DispatchOrderDetailPage = () => {
         )}
       </div>
 
-      {/* Order Chat Popup - only when customer exists */}
-      {order && (order.customerId || order.customerUserId || order.customer?.userId) && (
-        <OrderChatPopup 
-          orderId={order.orderId}
-          customerId={order.customerId || order.customerUserId || order.customer?.userId}
-          order={order} 
-        />
-      )}
+
     </div>
   );
 };

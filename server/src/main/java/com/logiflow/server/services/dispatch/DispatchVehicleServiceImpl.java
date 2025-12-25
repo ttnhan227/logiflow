@@ -1,6 +1,8 @@
 package com.logiflow.server.services.dispatch;
 
+import com.logiflow.server.models.Driver;
 import com.logiflow.server.models.Vehicle;
+import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,9 @@ public class DispatchVehicleServiceImpl implements DispatchVehicleService {
     @Autowired
     private VehicleRepository vehicleRepository;
 
+    @Autowired
+    private DriverRepository driverRepository;
+
     @Override
     public List<?> getAllVehicles() {
         return vehicleRepository.findAll().stream()
@@ -24,13 +29,34 @@ public class DispatchVehicleServiceImpl implements DispatchVehicleService {
 
     @Override
     public List<?> getAvailableVehicles() {
+        // Get all available drivers for license compatibility check
+        List<Driver> availableDrivers = driverRepository.findByStatus("available");
+
         return vehicleRepository.findByStatus("available").stream()
+                .filter(vehicle -> hasCompatibleDriver(vehicle, availableDrivers))
                 .map(this::toVehicleDto)
                 .collect(Collectors.toList());
     }
 
+    private boolean hasCompatibleDriver(Vehicle vehicle, List<Driver> availableDrivers) {
+        String requiredLicense = vehicle.getRequiredLicense();
+        if (requiredLicense == null || requiredLicense.trim().isEmpty()) {
+            return true; // No license requirement, so any driver can operate
+        }
+
+        return availableDrivers.stream()
+                .anyMatch(driver -> isLicenseCompatible(driver.getLicenseType(), requiredLicense));
+    }
+
+    private boolean isLicenseCompatible(String driverLicense, String requiredLicense) {
+        if (driverLicense == null || requiredLicense == null) {
+            return false;
+        }
+        return driverLicense.trim().equalsIgnoreCase(requiredLicense.trim());
+    }
+
     private VehicleDto toVehicleDto(Vehicle v) {
-        return new VehicleDto(v.getVehicleId(), v.getVehicleType(), v.getLicensePlate(), v.getCapacity(), v.getStatus());
+        return new VehicleDto(v.getVehicleId(), v.getVehicleType(), v.getLicensePlate(), v.getCapacity(), v.getStatus(), v.getRequiredLicense());
     }
 
     @Getter
@@ -40,13 +66,15 @@ public class DispatchVehicleServiceImpl implements DispatchVehicleService {
         private String licensePlate;
         private Integer capacity;
         private String status;
+        private String requiredLicense;
 
-        public VehicleDto(Integer vehicleId, String vehicleType, String licensePlate, Integer capacity, String status) {
+        public VehicleDto(Integer vehicleId, String vehicleType, String licensePlate, Integer capacity, String status, String requiredLicense) {
             this.vehicleId = vehicleId;
             this.vehicleType = vehicleType;
             this.licensePlate = licensePlate;
             this.capacity = capacity;
             this.status = status;
+            this.requiredLicense = requiredLicense;
         }
 
     }

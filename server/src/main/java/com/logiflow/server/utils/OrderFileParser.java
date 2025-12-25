@@ -93,12 +93,17 @@ public class OrderFileParser {
                     request.setContainerNumber(row[9].trim());
                 }
 
-                // Dock Info - column 10
+                // Warehouse Name - column 10
                 if (row.length > 10 && row[10] != null && !row[10].trim().isEmpty()) {
-                    request.setDockInfo(row[10].trim());
+                    request.setWarehouseName(row[10].trim());
                 }
 
-                // Package Value - column 11
+                // Dock Number - column 11
+                if (row.length > 11 && row[11] != null && !row[11].trim().isEmpty()) {
+                    request.setDockNumber(row[11].trim());
+                }
+
+                // Package Value - column 12
                 if (row.length > 11 && row[11] != null && !row[11].trim().isEmpty()) {
                     try {
                         request.setPackageValue(new java.math.BigDecimal(row[11].trim()));
@@ -237,19 +242,28 @@ public class OrderFileParser {
                     }
                 }
 
-                // Dock Info - column 10
+                // Warehouse Name - column 10
                 Cell cell10 = row.getCell(10);
                 if (cell10 != null) {
                     String value = getCellValueAsString(cell10);
                     if (value != null && !value.trim().isEmpty()) {
-                        request.setDockInfo(value.trim());
+                        request.setWarehouseName(value.trim());
                     }
                 }
 
-                // Package Value - column 11
+                // Dock Number - column 11
                 Cell cell11 = row.getCell(11);
                 if (cell11 != null) {
                     String value = getCellValueAsString(cell11);
+                    if (value != null && !value.trim().isEmpty()) {
+                        request.setDockNumber(value.trim());
+                    }
+                }
+
+                // Package Value - column 12
+                Cell cell12 = row.getCell(12);
+                if (cell12 != null) {
+                    String value = getCellValueAsString(cell12);
                     if (value != null && !value.trim().isEmpty()) {
                         try {
                             request.setPackageValue(new java.math.BigDecimal(value.trim()));
@@ -259,10 +273,10 @@ public class OrderFileParser {
                     }
                 }
 
-                // Trip ID - column 12
-                Cell cell12 = row.getCell(12);
-                if (cell12 != null) {
-                    String value = getCellValueAsString(cell12);
+                // Trip ID - column 13
+                Cell cell13 = row.getCell(13);
+                if (cell13 != null) {
+                    String value = getCellValueAsString(cell13);
                     if (value != null && !value.trim().isEmpty()) {
                         try {
                             request.setTripId((int) Double.parseDouble(value.trim()));

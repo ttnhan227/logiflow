@@ -142,30 +142,61 @@ public class TripServiceImpl implements TripService {
 
         String normalizedStatus = normalizeStatus(status);
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Trip> tripPage;
+        // For proper global sorting, we need to fetch all trips and sort them in memory
+        // before pagination. This ensures consistent sorting across all pages.
+        List<Trip> allTrips;
         if (normalizedStatus != null && !normalizedStatus.isEmpty()) {
-            tripPage = tripRepository.findByStatusPage(normalizedStatus.toLowerCase(), pageable);
+            allTrips = tripRepository.findByStatusWithRelations(normalizedStatus.toLowerCase());
         } else {
-            tripPage = tripRepository.findAllPage(pageable);
+            allTrips = tripRepository.findAllWithRelations();
         }
 
+        // Sort by newest first, then by status priority for same creation date
+        Map<String, Integer> statusPriority = Map.of(
+            "scheduled", 1,  // Highest priority - trips ready to be assigned
+            "assigned", 2,   // Driver assigned but not started
+            "in_progress", 3, // Currently active trips
+            "delayed", 4,    // Delayed trips (still active)
+            "arrived", 5,    // Arrived at destination
+            "completed", 6,  // Finished trips
+            "cancelled", 7   // Cancelled trips (lowest priority)
+        );
+
+        allTrips.sort((a, b) -> {
+            // First sort by newest creation date
+            int dateCompare = b.getCreatedAt().compareTo(a.getCreatedAt());
+            if (dateCompare != 0) {
+                return dateCompare;
+            }
+
+            // If same creation date, sort by status priority
+            int aPriority = statusPriority.getOrDefault(a.getStatus(), 99);
+            int bPriority = statusPriority.getOrDefault(b.getStatus(), 99);
+            return Integer.compare(aPriority, bPriority);
+        });
+
+        // Manual pagination after sorting
+        int startIndex = page * size;
+        int endIndex = Math.min(startIndex + size, allTrips.size());
+        List<Trip> pageTrips = allTrips.subList(startIndex, endIndex);
+
         // Load relations for the trips in this page
-        // NOTE: We must not FETCH JOIN multiple List collections on Trip (Hibernate MultipleBagFetchException).
-        // So we load tripAssignments via TripRepository, and load orders via a separate OrderRepository query.
-        List<Integer> tripIds = tripPage.getContent().stream()
+        List<Integer> tripIds = pageTrips.stream()
             .map(Trip::getTripId)
             .collect(Collectors.toList());
 
         Map<Integer, List<Order>> ordersByTripId = orderRepository.findByTripIdsWithRelations(tripIds).stream()
             .collect(Collectors.groupingBy(o -> o.getTrip() != null ? o.getTrip().getTripId() : null));
 
-        List<TripDto> tripDtos = tripIds.stream()
-            .map(id -> tripRepository.findByIdWithRelations(id).orElse(null))
-            .filter(java.util.Objects::nonNull)
+        // Create TripDto from paginated results
+        List<TripDto> tripDtos = pageTrips.stream()
             .peek(t -> t.setOrders(ordersByTripId.getOrDefault(t.getTripId(), new java.util.ArrayList<>())))
             .map(TripDto::fromTrip)
             .collect(Collectors.toList());
+
+        // Create a mock Page object for compatibility
+        org.springframework.data.domain.PageImpl<Trip> tripPage =
+            new org.springframework.data.domain.PageImpl<>(pageTrips, PageRequest.of(page, size), allTrips.size());
 
         // Summary: keep same behavior as before (counts from ALL trips with/without status filter)
         List<Trip> summaryTrips;
@@ -238,10 +269,29 @@ public class TripServiceImpl implements TripService {
         driver.setStatus("assigned");
         driverRepository.save(driver);
 
+        // When assigning a trip to a driver, set status to "assigned" (not "in_progress")
+        // The trip becomes "in_progress" only when the driver accepts and starts it
         if (trip.getStatus() == null || trip.getStatus().equalsIgnoreCase("scheduled")) {
-            trip.setStatus("in_progress");
+            trip.setStatus("assigned");
         }
         Trip saved = tripRepository.save(trip);
+
+        // Send notification to driver about assignment
+        try {
+            String message = "New trip assigned: #" + tripId +
+                           " - Vehicle: " + (vehicle != null ? vehicle.getLicensePlate() : "Unknown") +
+                           " - Scheduled: " + trip.getScheduledDeparture().toString();
+            notificationService.sendTripNotification(
+                driver.getDriverId(),
+                tripId,
+                "TRIP_ASSIGNED",
+                message,
+                "ASSIGNED"
+            );
+        } catch (Exception e) {
+            // Log error but don't fail the assignment
+            System.err.println("Failed to send driver assignment notification: " + e.getMessage());
+        }
 
         // Audit the critical trip assignment operation
         String driverUsername = driver.getUser() != null ? driver.getUser().getUsername() : "Unknown";
@@ -297,8 +347,18 @@ public class TripServiceImpl implements TripService {
                     assignment.setStatus("in_progress");
                 } else if ("completed".equalsIgnoreCase(newStatus)) {
                     assignment.setStatus("completed");
+                    // Reset driver status to available when trip is completed
+                    if (assignment.getDriver() != null) {
+                        assignment.getDriver().setStatus("available");
+                        driverRepository.save(assignment.getDriver());
+                    }
                 } else if ("cancelled".equalsIgnoreCase(newStatus)) {
                     assignment.setStatus("cancelled");
+                    // Reset driver status to available when trip is cancelled
+                    if (assignment.getDriver() != null) {
+                        assignment.getDriver().setStatus("available");
+                        driverRepository.save(assignment.getDriver());
+                    }
                 }
             }
             tripAssignmentRepository.saveAll(trip.getTripAssignments());
