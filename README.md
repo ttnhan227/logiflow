@@ -101,10 +101,18 @@ The application uses Tesseract OCR for document processing. Install Tesseract OC
 
 **Setup Steps:**
 1. Open the `client_mobile` directory in Android Studio
-2. Ensure Flutter SDK is properly configured
-3. Run `flutter pub get` to install dependencies
-4. Connect Android device or start emulator
-5. Run the app from Android Studio
+2. Update API configuration: Open `lib/services/api_client.dart` and change the `baseUrl` to your computer's IP address (replace `192.168.1.60` with your IP)
+3. Ensure Flutter SDK is properly configured
+4. Run `flutter pub get` to install dependencies
+5. Connect Android device or start emulator
+6. Run the app from Android Studio
+
+**API Configuration:**
+The mobile app connects to the backend API. Update the IP address in `lib/services/api_client.dart`:
+```dart
+static const String baseUrl = 'http://YOUR_IP_ADDRESS:8080/api';
+```
+To find your IP address, run `ipconfig` in Command Prompt and use your network adapter's IPv4 address.
 
 **Development Commands:**
 - `flutter pub get` - Install dependencies
