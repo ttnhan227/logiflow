@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
@@ -19,17 +20,23 @@ public class GpsForegroundService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
-        Notification notification = createNotification();
-        startForeground(NOTIFICATION_ID, notification);
+        try {
+            createNotificationChannel();
+            Notification notification = createNotification();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } else {
+                startForeground(NOTIFICATION_ID, notification);
+            }
+        } catch (Exception e) {
+            // If foreground service fails, stop the service
+            stopSelf();
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // Ensure we're running in foreground
-        Notification notification = createNotification();
-        startForeground(NOTIFICATION_ID, notification);
-
+        // Service is already in foreground from onCreate
         // Return START_STICKY to restart service if killed
         return START_STICKY;
     }
@@ -70,10 +77,13 @@ public class GpsForegroundService extends Service {
             PendingIntent.FLAG_IMMUTABLE
         );
 
+        // Use system icon to avoid issues with missing launcher icon
+        int iconResId = android.R.drawable.ic_menu_mylocation;
+
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("GPS Tracking Active")
             .setContentText("Tracking your location for deliveries")
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(iconResId)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
