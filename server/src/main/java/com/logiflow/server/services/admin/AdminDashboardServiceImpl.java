@@ -269,35 +269,20 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     @Override
     @Transactional(readOnly = true)
     public List<ActiveDriverLocationDto> getActiveDriverLocations() {
-        // Find all trip assignments with status 'accepted' and trip status 'in_progress' or 'arrived'
-        List<TripAssignment> activeAssignments = tripAssignmentRepository.findAll().stream()
-            .filter(ta -> "accepted".equalsIgnoreCase(ta.getStatus()))
-            .filter(ta -> {
-                Trip trip = ta.getTrip();
-                String status = trip.getStatus();
-                return "in_progress".equalsIgnoreCase(status) || "arrived".equalsIgnoreCase(status);
-            })
-            .collect(Collectors.toList());
-
-        // Map to DTOs with driver location and trip info
-        return activeAssignments.stream()
-            .filter(ta -> ta.getDriver() != null)
-            .filter(ta -> ta.getDriver().getCurrentLocationLat() != null && ta.getDriver().getCurrentLocationLng() != null)
-            .map(ta -> {
-                Driver driver = ta.getDriver();
-                Trip trip = ta.getTrip();
-                return ActiveDriverLocationDto.of(
-                    driver.getDriverId(),
-                    driver.getUser().getFullName(),
-                    driver.getUser().getPhone(),
-                    trip.getTripId(),
-                    trip.getStatus(),
-                    driver.getCurrentLocationLat(),
-                    driver.getCurrentLocationLng(),
-                    trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null,
-                    trip.getRoute() != null ? trip.getRoute().getRouteName() : null
-                );
-            })
+        // Get all drivers with current location data
+        return driverRepository.findAll().stream()
+            .filter(driver -> driver.getCurrentLocationLat() != null && driver.getCurrentLocationLng() != null)
+            .map(driver -> ActiveDriverLocationDto.of(
+                driver.getDriverId(),
+                driver.getUser().getFullName(),
+                driver.getUser().getPhone(),
+                null, // tripId - not needed
+                "active", // tripStatus - simplified
+                driver.getCurrentLocationLat(),
+                driver.getCurrentLocationLng(),
+                null, // vehiclePlate - not needed
+                null  // routeName - not needed
+            ))
             .collect(Collectors.toList());
     }
 
