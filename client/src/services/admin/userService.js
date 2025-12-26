@@ -32,6 +32,86 @@ const mapPage = (p) => ({
   size: p?.size ?? 0,
 });
 
+// Map driver DTO to UI shape
+const mapDriverDtoToUi = (d) => ({
+  id: d?.userId,
+  username: d?.username,
+  email: d?.email,
+  fullName: d?.fullName,
+  phone: d?.phone,
+  profilePictureUrl: d?.profilePictureUrl
+    ? (d.profilePictureUrl.startsWith('http://') || d.profilePictureUrl.startsWith('https://')
+        ? d.profilePictureUrl
+        : `${getBaseUrl()}${d.profilePictureUrl.startsWith('/') ? '' : '/'}${d.profilePictureUrl}`)
+    : null,
+  role: d?.roleName,
+  active: d?.isActive,
+  createdAt: d?.createdAt,
+  lastLogin: d?.lastLogin,
+  // Driver-specific fields
+  licenseType: d?.licenseType,
+  licenseNumber: d?.licenseNumber,
+  licenseExpiryDate: d?.licenseExpiryDate,
+  licenseIssueDate: d?.licenseIssueDate,
+  yearsExperience: d?.yearsExperience,
+  healthStatus: d?.healthStatus,
+  currentLocationLat: d?.currentLocationLat,
+  currentLocationLng: d?.currentLocationLng,
+  rating: d?.rating,
+  status: d?.status,
+});
+
+// Map customer DTO to UI shape
+const mapCustomerDtoToUi = (c) => ({
+  id: c?.userId,
+  username: c?.username,
+  email: c?.email,
+  fullName: c?.fullName,
+  phone: c?.phone,
+  profilePictureUrl: c?.profilePictureUrl
+    ? (c.profilePictureUrl.startsWith('http://') || c.profilePictureUrl.startsWith('https://')
+        ? c.profilePictureUrl
+        : `${getBaseUrl()}${c.profilePictureUrl.startsWith('/') ? '' : '/'}${c.profilePictureUrl}`)
+    : null,
+  role: c?.roleName,
+  active: c?.isActive,
+  createdAt: c?.createdAt,
+  lastLogin: c?.lastLogin,
+  // Customer-specific fields
+  companyName: c?.companyName,
+  companyCode: c?.companyCode,
+  defaultDeliveryAddress: c?.defaultDeliveryAddress,
+  preferredPaymentMethod: c?.preferredPaymentMethod,
+  totalOrders: c?.totalOrders,
+  totalSpent: c?.totalSpent,
+  lastOrderDate: c?.lastOrderDate,
+});
+
+// Map dispatcher DTO to UI shape (same as regular user for now)
+const mapDispatcherDtoToUi = mapDtoToUi;
+
+// Map role-specific pages
+const mapDriverPage = (p) => ({
+  content: Array.isArray(p?.content) ? p.content.map(mapDriverDtoToUi) : [],
+  totalElements: p?.totalElements ?? 0,
+  number: p?.number ?? 0,
+  size: p?.size ?? 0,
+});
+
+const mapCustomerPage = (p) => ({
+  content: Array.isArray(p?.content) ? p.content.map(mapCustomerDtoToUi) : [],
+  totalElements: p?.totalElements ?? 0,
+  number: p?.number ?? 0,
+  size: p?.size ?? 0,
+});
+
+const mapDispatcherPage = (p) => ({
+  content: Array.isArray(p?.content) ? p.content.map(mapDispatcherDtoToUi) : [],
+  totalElements: p?.totalElements ?? 0,
+  number: p?.number ?? 0,
+  size: p?.size ?? 0,
+});
+
 const userService = {
   // List with pagination
   getUsers: (page = 0, size = 10) =>
@@ -93,6 +173,37 @@ const userService = {
     api
       .put(`/admin/user-management/${id}/toggle-status`)
       .then((res) => mapDtoToUi(res.data)),
+
+  // Role-specific methods
+  getDrivers: (page = 0, size = 10) =>
+    api
+      .get('/admin/user-management/drivers', { params: { page, size } })
+      .then((res) => mapDriverPage(res.data)),
+
+  getCustomers: (page = 0, size = 10) =>
+    api
+      .get('/admin/user-management/customers', { params: { page, size } })
+      .then((res) => mapCustomerPage(res.data)),
+
+  getDispatchers: (page = 0, size = 10) =>
+    api
+      .get('/admin/user-management/dispatchers', { params: { page, size } })
+      .then((res) => mapDispatcherPage(res.data)),
+
+  searchDrivers: (term, page = 0, size = 10) =>
+    api
+      .get('/admin/user-management/drivers/search', { params: { term, page, size } })
+      .then((res) => mapDriverPage(res.data)),
+
+  searchCustomers: (term, page = 0, size = 10) =>
+    api
+      .get('/admin/user-management/customers/search', { params: { term, page, size } })
+      .then((res) => mapCustomerPage(res.data)),
+
+  searchDispatchers: (term, page = 0, size = 10) =>
+    api
+      .get('/admin/user-management/dispatchers/search', { params: { term, page, size } })
+      .then((res) => mapDispatcherPage(res.data)),
 };
 
 export default userService;

@@ -1,10 +1,9 @@
 package com.logiflow.server.services.admin;
 
-import com.logiflow.server.dtos.admin.user_management.UserDto;
-import com.logiflow.server.dtos.admin.user_management.UserCreationDto;
-import com.logiflow.server.dtos.admin.user_management.UserUpdateDto;
-import com.logiflow.server.models.Role;
-import com.logiflow.server.models.User;
+import com.logiflow.server.dtos.admin.user_management.*;
+import com.logiflow.server.models.*;
+import com.logiflow.server.repositories.customer.CustomerRepository;
+import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +26,12 @@ public class UserManagementServiceImpl implements UserManagementService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
+
+    @Autowired
+    private DriverRepository driverRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -215,8 +220,168 @@ public class UserManagementServiceImpl implements UserManagementService {
         return new PageImpl<>(pageContent, pageable, userDtos.size());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DriverUserDto> getDrivers(Pageable pageable) {
+        List<Driver> drivers = driverRepository.findAllDriversWithUser();
+        List<DriverUserDto> driverDtos = drivers.stream()
+            .map(this::convertToDriverDto)
+            .collect(Collectors.toList());
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), driverDtos.size());
+        List<DriverUserDto> pageContent = driverDtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, driverDtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CustomerUserDto> getCustomers(Pageable pageable) {
+        List<Customer> customers = customerRepository.findAllCustomersWithUser();
+        List<CustomerUserDto> customerDtos = customers.stream()
+            .map(this::convertToCustomerDto)
+            .collect(Collectors.toList());
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), customerDtos.size());
+        List<CustomerUserDto> pageContent = customerDtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, customerDtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DispatcherUserDto> getDispatchers(Pageable pageable) {
+        List<User> users = userRepository.findByRoleNameWithRole("DISPATCHER");
+        List<DispatcherUserDto> dispatcherDtos = users.stream()
+            .map(this::convertToDispatcherDto)
+            .collect(Collectors.toList());
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), dispatcherDtos.size());
+        List<DispatcherUserDto> pageContent = dispatcherDtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, dispatcherDtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DriverUserDto> searchDrivers(String searchTerm, Pageable pageable) {
+        List<Driver> drivers = driverRepository.findAllDriversWithUser();
+        List<DriverUserDto> driverDtos = drivers.stream()
+            .map(this::convertToDriverDto)
+            .filter(dto -> dto.getUsername().toLowerCase().contains(searchTerm.toLowerCase()) ||
+                          dto.getEmail().toLowerCase().contains(searchTerm.toLowerCase()))
+            .collect(Collectors.toList());
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), driverDtos.size());
+        List<DriverUserDto> pageContent = driverDtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, driverDtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CustomerUserDto> searchCustomers(String searchTerm, Pageable pageable) {
+        List<Customer> customers = customerRepository.findAllCustomersWithUser();
+        List<CustomerUserDto> customerDtos = customers.stream()
+            .map(this::convertToCustomerDto)
+            .filter(dto -> dto.getUsername().toLowerCase().contains(searchTerm.toLowerCase()) ||
+                          dto.getEmail().toLowerCase().contains(searchTerm.toLowerCase()))
+            .collect(Collectors.toList());
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), customerDtos.size());
+        List<CustomerUserDto> pageContent = customerDtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, customerDtos.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DispatcherUserDto> searchDispatchers(String searchTerm, Pageable pageable) {
+        List<User> users = userRepository.findByRoleNameWithRole("DISPATCHER");
+        List<DispatcherUserDto> dispatcherDtos = users.stream()
+            .map(this::convertToDispatcherDto)
+            .filter(dto -> dto.getUsername().toLowerCase().contains(searchTerm.toLowerCase()) ||
+                          dto.getEmail().toLowerCase().contains(searchTerm.toLowerCase()))
+            .collect(Collectors.toList());
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), dispatcherDtos.size());
+        List<DispatcherUserDto> pageContent = dispatcherDtos.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, dispatcherDtos.size());
+    }
+
     private UserDto convertToDto(User user) {
         return UserDto.fromUser(
+            user.getUserId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getFullName(),
+            user.getPhone(),
+            user.getProfilePictureUrl(),
+            user.getRole() != null ? user.getRole().getRoleName() : null,
+            user.getIsActive(),
+            user.getCreatedAt(),
+            user.getLastLogin()
+        );
+    }
+
+    private DriverUserDto convertToDriverDto(Driver driver) {
+        User user = driver.getUser();
+        return DriverUserDto.fromUserAndDriver(
+            user.getUserId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getFullName(),
+            user.getPhone(),
+            user.getProfilePictureUrl(),
+            user.getRole() != null ? user.getRole().getRoleName() : null,
+            user.getIsActive(),
+            user.getCreatedAt(),
+            user.getLastLogin(),
+            driver.getLicenseType(),
+            driver.getLicenseNumber(),
+            driver.getLicenseExpiryDate(),
+            driver.getLicenseIssueDate(),
+            driver.getYearsExperience(),
+            driver.getHealthStatus().toString(),
+            driver.getCurrentLocationLat(),
+            driver.getCurrentLocationLng(),
+            driver.getRating(),
+            driver.getStatus()
+        );
+    }
+
+    private CustomerUserDto convertToCustomerDto(Customer customer) {
+        User user = customer.getUser();
+        return CustomerUserDto.fromUserAndCustomer(
+            user.getUserId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getFullName(),
+            user.getPhone(),
+            user.getProfilePictureUrl(),
+            user.getRole() != null ? user.getRole().getRoleName() : null,
+            user.getIsActive(),
+            user.getCreatedAt(),
+            user.getLastLogin(),
+            customer.getCompanyName(),
+            customer.getCompanyCode(),
+            customer.getDefaultDeliveryAddress(),
+            customer.getPreferredPaymentMethod(),
+            customer.getTotalOrders(),
+            customer.getTotalSpent(),
+            customer.getLastOrderDate()
+        );
+    }
+
+    private DispatcherUserDto convertToDispatcherDto(User user) {
+        return DispatcherUserDto.fromUser(
             user.getUserId(),
             user.getUsername(),
             user.getEmail(),

@@ -29,6 +29,11 @@ public interface EmailService {
             Integer orderId, BigDecimal amount, String paypalPaymentLink);
 
     /**
+     * Send registration approval email with login credentials
+     */
+    void sendRegistrationApprovalEmail(String to, String fullName, String username, String tempPassword, String roleName);
+
+    /**
      * Send test email for SMTP configuration testing
      */
     void sendTestEmail(String to, String subject, String message);

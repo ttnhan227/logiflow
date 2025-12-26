@@ -11,6 +11,7 @@ import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.services.admin.AuditLogService;
+import com.logiflow.server.services.email.EmailService;
 import com.logiflow.server.services.registration.RegistrationRequestServiceImpl;
 import com.logiflow.server.websocket.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,8 @@ public class AdminRegistrationRequestController {
     private RegistrationRequestServiceImpl registrationRequestService;
     @Autowired
     private NotificationService notificationService;
+    @Autowired
+    private EmailService emailService;
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -201,17 +204,34 @@ public class AdminRegistrationRequestController {
         // Update request status
         req.setStatus(RegistrationRequest.RequestStatus.APPROVED);
         registrationRequestRepository.save(req);
-        
+
+        // Send welcome email with credentials
+        logger.info("Attempting to send registration approval email to: {} (username: {}, role: {})",
+            user.getEmail(), user.getUsername(), req.getRole().getRoleName());
+        try {
+            emailService.sendRegistrationApprovalEmail(
+                user.getEmail(),
+                user.getFullName(),
+                user.getUsername(),
+                tempPassword,
+                req.getRole().getRoleName()
+            );
+            logger.info("Registration approval email sent successfully to: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to send registration approval email to {}: {}", user.getEmail(), e.getMessage(), e);
+            // Don't fail the approval process if email fails
+        }
+
         auditLogService.log(
             "APPROVE_REGISTRATION",
             "admin", // TODO: replace with actual username from context
             "ADMIN", // TODO: replace with actual role from context
             "Approved registration for: " + user.getUsername() + " (Role: " + req.getRole().getRoleName() + ")"
         );
-        
+
         return ResponseEntity.ok(
-            "Request approved successfully. Created driver account username='" + user.getUsername() +
-            "' with temporary password='" + tempPassword + "'."
+            "Request approved successfully. Created account username='" + user.getUsername() +
+            "' with temporary password='" + tempPassword + "'. Welcome email sent to " + user.getEmail() + "."
         );
     }
 

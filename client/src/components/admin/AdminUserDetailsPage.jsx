@@ -1,22 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { userService } from '../../services';
 import './admin.css';
 
 const AdminUserDetailsPage = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [roleSpecificData, setRoleSpecificData] = useState(null);
 
   useEffect(() => {
     const loadUserDetails = async () => {
       try {
         setLoading(true);
         setError(null);
+
+        // First get basic user data
         const data = await userService.getUserById(parseInt(userId));
         setUser(data);
+
+        // Load role-specific extended data
+        if (data && data.role) {
+          try {
+            let extendedData = null;
+            if (data.role === 'DRIVER') {
+              // Search for this specific driver to get extended data
+              const driversResult = await userService.searchDrivers(data.username, 0, 1);
+              extendedData = driversResult.content.find(d => d.id === parseInt(userId));
+            } else if (data.role === 'CUSTOMER') {
+              // Search for this specific customer to get extended data
+              const customersResult = await userService.searchCustomers(data.username, 0, 1);
+              extendedData = customersResult.content.find(c => c.id === parseInt(userId));
+            } else if (data.role === 'DISPATCHER') {
+              // Search for this specific dispatcher to get extended data
+              const dispatchersResult = await userService.searchDispatchers(data.username, 0, 1);
+              extendedData = dispatchersResult.content.find(d => d.id === parseInt(userId));
+            }
+
+            if (extendedData) {
+              setRoleSpecificData(extendedData);
+            } else {
+              // Fallback to basic user data
+              setRoleSpecificData(data);
+            }
+          } catch (roleErr) {
+            // If extended data fetch fails, use basic data
+            console.warn('Could not load role-specific data:', roleErr);
+            setRoleSpecificData(data);
+          }
+        }
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Failed to load user details');
       } finally {
@@ -202,6 +237,127 @@ const AdminUserDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Role-Specific Information Cards */}
+        {user.role === 'DRIVER' && roleSpecificData && (
+          <div className="details-card">
+            <div className="card-header">
+              <h2>🚗 Driver Information</h2>
+            </div>
+            <div className="card-content">
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>License Type</label>
+                  <div className="detail-value">{roleSpecificData.licenseType || 'N/A'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>License Number</label>
+                  <div className="detail-value">{roleSpecificData.licenseNumber || 'N/A'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>License Issue Date</label>
+                  <div className="detail-value detail-date">{roleSpecificData.licenseIssueDate ? formatDate(roleSpecificData.licenseIssueDate) : 'N/A'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>License Expiry Date</label>
+                  <div className="detail-value detail-date">{roleSpecificData.licenseExpiryDate ? formatDate(roleSpecificData.licenseExpiryDate) : 'N/A'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Years Experience</label>
+                  <div className="detail-value">{roleSpecificData.yearsExperience || 0}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Health Status</label>
+                  <div className="detail-value">
+                    <span className={`status-badge ${roleSpecificData.healthStatus?.toLowerCase()}`}>
+                      {roleSpecificData.healthStatus || 'Unknown'}
+                    </span>
+                  </div>
+                </div>
+                <div className="detail-item">
+                  <label>Current Status</label>
+                  <div className="detail-value">
+                    <span className={`status-badge ${roleSpecificData.status?.toLowerCase()}`}>
+                      {roleSpecificData.status || 'Unknown'}
+                    </span>
+                  </div>
+                </div>
+                <div className="detail-item">
+                  <label>Rating</label>
+                  <div className="detail-value">{roleSpecificData.rating ? `${roleSpecificData.rating}/5.0` : 'Not rated'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {user.role === 'CUSTOMER' && roleSpecificData && (
+          <div className="details-card">
+            <div className="card-header">
+              <h2>👤 Customer Information</h2>
+            </div>
+            <div className="card-content">
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Company Name</label>
+                  <div className="detail-value">{roleSpecificData.companyName || 'Individual Customer'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Company Code</label>
+                  <div className="detail-value">{roleSpecificData.companyCode || 'N/A'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Preferred Payment Method</label>
+                  <div className="detail-value">{roleSpecificData.preferredPaymentMethod?.replace('_', ' ') || 'Not specified'}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Total Orders</label>
+                  <div className="detail-value">{roleSpecificData.totalOrders || 0}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Total Spent</label>
+                  <div className="detail-value">${(roleSpecificData.totalSpent || 0).toFixed(2)}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Last Order Date</label>
+                  <div className="detail-value detail-date">{roleSpecificData.lastOrderDate ? formatDate(roleSpecificData.lastOrderDate) : 'Never'}</div>
+                </div>
+              </div>
+              {roleSpecificData.defaultDeliveryAddress && (
+                <div className="detail-item" style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                  <label>Default Delivery Address</label>
+                  <div className="detail-value" style={{ whiteSpace: 'pre-wrap', minHeight: '60px' }}>
+                    {roleSpecificData.defaultDeliveryAddress}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {user.role === 'DISPATCHER' && (
+          <div className="details-card">
+            <div className="card-header">
+              <h2>📦 Dispatcher Permissions</h2>
+            </div>
+            <div className="card-content">
+              <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
+                <label>Role Capabilities</label>
+                <div className="detail-value" style={{ background: 'rgba(34, 197, 94, 0.05)', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                  <ul style={{ margin: 0, paddingLeft: '20px', listStyle: 'none', color: '#16a34a' }}>
+                    <li style={{ marginBottom: '8px' }}>• Create and manage delivery routes</li>
+                    <li style={{ marginBottom: '8px' }}>• Assign orders to drivers</li>
+                    <li style={{ marginBottom: '8px' }}>• Track delivery progress in real-time</li>
+                    <li style={{ marginBottom: '8px' }}>• Handle customer service inquiries</li>
+                    <li style={{ marginBottom: '8px' }}>• Generate delivery reports</li>
+                    <li style={{ marginBottom: '8px' }}>• Monitor fleet performance</li>
+                    <li>• Manage trip assignments</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}

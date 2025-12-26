@@ -1,8 +1,6 @@
 package com.logiflow.server.controllers.admin;
 
-import com.logiflow.server.dtos.admin.user_management.UserDto;
-import com.logiflow.server.dtos.admin.user_management.UserCreationDto;
-import com.logiflow.server.dtos.admin.user_management.UserUpdateDto;
+import com.logiflow.server.dtos.admin.user_management.*;
 import com.logiflow.server.services.admin.UserManagementService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -89,5 +87,57 @@ public class AdminUserManagementController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    // Role-specific endpoints
+    @GetMapping("/drivers")
+    public ResponseEntity<Page<DriverUserDto>> getDrivers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(userManagementService.getDrivers(pageable));
+    }
+
+    @GetMapping("/customers")
+    public ResponseEntity<Page<CustomerUserDto>> getCustomers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(userManagementService.getCustomers(pageable));
+    }
+
+    @GetMapping("/dispatchers")
+    public ResponseEntity<Page<DispatcherUserDto>> getDispatchers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(userManagementService.getDispatchers(pageable));
+    }
+
+    @GetMapping("/drivers/search")
+    public ResponseEntity<Page<DriverUserDto>> searchDrivers(
+            @RequestParam String term,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(userManagementService.searchDrivers(term, pageable));
+    }
+
+    @GetMapping("/customers/search")
+    public ResponseEntity<Page<CustomerUserDto>> searchCustomers(
+            @RequestParam String term,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(userManagementService.searchCustomers(term, pageable));
+    }
+
+    @GetMapping("/dispatchers/search")
+    public ResponseEntity<Page<DispatcherUserDto>> searchDispatchers(
+            @RequestParam String term,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(userManagementService.searchDispatchers(term, pageable));
     }
 }

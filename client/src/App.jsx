@@ -19,6 +19,9 @@ import DriversPage from "./components/home/DriversPage";
 import MobileAppPage from "./components/home/MobileAppPage";
 import AdminDashboardPage from "./components/admin/AdminDashboardPage";
 import UserManagementPage from "./components/admin/AdminUserManagementPage";
+import AdminDriverManagementPage from "./components/admin/AdminDriverManagementPage";
+import AdminCustomerManagementPage from "./components/admin/AdminCustomerManagementPage";
+import AdminDispatcherManagementPage from "./components/admin/AdminDispatcherManagementPage";
 import AdminUserDetailsPage from "./components/admin/AdminUserDetailsPage";
 import AdminUserEditPage from "./components/admin/AdminUserEditPage";
 import AdminSettingsPage from "./components/admin/AdminSettingsPage";
@@ -196,6 +199,36 @@ function App() {
           <Route path="/admin/users" element={
             <ProtectedRoute requiredRole="ADMIN">
               <UserManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/drivers" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminDriverManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/customers" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminCustomerManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/dispatchers" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminDispatcherManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/drivers/:userId" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminUserDetailsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/customers/:userId" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminUserDetailsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/dispatchers/:userId" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminUserDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users/:userId" element={

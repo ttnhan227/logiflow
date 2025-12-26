@@ -38,7 +38,15 @@ const AdminSideNav = () => {
     { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
     { path: '/admin/reports', icon: '📈', label: 'Reports & Analytics' },
     { path: '/admin/trips-oversight', icon: '📦', label: 'Trips Oversight' },
-    { path: '/admin/users', icon: '👥', label: 'User Management' },
+    {
+      label: 'User Management',
+      icon: '👥',
+      children: [
+        { path: '/admin/users/drivers', icon: '🚗', label: 'Drivers' },
+        { path: '/admin/users/customers', icon: '👤', label: 'Customers' },
+        { path: '/admin/users/dispatchers', icon: '📦', label: 'Dispatchers' },
+      ]
+    },
     { path: '/admin/registration-requests', icon: '📋', label: 'Registration Requests' },
     { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
     { path: '/admin/payment-requests', icon: '💳', label: 'Payment Requests' },

@@ -826,7 +826,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             return;
         }
 
-        String[] paymentMethods = {"cash", "credit_card", "digital_wallet", "debit_card"};
+        String[] paymentMethods = {"cash", "credit_card", "digital_wallet", "bank_transfer"};
         String[] neighborhoods = {"District 1", "District 7", "Thu Duc", "Go Vap", "Tan Binh"};
         String[] wards = {"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11"};
         String[] streets = {"Nguyen Trai", "Le Hong Phong", "Tran Hung Dao", "Vo Van Tan", "Pham Ngoc Thach", "Tong Huu Dinh"};
