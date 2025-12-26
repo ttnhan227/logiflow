@@ -216,149 +216,78 @@ class _OrderMapViewState extends State<OrderMapView> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Card(
-        child: SizedBox(
-          height: 300,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
-
-    final status =
-        widget.tracking?.orderStatus ?? widget.order.orderStatus ?? 'PENDING';
 
     final center = _driverLocation ??
         _pickupLocation ??
         _deliveryLocation ??
         const LatLng(10.762622, 106.660172);
 
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // header
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Icon(Icons.map, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Order Location',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(status),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // map
-          SizedBox(
-            height: 300,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: center,
-                initialZoom:
-                (_driverLocation != null || _pickupLocation != null || _deliveryLocation != null)
-                    ? 15.0
-                    : 12.0,
-                maxZoom: 18.0,
-                minZoom: 8.0,
-                onPositionChanged: (pos, hasGesture) {
-                  if (hasGesture) _userMovedMap = true;
-                  if (pos.zoom != null) _currentZoom = pos.zoom!;
-                },
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.logiflow.client_mobile',
-                  errorTileCallback: (tile, error, stackTrace) {
-                    debugPrint('TILE ERROR: $error');
-                  },
-                ),
-
-                MarkerLayer(
-                  markers: [
-                    if (_driverLocation != null)
-                      Marker(
-                        point: _driverLocation!,
-                        width: 50,
-                        height: 50,
-                        child: _circleIcon(
-                          icon: Icons.local_shipping,
-                          borderColor: Colors.blue,
-                          iconColor: Colors.blue,
-                        ),
-                      ),
-
-                    if (_pickupLocation != null)
-                      Marker(
-                        point: _pickupLocation!,
-                        width: 40,
-                        height: 40,
-                        child: _circleIcon(
-                          icon: Icons.location_on,
-                          borderColor: Colors.green,
-                          iconColor: Colors.green,
-                        ),
-                      ),
-
-                    if (_deliveryLocation != null)
-                      Marker(
-                        point: _deliveryLocation!,
-                        width: 40,
-                        height: 40,
-                        child: _circleIcon(
-                          icon: Icons.flag,
-                          borderColor: Colors.red,
-                          iconColor: Colors.red,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // footer info
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                if (_driverLocation != null) ...[
-                  const Icon(Icons.local_shipping, size: 16, color: Colors.blue),
-                  const SizedBox(width: 4),
-                  const Text('Driver location available',
-                      style: TextStyle(fontSize: 12)),
-                ] else ...[
-                  const Icon(Icons.info_outline, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  const Expanded(
-                    child: Text(
-                      'Driver location not available yet.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom:
+        (_driverLocation != null || _pickupLocation != null || _deliveryLocation != null)
+            ? 15.0
+            : 12.0,
+        maxZoom: 18.0,
+        minZoom: 8.0,
+        onPositionChanged: (pos, hasGesture) {
+          if (hasGesture) _userMovedMap = true;
+          if (pos.zoom != null) _currentZoom = pos.zoom!;
+        },
       ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.logiflow.client_mobile',
+          errorTileCallback: (tile, error, stackTrace) {
+            debugPrint('TILE ERROR: $error');
+          },
+        ),
+
+        MarkerLayer(
+          markers: [
+            if (_driverLocation != null)
+              Marker(
+                point: _driverLocation!,
+                width: 50,
+                height: 50,
+                child: _circleIcon(
+                  icon: Icons.local_shipping,
+                  borderColor: Colors.blue,
+                  iconColor: Colors.blue,
+                ),
+              ),
+
+            if (_pickupLocation != null)
+              Marker(
+                point: _pickupLocation!,
+                width: 40,
+                height: 40,
+                child: _circleIcon(
+                  icon: Icons.location_on,
+                  borderColor: Colors.green,
+                  iconColor: Colors.green,
+                ),
+              ),
+
+            if (_deliveryLocation != null)
+              Marker(
+                point: _deliveryLocation!,
+                width: 40,
+                height: 40,
+                child: _circleIcon(
+                  icon: Icons.flag,
+                  borderColor: Colors.red,
+                  iconColor: Colors.red,
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 

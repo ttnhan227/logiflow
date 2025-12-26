@@ -3,6 +3,11 @@ class DriverOrder {
   final String customerName;
   final String? customerPhone;
   final String pickupAddress;
+  final String? pickupType;
+  final String? containerNumber;
+  final String? terminalName;
+  final String? warehouseName;
+  final String? dockNumber;
   final String deliveryAddress;
   final double? pickupLat;
   final double? pickupLng;
@@ -23,6 +28,11 @@ class DriverOrder {
     required this.customerName,
     this.customerPhone,
     required this.pickupAddress,
+    this.pickupType,
+    this.containerNumber,
+    this.terminalName,
+    this.warehouseName,
+    this.dockNumber,
     required this.deliveryAddress,
     this.pickupLat,
     this.pickupLng,
@@ -45,6 +55,11 @@ class DriverOrder {
       customerName: json['customerName'],
       customerPhone: json['customerPhone'],
       pickupAddress: json['pickupAddress'],
+      pickupType: json['pickupType'],
+      containerNumber: json['containerNumber'],
+      terminalName: json['terminalName'],
+      warehouseName: json['warehouseName'],
+      dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       pickupLat: json['pickupLat']?.toDouble(),
       pickupLng: json['pickupLng']?.toDouble(),
@@ -68,6 +83,11 @@ class DriverOrder {
       'customerName': customerName,
       'customerPhone': customerPhone,
       'pickupAddress': pickupAddress,
+      'pickupType': pickupType,
+      'containerNumber': containerNumber,
+      'terminalName': terminalName,
+      'warehouseName': warehouseName,
+      'dockNumber': dockNumber,
       'deliveryAddress': deliveryAddress,
       'pickupLat': pickupLat,
       'pickupLng': pickupLng,

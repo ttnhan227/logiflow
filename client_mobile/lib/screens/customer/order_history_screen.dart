@@ -139,6 +139,66 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     await _loadOrderHistory();
   }
 
+  Color _getStatusColorForCard(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return Colors.green;
+      case 'CANCELLED':
+        return Colors.red;
+      case 'PENDING':
+        return Colors.amber;
+      case 'ASSIGNED':
+        return Colors.blue;
+      case 'IN_TRANSIT':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildSectionCard(String title, IconData icon, Color color, List<Widget> children) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -193,303 +253,84 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 itemCount: _orders.length,
                 itemBuilder: (context, index) {
                   final order = _orders[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  return InkWell(
+                    onTap: () {
+                      // Navigate to receipt screen for paid orders
+                      if (order.orderStatus.toUpperCase() == 'DELIVERED' &&
+                          order.paymentStatus?.toUpperCase() == 'PAID') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OrderReceiptScreen(
+                              orderId: order.orderId,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: _buildSectionCard(
+                      'ORDER #${order.orderId}',
+                      Icons.history,
+                      _getStatusColorForCard(order.orderStatus),
+                      [
+                        // Status badge at the top
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(order.orderStatus).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _getStatusColor(order.orderStatus).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Order #${order.orderId}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
                               Icon(
                                 _getStatusIcon(order.orderStatus),
+                                size: 14,
                                 color: _getStatusColor(order.orderStatus),
-                                size: 20,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _getStatusText(order.orderStatus),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getStatusColor(order.orderStatus),
+                                ),
                               ),
                             ],
                           ),
+                        ),
 
-                          // Delay report banner for completed orders that had delays
-                          if (order.delayReason != null &&
-                              order.delayReason!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.orange[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.orange[200]!),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.warning_amber,
-                                    size: 16,
-                                    color: Colors.orange[700],
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      order.delayReason!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.orange[900],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 12),
 
-                          const SizedBox(height: 8),
-                          Text(
-                            'From: ${order.pickupAddress}',
-                            style: TextStyle(color: Colors.grey[600]),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'To: ${order.deliveryAddress}',
-                            style: TextStyle(color: Colors.grey[600]),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          // Pickup Type Information
-                          if (order.pickupType != null &&
-                              order.pickupType!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.blue[200]!),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Pickup Type: ${order.pickupType}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  // Show specific fields based on pickup type
-                                  if (order.pickupType == 'WAREHOUSE' &&
-                                      order.warehouseName != null) ...[
-                                    Text(
-                                      'Warehouse: ${order.warehouseName}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ],
-                                  if (order.pickupType == 'WAREHOUSE' &&
-                                      order.dockNumber != null) ...[
-                                    Text(
-                                      'Dock: ${order.dockNumber}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ],
-                                  if (order.pickupType == 'PORT_TERMINAL' &&
-                                      order.containerNumber != null) ...[
-                                    Text(
-                                      'Container: ${order.containerNumber}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ],
-                                  if (order.pickupType == 'PORT_TERMINAL' &&
-                                      order.terminalName != null) ...[
-                                    Text(
-                                      'Terminal: ${order.terminalName}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
-                          // Package Details
-                          if (order.packageDetails != null &&
-                              order.packageDetails!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              'Package: ${order.packageDetails}',
-                              style: TextStyle(color: Colors.grey[700]),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          const SizedBox(height: 12),
-                          // Specifications Row
-                          Row(
-                            children: [
-                              if (order.weightTons != null)
-                                Expanded(
-                                  child: Text(
-                                    'Weight: ${order.weightTons} tons',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
-                              if (order.distanceKm != null)
-                                Expanded(
-                                  child: Text(
-                                    'Distance: ${order.distanceKm!.toStringAsFixed(1)}km',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
-                              if (order.packageValue != null)
-                                Expanded(
-                                  child: Text(
-                                    'Value: VND ${order.packageValue!.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          // Price Breakdown - Always show if we have any pricing data
-                          if (order.shippingFee != null ||
-                              order.distanceKm != null ||
-                              order.weightTons != null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue[200]!),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Price Breakdown',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Add the same price breakdown as other screens
-                                  // Assume normal priority for history (we don't have priority info in OrderHistory)
-                                  _buildFeeBreakdown(
-                                    order.distanceKm != null
-                                        ? order.distanceKm!.toStringAsFixed(1) +
-                                              ' km'
-                                        : null,
-                                    order.weightTons,
-                                    order.priorityLevel ==
-                                        'URGENT', // Use actual priority level
-                                    order.pickupAddress ?? '',
-                                    order.deliveryAddress ?? '',
-                                    packageValue: order.packageValue,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ] else ...[
-                            // Show debug info if no pricing data
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.orange[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.orange[200]!),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Debug: No pricing data available',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.orange[800],
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Fee: ${order.shippingFee}, Distance: ${order.distanceKm}, Weight: ${order.weightTons}, Value: ${order.packageValue}',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.orange[700],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          // Payment Status with contextual messaging
-                          const SizedBox(height: 8),
+                        // Delay report banner for completed orders that had delays
+                        if (order.delayReason != null && order.delayReason!.isNotEmpty) ...[
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: _getPaymentStatusColor(
-                                order.paymentStatus,
-                              ).withOpacity(0.1),
+                              color: Colors.orange[50],
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _getPaymentStatusColor(
-                                  order.paymentStatus,
-                                ).withOpacity(0.3),
-                              ),
+                              border: Border.all(color: Colors.orange[200]!),
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Icon(
-                                  _getPaymentStatusIcon(order.paymentStatus),
-                                  size: 20,
-                                  color: _getPaymentStatusColor(
-                                    order.paymentStatus,
-                                  ),
+                                  Icons.warning_amber,
+                                  size: 16,
+                                  color: Colors.orange[700],
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    _getPaymentStatusMessage(
-                                      order.paymentStatus,
-                                    ),
+                                    order.delayReason!,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: _getPaymentStatusColor(
-                                        order.paymentStatus,
-                                      ),
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.orange[900],
                                     ),
                                   ),
                                 ),
@@ -497,106 +338,412 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Ordered: ${_formatDate(order.createdAt)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[500],
+                        ],
+
+                        // Pickup Type Information
+                        if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.business,
+                                      size: 16,
+                                      color: Colors.blue[700],
                                     ),
-                                  ),
-                                  if (order.deliveredAt != null)
+                                    const SizedBox(width: 6),
                                     Text(
-                                      'Delivered: ${_formatDate(order.deliveredAt!)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.green[600],
-                                        fontWeight: FontWeight.w500,
+                                      'Pickup Type: ${order.pickupType}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue,
                                       ),
                                     ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                // Show specific fields based on pickup type
+                                if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                                  Text(
+                                    'Warehouse: ${order.warehouseName}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.blue),
+                                  ),
                                 ],
-                              ),
-                            ],
+                                if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                                  Text(
+                                    'Dock: ${order.dockNumber}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.blue),
+                                  ),
+                                ],
+                                if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                                  Text(
+                                    'Container: ${order.containerNumber}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.blue),
+                                  ),
+                                ],
+                                if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                                  Text(
+                                    'Terminal: ${order.terminalName}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.blue),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                          if (order.driverName != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.person,
-                                  size: 16,
-                                  color: Colors.blue[600],
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Delivered by: ${order.driverName}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.blue[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 12),
+                        ],
+
+                        // Route Information
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                order.pickupAddress ?? 'N/A',
+                                style: const TextStyle(fontSize: 14),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
-                          if (order.driverRating != null) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.star, size: 16, color: Colors.amber),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Rating: ${order.driverRating}/5',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.amber[700],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.flag,
+                              color: Colors.green,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                order.deliveryAddress ?? 'N/A',
+                                style: const TextStyle(fontSize: 14),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
+                        ),
+
+                        // Package Details
+                        if (order.packageDetails != null && order.packageDetails!.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Status: ${_getStatusText(order.orderStatus)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: _getStatusColor(order.orderStatus),
-                                  fontWeight: FontWeight.w500,
+                              const Icon(
+                                Icons.inventory_2,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  order.packageDetails!,
+                                  style: const TextStyle(fontSize: 13),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              // Only show View Receipt button for paid orders
-                              if (order.orderStatus.toUpperCase() ==
-                                      'DELIVERED' &&
-                                  order.paymentStatus?.toUpperCase() == 'PAID')
-                                TextButton.icon(
-                                  onPressed: () {
-                                    // Navigate to receipt screen for paid orders
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            OrderReceiptScreen(
-                                              orderId: order.orderId,
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.receipt, size: 16),
-                                  label: const Text('View Receipt'),
-                                ),
                             ],
                           ),
                         ],
-                      ),
+
+                        const SizedBox(height: 12),
+
+                        // Package specs row
+                        Row(
+                          children: [
+                            if (order.weightTons != null)
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.monitor_weight,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${order.weightTons!.toStringAsFixed(1)}t',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (order.distanceKm != null)
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.route,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${order.distanceKm!.toStringAsFixed(0)}km',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (order.packageValue != null)
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.monetization_on,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'VND ${order.packageValue!.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+
+                        // Price Breakdown section
+                        if (order.shippingFee != null || order.distanceKm != null || order.weightTons != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.receipt_long,
+                                      size: 16,
+                                      color: Colors.blue,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Price Breakdown',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                _buildFeeBreakdown(
+                                  order.distanceKm != null ? order.distanceKm!.toStringAsFixed(1) + ' km' : null,
+                                  order.weightTons,
+                                  order.priorityLevel == 'URGENT',
+                                  order.pickupAddress ?? '',
+                                  order.deliveryAddress ?? '',
+                                  packageValue: order.packageValue,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // Payment Status
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _getPaymentStatusColor(order.paymentStatus).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _getPaymentStatusIcon(order.paymentStatus),
+                                size: 16,
+                                color: _getPaymentStatusColor(order.paymentStatus),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _getPaymentStatusMessage(order.paymentStatus),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _getPaymentStatusColor(order.paymentStatus),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Driver and timing info
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time,
+                                        size: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Ordered: ${_formatDate(order.createdAt)}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (order.deliveredAt != null) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
+                                          size: 14,
+                                          color: Colors.green[600],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Delivered: ${_formatDate(order.deliveredAt!)}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.green[600],
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            if (order.driverName != null || order.driverRating != null)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (order.driverName != null) ...[
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.person,
+                                            size: 14,
+                                            color: Colors.blue[600],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              order.driverName!,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.blue[600],
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                    if (order.driverRating != null) ...[
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.star,
+                                            size: 14,
+                                            color: Colors.amber,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${order.driverRating}/5',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.amber[700],
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+
+                        // Action indicator
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              order.orderStatus.toUpperCase() == 'DELIVERED' &&
+                              order.paymentStatus?.toUpperCase() == 'PAID'
+                                ? Icons.receipt
+                                : Icons.info,
+                              size: 14,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              order.orderStatus.toUpperCase() == 'DELIVERED' &&
+                              order.paymentStatus?.toUpperCase() == 'PAID'
+                                ? 'Tap for receipt'
+                                : 'Tap for details',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   );
                 },

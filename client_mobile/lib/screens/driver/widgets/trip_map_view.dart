@@ -8,8 +8,17 @@ class TripMapView extends StatefulWidget {
   final Map<String, dynamic> tripDetail;
   final bool compact;
   final List<dynamic>? orders;
+  final double? driverLat;
+  final double? driverLng;
 
-  const TripMapView({super.key, required this.tripDetail, this.compact = false, this.orders});
+  const TripMapView({
+    super.key,
+    required this.tripDetail,
+    this.compact = false,
+    this.orders,
+    this.driverLat,
+    this.driverLng,
+  });
 
   @override
   State<TripMapView> createState() => _TripMapViewState();
@@ -115,6 +124,44 @@ class _TripMapViewState extends State<TripMapView> {
       double totalLat = 0;
       double totalLng = 0;
       int validLocations = 0;
+
+      // Add driver location marker if available
+      if (widget.driverLat != null && widget.driverLng != null) {
+        final driverPoint = LatLng(widget.driverLat!, widget.driverLng!);
+        totalLat += widget.driverLat!;
+        totalLng += widget.driverLng!;
+        validLocations++;
+        checkpoints.add(driverPoint);
+
+        markers.add(
+          Marker(
+            point: driverPoint,
+            width: 50,
+            height: 50,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.95),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.local_shipping,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
 
       // Create numbered checkpoints for each order
       for (var i = 0; i < orders.length; i++) {
@@ -360,6 +407,30 @@ class _TripMapViewState extends State<TripMapView> {
                     spacing: 16,
                     runSpacing: 8,
                     children: [
+                      if (widget.driverLat != null && widget.driverLng != null) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.local_shipping,
+                                  color: Colors.white,
+                                  size: 10,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text('Driver Location', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ],
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

@@ -12,6 +12,7 @@ class DriverTrip {
   final int? estimatedDuration;
   final String? departureLocation;
   final String? arrivalLocation;
+  final String? pickupTypes;
 
   const DriverTrip({
     required this.tripId,
@@ -25,6 +26,7 @@ class DriverTrip {
     this.estimatedDuration,
     this.departureLocation,
     this.arrivalLocation,
+    this.pickupTypes,
   });
 
   factory DriverTrip.fromJson(Map<String, dynamic> json) {
@@ -40,6 +42,7 @@ class DriverTrip {
       estimatedDuration: json['estimatedDuration'],
       departureLocation: json['departureLocation'],
       arrivalLocation: json['arrivalLocation'],
+      pickupTypes: json['pickupTypes'],
     );
   }
 
@@ -56,6 +59,7 @@ class DriverTrip {
       'estimatedDuration': estimatedDuration,
       'departureLocation': departureLocation,
       'arrivalLocation': arrivalLocation,
+      'pickupTypes': pickupTypes,
     };
   }
 }
@@ -65,6 +69,7 @@ class DriverTripDetail {
   final String? routeName;
   final String? status;
   final String? assignmentStatus;
+  final String? tripType;
   final String? scheduledDeparture;
   final String? scheduledArrival;
   final String? actualDeparture;
@@ -78,12 +83,15 @@ class DriverTripDetail {
   final String? delayAdminComment;
   final List<DriverOrder>? orders;
   final String? notes;
+  final double? driverLat;
+  final double? driverLng;
 
   const DriverTripDetail({
     required this.tripId,
     this.routeName,
     this.status,
     this.assignmentStatus,
+    this.tripType,
     this.scheduledDeparture,
     this.scheduledArrival,
     this.actualDeparture,
@@ -97,6 +105,8 @@ class DriverTripDetail {
     this.delayAdminComment,
     this.orders,
     this.notes,
+    this.driverLat,
+    this.driverLng,
   });
 
   factory DriverTripDetail.fromJson(Map<String, dynamic> json) {
@@ -105,6 +115,7 @@ class DriverTripDetail {
       routeName: json['routeName'],
       status: json['status'],
       assignmentStatus: json['assignmentStatus'],
+      tripType: json['tripType'],
       scheduledDeparture: json['scheduledDeparture'],
       scheduledArrival: json['scheduledArrival'],
       actualDeparture: json['actualDeparture'],
@@ -120,6 +131,8 @@ class DriverTripDetail {
           ? (json['orders'] as List).map((o) => DriverOrder.fromJson(o)).toList()
           : null,
       notes: json['notes'],
+      driverLat: json['driverLat']?.toDouble(),
+      driverLng: json['driverLng']?.toDouble(),
     );
   }
 
@@ -129,6 +142,7 @@ class DriverTripDetail {
       'routeName': routeName,
       'status': status,
       'assignmentStatus': assignmentStatus,
+      'tripType': tripType,
       'scheduledDeparture': scheduledDeparture,
       'scheduledArrival': scheduledArrival,
       'actualDeparture': actualDeparture,
@@ -142,6 +156,8 @@ class DriverTripDetail {
       'delayAdminComment': delayAdminComment,
       'orders': orders?.map((o) => o.toJson()).toList(),
       'notes': notes,
+      'driverLat': driverLat,
+      'driverLng': driverLng,
     };
   }
 }

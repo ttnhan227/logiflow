@@ -10,6 +10,7 @@ import '../models/user.dart';
 import 'auth/login_screen.dart';
 import 'driver/driver_chat_list_screen.dart';
 import 'driver/driver_trips_screen.dart';
+import 'driver/driver_trip_history_screen.dart';
 import 'driver/driver_trip_detail_screen.dart';
 import 'driver/driver_compliance_screen.dart';
 import 'driver/driver_profile_screen.dart';
@@ -360,6 +361,10 @@ class _MainLayoutState extends State<MainLayout> {
             label: 'Compliance',
           ),
           const BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
@@ -411,6 +416,7 @@ class _MainLayoutState extends State<MainLayout> {
           const DriverTripsScreen(),
           const DriverChatListScreen(),
           const DriverComplianceScreen(),
+          const DriverTripHistoryScreen(),
           const DriverProfileScreen(),
         ];
       case 'CUSTOMER':

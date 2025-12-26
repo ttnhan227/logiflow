@@ -506,14 +506,15 @@ public class DatabaseSeeder implements CommandLineRunner {
             order.setTerminalName(terminalNames[random.nextInt(terminalNames.length)]);
         }
 
-        // Synch Order status with Trip status - distribute statuses realistically for active trips
+        // Synch Order status with Trip status - logical progression
         if ("completed".equals(tripStatus)) {
+            // All orders in completed trip should be delivered
             order.setOrderStatus(Order.OrderStatus.DELIVERED);
         } else if ("in_progress".equals(tripStatus) || "arrived".equals(tripStatus)) {
             // For active trips, distribute order statuses realistically:
-            // ~40% ASSIGNED (not started), ~40% IN_TRANSIT (in progress), ~20% DELIVERED (completed)
+            // ~30% ASSIGNED (not started), ~50% IN_TRANSIT (in progress), ~20% DELIVERED (completed)
             int statusRandom = random.nextInt(100);
-            if (statusRandom < 40) {
+            if (statusRandom < 30) {
                 order.setOrderStatus(Order.OrderStatus.ASSIGNED);
             } else if (statusRandom < 80) {
                 order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
@@ -521,6 +522,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 order.setOrderStatus(Order.OrderStatus.DELIVERED);
             }
         } else {
+            // For assigned/scheduled trips (not started yet), all orders should be assigned
             order.setOrderStatus(Order.OrderStatus.ASSIGNED);
         }
 

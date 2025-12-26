@@ -328,6 +328,21 @@ public class DriverServiceImpl implements DriverService {
         if (t.getTripAssignments() != null && !t.getTripAssignments().isEmpty()) {
             assignmentStatus = t.getTripAssignments().get(0).getStatus();
         }
+
+        // Build pickup types summary
+        String pickupTypes = null;
+        if (t.getOrders() != null && !t.getOrders().isEmpty()) {
+            java.util.Set<String> pickupTypeSet = new java.util.HashSet<>();
+            for (com.logiflow.server.models.Order order : t.getOrders()) {
+                if (order.getPickupType() != null) {
+                    pickupTypeSet.add(order.getPickupType().name());
+                }
+            }
+            if (!pickupTypeSet.isEmpty()) {
+                pickupTypes = String.join(", ", pickupTypeSet);
+            }
+        }
+
         return new TripSummaryDto(
                 t.getTripId(),
                 t.getStatus(),
@@ -336,7 +351,8 @@ public class DriverServiceImpl implements DriverService {
                 t.getScheduledDeparture(),
                 t.getScheduledArrival(),
                 routeName,
-                plate
+                plate,
+                pickupTypes
         );
     }
 
@@ -349,7 +365,7 @@ public class DriverServiceImpl implements DriverService {
             assignmentStatus = t.getTripAssignments().get(0).getStatus();
         }
         dto.setAssignmentStatus(assignmentStatus);
-        dto.setTripType(t.getTripType());
+        dto.setTripType(t.getTripType() != null ? t.getTripType() : "STANDARD");
         dto.setScheduledDeparture(t.getScheduledDeparture());
         dto.setScheduledArrival(t.getScheduledArrival());
         dto.setActualDeparture(t.getActualDeparture());
@@ -375,6 +391,11 @@ public class DriverServiceImpl implements DriverService {
                 brief.setCustomerName(o.getCustomerName());
                 brief.setCustomerPhone(o.getCustomerPhone());
                 brief.setPickupAddress(o.getPickupAddress());
+                brief.setPickupType(o.getPickupType() != null ? o.getPickupType().name() : null);
+                brief.setContainerNumber(o.getContainerNumber());
+                brief.setTerminalName(o.getTerminalName());
+                brief.setWarehouseName(o.getWarehouseName());
+                brief.setDockNumber(o.getDockNumber());
                 brief.setDeliveryAddress(o.getDeliveryAddress());
                 brief.setPickupLat(o.getPickupLat());
                 brief.setPickupLng(o.getPickupLng());
@@ -393,6 +414,16 @@ public class DriverServiceImpl implements DriverService {
                 return brief;
             }).toList());
         }
+
+        // Add driver location for map display
+        if (t.getTripAssignments() != null && !t.getTripAssignments().isEmpty()) {
+            Driver driver = t.getTripAssignments().get(0).getDriver();
+            if (driver != null) {
+                dto.setDriverLat(driver.getCurrentLocationLat());
+                dto.setDriverLng(driver.getCurrentLocationLng());
+            }
+        }
+
         return dto;
     }
 

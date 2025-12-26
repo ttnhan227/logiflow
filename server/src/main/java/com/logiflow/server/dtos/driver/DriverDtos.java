@@ -20,6 +20,7 @@ public class DriverDtos {
         private LocalDateTime scheduledArrival;
         private String routeName;        // gợi ý hiển thị
         private String vehiclePlate;     // gợi ý hiển thị
+        private String pickupTypes;      // summary of pickup types in this trip (e.g., "WAREHOUSE, PORT_TERMINAL")
 
             public static TripSummaryDto fromTrip(com.logiflow.server.models.Trip trip) {
                 if (trip == null) return null;
@@ -37,6 +38,20 @@ public class DriverDtos {
                 dto.setScheduledArrival(trip.getScheduledArrival());
                 dto.setRouteName(trip.getRoute() != null ? trip.getRoute().getRouteName() : null);
                 dto.setVehiclePlate(trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null);
+
+                // Build pickup types summary
+                if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+                    java.util.Set<String> pickupTypeSet = new java.util.HashSet<>();
+                    for (com.logiflow.server.models.Order order : trip.getOrders()) {
+                        if (order.getPickupType() != null) {
+                            pickupTypeSet.add(order.getPickupType().name());
+                        }
+                    }
+                    if (!pickupTypeSet.isEmpty()) {
+                        dto.setPickupTypes(String.join(", ", pickupTypeSet));
+                    }
+                }
+
                 return dto;
             }
     }
@@ -64,6 +79,10 @@ public class DriverDtos {
         private String delayAdminComment;
 
         private List<OrderBrief> orders;
+
+        // Driver location for map display
+        private BigDecimal driverLat;
+        private BigDecimal driverLng;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
@@ -72,6 +91,11 @@ public class DriverDtos {
         private String customerName;
         private String customerPhone;
         private String pickupAddress;
+        private String pickupType;
+        private String containerNumber;
+        private String terminalName;
+        private String warehouseName;
+        private String dockNumber;
         private String deliveryAddress;
         private BigDecimal pickupLat;
         private BigDecimal pickupLng;

@@ -1,154 +1,84 @@
 import 'package:flutter/material.dart';
 import '../../services/driver/driver_service.dart';
 import '../../models/driver/trip.dart';
-import 'driver_trip_detail_screen.dart';
-import 'driver_trip_history_screen.dart';
+import 'driver_trip_history_detail_screen.dart';
 
-class DriverTripsScreen extends StatefulWidget {
-  const DriverTripsScreen({super.key});
+class DriverTripHistoryScreen extends StatefulWidget {
+  const DriverTripHistoryScreen({super.key});
 
   @override
-  State<DriverTripsScreen> createState() => _DriverTripsScreenState();
+  State<DriverTripHistoryScreen> createState() => _DriverTripHistoryScreenState();
 }
 
-class _DriverTripsScreenState extends State<DriverTripsScreen> {
-  bool _isLoading = true;
+class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
   List<DriverTrip> _trips = [];
+  bool _isLoading = true;
   String? _error;
-  DateTimeRange? _dateRange;
-  String? _statusFilter; // Add status filter to match schedule functionality
 
   @override
   void initState() {
     super.initState();
-    _fetchTrips();
+    _loadTripHistory();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Force refresh trips every time we return to this screen
-    // This ensures updates after delivery confirmations and other changes
+    // Follow driver screen pattern - refresh when returning to this screen
+    // Drivers should see updated trip status after navigation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isLoading) {
         // Add a small delay to ensure navigation is fully complete
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) {
-            _fetchTrips();
+            _loadTripHistory();
           }
         });
       }
     });
   }
 
-  Future<void> _fetchTrips() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _loadTripHistory() async {
     try {
-      List<DriverTrip> trips;
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
 
-      // Use schedule API if date range is set, otherwise use trips API
-      if (_dateRange != null && _statusFilter == null) {
-        final start = _dateRange!.start.toIso8601String().split('T').first;
-        final end = _dateRange!.end.toIso8601String().split('T').first;
-        final scheduleItems = await driverService.getMySchedule(start, end);
-
-        // Convert schedule items to driver trips format (missing some fields)
-        trips = scheduleItems.map((item) => DriverTrip(
-          tripId: item.tripId,
-          status: item.status,
-          assignmentStatus: null, // Schedule API doesn't have this
-          scheduledDeparture: item.scheduledDeparture,
-          scheduledArrival: item.scheduledArrival,
-          routeName: item.routeName,
-        )).toList();
-      } else {
-        // Use regular trips API
-        trips = await driverService.getMyTrips(status: _statusFilter);
-      }
-
-      // Filter out completed and cancelled trips for active trips screen
-      trips = trips.where((trip) {
+      final trips = await driverService.getMyTrips();
+      final filteredTrips = trips.where((trip) {
         final status = trip.status?.toLowerCase();
-        return status != 'completed' && status != 'cancelled';
+        return status == 'completed' || status == 'cancelled';
       }).toList();
 
-      // Sort trips by priority: arrived > in_progress > scheduled
-      trips.sort((a, b) {
-        int getPriority(String? status) {
-          switch (status?.toLowerCase()) {
-            case 'arrived': return 0; // Top priority - driver at destination!
-            case 'in_progress': return 1;
-            case 'scheduled': return 2;
-            default: return 3;
-          }
+      // Sort by most recent first
+      filteredTrips.sort((a, b) {
+        if (a.scheduledDeparture != null && b.scheduledDeparture != null) {
+          return b.scheduledDeparture!.compareTo(a.scheduledDeparture!);
         }
-
-        int priorityA = getPriority(a.status);
-        int priorityB = getPriority(b.status);
-
-        return priorityA.compareTo(priorityB);
+        return b.tripId.compareTo(a.tripId);
       });
 
       setState(() {
-        _trips = trips;
-        _isLoading = false;
+        _trips = filteredTrips;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Error: $e';
-        _isLoading = false;
-      });
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _refresh() async {
-    await _fetchTrips();
-  }
-
-  Future<void> _pickDateRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: now.subtract(const Duration(days: 365)),
-      lastDate: now.add(const Duration(days: 365)),
-      initialDateRange: _dateRange ?? DateTimeRange(start: now, end: now.add(const Duration(days: 7))),
-    );
-    if (picked != null) {
-      setState(() {
-        _dateRange = picked;
-        _statusFilter = null; // Clear status filter when using date range
-      });
-      _fetchTrips();
-    }
-  }
-
-  void _clearFilters() {
-    setState(() {
-      _dateRange = null;
-      _statusFilter = null;
-    });
-    _fetchTrips();
-  }
-
-  void _setStatusFilter(String? status) {
-    setState(() {
-      _statusFilter = status;
-      _dateRange = null; // Clear date range when using status filter
-    });
-    _fetchTrips();
+    await _loadTripHistory();
   }
 
   String _getStatusEmoji(String status) {
     switch (status.toUpperCase()) {
-      case 'SCHEDULED':
-        return '🔵';
-      case 'IN_PROGRESS':
-        return '🟡';
-      case 'ARRIVED':
-        return '🟣';
+      case 'COMPLETED':
+        return '🟢';
+      case 'CANCELLED':
+        return '🔴';
       default:
         return '⚪';
     }
@@ -156,12 +86,10 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
 
   Color _getStatusColorForCard(String status) {
     switch (status.toUpperCase()) {
-      case 'SCHEDULED':
-        return Colors.blue;
-      case 'IN_PROGRESS':
-        return Colors.orange;
-      case 'ARRIVED':
-        return Colors.purple;
+      case 'COMPLETED':
+        return Colors.green;
+      case 'CANCELLED':
+        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -208,6 +136,26 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return weekdays[date.weekday - 1];
+    } else {
+      return '${date.month}/${date.day}/${date.year}';
+    }
+  }
+
+  String _formatDateTime(DateTime date) {
+    return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -264,13 +212,13 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.local_shipping_outlined,
+                                Icons.history,
                                 size: 64,
                                 color: Colors.grey,
                               ),
                               SizedBox(height: 16),
                               Text(
-                                'No active trips',
+                                'No completed trips',
                                 style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.grey,
@@ -278,7 +226,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                               ),
                               SizedBox(height: 8),
                               Text(
-                                'Your active trips will appear here',
+                                'Your trip history will appear here',
                                 style: TextStyle(color: Colors.grey),
                               ),
                             ],
@@ -298,7 +246,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    DriverTripDetailScreen(tripId: trip.tripId),
+                                    DriverTripHistoryDetailScreen(tripId: trip.tripId),
                               ),
                             );
                           },
@@ -353,37 +301,41 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                               ],
 
                               // Departure/Arrival Information
-                              if (trip.scheduledDeparture != null)
+                              if (trip.departureLocation != null)
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.access_time,
-                                      color: Colors.green,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Departure: ${trip.scheduledDeparture}',
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              if (trip.scheduledArrival != null) ...[
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.alarm,
+                                      Icons.location_on,
                                       color: Colors.red,
                                       size: 16,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Arrival: ${trip.scheduledArrival}',
+                                        trip.departureLocation!,
                                         style: const TextStyle(fontSize: 14),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              if (trip.arrivalLocation != null) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.flag,
+                                      color: Colors.green,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        trip.arrivalLocation!,
+                                        style: const TextStyle(fontSize: 14),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -392,7 +344,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
 
                               const SizedBox(height: 12),
 
-                              // Trip specs
+                              // Package specs
                               Row(
                                 children: [
                                   if (trip.distance != null)
@@ -460,8 +412,8 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                                 ],
                               ),
 
-                              // Assignment Status Information
-                              if (trip.assignmentStatus != null && trip.assignmentStatus!.isNotEmpty) ...[
+                              // Pickup Types Information
+                              if (trip.pickupTypes != null && trip.pickupTypes!.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 Container(
                                   padding: const EdgeInsets.all(12),
@@ -476,13 +428,13 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                                       Row(
                                         children: [
                                           Icon(
-                                            Icons.assignment,
+                                            Icons.business,
                                             size: 16,
                                             color: Colors.blue[700],
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'Assignment: ${trip.assignmentStatus}',
+                                            'Pickup Types: ${trip.pickupTypes}',
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w600,
@@ -495,6 +447,28 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                                   ),
                                 ),
                               ],
+
+                              const SizedBox(height: 12),
+
+                              // Departure Date
+                              if (trip.scheduledDeparture != null)
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Completed: ${_formatDate(DateTime.parse(trip.scheduledDeparture!))}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
 
                               // Tap indicator
                               const SizedBox(height: 12),

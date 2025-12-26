@@ -93,7 +93,7 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
     await _loadOrders();
   }
 
-  String _getStatusColor(String status) {
+  String _getStatusEmoji(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
         return '⬜';
@@ -109,6 +109,108 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
         return '⚪';
     }
   }
+
+  Color _getStatusColorForCard(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return Colors.amber;
+      case 'ASSIGNED':
+        return Colors.blue;
+      case 'IN_TRANSIT':
+        return Colors.orange;
+      case 'DELIVERED':
+        return Colors.green;
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildSectionCard(String title, IconData icon, Color color, List<Widget> children) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getOrderDetailStatusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return Icons.check_circle;
+      case 'IN_TRANSIT':
+        return Icons.local_shipping;
+      case 'ASSIGNED':
+        return Icons.assignment;
+      case 'PENDING':
+        return Icons.schedule;
+      case 'CANCELLED':
+        return Icons.cancel;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getOrderDetailStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return Colors.green;
+      case 'IN_TRANSIT':
+        return Colors.orange;
+      case 'ASSIGNED':
+        return Colors.blue;
+      case 'PENDING':
+        return Colors.grey;
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+
+
+
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -193,189 +295,250 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                       itemBuilder: (context, index) {
                         final order = _orders[index];
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      OrderDetailScreen(orderId: order.orderId),
+                        return InkWell(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    OrderDetailScreen(orderId: order.orderId),
+                              ),
+                            );
+                          },
+                          child: _buildSectionCard(
+                            'ORDER #${order.orderId}',
+                            Icons.local_shipping,
+                            _getStatusColorForCard(order.orderStatus ?? ''),
+                            [
+                              // Status badge at the top
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _getStatusTextColor(order.orderStatus ?? '').withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: _getStatusTextColor(order.orderStatus ?? '').withOpacity(0.3),
+                                  ),
                                 ),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                child: Text(
+                                  order.orderStatus ?? 'Unknown',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: _getStatusTextColor(order.orderStatus ?? ''),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // ✅ Delay banner nên để ngay đây (customer thấy liền)
+                              if (order.delayReason != null &&
+                                  order.delayReason!.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.orange[200]!,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Order #${order.orderId}',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      Icon(
+                                        Icons.warning_amber,
+                                        size: 16,
+                                        color: Colors.orange[700],
                                       ),
-                                      Text(
-                                        '${_getStatusColor(order.orderStatus ?? '')} ${order.orderStatus ?? ''}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: _getStatusTextColor(
-                                            order.orderStatus ?? '',
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          order.delayReason!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.orange[900],
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
 
-                                  // ✅ Delay banner nên để ngay đây (customer thấy liền)
-                                  if (order.delayReason != null &&
-                                      order.delayReason!.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange[50],
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: Colors.orange[200]!,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                              // Pickup Type Information
+                              if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.blue[200]!),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
                                         children: [
                                           Icon(
-                                            Icons.warning_amber,
+                                            Icons.business,
                                             size: 16,
-                                            color: Colors.orange[700],
+                                            color: Colors.blue[700],
                                           ),
                                           const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              order.delayReason!,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.orange[900],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-
-                                  // Pickup Type Information
-                                  if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue[50],
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: Colors.blue[200]!),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
                                           Text(
                                             'Pickup Type: ${order.pickupType}',
                                             style: const TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.w600,
                                               color: Colors.blue,
                                             ),
                                           ),
-                                          const SizedBox(height: 4),
-                                          // Show specific fields based on pickup type
-                                          if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
-                                            Text(
-                                              'Warehouse: ${order.warehouseName}',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.blue,
-                                              ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // Show specific fields based on pickup type
+                                      if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                                        Text(
+                                          'Warehouse: ${order.warehouseName}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ],
+                                      if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                                        Text(
+                                          'Dock: ${order.dockNumber}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ],
+                                      if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                                        Text(
+                                          'Container: ${order.containerNumber}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ],
+                                      if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                                        Text(
+                                          'Terminal: ${order.terminalName}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              // Route Information
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on,
+                                    color: Colors.red,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      order.pickupAddress ?? 'N/A',
+                                      style: const TextStyle(fontSize: 14),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.flag,
+                                    color: Colors.green,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      order.deliveryAddress ?? 'N/A',
+                                      style: const TextStyle(fontSize: 14),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // Package details row
+                              Row(
+                                children: [
+                                  if (order.weightTons != null)
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.monitor_weight,
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${order.weightTons!.toStringAsFixed(1)}t',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                              fontWeight: FontWeight.w500,
                                             ),
-                                          ],
-                                          if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
-                                            Text(
-                                              'Dock: ${order.dockNumber}',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.blue,
-                                              ),
-                                            ),
-                                          ],
-                                          if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
-                                            Text(
-                                              'Container: ${order.containerNumber}',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.blue,
-                                              ),
-                                            ),
-                                          ],
-                                          if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
-                                            Text(
-                                              'Terminal: ${order.terminalName}',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.blue,
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         ],
                                       ),
                                     ),
-                                  ],
-
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'From: ${order.pickupAddress}',
-                                    style: TextStyle(color: Colors.grey[600]),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'To: ${order.deliveryAddress}',
-                                    style: TextStyle(color: Colors.grey[600]),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      if (order.weightTons != null)
-                                        Expanded(
-                                          child: Text(
-                                            '${order.weightTons!.toStringAsFixed(1)}t',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey,
-                                            ),
+                                  if (order.distanceKm != null)
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.route,
+                                            size: 16,
+                                            color: Colors.grey,
                                           ),
-                                        ),
-                                      if (order.distanceKm != null)
-                                        Expanded(
-                                          child: Text(
+                                          const SizedBox(width: 4),
+                                          Text(
                                             '${order.distanceKm!.toStringAsFixed(0)}km',
                                             style: const TextStyle(
                                               fontSize: 12,
                                               color: Colors.grey,
                                             ),
                                           ),
-                                        ),
-                                      if (order.packageValue != null)
-                                        Expanded(
-                                          child: Text(
+                                        ],
+                                      ),
+                                    ),
+                                  if (order.packageValue != null)
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.monetization_on,
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
                                             'VND ${order.packageValue!.toStringAsFixed(0)}',
                                             style: const TextStyle(
                                               fontSize: 12,
@@ -383,12 +546,33 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
-                                        ),
-                                    ],
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+
+                              // Tap indicator
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.touch_app,
+                                    size: 14,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Tap for details',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[500],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                            ],
                           ),
                         );
                       },
@@ -544,6 +728,49 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     });
   }
 
+  Widget _buildSectionCard(String title, IconData icon, Color color, List<Widget> children) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -579,9 +806,53 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Map dùng tracking đang poll -> marker nhúc nhích
-                OrderMapView(order: order, tracking: tracking),
-                const SizedBox(height: 16),
+                // Map View - Matching Driver Trip Detail Screen
+                Card(
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.map,
+                              color: Colors.green,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'LIVE TRACKING',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              'Order #${order.orderId}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Map Section
+                      Container(
+                        height: 220,
+                        color: Colors.grey[100],
+                        child: OrderMapView(order: order, tracking: tracking),
+                      ),
+                    ],
+                  ),
+                ),
                 _buildOrderCard(order, tracking),
                 const SizedBox(height: 16),
                 _buildTrackingCard(tracking),
@@ -594,42 +865,157 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildOrderCard(Order order, TrackOrderResponse tracking) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return _buildSectionCard(
+      'ORDER DETAILS',
+      Icons.assignment,
+      Colors.purple,
+      [
+        // Status and Priority
+        Row(
           children: [
-            const Text(
-              'Order Details',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Row(
+                children: [
+                  Icon(
+                    _getOrderDetailStatusIcon(order.orderStatus ?? ''),
+                    size: 16,
+                    color: _getOrderDetailStatusColor(order.orderStatus ?? ''),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    order.orderStatus ?? 'Unknown',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _getOrderDetailStatusColor(order.orderStatus ?? ''),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildInfoRow('Status', order.orderStatus ?? 'Unknown'),
-            _buildInfoRow('Priority', order.priorityLevel ?? 'Normal'),
-            _buildInfoRow('Customer', order.customerName ?? 'N/A'),
-            if (order.customerPhone != null)
-              _buildInfoRow('Phone', order.customerPhone!),
-            const SizedBox(height: 16),
-            const Text(
-              'Pickup Address:',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            Text(order.pickupAddress ?? 'N/A'),
+            if (order.priorityLevel != null)
+              Row(
+                children: [
+                  Icon(
+                    order.priorityLevel == 'URGENT' ? Icons.warning : Icons.low_priority,
+                    size: 16,
+                    color: order.priorityLevel == 'URGENT' ? Colors.orange : Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    order.priorityLevel!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: order.priorityLevel == 'URGENT' ? Colors.orange : Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
 
-            // Pickup Type Information
-            if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
+        const SizedBox(height: 12),
+
+        // Customer Information
+        Row(
+          children: [
+            const Icon(
+              Icons.person,
+              size: 16,
+              color: Colors.grey,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                order.customerName ?? 'N/A',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        if (order.customerPhone != null) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.phone,
+                size: 16,
+                color: Colors.grey,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  order.customerPhone!,
+                  style: const TextStyle(fontSize: 14),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ],
+          ),
+        ],
+
+        const SizedBox(height: 12),
+
+        // Route Information
+        Row(
+          children: [
+            const Icon(
+              Icons.location_on,
+              color: Colors.red,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                order.pickupAddress ?? 'N/A',
+                style: const TextStyle(fontSize: 14),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            const Icon(
+              Icons.flag,
+              color: Colors.green,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                order.deliveryAddress ?? 'N/A',
+                style: const TextStyle(fontSize: 14),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+
+        // Pickup Type Information
+        if (order.pickupType != null && order.pickupType!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
+                    Icon(
+                      Icons.business,
+                      size: 16,
+                      color: Colors.blue[700],
+                    ),
+                    const SizedBox(width: 6),
                     Text(
                       'Pickup Type: ${order.pickupType}',
                       style: const TextStyle(
@@ -638,78 +1024,143 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         color: Colors.blue,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    // Show specific fields based on pickup type
-                    if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
-                      Text(
-                        'Warehouse: ${order.warehouseName}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                    if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
-                      Text(
-                        'Dock: ${order.dockNumber}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                    if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
-                      Text(
-                        'Container: ${order.containerNumber}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                    if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
-                      Text(
-                        'Terminal: ${order.terminalName}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
                   ],
+                ),
+                const SizedBox(height: 6),
+                // Show specific fields based on pickup type
+                if (order.pickupType == 'WAREHOUSE' && order.warehouseName != null) ...[
+                  Text(
+                    'Warehouse: ${order.warehouseName}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+                if (order.pickupType == 'WAREHOUSE' && order.dockNumber != null) ...[
+                  Text(
+                    'Dock: ${order.dockNumber}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+                if (order.pickupType == 'PORT_TERMINAL' && order.containerNumber != null) ...[
+                  Text(
+                    'Container: ${order.containerNumber}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+                if (order.pickupType == 'PORT_TERMINAL' && order.terminalName != null) ...[
+                  Text(
+                    'Terminal: ${order.terminalName}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+
+        // Package Details
+        if (order.packageDetails != null && order.packageDetails!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(
+                Icons.inventory_2,
+                size: 16,
+                color: Colors.grey,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  order.packageDetails!,
+                  style: const TextStyle(fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
+          ),
+        ],
 
-            const SizedBox(height: 8),
-            const Text(
-              'Delivery Address:',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            Text(order.deliveryAddress ?? 'N/A'),
-            if (order.packageDetails != null &&
-                order.packageDetails!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              const Text(
-                'Package Details:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              Text(order.packageDetails!),
-            ],
-            const SizedBox(height: 16),
-            if (order.packageValue != null)
-              _buildInfoRow(
-                'Package Value',
-                'VND ${order.packageValue?.toStringAsFixed(0)}',
+        // Package specs
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            if (order.weightTons != null)
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.monitor_weight,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${order.weightTons!.toStringAsFixed(1)}t',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             if (order.distanceKm != null)
-              _buildInfoRow(
-                'Distance',
-                '${order.distanceKm?.toStringAsFixed(1)} km',
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.route,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${order.distanceKm!.toStringAsFixed(0)}km',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (order.packageValue != null)
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.monetization_on,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'VND ${order.packageValue!.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
-      ),
+      ],
     );
   }
 
@@ -814,6 +1265,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ],
       ),
     );
+  }
+
+  IconData _getOrderDetailStatusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return Icons.check_circle;
+      case 'IN_TRANSIT':
+        return Icons.local_shipping;
+      case 'ASSIGNED':
+        return Icons.assignment;
+      case 'PENDING':
+        return Icons.schedule;
+      case 'CANCELLED':
+        return Icons.cancel;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getOrderDetailStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'DELIVERED':
+        return Colors.green;
+      case 'IN_TRANSIT':
+        return Colors.orange;
+      case 'ASSIGNED':
+        return Colors.blue;
+      case 'PENDING':
+        return Colors.grey;
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }
 
