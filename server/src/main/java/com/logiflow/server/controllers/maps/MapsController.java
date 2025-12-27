@@ -9,6 +9,7 @@ import com.logiflow.server.services.maps.MapsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controller for map-related operations using OpenStreetMap services.
@@ -38,6 +39,24 @@ public class MapsController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Reverse geocode coordinates to address
+     * GET /api/maps/reverse-geocode?lat=...&lng=...
+     */
+    @GetMapping("/reverse-geocode")
+    public ResponseEntity<?> reverseGeocode(@RequestParam double lat, @RequestParam double lng) {
+        try {
+            String address = mapsService.reverseGeocode(lat, lng);
+            if (address != null) {
+                return ResponseEntity.ok(Map.of("address", address));
+            } else {
+                return ResponseEntity.badRequest().body("Reverse geocoding failed");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error during reverse geocoding: " + e.getMessage());
         }
     }
 

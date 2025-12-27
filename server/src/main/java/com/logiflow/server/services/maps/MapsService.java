@@ -22,6 +22,16 @@ public interface MapsService {
     GeocodeResultDto geocodeAddress(String address);
 
     /**
+     * Reverse geocode coordinates to address
+     * Uses Nominatim API (OpenStreetMap)
+     *
+     * @param latitude The latitude
+     * @param longitude The longitude
+     * @return String containing formatted address, or null if reverse geocoding fails
+     */
+    String reverseGeocode(double latitude, double longitude);
+
+    /**
      * Get route directions between two points
      * Uses OSRM (Open Source Routing Machine) API
      *

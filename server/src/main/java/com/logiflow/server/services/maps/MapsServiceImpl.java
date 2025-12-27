@@ -158,6 +158,37 @@ public class MapsServiceImpl implements MapsService {
     }
 
     /**
+     * Reverse geocode coordinates to address using Nominatim API
+     *
+     * @param latitude The latitude
+     * @param longitude The longitude
+     * @return String containing formatted address, or null if reverse geocoding fails
+     */
+    @Override
+    public String reverseGeocode(double latitude, double longitude) {
+        enforceRateLimit();
+
+        try {
+            String url = String.format(
+                "https://nominatim.openstreetmap.org/reverse?format=json&lat=%s&lon=%s&addressdetails=1&accept-language=en",
+                latitude, longitude
+            );
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = restTemplate.getForObject(url, Map.class);
+
+            if (result != null && result.containsKey("display_name")) {
+                return result.get("display_name").toString();
+            }
+        } catch (Exception e) {
+            System.err.println("Reverse geocoding error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    /**
      * Get route directions between two points using OSRM API
      * 
      * @param originLat Origin latitude
