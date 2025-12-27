@@ -1137,7 +1137,12 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createVehicle("container", "51C-78901", new BigDecimal("20.0"), "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282"), "available", now.minusDays(120), 8, 4.9),
                 createVehicle("van", "51B-89012", new BigDecimal("1.0"), "C", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "maintenance", now.minusDays(115), 7, 3.9),
                 createVehicle("truck", "51A-90123", new BigDecimal("4.0"), "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "available", now.minusDays(110), 10, 4.1),
-                createVehicle("container", "51C-01234", new BigDecimal("30.0"), "FC", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use", now.minusDays(105), 9, 5.3)
+                createVehicle("container", "51C-01234", new BigDecimal("30.0"), "FC", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use", now.minusDays(105), 9, 5.3),
+                createVehicle("truck", "51A-11223", new BigDecimal("6.0"), "C", new BigDecimal("21.0285"), new BigDecimal("105.8342"), "available", now.minusDays(100), 11, 4.4),
+                createVehicle("van", "51B-22334", new BigDecimal("0.9"), "B2", new BigDecimal("16.0628"), new BigDecimal("108.2328"), "available", now.minusDays(95), 9, 3.7),
+                createVehicle("container", "51C-33445", new BigDecimal("35.0"), "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282"), "in_use", now.minusDays(90), 7, 5.2),
+                createVehicle("truck", "51D-44556", new BigDecimal("8.0"), "D", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "available", now.minusDays(85), 13, 4.6),
+                createVehicle("van", "51B-55667", new BigDecimal("1.2"), "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "maintenance", now.minusDays(80), 10, 4.0)
         );
         vehicleRepository.saveAll(vehicles);
         System.out.println("Seeded " + vehicles.size() + " vehicles with performance data");

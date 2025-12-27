@@ -276,6 +276,12 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
             logger.info("{}", extractedText);
             logger.info("=== RAW OCR TEXT END ===");
 
+            // Validate if the document appears to be a driver's license
+            if (!isLikelyLicenseDocument(extractedText)) {
+                logger.warn("Document validation failed: text does not appear to be a driver's license");
+                return new LicenseInfo("Uploaded document does not appear to be a driver's license format. Please upload a valid driver's license.");
+            }
+
             // Try AI parsing first
             LicenseInfo result = parseWithAI(extractedText);
             if (result != null && result.isExtractionSuccessful()) {
@@ -527,6 +533,41 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
             logger.error("Error converting Mat to BufferedImage: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to convert OpenCV Mat to image format", e);
         }
+    }
+
+    private boolean isLikelyLicenseDocument(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return false;
+        }
+
+        String upperText = text.toUpperCase();
+
+        // Common driver's license keywords and patterns
+        String[] licenseKeywords = {
+            "DRIVER", "LICENSE", "LICENCE", "DRIVING", "DL", "DLN", "PERMIT",
+            "MOTOR", "VEHICLE", "CLASS", "TYPE", "EXPIRY", "EXPIRES", "VALID",
+            "BIRTH", "DOB", "ISSUE", "ISSUED", "NUMBER", "ID", "CARD",
+            "PHOTO", "SIGNATURE", "ENDORSEMENT", "RESTRICTION"
+        };
+
+        // Check for license keywords
+        int keywordCount = 0;
+        for (String keyword : licenseKeywords) {
+            if (upperText.contains(keyword)) {
+                keywordCount++;
+            }
+        }
+
+        // Check for license number patterns
+        Pattern licenseNumberPattern = Pattern.compile("\\b([A-Z0-9]{6,15})\\b");
+        boolean hasLicenseNumber = licenseNumberPattern.matcher(upperText).find();
+
+        // Check for date patterns (common in licenses)
+        Pattern datePattern = Pattern.compile("\\b(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\b");
+        boolean hasDates = datePattern.matcher(upperText).find();
+
+        // Consider it a license if it has multiple keywords or license number + dates
+        return keywordCount >= 3 || (hasLicenseNumber && hasDates) || keywordCount >= 2 && hasDates;
     }
 
     private LicenseInfo parseLicenseInfo(String text) {

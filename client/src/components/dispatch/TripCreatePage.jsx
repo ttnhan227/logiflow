@@ -100,18 +100,32 @@ const TripCreatePage = () => {
         }
 
         const totalWeight = selectedOrdersData.totalWeightTons;
-        const maxCapacityTons = Math.max(...vehicles.map(v => v.capacityTons || 0));
+        const availableVehicles = vehicles.filter(v => v.status === 'available');
+        const maxCapacityTons = availableVehicles.length > 0 ? Math.max(...availableVehicles.map(v => v.capacityTons || 0)) : 0;
         const exceedsAllVehicles = totalWeight > maxCapacityTons;
 
         return { maxCapacityTons, exceedsAllVehicles };
     }, [vehicles, selectedOrdersData?.totalWeightTons]);
 
-    // Sort vehicles based on weight capacity suitability
+    // Sort vehicles: available first, then by weight capacity suitability
     const sortedVehicles = useMemo(() => {
-        if (!selectedOrdersData?.totalWeightTons) return vehicles;
+        if (!selectedOrdersData?.totalWeightTons) {
+            // If no weight selected, sort by availability
+            return [...vehicles].sort((a, b) => {
+                const aAvailable = a.status === 'available';
+                const bAvailable = b.status === 'available';
+                return bAvailable ? 1 : -1; // available first
+            });
+        }
 
         const totalWeight = selectedOrdersData.totalWeightTons;
         return [...vehicles].sort((a, b) => {
+            const aAvailable = a.status === 'available';
+            const bAvailable = b.status === 'available';
+
+            // Available vehicles first
+            if (aAvailable !== bAvailable) return bAvailable ? 1 : -1;
+
             const aCapacityTons = a.capacityTons || 0;
             const bCapacityTons = b.capacityTons || 0;
 
@@ -142,6 +156,11 @@ const TripCreatePage = () => {
 
         if (!selectedVehicle || !scheduledDeparture || !scheduledArrival || selectedOrderIds.length === 0) {
             setError('Please fill all required fields and select at least one order');
+            return;
+        }
+
+        if (selectedVehicle.status !== 'available') {
+            setError('Selected vehicle is not available for trips. Please choose an available vehicle.');
             return;
         }
 
@@ -217,24 +236,27 @@ const TripCreatePage = () => {
                                 const capacityTons = v.capacityTons || 0;
                                 const totalWeight = selectedOrdersData?.totalWeightTons || 0;
                                 const canHandle = capacityTons >= totalWeight;
+                                const isAvailable = v.status === 'available';
                                 const remaining = capacityTons - totalWeight;
+                                const isUsable = canHandle && isAvailable;
 
                                 return (
                                     <option
                                         key={v.vehicleId}
                                         value={v.vehicleId}
-                                        disabled={!canHandle}
+                                        disabled={!isUsable}
                                         style={{
-                                            color: canHandle ? 'inherit' : '#9ca3af',
-                                            fontStyle: canHandle ? 'normal' : 'italic'
+                                            color: isUsable ? 'inherit' : '#9ca3af',
+                                            fontStyle: isUsable ? 'normal' : 'italic'
                                         }}
                                     >
-                                        {canHandle ? '✅' : '🚫'} {v.vehicleType} ({capacityTons.toLocaleString()} t)
+                                        {isUsable ? '✅' : (!isAvailable ? '⏸️' : '🚫')} {v.vehicleType} ({capacityTons.toLocaleString()} t)
                                         {totalWeight > 0 && (
                                             canHandle
                                                 ? ` - ${remaining.toLocaleString()} t remaining`
                                                 : ` - ${Math.abs(remaining).toLocaleString()} t over capacity`
                                         )}
+                                        {!isAvailable && ` - ${v.status}`}
                                         {v.requiredLicense && ` - License: ${v.requiredLicense}`}
                                     </option>
                                 );

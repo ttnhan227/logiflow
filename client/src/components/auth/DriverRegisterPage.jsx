@@ -133,8 +133,17 @@ const DriverRegisterPage = () => {
               address: result.data.address || prev.address,
             }));
           } else {
-            // OCR failed but allow manual entry
-            setOcrError(result.error || 'OCR extraction failed. Please enter information manually.');
+            // Check if the error indicates the document is not a license
+            const errorMessage = result.error || 'OCR extraction failed. Please enter information manually.';
+            if (errorMessage.includes('license format')) {
+              // Document is not a license - prevent proceeding
+              setError('Please upload a valid driver\'s license. The uploaded document does not appear to be a license.');
+              setLoading(false);
+              return;
+            } else {
+              // OCR failed but allow manual entry
+              setOcrError(errorMessage);
+            }
           }
         } catch (ocrError) {
           console.error('OCR Error:', ocrError);
