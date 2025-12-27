@@ -167,7 +167,6 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
 
     @Override
     @Transactional(readOnly = true)
-    @Transactional(readOnly = true)
     public Optional<String> getSettingValue(String category, String key) {
         Optional<SystemSetting> setting = systemSettingRepository.findByCategoryAndKey(category, key);
         if (setting.isPresent()) {
