@@ -167,6 +167,16 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
 
     @Override
     @Transactional(readOnly = true)
+    @Transactional(readOnly = true)
+    public Optional<String> getSettingValue(String category, String key) {
+        Optional<SystemSetting> setting = systemSettingRepository.findByCategoryAndKey(category, key);
+        if (setting.isPresent()) {
+            // TODO: Decrypt value if encrypted before returning
+            return Optional.of(setting.get().getValue());
+        }
+        return Optional.empty();
+    }
+
     public boolean settingExists(String category, String key) {
         return systemSettingRepository.existsByCategoryAndKey(category, key);
     }

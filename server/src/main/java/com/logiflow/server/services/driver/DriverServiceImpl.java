@@ -312,10 +312,13 @@ public class DriverServiceImpl implements DriverService {
 
     private BigDecimal getSystemSettingAsBigDecimal(String category, String key, BigDecimal defaultValue) {
         try {
-            // TODO: Implement proper system settings lookup once SystemSettingsService has getSettingValue method
-            // For now, return defaults but structure is ready for system settings integration
+            Optional<String> value = systemSettingsService.getSettingValue(category, key);
+            if (value.isPresent()) {
+                return new BigDecimal(value.get());
+            }
             return defaultValue;
         } catch (Exception e) {
+            System.out.println("Error retrieving system setting " + category + "." + key + ": " + e.getMessage());
             return defaultValue;
         }
     }

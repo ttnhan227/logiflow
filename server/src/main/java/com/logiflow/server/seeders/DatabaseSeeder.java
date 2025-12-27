@@ -1246,54 +1246,20 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedSystemSettings() {
         List<SystemSetting> settings = Arrays.asList(
-                // Maps and Location
-                createSystemSetting("maps", "map_provider", "openstreet", false, "Primary map provider (openstreet, mapbox, google)"),
-                createSystemSetting("maps", "routing_provider", "openstreet", false, "Provider for route calculation and optimization"),
-                createSystemSetting("maps", "geocoding_enabled", "true", false, "Enable address geocoding for pickup/delivery locations"),
+                // Pricing settings used by ShippingFeeCalculator
+                createSystemSetting("pricing", "base_fee", "20", false, "Base shipping fee"),
+                createSystemSetting("pricing", "price_per_km", "5", false, "Price per kilometer for distance-based shipping"),
+                createSystemSetting("pricing", "price_per_ton", "50000", false, "Price per ton for weight-based shipping"),
+                createSystemSetting("pricing", "insurance_rate", "0.01", false, "Insurance rate as percentage of package value"),
+                createSystemSetting("pricing", "urgent_multiplier", "1.5", false, "Multiplier for urgent orders"),
+                createSystemSetting("pricing", "min_fee", "10", false, "Minimum shipping fee"),
 
-                // GPS and Tracking
-                createSystemSetting("gps", "gps_tracking_enabled", "true", false, "Enable GPS tracking for vehicles and drivers"),
-                createSystemSetting("gps", "location_update_interval", "30", false, "Driver location update interval in seconds"),
-                createSystemSetting("gps", "route_deviation_alert", "true", false, "Alert when driver deviates from planned route"),
-
-                // Notifications
-                createSystemSetting("notifications", "email_enabled", "true", false, "Enable email notifications"),
-                createSystemSetting("notifications", "sms_enabled", "false", false, "Enable SMS notifications through third-party provider"),
-                createSystemSetting("notifications", "push_enabled", "true", false, "Enable push notifications for mobile app"),
-
-                // Integration Services
-                createSystemSetting("integration", "email_service_provider", "smtp", false, "Email service provider (smtp, sendgrid, mailgun)"),
-                createSystemSetting("integration", "payment_provider", "paypal", false, "Payment processing provider"),
-                createSystemSetting("integration", "sms_provider", "none", false, "SMS service provider"),
-
-                // Business Rules
-                createSystemSetting("business", "default_currency", "VND", false, "Default currency for transactions"),
-                createSystemSetting("business", "tax_rate", "0.08", false, "Default tax rate for calculations"),
-                createSystemSetting("business", "working_hours_start", "06:00", false, "Business working hours start time"),
-                createSystemSetting("business", "working_hours_end", "22:00", false, "Business working hours end time"),
-
-                // Compliance and Safety
-                createSystemSetting("compliance", "license_check_enabled", "true", false, "Enable automatic license validation"),
-                createSystemSetting("compliance", "insurance_check_enabled", "true", false, "Enable insurance expiry monitoring"),
-                createSystemSetting("compliance", "safety_inspection_reminder", "30", false, "Days before safety inspection due"),
-
-                // Performance and Limits
-                createSystemSetting("performance", "max_orders_per_trip", "5", false, "Maximum orders allowed per trip"),
-                createSystemSetting("performance", "max_drivers_per_dispatcher", "20", false, "Maximum drivers per dispatcher"),
-                createSystemSetting("performance", "auto_assignment_enabled", "true", false, "Enable automatic trip assignment"),
-
-                // Security
-                createSystemSetting("security", "password_min_length", "8", false, "Minimum password length"),
-                createSystemSetting("security", "session_timeout", "480", false, "Session timeout in minutes"),
-                createSystemSetting("security", "two_factor_enabled", "false", false, "Enable two-factor authentication"),
-
-                // Logistics Specific
-                createSystemSetting("logistics", "fuel_price_per_liter", "25000", false, "Current fuel price for cost calculations"),
-                createSystemSetting("logistics", "default_speed_kmh", "40", false, "Default vehicle speed for time estimates"),
-                createSystemSetting("logistics", "heavy_cargo_threshold_tons", "10", false, "Weight threshold for heavy cargo classification")
+                // Compliance settings used by DriverServiceImpl
+                createSystemSetting("compliance", "max_daily_hours", "8.00", false, "Maximum daily working hours for drivers"),
+                createSystemSetting("work-rest", "mandatory_rest_hours", "8.00", false, "Mandatory rest hours after max daily hours")
         );
         systemSettingRepository.saveAll(settings);
-        System.out.println("Seeded " + settings.size() + " comprehensive system settings");
+        System.out.println("Seeded " + settings.size() + " business system settings that can be modified via admin UI");
     }
 
     private SystemSetting createSystemSetting(String category, String key, String value, boolean isEncrypted, String description) {
