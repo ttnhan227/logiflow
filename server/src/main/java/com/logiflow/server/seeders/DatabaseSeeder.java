@@ -1128,7 +1128,6 @@ public class DatabaseSeeder implements CommandLineRunner {
     private void seedVehicles() {
         LocalDateTime now = LocalDateTime.now();
         List<Vehicle> vehicles = Arrays.asList(
-                // Original vehicles
                 createVehicle("truck", "51A-12345", new BigDecimal("2.0"), "C", new BigDecimal("21.0285"), new BigDecimal("105.8342"), "available", now.minusDays(150), 8, 4.2),
                 createVehicle("van", "51B-23456", new BigDecimal("0.8"), "B2", new BigDecimal("16.0471"), new BigDecimal("108.2068"), "available", now.minusDays(145), 12, 3.8),
                 createVehicle("container", "51C-34567", new BigDecimal("25.0"), "FC", new BigDecimal("21.5867"), new BigDecimal("105.3819"), "maintenance", now.minusDays(140), 6, 5.1),
@@ -1139,28 +1138,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createVehicle("van", "51B-89012", new BigDecimal("1.0"), "C", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "maintenance", now.minusDays(115), 7, 3.9),
                 createVehicle("truck", "51A-90123", new BigDecimal("4.0"), "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "available", now.minusDays(110), 10, 4.1),
                 createVehicle("container", "51C-01234", new BigDecimal("30.0"), "FC", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use", now.minusDays(105), 9, 5.3),
-
-                // Additional trucks for better coverage
-                createVehicle("truck", "51A-11223", new BigDecimal("1.5"), "B2", new BigDecimal("21.0250"), new BigDecimal("105.8300"), "available", now.minusDays(100), 15, 4.0),
-                createVehicle("truck", "51D-22334", new BigDecimal("8.0"), "D", new BigDecimal("16.0600"), new BigDecimal("108.2300"), "available", now.minusDays(95), 11, 4.6),
-                createVehicle("truck", "51A-33445", new BigDecimal("6.0"), "C", new BigDecimal("21.0300"), new BigDecimal("105.8500"), "available", now.minusDays(90), 16, 4.4),
-                createVehicle("truck", "51E-44556", new BigDecimal("15.0"), "E", new BigDecimal("16.0650"), new BigDecimal("108.2350"), "maintenance", now.minusDays(85), 12, 4.7),
-                createVehicle("truck", "51A-55667", new BigDecimal("2.5"), "C", new BigDecimal("21.0260"), new BigDecimal("105.8350"), "available", now.minusDays(80), 13, 4.1),
-
-                // Additional vans
-                createVehicle("van", "51B-66778", new BigDecimal("0.5"), "B2", new BigDecimal("20.8400"), new BigDecimal("106.6850"), "available", now.minusDays(75), 18, 3.6),
-                createVehicle("van", "51B-77889", new BigDecimal("1.2"), "C", new BigDecimal("20.8450"), new BigDecimal("106.6900"), "available", now.minusDays(70), 14, 3.9),
-                createVehicle("van", "51B-88990", new BigDecimal("0.9"), "B2", new BigDecimal("20.8500"), new BigDecimal("106.6950"), "in_use", now.minusDays(65), 16, 3.7),
-
-                // Additional containers for heavy cargo
-                createVehicle("container", "51C-99001", new BigDecimal("35.0"), "FC", new BigDecimal("10.8200"), new BigDecimal("106.6250"), "available", now.minusDays(60), 7, 5.2),
-                createVehicle("container", "51C-00112", new BigDecimal("28.0"), "FC", new BigDecimal("10.8250"), new BigDecimal("106.6300"), "available", now.minusDays(55), 10, 5.0),
-                createVehicle("container", "51C-11223", new BigDecimal("22.0"), "FC", new BigDecimal("10.8300"), new BigDecimal("106.6350"), "maintenance", now.minusDays(50), 11, 4.8),
-
-                // More variety - different locations
-                createVehicle("truck", "29A-22334", new BigDecimal("3.5"), "C", new BigDecimal("10.7800"), new BigDecimal("106.6950"), "available", now.minusDays(45), 9, 4.3),
-                createVehicle("van", "30A-33445", new BigDecimal("0.7"), "B2", new BigDecimal("16.0500"), new BigDecimal("108.2050"), "available", now.minusDays(40), 17, 3.8),
-                createVehicle("container", "51C-44556", new BigDecimal("18.0"), "FC", new BigDecimal("21.4000"), new BigDecimal("105.4200"), "available", now.minusDays(35), 8, 4.9)
+                createVehicle("truck", "51A-11223", new BigDecimal("6.0"), "C", new BigDecimal("21.0285"), new BigDecimal("105.8342"), "available", now.minusDays(100), 11, 4.4),
+                createVehicle("van", "51B-22334", new BigDecimal("0.9"), "B2", new BigDecimal("16.0628"), new BigDecimal("108.2328"), "available", now.minusDays(95), 9, 3.7),
+                createVehicle("container", "51C-33445", new BigDecimal("35.0"), "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282"), "in_use", now.minusDays(90), 7, 5.2),
+                createVehicle("truck", "51D-44556", new BigDecimal("8.0"), "D", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "available", now.minusDays(85), 13, 4.6),
+                createVehicle("van", "51B-55667", new BigDecimal("1.2"), "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "maintenance", now.minusDays(80), 10, 4.0)
         );
         vehicleRepository.saveAll(vehicles);
         System.out.println("Seeded " + vehicles.size() + " vehicles with performance data");

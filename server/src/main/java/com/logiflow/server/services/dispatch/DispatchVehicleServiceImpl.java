@@ -29,11 +29,8 @@ public class DispatchVehicleServiceImpl implements DispatchVehicleService {
 
     @Override
     public List<?> getAvailableVehicles() {
-        // Get all available drivers for license compatibility check
-        List<Driver> availableDrivers = driverRepository.findByStatus("available");
-
-        return vehicleRepository.findByStatus("available").stream()
-                .filter(vehicle -> hasCompatibleDriver(vehicle, availableDrivers))
+        // Return all vehicles so frontend can display them and grey out unavailable ones
+        return vehicleRepository.findAll().stream()
                 .map(this::toVehicleDto)
                 .collect(Collectors.toList());
     }

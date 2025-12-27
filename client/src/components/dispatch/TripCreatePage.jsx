@@ -43,7 +43,7 @@ const TripCreatePage = () => {
             try {
                 const [ordersRes, vehiclesRes] = await Promise.all([
                     orderService.getOrders({ status: 'PENDING', page: 0, size: 200 }),
-                    dispatchVehicleService.getAllVehicles(),
+                    dispatchVehicleService.getAvailableVehicles(),
                 ]);
                 setPendingOrders(ordersRes?.orders || []);
                 setVehicles(vehiclesRes || []);
@@ -100,45 +100,42 @@ const TripCreatePage = () => {
         }
 
         const totalWeight = selectedOrdersData.totalWeightTons;
-        const maxCapacityTons = Math.max(...vehicles.map(v => v.capacityTons || 0));
+        const availableVehicles = vehicles.filter(v => v.status === 'available');
+        const maxCapacityTons = availableVehicles.length > 0 ? Math.max(...availableVehicles.map(v => v.capacityTons || 0)) : 0;
         const exceedsAllVehicles = totalWeight > maxCapacityTons;
 
         return { maxCapacityTons, exceedsAllVehicles };
     }, [vehicles, selectedOrdersData?.totalWeightTons]);
 
-    // Sort vehicles: Available first (by suitability), then unavailable (by status)
+    // Sort vehicles: available first, then by weight capacity suitability
     const sortedVehicles = useMemo(() => {
         if (!selectedOrdersData?.totalWeightTons) {
-            // No orders selected - sort by availability then capacity
+            // If no weight selected, sort by availability
             return [...vehicles].sort((a, b) => {
                 const aAvailable = a.status === 'available';
                 const bAvailable = b.status === 'available';
-
-                if (aAvailable !== bAvailable) return bAvailable ? 1 : -1;
-
-                // Within same status, sort by capacity (descending)
-                const aCapacity = a.capacityTons || 0;
-                const bCapacity = b.capacityTons || 0;
-                return bCapacity - aCapacity;
+                return bAvailable ? 1 : -1; // available first
             });
         }
 
         const totalWeight = selectedOrdersData.totalWeightTons;
         return [...vehicles].sort((a, b) => {
-            const aCapacityTons = a.capacityTons || 0;
-            const bCapacityTons = b.capacityTons || 0;
             const aAvailable = a.status === 'available';
             const bAvailable = b.status === 'available';
-            const aCanHandle = aCapacityTons >= totalWeight && aAvailable;
-            const bCanHandle = bCapacityTons >= totalWeight && bAvailable;
 
-            // Available vehicles that can handle weight come first
-            if (aCanHandle !== bCanHandle) return bCanHandle ? 1 : -1;
-
-            // Then available vehicles that can't handle weight
+            // Available vehicles first
             if (aAvailable !== bAvailable) return bAvailable ? 1 : -1;
 
-            // Within same availability + suitability, sort by remaining capacity
+            const aCapacityTons = a.capacityTons || 0;
+            const bCapacityTons = b.capacityTons || 0;
+
+            // Vehicles that can handle the weight come first
+            const aCanHandle = aCapacityTons >= totalWeight;
+            const bCanHandle = bCapacityTons >= totalWeight;
+
+            if (aCanHandle !== bCanHandle) return bCanHandle ? 1 : -1;
+
+            // Within suitable vehicles, sort by remaining capacity (ascending = better fit)
             if (aCanHandle && bCanHandle) {
                 const aRemaining = aCapacityTons - totalWeight;
                 const bRemaining = bCapacityTons - totalWeight;
@@ -146,8 +143,8 @@ const TripCreatePage = () => {
             }
 
             // For vehicles that can't handle, sort by how close they are to capacity
-            const aDiff = Math.abs(totalWeight - aCapacityTons);
-            const bDiff = Math.abs(totalWeight - bCapacityTons);
+            const aDiff = totalWeight - aCapacityTons;
+            const bDiff = totalWeight - bCapacityTons;
             return aDiff - bDiff;
         });
     }, [vehicles, selectedOrdersData?.totalWeightTons]);
@@ -159,6 +156,11 @@ const TripCreatePage = () => {
 
         if (!selectedVehicle || !scheduledDeparture || !scheduledArrival || selectedOrderIds.length === 0) {
             setError('Please fill all required fields and select at least one order');
+            return;
+        }
+
+        if (selectedVehicle.status !== 'available') {
+            setError('Selected vehicle is not available for trips. Please choose an available vehicle.');
             return;
         }
 
@@ -224,222 +226,54 @@ const TripCreatePage = () => {
             <form className="detail-card" style={{ padding: '1.5rem' }} onSubmit={onSubmit}>
                 <div className="card-body" style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
                     <div className="form-group">
-                        <label>Vehicle Selection {selectedOrdersData?.totalWeightTons ? `(Total weight: ${selectedOrdersData.totalWeightTons.toLocaleString()} t)` : ''}</label>
-
-                        {/* Vehicle Cards Grid */}
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                            gap: '1rem',
-                            maxHeight: '400px',
-                            overflowY: 'auto',
-                            padding: '1rem',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            backgroundColor: '#f9fafb'
+                        <label>Vehicle {selectedOrdersData?.totalWeightTons ? `(Total weight: ${selectedOrdersData.totalWeightTons.toLocaleString()} t)` : ''}</label>
+                        <select value={selectedVehicle ? selectedVehicle.vehicleId : ''} onChange={e => {
+                            const v = vehicles.find(x => x.vehicleId === Number(e.target.value));
+                            setSelectedVehicle(v || null);
                         }}>
+                            <option value="">-- Select Vehicle --</option>
                             {sortedVehicles.map(v => {
                                 const capacityTons = v.capacityTons || 0;
                                 const totalWeight = selectedOrdersData?.totalWeightTons || 0;
+                                const canHandle = capacityTons >= totalWeight;
                                 const isAvailable = v.status === 'available';
-                                const canHandleWeight = capacityTons >= totalWeight;
-                                const canSelect = isAvailable && canHandleWeight;
                                 const remaining = capacityTons - totalWeight;
-                                const utilizationPercent = totalWeight > 0 ? (totalWeight / capacityTons) * 100 : 0;
-
-                                // Status styling
-                                let statusIcon = '✅';
-                                let statusText = 'Available';
-                                let statusColor = '#10b981';
-                                let cardOpacity = 1;
-                                let cardBorder = '2px solid #10b981';
-
-                                if (!isAvailable) {
-                                    cardOpacity = 0.6;
-                                    cardBorder = '2px solid #9ca3af';
-                                    if (v.status === 'maintenance') {
-                                        statusIcon = '🔧';
-                                        statusText = 'Maintenance';
-                                        statusColor = '#f59e0b';
-                                    } else if (v.status === 'in_use') {
-                                        statusIcon = '🚛';
-                                        statusText = 'In Use';
-                                        statusColor = '#3b82f6';
-                                    } else {
-                                        statusIcon = '❌';
-                                        statusText = v.status;
-                                        statusColor = '#ef4444';
-                                    }
-                                } else if (!canHandleWeight) {
-                                    statusIcon = '⚖️';
-                                    statusText = 'Over Capacity';
-                                    statusColor = '#ef4444';
-                                    cardBorder = '2px solid #ef4444';
-                                }
-
-                                const isSelected = selectedVehicle?.vehicleId === v.vehicleId;
+                                const isUsable = canHandle && isAvailable;
 
                                 return (
-                                    <div
+                                    <option
                                         key={v.vehicleId}
-                                        onClick={() => canSelect && setSelectedVehicle(isSelected ? null : v)}
+                                        value={v.vehicleId}
+                                        disabled={!isUsable}
                                         style={{
-                                            padding: '1rem',
-                                            borderRadius: '8px',
-                                            border: isSelected ? '2px solid #3b82f6' : cardBorder,
-                                            backgroundColor: isSelected ? '#eff6ff' : 'white',
-                                            opacity: cardOpacity,
-                                            cursor: canSelect ? 'pointer' : 'not-allowed',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
-                                            position: 'relative'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (canSelect) {
-                                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (canSelect) {
-                                                e.currentTarget.style.transform = 'translateY(0)';
-                                                e.currentTarget.style.boxShadow = isSelected ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 1px 3px rgba(0, 0, 0, 0.1)';
-                                            }
+                                            color: isUsable ? 'inherit' : '#9ca3af',
+                                            fontStyle: isUsable ? 'normal' : 'italic'
                                         }}
                                     >
-                                        {/* Selection Indicator */}
-                                        {isSelected && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '0.5rem',
-                                                right: '0.5rem',
-                                                width: '24px',
-                                                height: '24px',
-                                                borderRadius: '50%',
-                                                backgroundColor: '#3b82f6',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: 'white',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold'
-                                            }}>
-                                                ✓
-                                            </div>
+                                        {isUsable ? '✅' : (!isAvailable ? '⏸️' : '🚫')} {v.vehicleType} ({capacityTons.toLocaleString()} t)
+                                        {totalWeight > 0 && (
+                                            canHandle
+                                                ? ` - ${remaining.toLocaleString()} t remaining`
+                                                : ` - ${Math.abs(remaining).toLocaleString()} t over capacity`
                                         )}
-
-                                        {/* Header */}
-                                        <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            marginBottom: '0.75rem'
-                                        }}>
-                                            <div style={{
-                                                fontSize: '1.1rem',
-                                                fontWeight: '600',
-                                                color: '#1e293b'
-                                            }}>
-                                                {v.vehicleType.charAt(0).toUpperCase() + v.vehicleType.slice(1)}
-                                            </div>
-                                            <div style={{
-                                                fontSize: '0.9rem',
-                                                color: statusColor,
-                                                fontWeight: '500',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.25rem'
-                                            }}>
-                                                <span>{statusIcon}</span>
-                                                <span>{statusText}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Capacity Info */}
-                                        <div style={{ marginBottom: '0.75rem' }}>
-                                            <div style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                marginBottom: '0.25rem'
-                                            }}>
-                                                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                                                    Capacity: {capacityTons.toLocaleString()} tons
-                                                </span>
-                                                {totalWeight > 0 && (
-                                                    <span style={{
-                                                        fontSize: '0.85rem',
-                                                        color: canHandleWeight ? '#059669' : '#dc2626',
-                                                        fontWeight: '500'
-                                                    }}>
-                                                        {canHandleWeight
-                                                            ? `${remaining.toLocaleString()} t remaining`
-                                                            : `${Math.abs(remaining).toLocaleString()} t over`
-                                                        }
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Capacity Bar */}
-                                            <div style={{
-                                                width: '100%',
-                                                height: '8px',
-                                                backgroundColor: '#e5e7eb',
-                                                borderRadius: '4px',
-                                                overflow: 'hidden'
-                                            }}>
-                                                <div style={{
-                                                    width: `${Math.min(utilizationPercent, 100)}%`,
-                                                    height: '100%',
-                                                    backgroundColor: utilizationPercent > 100 ? '#dc2626' : utilizationPercent > 80 ? '#f59e0b' : '#10b981',
-                                                    transition: 'width 0.3s ease'
-                                                }}></div>
-                                            </div>
-                                        </div>
-
-                                        {/* License Info */}
-                                        {v.requiredLicense && (
-                                            <div style={{
-                                                fontSize: '0.8rem',
-                                                color: '#6b7280',
-                                                backgroundColor: '#f3f4f6',
-                                                padding: '0.25rem 0.5rem',
-                                                borderRadius: '4px',
-                                                display: 'inline-block'
-                                            }}>
-                                                License: {v.requiredLicense}
-                                            </div>
-                                        )}
-
-                                        {/* License Plate */}
-                                        <div style={{
-                                            marginTop: '0.5rem',
-                                            fontSize: '0.8rem',
-                                            color: '#9ca3af',
-                                            fontFamily: 'monospace'
-                                        }}>
-                                            {v.licensePlate}
-                                        </div>
-                                    </div>
+                                        {!isAvailable && ` - ${v.status}`}
+                                        {v.requiredLicense && ` - License: ${v.requiredLicense}`}
+                                    </option>
                                 );
                             })}
-                        </div>
-
-                        <div style={{
-                            marginTop: '0.5rem',
-                            fontSize: '0.75rem',
-                            color: '#6b7280',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.25rem'
-                        }}>
-                            {selectedOrdersData?.totalWeightTons > 0 && (
-                                <div>💡 Click on available vehicles that can handle your cargo weight</div>
-                            )}
-                            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
-                                ✅ Available • 🔧 Maintenance • 🚛 In Use • ⚖️ Over capacity
+                        </select>
+                        {selectedOrdersData?.totalWeightTons > 0 && (
+                            <div style={{
+                                marginTop: '0.5rem',
+                                fontSize: '0.75rem',
+                                color: '#6b7280',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <span>💡 Vehicles are sorted by suitability for your cargo weight</span>
                             </div>
-                        </div>
+                        )}
                     </div>
                     {/* Route selection removed — AI auto-selects based on order addresses */}
                     <div className="form-group">

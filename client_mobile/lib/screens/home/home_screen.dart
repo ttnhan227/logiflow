@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../services/auth/auth_service.dart';
 import '../../services/driver/driver_service.dart';
 import '../../services/gps/gps_tracking_service.dart';
+import '../../services/maps/maps_service.dart';
 import '../../models/user.dart';
 import '../driver/driver_trip_detail_screen.dart';
 
@@ -16,11 +19,21 @@ class _HomeScreenState extends State<HomeScreen> {
   User? _currentUser;
   bool _isLoading = true;
   List<dynamic>? _activeTrips;
+  double? _currentLat;
+  double? _currentLng;
+  String? _currentAddress;
+  Timer? _locationUpdateTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+  }
+
+  @override
+  void dispose() {
+    _locationUpdateTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadUser() async {
@@ -36,19 +49,66 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _startLocationUpdates() {
+    _stopLocationUpdates(); // Cancel any existing timer
+    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 30), (
+      timer,
+    ) async {
+      if (!mounted) return;
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        final address = await mapsService.reverseGeocode(
+          position.latitude,
+          position.longitude,
+        );
+        if (mounted) {
+          setState(() {
+            _currentLat = position.latitude;
+            _currentLng = position.longitude;
+            _currentAddress = address ?? 'Unknown location';
+          });
+        }
+      } catch (e) {
+        print('Error updating location: $e');
+      }
+    });
+  }
+
+  void _stopLocationUpdates() {
+    _locationUpdateTimer?.cancel();
+    _locationUpdateTimer = null;
+    setState(() {
+      _currentLat = null;
+      _currentLng = null;
+      _currentAddress = null;
+    });
+  }
+
   Future<void> _loadActiveTrips() async {
     if (_currentUser?.role?.toUpperCase() == 'DRIVER') {
       try {
         final trips = await driverService.getMyTrips();
-        final activeTrips = trips.where((trip) =>
-          trip.status?.toLowerCase() == 'in_progress' ||
-          trip.status?.toLowerCase() == 'arrived'
-        ).take(1).toList(); // Just need one active trip for the banner
+        final activeTrips = trips
+            .where(
+              (trip) =>
+                  trip.status?.toLowerCase() == 'in_progress' ||
+                  trip.status?.toLowerCase() == 'arrived',
+            )
+            .take(1)
+            .toList(); // Just need one active trip for the banner
 
         if (mounted) {
           setState(() {
             _activeTrips = activeTrips;
           });
+          // Start location updates if has active trips
+          if (activeTrips.isNotEmpty) {
+            _startLocationUpdates();
+          } else {
+            _stopLocationUpdates();
+          }
         }
       } catch (e) {
         // Silently fail - driver just won't see GPS banner
@@ -57,16 +117,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGpsBanner() {
-    if (_activeTrips == null || _activeTrips!.isEmpty) return const SizedBox.shrink();
+    if (_activeTrips == null || _activeTrips!.isEmpty)
+      return const SizedBox.shrink();
 
     final activeTrip = _activeTrips!.first;
-    final isGpsTracking = gpsTrackingService.isTracking && gpsTrackingService.currentTripId == activeTrip.tripId.toString();
+    final isGpsTracking =
+        gpsTrackingService.isTracking &&
+        gpsTrackingService.currentTripId == activeTrip.tripId.toString();
 
     // Auto-start GPS tracking for trips that are in progress but not yet tracking
     if (!isGpsTracking && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
-          await gpsTrackingService.connectAndStartTracking(activeTrip.tripId.toString());
+          await gpsTrackingService.connectAndStartTracking(
+            activeTrip.tripId.toString(),
+          );
           // Force banner update after GPS starts
           if (mounted) {
             setState(() {});
@@ -80,12 +145,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final bannerColor = isGpsTracking ? Colors.green : Colors.orange;
     final icon = isGpsTracking ? Icons.gps_fixed : Icons.location_disabled;
-    final title = isGpsTracking ? 'GPS Tracking Active' : 'GPS Tracking Required';
+    final title = isGpsTracking
+        ? 'GPS Tracking Active'
+        : 'GPS Tracking Required';
     final subtitle = isGpsTracking
-        ? 'Your location is being shared with customers'
+        ? (_currentLat != null &&
+                  _currentLng != null &&
+                  _currentAddress != null)
+              ? 'Lat: ${_currentLat!.toStringAsFixed(6)}, Lng: ${_currentLng!.toStringAsFixed(6)}\n${_currentAddress}'
+              : 'Your location is being shared with customers'
         : activeTrip.status?.toLowerCase() == 'arrived'
-            ? 'You must share location while at delivery destination'
-            : 'Tap "My Trips" to start tracking your route';
+        ? 'You must share location while at delivery destination'
+        : 'Tap "My Trips" to start tracking your route';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -114,18 +185,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'Trip #${activeTrip.tripId} • ${activeTrip.routeName ?? "Route"}',
-                  style: TextStyle(
-                    color: bannerColor.shade700,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: bannerColor.shade700, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: bannerColor.shade600,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: bannerColor.shade600, fontSize: 12),
                 ),
               ],
             ),
@@ -147,10 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Text(
                     'Welcome to LogiFlow!',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
 
@@ -174,9 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(height: 8),
                             Text(
                               'Role: ${_currentUser!.role}',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                              ),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           ],
                         ),
@@ -200,9 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           SizedBox(height: 8),
                           Text(
                             'Manage drivers, vehicles, and deliveries efficiently with our intelligent logistics system.',
-                            style: TextStyle(
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
