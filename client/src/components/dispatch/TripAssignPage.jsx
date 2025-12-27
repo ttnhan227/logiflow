@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { tripService } from '../../services';
+import { tripService, dispatchDriverService } from '../../services';
 import './dispatch.css';
 import './modern-dispatch.css';
 
@@ -29,8 +29,8 @@ const TripAssignPage = () => {
   const loadDrivers = async () => {
     setDriversLoading(true);
     try {
-      const drv = await tripService.getAvailableDrivers();
-      console.log('Drivers loaded:', drv);
+      const drv = await dispatchDriverService.getAllDrivers();
+      console.log('All drivers loaded:', drv);
       setDrivers(drv || []);
     } catch (ex) {
       console.error('Failed to load drivers', ex?.response?.data || ex);
@@ -79,7 +79,31 @@ const TripAssignPage = () => {
   const isLicenseCompatible = (driverLicense, requiredLicense) => {
     if (!requiredLicense) return true; // No requirement
     if (!driverLicense) return false; // Driver has no license
-    return driverLicense.toUpperCase() === requiredLicense.toUpperCase();
+
+    const driver = driverLicense.toUpperCase();
+    const required = requiredLicense.toUpperCase();
+
+    // License hierarchy: higher licenses can operate lower-class vehicles
+    // A1 > B2 > C > D > E > FC
+    const licenseHierarchy = {
+      'A1': 6,   // Highest - can operate all vehicles
+      'B2': 5,   // Can operate B2, C, D, E, FC vehicles
+      'C': 4,    // Can operate C, D, E, FC vehicles
+      'D': 3,    // Can operate D, E, FC vehicles
+      'E': 2,    // Can operate E, FC vehicles
+      'FC': 1    // Can only operate FC vehicles (lowest)
+    };
+
+    const driverLevel = licenseHierarchy[driver];
+    const requiredLevel = licenseHierarchy[required];
+
+    // Invalid license types
+    if (driverLevel === undefined || requiredLevel === undefined) {
+      return false;
+    }
+
+    // Driver can operate this vehicle if their license level is >= required level
+    return driverLevel >= requiredLevel;
   };
 
   const onAssign = async () => {
@@ -287,15 +311,29 @@ const TripAssignPage = () => {
                   fontSize: '0.9rem',
                   color: '#0c4a6e'
                 }}>
-                  <strong>Available Vehicles:</strong> {drivers.length} vehicle{drivers.length !== 1 ? 's' : ''} with compatible drivers found.
+                  <strong>All Drivers:</strong> {showEligibleOnly ?
+                    `${(drivers.filter(driver => {
+                      const rec = (recommended || []).find(r => Number(r.driverId) === Number(driver.driverId));
+                      const requiredLicense = trip?.vehicleRequiredLicense;
+                      const driverLicense = driver.licenseType;
+                      const isLicenseCompatible = isLicenseCompatible(driverLicense, requiredLicense);
+                      return rec ? rec.eligible : (driver.status === 'available' && isLicenseCompatible);
+                    })).length} eligible driver${(drivers.filter(driver => {
+                      const rec = (recommended || []).find(r => Number(r.driverId) === Number(driver.driverId));
+                      const requiredLicense = trip?.vehicleRequiredLicense;
+                      const driverLicense = driver.licenseType;
+                      const isLicenseCompatible = isLicenseCompatible(driverLicense, requiredLicense);
+                      return rec ? rec.eligible : (driver.status === 'available' && isLicenseCompatible);
+                    })).length !== 1 ? 's' : ''} shown`
+                    : `${drivers.length} driver${drivers.length !== 1 ? 's' : ''} available for consideration`}
                   {recommended && recommended.length > 0 && (
                     <span style={{ marginLeft: '1rem' }}>
-                      Driver recommendations loaded ({recommended.length} evaluated).
+                      Smart recommendations loaded ({recommended.length} evaluated).
                     </span>
                   )}
                   {(!recommended || recommended.length === 0) && (
                     <span style={{ marginLeft: '1rem', color: '#64748b' }}>
-                      Loading driver recommendations...
+                      Loading smart recommendations...
                     </span>
                   )}
                 </div>
@@ -303,110 +341,214 @@ const TripAssignPage = () => {
             )}
 
             {!driversLoading && drivers && drivers.length > 0 && (
-              <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '50px' }}></th>
-                      <th>Name</th>
-                      <th style={{ width: '80px' }}>Score</th>
-                      <th style={{ width: '120px' }}>Eligible</th>
-                      <th style={{ width: '100px' }}>Proximity</th>
-                      <th>Reasons</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recommended && recommended.length > 0 ? (
-                      // Show recommendations when available
-                      (showEligibleOnly ? recommended.filter(r => r.eligible) : recommended).map(r => {
-                        const reasons = Array.isArray(r.reasons) ? r.reasons : [];
-                        const gatingPrefixes = [
-                          'Not available',
-                          'Not fit',
-                          'Rest required',
-                          'License mismatch',
-                          'Over capacity',
-                          'Already has active assignment'
-                        ];
-                        const gating = reasons.filter(x => gatingPrefixes.some(p => (x || '').startsWith(p)));
-                        const nonGating = reasons.filter(x => !gating.includes(x));
-                        const ordered = [...gating, ...nonGating];
-                        const firstGating = gating.length > 0 ? gating[0] : null;
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '1rem',
+                maxHeight: '500px',
+                overflowY: 'auto',
+                padding: '1rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: '#f9fafb'
+              }}>
+                {(showEligibleOnly ? drivers.filter(driver => {
+                  const rec = (recommended || []).find(r => Number(r.driverId) === Number(driver.driverId));
+                  const requiredLicense = trip?.vehicleRequiredLicense;
+                  const driverLicense = driver.licenseType;
+                  const isLicenseCompatible = isLicenseCompatible(driverLicense, requiredLicense);
+                  return rec ? rec.eligible : (driver.status === 'available' && isLicenseCompatible);
+                }) : drivers).map(driver => {
+                  // Find recommendation data for this driver
+                  const rec = (recommended || []).find(r => Number(r.driverId) === Number(driver.driverId));
 
-                        return (
-                          <tr key={r.driverId} style={{ opacity: r.eligible ? 1 : 0.6 }}>
-                            <td>
-                              <input
-                                type="radio"
-                                name="driver"
-                                value={r.driverId}
-                                onChange={e => setSelectedDriver(e.target.value)}
-                              />
-                            </td>
-                            <td className="cell-text">{r.fullName || `Driver #${r.driverId}`}</td>
-                            <td className="cell-text">{typeof r.score === 'number' ? r.score.toFixed(1) : r.score}</td>
-                            <td className="cell-text">
-                              <span style={{
-                                color: r.eligible ? '#10b981' : '#ef4444',
-                                fontWeight: '600',
-                                fontSize: '12px'
-                              }}>
-                                {r.eligible ? '✓ Eligible' : `✗ Ineligible`}
-                              </span>
-                              {firstGating && (
-                                <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
-                                  {firstGating}
-                                </div>
-                              )}
-                            </td>
-                            <td className="cell-text">
-                              {typeof r.distanceToPickupKm === 'number' ? `${r.distanceToPickupKm.toFixed(1)} km` : 'N/A'}
-                            </td>
-                            <td className="cell-text" style={{ maxWidth: '300px' }}>
-                              {ordered.length > 0 ? (
-                                <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '12px' }}>
-                                  {ordered.slice(0, 3).map((reason, idx) => (
-                                    <li key={idx} style={{ marginBottom: '2px' }}>{reason}</li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <span style={{ color: '#6b7280', fontSize: '12px' }}>No issues</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      // Show basic driver list while recommendations load
-                      drivers.slice(0, 10).map((driver, index) => (
-                        <tr key={driver.vehicleId || index}>
-                          <td>
-                            <input
-                              type="radio"
-                              name="driver"
-                              value={driver.vehicleId}
-                              onChange={e => setSelectedDriver(e.target.value)}
-                              disabled={true}
-                            />
-                          </td>
-                          <td className="cell-text">Loading driver details...</td>
-                          <td className="cell-text">-</td>
-                          <td className="cell-text">
-                            <span style={{ color: '#64748b', fontSize: '12px' }}>Evaluating...</span>
-                          </td>
-                          <td className="cell-text">-</td>
-                          <td className="cell-text">
-                            <span style={{ color: '#64748b', fontSize: '12px' }}>Please wait</span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                  // Determine license compatibility with selected vehicle
+                  const requiredLicense = trip?.vehicleRequiredLicense;
+                  const driverLicense = driver.licenseType;
+                  const isLicenseCompatible = !requiredLicense || (driverLicense && driverLicense.toUpperCase() === requiredLicense.toUpperCase());
+
+                  // Determine overall eligibility
+                  const isEligible = rec ? rec.eligible : (driver.status === 'available' && isLicenseCompatible);
+                  const canSelect = isEligible;
+
+                  // Status styling
+                  let statusIcon = '✅';
+                  let statusText = 'Available';
+                  let statusColor = '#10b981';
+                  let cardOpacity = 1;
+                  let cardBorder = '2px solid #10b981';
+
+                  if (!isEligible) {
+                    cardOpacity = 0.7;
+                    cardBorder = '2px solid #9ca3af';
+                    if (!isLicenseCompatible) {
+                      statusIcon = '🚫';
+                      statusText = 'License Mismatch';
+                      statusColor = '#ef4444';
+                      cardBorder = '2px solid #ef4444';
+                    } else if (driver.status !== 'available') {
+                      statusIcon = '⏸️';
+                      statusText = driver.status || 'Unavailable';
+                      statusColor = '#f59e0b';
+                    }
+                  }
+
+                  const isSelected = selectedDriver === driver.driverId.toString();
+
+                  return (
+                    <div
+                      key={driver.driverId}
+                      onClick={() => canSelect && setSelectedDriver(driver.driverId.toString())}
+                      style={{
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        border: isSelected ? '2px solid #3b82f6' : cardBorder,
+                        backgroundColor: isSelected ? '#eff6ff' : 'white',
+                        opacity: cardOpacity,
+                        cursor: canSelect ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        position: 'relative'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (canSelect) {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (canSelect) {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = isSelected ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 1px 3px rgba(0, 0, 0, 0.1)';
+                        }
+                      }}
+                    >
+                      {/* Selection Indicator */}
+                      {isSelected && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '0.5rem',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          backgroundColor: '#3b82f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '14px',
+                          fontWeight: 'bold'
+                        }}>
+                          ✓
+                        </div>
+                      )}
+
+                      {/* Header */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '0.75rem'
+                      }}>
+                        <div style={{
+                          fontSize: '1.1rem',
+                          fontWeight: '600',
+                          color: '#1e293b'
+                        }}>
+                          {driver.fullName || `Driver #${driver.driverId}`}
+                        </div>
+                        <div style={{
+                          fontSize: '0.9rem',
+                          color: statusColor,
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
+                        }}>
+                          <span>{statusIcon}</span>
+                          <span>{statusText}</span>
+                        </div>
+                      </div>
+
+                      {/* License Info */}
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        <div style={{
+                          fontSize: '0.9rem',
+                          color: '#6b7280',
+                          marginBottom: '0.25rem'
+                        }}>
+                          License: <strong>{driverLicense || 'None'}</strong>
+                          {requiredLicense && (
+                            <span style={{
+                              marginLeft: '0.5rem',
+                              color: isLicenseCompatible ? '#10b981' : '#ef4444',
+                              fontWeight: '500'
+                            }}>
+                              {isLicenseCompatible ? '✓ Compatible' : `✗ Requires ${requiredLicense} or higher`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Recommendation Score (if available) */}
+                      {rec && (
+                        <div style={{
+                          marginBottom: '0.75rem',
+                          padding: '0.5rem',
+                          backgroundColor: rec.eligible ? '#f0fdf4' : '#fef2f2',
+                          borderRadius: '4px',
+                          border: `1px solid ${rec.eligible ? '#bbf7d0' : '#fecaca'}`
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '0.85rem'
+                          }}>
+                            <span style={{ color: '#6b7280' }}>Recommendation Score:</span>
+                            <span style={{
+                              fontWeight: '600',
+                              color: rec.eligible ? '#166534' : '#dc2626'
+                            }}>
+                              {typeof rec.score === 'number' ? rec.score.toFixed(1) : rec.score}
+                            </span>
+                          </div>
+                          {rec.distanceToPickupKm && (
+                            <div style={{
+                              marginTop: '0.25rem',
+                              fontSize: '0.8rem',
+                              color: '#6b7280'
+                            }}>
+                              Distance to pickup: {rec.distanceToPickupKm.toFixed(1)} km
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Contact Info */}
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: '#9ca3af'
+                      }}>
+                        📞 {driver.phone || 'No phone'}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            {!driversLoading && recommended && recommended.length > 0 && showEligibleOnly && (recommended.filter(r => r.eligible).length === 0) && (
+            {!driversLoading && showEligibleOnly && (() => {
+              const eligibleDrivers = drivers.filter(driver => {
+                const rec = (recommended || []).find(r => Number(r.driverId) === Number(driver.driverId));
+                const requiredLicense = trip?.vehicleRequiredLicense;
+                const driverLicense = driver.licenseType;
+                const isLicenseCompatible = isLicenseCompatible(driverLicense, requiredLicense);
+                return rec ? rec.eligible : (driver.status === 'available' && isLicenseCompatible);
+              });
+              return eligibleDrivers.length === 0;
+            })() && (
               <div style={{
                 padding: '2rem',
                 textAlign: 'center',
@@ -418,7 +560,7 @@ const TripAssignPage = () => {
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚫</div>
                 <h4 style={{ margin: '0 0 0.5rem 0', color: '#dc2626' }}>No eligible drivers</h4>
                 <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                  No drivers meet the current eligibility criteria. Try adjusting requirements or freeing up drivers.
+                  No drivers meet the current eligibility criteria. Try unchecking "Show eligible only" to see all drivers, or adjust vehicle requirements.
                 </p>
               </div>
             )}
