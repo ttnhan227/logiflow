@@ -90,8 +90,8 @@ const AdminUserDetailsPage = () => {
         </div>
         <div className="error-banner">{error}</div>
         <div style={{ padding: '20px' }}>
-          <button className="btn btn-secondary" onClick={() => navigate('/admin/users')}>
-            ← Back to Users
+          <button className="btn btn-secondary" onClick={() => navigate('/admin/dashboard')}>
+            ← Back to Dashboard
           </button>
         </div>
       </div>
@@ -110,8 +110,8 @@ const AdminUserDetailsPage = () => {
           <div className="empty-state-description">The user you're looking for doesn't exist.</div>
         </div>
         <div style={{ padding: '20px' }}>
-          <button className="btn btn-secondary" onClick={() => navigate('/admin/users')}>
-            ← Back to Users
+          <button className="btn btn-secondary" onClick={() => navigate('/admin/dashboard')}>
+            ← Back to Dashboard
           </button>
         </div>
       </div>
@@ -362,9 +362,9 @@ const AdminUserDetailsPage = () => {
 
       {/* Action Buttons */}
       <div className="admin-details-actions">
-        <button 
-          className="btn btn-secondary" 
-          onClick={() => navigate('/admin/users')}
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate('/admin/users/' + user.role.toLowerCase() + 's')}
         >
           ← Back to Users
         </button>

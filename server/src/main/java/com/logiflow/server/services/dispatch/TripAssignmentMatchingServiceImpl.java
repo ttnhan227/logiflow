@@ -151,8 +151,8 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
 
         // Capacity vs cargo weight: interpret Vehicle.capacity as tons.
         BigDecimal totalWeightTons = computeTripWeightTons(trip);
-        if (totalWeightTons != null && vehicle.getCapacity() != null) {
-            BigDecimal capTons = new BigDecimal(vehicle.getCapacity());
+        if (totalWeightTons != null && vehicle.getCapacityTons() != null) {
+            BigDecimal capTons = vehicle.getCapacityTons();
             if (totalWeightTons.compareTo(capTons) > 0) {
                 throw new RuntimeException("Vehicle capacity (" + capTons + " tons) is insufficient for trip cargo (" + totalWeightTons + " tons)");
             }
@@ -222,9 +222,9 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
             }
         }
 
-        // 5) Capacity vs weight (Vehicle.capacity interpreted as tons)
-        if (vehicle != null && vehicle.getCapacity() != null && totalWeightTons != null) {
-            BigDecimal capTons = new BigDecimal(vehicle.getCapacity());
+        // 5) Capacity vs weight (Vehicle.capacityTons in tons)
+        if (vehicle != null && vehicle.getCapacityTons() != null && totalWeightTons != null) {
+            BigDecimal capTons = vehicle.getCapacityTons();
             if (totalWeightTons.compareTo(capTons) > 0) {
                 eligible = false;
                 reasons.add("Over capacity (cargo " + totalWeightTons + "t > cap " + capTons + "t)");

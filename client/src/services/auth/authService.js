@@ -35,7 +35,17 @@ const authService = {
     return response.data;
   },
 
-  logout: () => {
+  logout: async () => {
+    const user = authService.getCurrentUser();
+    if (user && user.username) {
+      try {
+        // Log the logout on the backend
+        await api.post('/auth/logout', null, { params: { username: user.username } });
+      } catch (error) {
+        console.error('Failed to log logout:', error);
+      }
+    }
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     // Clear any auth headers

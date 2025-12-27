@@ -100,8 +100,7 @@ const TripCreatePage = () => {
         }
 
         const totalWeight = selectedOrdersData.totalWeightTons;
-        const maxCapacityKg = Math.max(...vehicles.map(v => v.capacity || 0));
-        const maxCapacityTons = maxCapacityKg / 1000;
+        const maxCapacityTons = Math.max(...vehicles.map(v => v.capacityTons || 0));
         const exceedsAllVehicles = totalWeight > maxCapacityTons;
 
         return { maxCapacityTons, exceedsAllVehicles };
@@ -113,10 +112,8 @@ const TripCreatePage = () => {
 
         const totalWeight = selectedOrdersData.totalWeightTons;
         return [...vehicles].sort((a, b) => {
-            const aCapacityKg = a.capacity || 0;
-            const bCapacityKg = b.capacity || 0;
-            const aCapacityTons = aCapacityKg / 1000; // Convert kg to tons
-            const bCapacityTons = bCapacityKg / 1000; // Convert kg to tons
+            const aCapacityTons = a.capacityTons || 0;
+            const bCapacityTons = b.capacityTons || 0;
 
             // Vehicles that can handle the weight come first
             const aCanHandle = aCapacityTons >= totalWeight;
@@ -217,8 +214,7 @@ const TripCreatePage = () => {
                         }}>
                             <option value="">-- Select Vehicle --</option>
                             {sortedVehicles.map(v => {
-                                const capacityKg = v.capacity || 0;
-                                const capacityTons = capacityKg / 1000; // Convert kg to tons
+                                const capacityTons = v.capacityTons || 0;
                                 const totalWeight = selectedOrdersData?.totalWeightTons || 0;
                                 const canHandle = capacityTons >= totalWeight;
                                 const remaining = capacityTons - totalWeight;

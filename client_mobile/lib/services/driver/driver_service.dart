@@ -8,7 +8,9 @@ import '../../models/driver/update_driver_profile_request.dart';
 
 class DriverService {
   Future<List<DriverTrip>> getMyTrips({String? status}) async {
-    final endpoint = status != null ? '/driver/me/trips?status=$status' : '/driver/me/trips';
+    final endpoint = status != null
+        ? '/driver/me/trips?status=$status'
+        : '/driver/me/trips';
     final response = await apiClient.get(endpoint);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
@@ -23,12 +25,13 @@ class DriverService {
   Future<bool> hasActiveTripAssignment() async {
     try {
       final trips = await getMyTrips();
-      return trips.any((trip) =>
-        // Must be actively committed to trips (exclude just-assigned-offers)
-        // "accepted" status means driver committed to this trip - BLOCKS other assignments
-        trip.assignmentStatus?.toLowerCase() == 'accepted' ||
-        // Also include trips that are in progress regardless of assignment status
-        trip.status?.toLowerCase() == 'in_progress'
+      return trips.any(
+        (trip) =>
+            // Must be actively committed to trips (exclude just-assigned-offers)
+            // "accepted" status means driver committed to this trip - BLOCKS other assignments
+            trip.assignmentStatus?.toLowerCase() == 'accepted' ||
+            // Also include trips that are in progress regardless of assignment status
+            trip.status?.toLowerCase() == 'in_progress',
         // Note: "assigned" scheduled trips are offers that haven't been accepted yet - don't block
       );
     } catch (e) {
@@ -46,8 +49,13 @@ class DriverService {
     }
   }
 
-  Future<List<DriverScheduleItem>> getMySchedule(String startDate, String endDate) async {
-    final response = await apiClient.get('/driver/me/schedule?startDate=$startDate&endDate=$endDate');
+  Future<List<DriverScheduleItem>> getMySchedule(
+    String startDate,
+    String endDate,
+  ) async {
+    final response = await apiClient.get(
+      '/driver/me/schedule?startDate=$startDate&endDate=$endDate',
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
       return data.map((item) => DriverScheduleItem.fromJson(item)).toList();
@@ -98,7 +106,9 @@ class DriverService {
   }
 
   Future<void> updateOrderStatus(int tripId, int orderId, String status) async {
-    print('MOBILE DEBUG: updateOrderStatus called with tripId=$tripId, orderId=$orderId, status=$status');
+    print(
+      'MOBILE DEBUG: updateOrderStatus called with tripId=$tripId, orderId=$orderId, status=$status',
+    );
     final response = await apiClient.post(
       '/driver/me/trips/$tripId/orders/$orderId/status',
       body: {'status': status},
@@ -108,7 +118,10 @@ class DriverService {
     }
   }
 
-  Future<void> updateAssignmentStatus(int tripId, String assignmentStatus) async {
+  Future<void> updateAssignmentStatus(
+    int tripId,
+    String assignmentStatus,
+  ) async {
     final response = await apiClient.post(
       '/driver/me/trips/$tripId/assignment-status',
       body: {'assignmentStatus': assignmentStatus},
@@ -122,9 +135,7 @@ class DriverService {
   Future<void> reportTripDelay(int tripId, String reason) async {
     final response = await apiClient.post(
       '/driver/me/trips/${tripId}/delay',
-      body: {
-        'delayReason': reason,
-      },
+      body: {'delayReason': reason},
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to report delay: ${response.body}');
@@ -143,7 +154,9 @@ class DriverService {
   }
 
   // Update driver profile
-  Future<DriverProfile> updateProfile(UpdateDriverProfileRequest request) async {
+  Future<DriverProfile> updateProfile(
+    UpdateDriverProfileRequest request,
+  ) async {
     final response = await apiClient.put(
       '/driver/me/profile',
       body: request.toJson(),
@@ -153,6 +166,28 @@ class DriverService {
       return DriverProfile.fromJson(data);
     } else {
       throw Exception('Failed to update profile: ${response.body}');
+    }
+  }
+
+  // Change password
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      final response = await apiClient.put(
+        '/user/profile/password',
+        queryParams: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to change password: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Failed to change password: $e');
     }
   }
 }

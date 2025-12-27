@@ -59,6 +59,7 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Transactional(readOnly = true)
     public List<String> getAvailableActions() {
         return Arrays.asList(
+            "LOGIN", "LOGOUT", "PASSWORD_CHANGE",
             "CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS",
             "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING",
             "CREATE_VEHICLE", "UPDATE_VEHICLE", "DELETE_VEHICLE",

@@ -67,12 +67,20 @@ class Order extends Equatable {
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
-      orderId: json['orderId'],
-      tripId: json['tripId'],
+      orderId: json['orderId'] is int
+          ? json['orderId']
+          : (json['orderId'] as num?)?.toInt(),
+      tripId: json['tripId'] is int
+          ? json['tripId']
+          : (json['tripId'] as num?)?.toInt(),
       customerName: json['customerName'],
       customerPhone: json['customerPhone'],
-      customerId: json['customerId'],
-      customerUserId: json['customerUserId'],
+      customerId: json['customerId'] is int
+          ? json['customerId']
+          : (json['customerId'] as num?)?.toInt(),
+      customerUserId: json['customerUserId'] is int
+          ? json['customerUserId']
+          : (json['customerUserId'] as num?)?.toInt(),
       pickupAddress: json['pickupAddress'],
       pickupType: json['pickupType'],
       containerNumber: json['containerNumber'],
@@ -81,17 +89,29 @@ class Order extends Equatable {
       dockNumber: json['dockNumber'],
       deliveryAddress: json['deliveryAddress'],
       packageDetails: json['packageDetails'],
-      weightKg: json['weightTons'] != null ? (json['weightTons'] as num).toDouble() * 1000 : null,
+      weightKg: json['weightTons'] != null
+          ? (json['weightTons'] as num).toDouble() * 1000
+          : null,
       packageValue: json['packageValue']?.toDouble(),
       distanceKm: json['distanceKm']?.toDouble(),
       priorityLevel: json['priorityLevel'],
       orderStatus: json['orderStatus'],
       tripStatus: json['tripStatus'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      estimatedPickupTime: json['estimatedPickupTime'] != null ? DateTime.parse(json['estimatedPickupTime']) : null,
-      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null ? DateTime.parse(json['estimatedDeliveryTime']) : null,
-      actualPickupTime: json['actualPickupTime'] != null ? DateTime.parse(json['actualPickupTime']) : null,
-      actualDeliveryTime: json['actualDeliveryTime'] != null ? DateTime.parse(json['actualDeliveryTime']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      estimatedPickupTime: json['estimatedPickupTime'] != null
+          ? DateTime.parse(json['estimatedPickupTime'])
+          : null,
+      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null
+          ? DateTime.parse(json['estimatedDeliveryTime'])
+          : null,
+      actualPickupTime: json['actualPickupTime'] != null
+          ? DateTime.parse(json['actualPickupTime'])
+          : null,
+      actualDeliveryTime: json['actualDeliveryTime'] != null
+          ? DateTime.parse(json['actualDeliveryTime'])
+          : null,
       driverName: json['driverName'],
       driverPhone: json['driverPhone'],
       vehiclePlate: json['vehiclePlate'],
@@ -307,7 +327,7 @@ class OrderSummary extends Equatable {
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     return OrderSummary(
-      orderId: json['orderId'],
+      orderId: (json['orderId'] as num).toInt(),
       customerName: json['customerName'],
       pickupAddress: json['pickupAddress'],
       pickupType: json['pickupType'],
@@ -325,13 +345,21 @@ class OrderSummary extends Equatable {
       paymentStatus: json['paymentStatus'],
       tripStatus: json['tripStatus'],
       createdAt: DateTime.parse(json['createdAt']),
-      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null ? DateTime.parse(json['estimatedDeliveryTime']) : null,
-      slaExtensionMinutes: json['slaExtensionMinutes'],
+      estimatedDeliveryTime: json['estimatedDeliveryTime'] != null
+          ? DateTime.parse(json['estimatedDeliveryTime'])
+          : null,
+      slaExtensionMinutes: json['slaExtensionMinutes'] is int
+          ? json['slaExtensionMinutes']
+          : (json['slaExtensionMinutes'] as num?)?.toInt(),
       delayReason: json['delayReason'],
       delayStatus: json['delayStatus'],
       deliveryFee: json['deliveryFee']?.toDouble() ?? 0.0,
-      customerId: json['customerId'],
-      customerUserId: json['customerUserId'],
+      customerId: json['customerId'] is int
+          ? json['customerId']
+          : (json['customerId'] as num?)?.toInt(),
+      customerUserId: json['customerUserId'] is int
+          ? json['customerUserId']
+          : (json['customerUserId'] as num?)?.toInt(),
     );
   }
 

@@ -11,6 +11,7 @@ import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.services.admin.AuditLogService;
 import com.logiflow.server.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,6 +49,9 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private RegistrationRequestRepository registrationRequestRepository;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
         // Proceed with normal authentication
@@ -60,6 +64,14 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow();
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
+
+        // Audit log the login
+        auditLogService.log(
+            "LOGIN",
+            user.getUsername(),
+            user.getRole() != null ? user.getRole().getRoleName() : "",
+            "User logged in from IP (not captured)"
+        );
 
         String token = jwtUtils.generateToken(user.getUsername(), user.getRole() != null ? user.getRole().getRoleName() : "");
 
@@ -123,6 +135,20 @@ public class AuthServiceImpl implements AuthService {
 
             return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(),
                 user.getProfilePictureUrl(), "Registration successful");
+        }
+    }
+
+    @Override
+    public void logout(String username) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user != null) {
+            // Audit log the logout
+            auditLogService.log(
+                "LOGOUT",
+                username,
+                user.getRole() != null ? user.getRole().getRoleName() : "",
+                "User logged out"
+            );
         }
     }
 }

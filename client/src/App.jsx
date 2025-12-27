@@ -18,13 +18,12 @@ import BusinessPage from "./components/home/BusinessPage";
 import DriversPage from "./components/home/DriversPage";
 import MobileAppPage from "./components/home/MobileAppPage";
 import AdminDashboardPage from "./components/admin/AdminDashboardPage";
-import UserManagementPage from "./components/admin/AdminUserManagementPage";
+
 import AdminDriverManagementPage from "./components/admin/AdminDriverManagementPage";
 import AdminCustomerManagementPage from "./components/admin/AdminCustomerManagementPage";
 import AdminDispatcherManagementPage from "./components/admin/AdminDispatcherManagementPage";
 import AdminUserDetailsPage from "./components/admin/AdminUserDetailsPage";
 import AdminUserEditPage from "./components/admin/AdminUserEditPage";
-import AdminSettingsPage from "./components/admin/AdminSettingsPage";
 import AdminSystemOverviewPage from "./components/admin/AdminSystemOverviewPage";
 import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
 import AdminRegistrationRequestsPage from "./components/admin/AdminRegistrationRequestsPage";
@@ -196,11 +195,7 @@ function App() {
               <AdminPaymentRequestPage />
             </ProtectedRoute>
           } />
-          <Route path="/admin/users" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <UserManagementPage />
-            </ProtectedRoute>
-          } />
+
           <Route path="/admin/users/drivers" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminDriverManagementPage />
@@ -231,21 +226,13 @@ function App() {
               <AdminUserDetailsPage />
             </ProtectedRoute>
           } />
-          <Route path="/admin/users/:userId" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminUserDetailsPage />
-            </ProtectedRoute>
-          } />
           <Route path="/admin/users/:userId/edit" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminUserEditPage />
             </ProtectedRoute>
           } />
-          <Route path="/admin/system/configuration" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminSettingsPage />
-            </ProtectedRoute>
-          } />
+
+
           <Route path="/admin/system/overview" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminSystemOverviewPage />

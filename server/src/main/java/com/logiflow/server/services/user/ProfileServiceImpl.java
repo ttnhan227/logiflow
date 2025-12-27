@@ -8,7 +8,9 @@ import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.services.admin.AuditLogService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -36,6 +38,12 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public ProfileDto getProfile(String username) {
@@ -155,5 +163,33 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         return profileDto;
+    }
+
+    @Override
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        User user = userRepository.findByUsernameWithRole(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        // Validate new password
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new RuntimeException("New password must be at least 6 characters long");
+        }
+
+        // Update password
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Audit log the password change
+        auditLogService.log(
+            "PASSWORD_CHANGE",
+            username,
+            user.getRole() != null ? user.getRole().getRoleName() : "",
+            "User changed password"
+        );
     }
 }

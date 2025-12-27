@@ -51,14 +51,7 @@ const AdminSideNav = () => {
     { path: '/admin/audit-logs', icon: '📝', label: 'Audit Logs' },
     { path: '/admin/payment-requests', icon: '💳', label: 'Payment Requests' },
     { path: '/admin/vehicles', icon: '🚗', label: 'Vehicles' },
-    {
-      label: 'System',
-      icon: '🛠️',
-      children: [
-        { path: '/admin/system/overview', icon: '🔍', label: 'System Overview' },
-        { path: '/admin/system/configuration', icon: '⚙️', label: 'Configuration' },
-      ]
-    }
+    { path: '/admin/system/overview', icon: '🛠️', label: 'System Overview & Configuration' },
   ];
 
   const handleLogout = () => {

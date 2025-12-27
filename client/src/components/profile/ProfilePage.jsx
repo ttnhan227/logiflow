@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { profileService, authService } from '../../services';
 import api from '../../services/api';
+import PasswordChangeModal from './PasswordChangeModal';
 import './profile.css';
 
 const getBaseUrl = () => {
@@ -12,6 +13,7 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -27,6 +29,10 @@ const ProfilePage = () => {
     };
     load();
   }, []);
+
+  const handlePasswordChangeSuccess = () => {
+    alert('Password changed successfully!');
+  };
 
 
 
@@ -152,7 +158,20 @@ const ProfilePage = () => {
         <a href="/profile/edit" className="btn btn-primary">
           Edit Profile
         </a>
+        <button
+          className="btn btn-secondary"
+          onClick={() => setShowPasswordModal(true)}
+        >
+          🔐 Change Password
+        </button>
       </div>
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSuccess={handlePasswordChangeSuccess}
+      />
     </div>
   );
 };

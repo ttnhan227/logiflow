@@ -7,7 +7,8 @@ class DriverTripHistoryScreen extends StatefulWidget {
   const DriverTripHistoryScreen({super.key});
 
   @override
-  State<DriverTripHistoryScreen> createState() => _DriverTripHistoryScreenState();
+  State<DriverTripHistoryScreen> createState() =>
+      _DriverTripHistoryScreenState();
 }
 
 class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
@@ -95,7 +96,12 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
     }
   }
 
-  Widget _buildSectionCard(String title, IconData icon, Color color, List<Widget> children) {
+  Widget _buildSectionCard(
+    String title,
+    IconData icon,
+    Color color,
+    List<Widget> children,
+  ) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
@@ -211,11 +217,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.history,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
+                              Icon(Icons.history, size: 64, color: Colors.grey),
                               SizedBox(height: 16),
                               Text(
                                 'No completed trips',
@@ -246,7 +248,9 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    DriverTripHistoryDetailScreen(tripId: trip.tripId),
+                                    DriverTripHistoryDetailScreen(
+                                      tripId: trip.tripId,
+                                    ),
                               ),
                             );
                           },
@@ -257,12 +261,19 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                             [
                               // Status badge at the top
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: _getStatusColorForCard(trip.status ?? '').withOpacity(0.1),
+                                  color: _getStatusColorForCard(
+                                    trip.status ?? '',
+                                  ).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: _getStatusColorForCard(trip.status ?? '').withOpacity(0.3),
+                                    color: _getStatusColorForCard(
+                                      trip.status ?? '',
+                                    ).withOpacity(0.3),
                                   ),
                                 ),
                                 child: Text(
@@ -270,7 +281,9 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: _getStatusColorForCard(trip.status ?? ''),
+                                    color: _getStatusColorForCard(
+                                      trip.status ?? '',
+                                    ),
                                   ),
                                 ),
                               ),
@@ -413,35 +426,42 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                               ),
 
                               // Pickup Types Information
-                              if (trip.pickupTypes != null && trip.pickupTypes!.isNotEmpty) ...[
+                              if (trip.pickupTypes != null &&
+                                  trip.pickupTypes!.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: Colors.blue[50],
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.blue[200]!),
+                                    border: Border.all(
+                                      color: Colors.blue[200]!,
+                                    ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.business,
-                                            size: 16,
-                                            color: Colors.blue[700],
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'Pickup Types: ${trip.pickupTypes}',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.blue,
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.business,
+                                              size: 16,
+                                              color: Colors.blue[700],
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Pickup Types: ${trip.pickupTypes}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),

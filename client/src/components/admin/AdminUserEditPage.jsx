@@ -187,7 +187,7 @@ const AdminUserEditPage = () => {
         window.dispatchEvent(new CustomEvent('userUpdated', { detail: updatedUser }));
       }
 
-      navigate('/admin/users');
+      navigate('/admin/users/' + user.role.toLowerCase() + 's');
     } catch (err) {
       setError(typeof err === 'string' ? err : 'Failed to update user');
     } finally {
@@ -357,10 +357,10 @@ const AdminUserEditPage = () => {
 
           {/* Action Buttons */}
           <div className="admin-edit-actions">
-            <button 
+            <button
               type="button"
               className="btn btn-secondary"
-              onClick={() => navigate('/admin/users')}
+              onClick={() => navigate('/admin/users/' + user.role.toLowerCase() + 's')}
               disabled={submitting}
             >
               Cancel

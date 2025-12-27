@@ -45,6 +45,11 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route")
     List<Trip> findAllWithRelations();
 
+    @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route LEFT JOIN FETCH t.orders WHERE t.status = 'completed'")
+    List<Trip> findCompletedTripsWithOrders();
+
+    List<Trip> findByStatus(String status);
+
     @Query("SELECT DISTINCT t FROM Trip t LEFT JOIN FETCH t.vehicle LEFT JOIN FETCH t.route LEFT JOIN FETCH t.orders o LEFT JOIN FETCH o.createdBy")
     org.springframework.data.domain.Page<Trip> findAllWithRelations(org.springframework.data.domain.Pageable pageable);
 

@@ -14,11 +14,19 @@ import com.logiflow.server.repositories.registration.RegistrationRequestReposito
 import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.system.SystemSettingRepository;
 import com.logiflow.server.repositories.payment.PaymentRepository;
+import com.logiflow.server.repositories.notification.NotificationRepository;
+import com.logiflow.server.repositories.audit.AuditLogRepository;
+import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
+// import com.logiflow.server.repositories.trip.TripProgressEventRepository; // Commented out - repository needs to be created
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -50,7 +58,13 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private SystemSettingRepository systemSettingRepository;
     @Autowired private PaymentRepository paymentRepository;
+    @Autowired private NotificationRepository notificationRepository;
+    @Autowired private AuditLogRepository auditLogRepository;
+    @Autowired private DeliveryConfirmationRepository deliveryConfirmationRepository;
+    // @Autowired private TripProgressEventRepository tripProgressEventRepository; // Commented out
     @Autowired private PasswordEncoder passwordEncoder;
+
+
 
     private final Random random = new Random();
 
@@ -71,6 +85,13 @@ public class DatabaseSeeder implements CommandLineRunner {
             seedOperationalData();
 
             seedRegistrationRequests();
+
+            // Seed additional operational data for complete demo experience
+            seedNotifications();
+            seedAuditLogs();
+            seedDeliveryConfirmations();
+            // seedTripProgressEvents(); // Commented out - repository not fully implemented
+
             System.out.println("Database seeding completed successfully!");
         } else {
             System.out.println("Database already seeded. Skipping...");
@@ -852,40 +873,59 @@ public class DatabaseSeeder implements CommandLineRunner {
                     customer.setDefaultDeliveryAddress(generateAddress(neighborhoods, wards, streets, index));
                     customer.setPreferredPaymentMethod(paymentMethods[Math.abs(user.getUsername().hashCode()) % paymentMethods.length]);
 
+                    // Calculate realistic customer activity based on their business type
                     int activityLevel = Math.abs(user.getEmail().hashCode()) % 100;
-                    if (activityLevel > 70) {
-                        customer.setTotalOrders(25 + (activityLevel % 45));
-                        customer.setTotalSpent(BigDecimal.valueOf(1500000 + (activityLevel % 5000000)));
-                    } else if (activityLevel > 30) {
-                        customer.setTotalOrders(3 + (activityLevel % 22));
-                        customer.setTotalSpent(BigDecimal.valueOf(150000 + (activityLevel % 1350000)));
+                    boolean isBusinessCustomer = customer.getCompanyName() != null;
+
+                    if (isBusinessCustomer) {
+                        // B2B customers have higher order volumes and values
+                        if (activityLevel > 60) {
+                            customer.setTotalOrders(35 + (activityLevel % 65)); // 35-100 orders
+                            customer.setTotalSpent(BigDecimal.valueOf(5000000 + (activityLevel % 25000000))); // 5M-30M VND
+                        } else if (activityLevel > 30) {
+                            customer.setTotalOrders(15 + (activityLevel % 30)); // 15-45 orders
+                            customer.setTotalSpent(BigDecimal.valueOf(2000000 + (activityLevel % 8000000))); // 2M-10M VND
+                        } else {
+                            customer.setTotalOrders(5 + (activityLevel % 10)); // 5-15 orders
+                            customer.setTotalSpent(BigDecimal.valueOf(500000 + (activityLevel % 1500000))); // 500k-2M VND
+                        }
                     } else {
-                        customer.setTotalOrders(activityLevel % 3);
-                        customer.setTotalSpent(BigDecimal.valueOf((activityLevel % 3) * 150000));
+                        // B2C customers have smaller order volumes
+                        if (activityLevel > 70) {
+                            customer.setTotalOrders(12 + (activityLevel % 18)); // 12-30 orders
+                            customer.setTotalSpent(BigDecimal.valueOf(800000 + (activityLevel % 2200000))); // 800k-3M VND
+                        } else if (activityLevel > 40) {
+                            customer.setTotalOrders(3 + (activityLevel % 12)); // 3-15 orders
+                            customer.setTotalSpent(BigDecimal.valueOf(200000 + (activityLevel % 800000))); // 200k-1M VND
+                        } else {
+                            customer.setTotalOrders(activityLevel % 5); // 0-4 orders
+                            customer.setTotalSpent(BigDecimal.valueOf((activityLevel % 5) * 80000)); // 0-320k VND
+                        }
                     }
 
                     if (customer.getTotalOrders() > 0) {
-                        int daysSinceLastOrder = 1 + (Math.abs(user.getUsername().hashCode()) % 60);
+                        // Set last order date based on customer activity level
+                        int daysSinceLastOrder = 1 + ((100 - activityLevel) / 10); // Active customers order more frequently
                         customer.setLastOrderDate(LocalDateTime.now().minusDays(daysSinceLastOrder));
                     }
 
                     // Add company information to specific customers for demo + ~30% random
                     String username = user.getUsername();
-                    boolean isB2B = false;
+                    boolean hasCompanyData = false;
 
                     // Force some specific users to have company data for demo
                     if ("nguyen.mai".equals(username) || "tran.binh".equals(username)) {
                         customer.setCompanyName("Logistics Solutions Ltd");
                         customer.setCompanyCode("LOG001");
-                        isB2B = true;
+                        hasCompanyData = true;
                     } else if ("pham.duc".equals(username) || "le.huong".equals(username)) {
                         customer.setCompanyName("Global Trade Corp");
                         customer.setCompanyCode("GTC002");
-                        isB2B = true;
+                        hasCompanyData = true;
                     }
 
                     // Add company information to ~30% of remaining customers (B2B simulation)
-                    if (!isB2B) {
+                    if (!hasCompanyData) {
                         int companySeed = Math.abs(user.getUsername().hashCode()) % 100;
                         if (companySeed < 30) { // 30% chance of being a B2B customer
                             int companyIndex = companySeed % companyNames.length;
@@ -907,6 +947,30 @@ public class DatabaseSeeder implements CommandLineRunner {
         String street = streets[Math.abs(seed * 7) % streets.length];
         int houseNumber = 1 + Math.abs(seed * 13) % 999;
         return String.format("%d %s, %s, %s, Ho Chi Minh City", houseNumber, street, ward, neighborhood);
+    }
+
+    private String generateEnhancedAddress(String role, int seed) {
+        String[] neighborhoods, wards, streets;
+
+        // Different areas based on role for realism
+        if ("DRIVER".equals(role)) {
+            // Drivers live in more suburban areas
+            neighborhoods = new String[]{"Go Vap", "Tan Binh", "Thu Duc", "District 12", "Binh Tan"};
+            wards = new String[]{"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11", "Ward 13"};
+            streets = new String[]{"Nguyen Trai", "Le Hong Phong", "Tran Hung Dao", "Vo Van Tan", "Pham Ngoc Thach", "Cuu Long"};
+        } else if ("DISPATCHER".equals(role) || "ADMIN".equals(role)) {
+            // Office workers live closer to city center
+            neighborhoods = new String[]{"District 1", "District 3", "District 7", "Tan Binh", "Phu Nhuan"};
+            wards = new String[]{"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11", "Ward 13", "Ward 15"};
+            streets = new String[]{"Dong Khoi", "Hai Ba Trung", "Le Loi", "Ton Duc Thang", "Nguyen Hue", "Pham Ngu Lao"};
+        } else {
+            // Customers from all areas
+            neighborhoods = new String[]{"District 1", "District 7", "Thu Duc", "Go Vap", "Tan Binh", "Binh Thạnh", "District 12"};
+            wards = new String[]{"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11", "Ward 13", "Ward 15"};
+            streets = new String[]{"Nguyen Trai", "Le Hong Phong", "Tran Hung Dao", "Vo Van Tan", "Pham Ngoc Thach", "Dong Khoi", "Hai Ba Trung"};
+        }
+
+        return generateAddress(neighborhoods, wards, streets, seed);
     }
 
     private void seedRoles() {
@@ -980,15 +1044,21 @@ public class DatabaseSeeder implements CommandLineRunner {
         user.setLastLogin(lastLogin);
         user.setCreatedAt(createdAt);
 
-        // Generate random date of birth (18-70 years old)
-        int age = 18 + random.nextInt(53);
+        // Generate realistic date of birth based on role
+        int age;
+        if ("DRIVER".equals(role.getRoleName())) {
+            age = 25 + random.nextInt(35); // Drivers typically 25-60 years old
+        } else if ("DISPATCHER".equals(role.getRoleName())) {
+            age = 22 + random.nextInt(28); // Dispatchers typically 22-50 years old
+        } else if ("CUSTOMER".equals(role.getRoleName())) {
+            age = 18 + random.nextInt(47); // Customers any adult age
+        } else {
+            age = 30 + random.nextInt(30); // Admins typically 30-60 years old
+        }
         user.setDateOfBirth(LocalDate.now().minusYears(age).minusDays(random.nextInt(365)));
 
-        // Generate address using the same method as customers
-        String[] neighborhoods = {"District 1", "District 7", "Thu Duc", "Go Vap", "Tan Binh"};
-        String[] wards = {"Ward 1", "Ward 3", "Ward 5", "Ward 7", "Ward 9", "Ward 11"};
-        String[] streets = {"Nguyen Trai", "Le Hong Phong", "Tran Hung Dao", "Vo Van Tan", "Pham Ngoc Thach", "Tong Huu Dinh"};
-        user.setAddress(generateAddress(neighborhoods, wards, streets, Math.abs(username.hashCode())));
+        // Generate address using enhanced method
+        user.setAddress(generateEnhancedAddress(role.getRoleName(), Math.abs(username.hashCode())));
 
         return user;
     }
@@ -1026,13 +1096,28 @@ public class DatabaseSeeder implements CommandLineRunner {
         driver.setLicenseNumber(licenseNumber);
         driver.setLicenseExpiryDate(licenseExpiry.toLocalDate());
 
-        // Calculate license issue date (typically 5-10 years before expiry)
-        int yearsBeforeExpiry = 5 + random.nextInt(6); // 5-10 years
+        // Calculate license issue date based on experience level
+        int yearsBeforeExpiry;
+        if (experience >= 10) {
+            yearsBeforeExpiry = 8 + random.nextInt(5); // 8-12 years (experienced drivers)
+        } else if (experience >= 5) {
+            yearsBeforeExpiry = 5 + random.nextInt(4); // 5-8 years (mid-level)
+        } else {
+            yearsBeforeExpiry = 2 + random.nextInt(4); // 2-5 years (new drivers)
+        }
         driver.setLicenseIssueDate(licenseExpiry.toLocalDate().minusYears(yearsBeforeExpiry));
 
-        driver.setRating(BigDecimal.valueOf(ratingValue));
+        // Adjust rating based on experience and some randomness
+        double experienceBonus = experience >= 10 ? 0.2 : experience >= 5 ? 0.1 : 0.0;
+        double finalRating = Math.min(5.0, ratingValue + experienceBonus + (random.nextDouble() * 0.3 - 0.15));
+        driver.setRating(BigDecimal.valueOf(Math.round(finalRating * 10.0) / 10.0));
+
         driver.setYearsExperience(experience);
-        driver.setHealthStatus(Driver.HealthStatus.FIT);
+
+        // Health status based on age/experience (simplified)
+        Driver.HealthStatus[] healthStatuses = {Driver.HealthStatus.FIT, Driver.HealthStatus.FIT, Driver.HealthStatus.FIT, Driver.HealthStatus.SICK};
+        driver.setHealthStatus(healthStatuses[random.nextInt(healthStatuses.length)]);
+
         driver.setCurrentLocationLat(lat);
         driver.setCurrentLocationLng(lng);
         driver.setStatus("available");
@@ -1043,31 +1128,111 @@ public class DatabaseSeeder implements CommandLineRunner {
     private void seedVehicles() {
         LocalDateTime now = LocalDateTime.now();
         List<Vehicle> vehicles = Arrays.asList(
-                createVehicle("truck", "51A-12345", 2000, "C", new BigDecimal("21.0285"), new BigDecimal("105.8342"), "available", now.minusDays(150)),
-                createVehicle("van", "51B-23456", 800, "B2", new BigDecimal("16.0471"), new BigDecimal("108.2068"), "available", now.minusDays(145)),
-                createVehicle("container", "51C-34567", 25000, "FC", new BigDecimal("21.5867"), new BigDecimal("105.3819"), "maintenance", now.minusDays(140)),
-                createVehicle("truck", "51A-45678", 5000, "C", new BigDecimal("21.0313"), new BigDecimal("105.8518"), "available", now.minusDays(135)),
-                createVehicle("truck", "51D-56789", 12000, "E", new BigDecimal("16.0628"), new BigDecimal("108.2328"), "available", now.minusDays(130)),
-                createVehicle("truck", "51A-67890", 3000, "D", new BigDecimal("21.0282"), new BigDecimal("105.8542"), "in_use", now.minusDays(125)),
-                createVehicle("container", "51C-78901", 20000, "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282"), "available", now.minusDays(120)),
-                createVehicle("van", "51B-89012", 1000, "C", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "maintenance", now.minusDays(115)),
-                createVehicle("truck", "51A-90123", 4000, "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "available", now.minusDays(110)),
-                createVehicle("container", "51C-01234", 30000, "FC", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use", now.minusDays(105))
+                createVehicle("truck", "51A-12345", new BigDecimal("2.0"), "C", new BigDecimal("21.0285"), new BigDecimal("105.8342"), "available", now.minusDays(150), 8, 4.2),
+                createVehicle("van", "51B-23456", new BigDecimal("0.8"), "B2", new BigDecimal("16.0471"), new BigDecimal("108.2068"), "available", now.minusDays(145), 12, 3.8),
+                createVehicle("container", "51C-34567", new BigDecimal("25.0"), "FC", new BigDecimal("21.5867"), new BigDecimal("105.3819"), "maintenance", now.minusDays(140), 6, 5.1),
+                createVehicle("truck", "51A-45678", new BigDecimal("5.0"), "C", new BigDecimal("21.0313"), new BigDecimal("105.8518"), "available", now.minusDays(135), 14, 4.5),
+                createVehicle("truck", "51D-56789", new BigDecimal("12.0"), "E", new BigDecimal("16.0628"), new BigDecimal("108.2328"), "available", now.minusDays(130), 13, 4.8),
+                createVehicle("truck", "51A-67890", new BigDecimal("3.0"), "D", new BigDecimal("21.0282"), new BigDecimal("105.8542"), "in_use", now.minusDays(125), 14, 4.3),
+                createVehicle("container", "51C-78901", new BigDecimal("20.0"), "FC", new BigDecimal("21.4082"), new BigDecimal("105.4282"), "available", now.minusDays(120), 8, 4.9),
+                createVehicle("van", "51B-89012", new BigDecimal("1.0"), "C", new BigDecimal("20.8462"), new BigDecimal("106.6884"), "maintenance", now.minusDays(115), 7, 3.9),
+                createVehicle("truck", "51A-90123", new BigDecimal("4.0"), "C", new BigDecimal("21.0278"), new BigDecimal("105.8342"), "available", now.minusDays(110), 10, 4.1),
+                createVehicle("container", "51C-01234", new BigDecimal("30.0"), "FC", new BigDecimal("10.8230"), new BigDecimal("106.6297"), "in_use", now.minusDays(105), 9, 5.3)
         );
         vehicleRepository.saveAll(vehicles);
-        System.out.println("Seeded " + vehicles.size() + " vehicles");
+        System.out.println("Seeded " + vehicles.size() + " vehicles with performance data");
     }
 
-    private Vehicle createVehicle(String vehicleType, String licensePlate, int capacity, String requiredLicense, BigDecimal lat, BigDecimal lng, String status, LocalDateTime createdAt) {
+    private Vehicle createVehicle(String vehicleType, String licensePlate, BigDecimal capacityTons, String requiredLicense, BigDecimal lat, BigDecimal lng, String status, LocalDateTime createdAt, int totalTripsCompleted, double avgFuelEfficiencyKmPerLiter) {
         Vehicle vehicle = new Vehicle();
         vehicle.setVehicleType(vehicleType);
         vehicle.setLicensePlate(licensePlate);
-        vehicle.setCapacity(capacity);
+        vehicle.setCapacityTons(capacityTons);
         vehicle.setRequiredLicense(requiredLicense);
         vehicle.setCurrentLocationLat(lat);
         vehicle.setCurrentLocationLng(lng);
         vehicle.setStatus(status);
         vehicle.setCreatedAt(createdAt);
+
+        // Add heavy logistics vehicle specifications
+        if ("truck".equals(vehicleType)) {
+            vehicle.setMake("Mercedes-Benz");
+            vehicle.setModel("Actros 1845");
+            vehicle.setFuelType("diesel");
+        } else if ("container".equals(vehicleType)) {
+            vehicle.setMake("MAN");
+            vehicle.setModel("TGX 18.440");
+            vehicle.setFuelType("diesel");
+        } else if ("van".equals(vehicleType)) {
+            vehicle.setMake("Ford");
+            vehicle.setModel("Transit");
+            vehicle.setFuelType("diesel");
+        }
+
+        // Add compliance dates (set to future)
+        LocalDateTime now = LocalDateTime.now();
+        vehicle.setRegistrationExpiryDate(now.plusYears(1));
+        vehicle.setInsuranceExpiryDate(now.plusMonths(6));
+        vehicle.setLastSafetyInspectionDate(now.minusMonths(3));
+        vehicle.setNextSafetyInspectionDueDate(now.plusMonths(9));
+
+        // Add maintenance dates
+        vehicle.setLastMaintenanceDate(now.minusMonths(2));
+        vehicle.setNextMaintenanceDueDate(now.plusMonths(4));
+
+        // Calculate performance tracking data based on vehicle age and usage patterns
+        // Age in years affects accumulated distance and maintenance costs
+        long ageInDays = java.time.temporal.ChronoUnit.DAYS.between(createdAt, now);
+        double ageInYears = ageInDays / 365.0;
+
+        // Calculate total distance based on vehicle age and typical usage
+        // Heavy trucks: 40,000-60,000 km/year, Vans: 25,000-35,000 km/year, Containers: 35,000-50,000 km/year
+        double annualKmRate;
+        switch (vehicleType) {
+            case "truck": annualKmRate = 45000 + (random.nextDouble() * 15000); break; // 45k-60k km/year
+            case "container": annualKmRate = 40000 + (random.nextDouble() * 10000); break; // 40k-50k km/year
+            case "van": annualKmRate = 28000 + (random.nextDouble() * 7000); break; // 28k-35k km/year
+            default: annualKmRate = 35000; break;
+        }
+
+        BigDecimal totalDistanceDriven = BigDecimal.valueOf(annualKmRate * ageInYears)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+        vehicle.setTotalDistanceDrivenKm(totalDistanceDriven);
+
+        // Calculate fuel consumption based on distance and efficiency
+        BigDecimal totalFuelConsumed = totalDistanceDriven.divide(
+            BigDecimal.valueOf(avgFuelEfficiencyKmPerLiter),
+            2, java.math.RoundingMode.HALF_UP);
+        vehicle.setTotalFuelConsumedLiters(totalFuelConsumed);
+
+        // Set fuel efficiency for display
+        vehicle.setAverageFuelEfficiencyKmPerLiter(BigDecimal.valueOf(avgFuelEfficiencyKmPerLiter));
+
+        // Set total trips completed
+        vehicle.setTotalTripsCompleted(totalTripsCompleted);
+
+        // Calculate maintenance costs based on distance and vehicle type
+        // Maintenance cost per km varies by vehicle type
+        double costPerKm;
+        switch (vehicleType) {
+            case "truck": costPerKm = 150 + (random.nextDouble() * 50); break; // 150-200 VND/km
+            case "container": costPerKm = 200 + (random.nextDouble() * 80); break; // 200-280 VND/km
+            case "van": costPerKm = 100 + (random.nextDouble() * 40); break; // 100-140 VND/km
+            default: costPerKm = 120; break;
+        }
+
+        // Add base maintenance costs and age-related costs
+        BigDecimal distanceBasedCost = totalDistanceDriven.multiply(BigDecimal.valueOf(costPerKm));
+        BigDecimal ageBasedCost = BigDecimal.valueOf(ageInYears * 2000000); // ~2M VND per year for general maintenance
+        BigDecimal totalMaintenanceCost = distanceBasedCost.add(ageBasedCost)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+        vehicle.setTotalMaintenanceCost(totalMaintenanceCost);
+
+        // Set maintenance cost this year (subset of total)
+        double thisYearFactor = Math.min(1.0, ageInYears); // Scale down for newer vehicles
+        vehicle.setMaintenanceCostThisYear(totalMaintenanceCost.multiply(BigDecimal.valueOf(thisYearFactor * 0.3))
+            .setScale(2, java.math.RoundingMode.HALF_UP));
+
         return vehicle;
     }
 
@@ -1081,13 +1246,54 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedSystemSettings() {
         List<SystemSetting> settings = Arrays.asList(
-                createSystemSetting("maps", "map_provider", "openstreet", false, "Primary map provider (openstreet, mapbox)"),
+                // Maps and Location
+                createSystemSetting("maps", "map_provider", "openstreet", false, "Primary map provider (openstreet, mapbox, google)"),
+                createSystemSetting("maps", "routing_provider", "openstreet", false, "Provider for route calculation and optimization"),
+                createSystemSetting("maps", "geocoding_enabled", "true", false, "Enable address geocoding for pickup/delivery locations"),
+
+                // GPS and Tracking
                 createSystemSetting("gps", "gps_tracking_enabled", "true", false, "Enable GPS tracking for vehicles and drivers"),
-                createSystemSetting("integration", "notification_sms_enabled", "false", false, "Enable SMS notifications through third-party provider"),
-                createSystemSetting("integration", "email_service_provider", "none", false, "Email service provider (smtp, sendgrid, mailgun, etc.)")
+                createSystemSetting("gps", "location_update_interval", "30", false, "Driver location update interval in seconds"),
+                createSystemSetting("gps", "route_deviation_alert", "true", false, "Alert when driver deviates from planned route"),
+
+                // Notifications
+                createSystemSetting("notifications", "email_enabled", "true", false, "Enable email notifications"),
+                createSystemSetting("notifications", "sms_enabled", "false", false, "Enable SMS notifications through third-party provider"),
+                createSystemSetting("notifications", "push_enabled", "true", false, "Enable push notifications for mobile app"),
+
+                // Integration Services
+                createSystemSetting("integration", "email_service_provider", "smtp", false, "Email service provider (smtp, sendgrid, mailgun)"),
+                createSystemSetting("integration", "payment_provider", "paypal", false, "Payment processing provider"),
+                createSystemSetting("integration", "sms_provider", "none", false, "SMS service provider"),
+
+                // Business Rules
+                createSystemSetting("business", "default_currency", "VND", false, "Default currency for transactions"),
+                createSystemSetting("business", "tax_rate", "0.08", false, "Default tax rate for calculations"),
+                createSystemSetting("business", "working_hours_start", "06:00", false, "Business working hours start time"),
+                createSystemSetting("business", "working_hours_end", "22:00", false, "Business working hours end time"),
+
+                // Compliance and Safety
+                createSystemSetting("compliance", "license_check_enabled", "true", false, "Enable automatic license validation"),
+                createSystemSetting("compliance", "insurance_check_enabled", "true", false, "Enable insurance expiry monitoring"),
+                createSystemSetting("compliance", "safety_inspection_reminder", "30", false, "Days before safety inspection due"),
+
+                // Performance and Limits
+                createSystemSetting("performance", "max_orders_per_trip", "5", false, "Maximum orders allowed per trip"),
+                createSystemSetting("performance", "max_drivers_per_dispatcher", "20", false, "Maximum drivers per dispatcher"),
+                createSystemSetting("performance", "auto_assignment_enabled", "true", false, "Enable automatic trip assignment"),
+
+                // Security
+                createSystemSetting("security", "password_min_length", "8", false, "Minimum password length"),
+                createSystemSetting("security", "session_timeout", "480", false, "Session timeout in minutes"),
+                createSystemSetting("security", "two_factor_enabled", "false", false, "Enable two-factor authentication"),
+
+                // Logistics Specific
+                createSystemSetting("logistics", "fuel_price_per_liter", "25000", false, "Current fuel price for cost calculations"),
+                createSystemSetting("logistics", "default_speed_kmh", "40", false, "Default vehicle speed for time estimates"),
+                createSystemSetting("logistics", "heavy_cargo_threshold_tons", "10", false, "Weight threshold for heavy cargo classification")
         );
         systemSettingRepository.saveAll(settings);
-        System.out.println("Seeded 4 system settings");
+        System.out.println("Seeded " + settings.size() + " comprehensive system settings");
     }
 
     private SystemSetting createSystemSetting(String category, String key, String value, boolean isEncrypted, String description) {
@@ -1324,4 +1530,317 @@ public class DatabaseSeeder implements CommandLineRunner {
         // Fallback: return any vehicle if no compatible ones found
         return vehicles.get(0);
     }
+
+    // ==========================================
+    // Additional Operational Data Seeding for Demo
+    // ==========================================
+
+    @Transactional
+    private void seedNotifications() {
+        System.out.println("Seeding notifications for demo...");
+
+        // Get admin users for broadcast notifications
+        List<User> adminUsers = userRepository.findAllUsersWithRole().stream()
+                .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole().getRoleName()))
+                .toList();
+
+        // Get dispatcher users
+        List<User> dispatcherUsers = userRepository.findAllUsersWithRole().stream()
+                .filter(u -> "DISPATCHER".equalsIgnoreCase(u.getRole().getRoleName()))
+                .toList();
+
+        // Get driver users
+        List<User> driverUsers = userRepository.findAllUsersWithRole().stream()
+                .filter(u -> "DRIVER".equalsIgnoreCase(u.getRole().getRoleName()))
+                .toList();
+
+        // Get customer users
+        List<User> customerUsers = userRepository.findAllUsersWithRole().stream()
+                .filter(u -> "CUSTOMER".equalsIgnoreCase(u.getRole().getRoleName()))
+                .toList();
+
+        LocalDateTime now = LocalDateTime.now();
+        List<Notification> notifications = new ArrayList<>();
+
+        // 1. Admin Broadcast Notifications (critical alerts, system events)
+        if (!driverUsers.isEmpty()) {
+            User driverUser = driverUsers.get(0); // Get first driver user
+            notifications.add(new Notification(
+                Notification.NotificationType.COMPLIANCE_ALERT,
+                "WARNING",
+                "License Expiring Soon",
+                "Driver " + driverUser.getFullName() + "'s license expires in 30 days. Please schedule renewal.",
+                "/admin/users/drivers/" + driverUser.getUserId(),
+                "View Driver",
+                null,
+                null
+            ));
+        }
+
+        notifications.add(new Notification(
+            Notification.NotificationType.SYSTEM_EVENT,
+            "INFO",
+            "Monthly Reports Ready",
+            "Performance reports for November 2024 are now available for review.",
+            "/admin/reports",
+            "View Reports",
+            null,
+            null
+        ));
+
+        // 2. Driver-specific notifications
+        if (!driverUsers.isEmpty()) {
+            User driver = driverUsers.get(0);
+            notifications.add(new Notification(
+                Notification.NotificationType.DRIVER_TRIP_EVENT,
+                "INFO",
+                "Trip Assigned",
+                "You have been assigned to trip #123 to Da Nang. Please check your schedule.",
+                "/driver/trips/123",
+                "View Trip",
+                123,
+                driver
+            ));
+
+            notifications.add(new Notification(
+                Notification.NotificationType.DELAY_REPORT,
+                "WARNING",
+                "Delay Report Submitted",
+                "Your delay report for trip #456 has been submitted and is pending admin review.",
+                "/driver/trips/456",
+                "View Trip",
+                456,
+                driver
+            ));
+        }
+
+        // 3. Customer-specific notifications
+        if (!customerUsers.isEmpty()) {
+            User customer = customerUsers.get(0);
+            notifications.add(new Notification(
+                Notification.NotificationType.ORDER_DELIVERED,
+                "SUCCESS",
+                "Order Delivered Successfully",
+                "Your order #789 has been delivered to the specified address.",
+                "/customer/orders/789",
+                "View Order",
+                789,
+                customer
+            ));
+
+            notifications.add(new Notification(
+                Notification.NotificationType.PAYMENT_REQUEST,
+                "INFO",
+                "Payment Required",
+                "Payment is required for delivered order #101. Please complete payment to confirm delivery.",
+                "/customer/orders/101/payment",
+                "Pay Now",
+                101,
+                customer
+            ));
+        }
+
+        // 4. Registration-related notifications for admins
+        if (!adminUsers.isEmpty()) {
+            User admin = adminUsers.get(0);
+            notifications.add(new Notification(
+                Notification.NotificationType.REGISTRATION_REQUEST,
+                "INFO",
+                "New Registration Request",
+                "New driver registration request from john.smith@example.com requires approval.",
+                "/admin/registration-requests",
+                "Review Request",
+                null,
+                admin
+            ));
+        }
+
+        // Set realistic timestamps (some recent, some older)
+        for (int i = 0; i < notifications.size(); i++) {
+            Notification notification = notifications.get(i);
+            notification.setCreatedAt(now.minusDays(random.nextInt(7))); // Within last week
+            // Mark some as read randomly
+            notification.setIsRead(random.nextDouble() < 0.6); // 60% read
+        }
+
+        notificationRepository.saveAll(notifications);
+        System.out.println("Seeded " + notifications.size() + " notifications");
+    }
+
+    @Transactional
+    private void seedAuditLogs() {
+        System.out.println("Seeding audit logs for demo...");
+
+        List<AuditLog> auditLogs = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Get users for realistic audit entries
+        List<User> allUsers = userRepository.findAllUsersWithRole();
+
+        // Sample audit actions
+        String[] actions = {
+            "LOGIN", "LOGOUT", "CREATE_VEHICLE", "UPDATE_VEHICLE", "DELETE_VEHICLE",
+            "CREATE_TRIP", "UPDATE_TRIP", "ASSIGN_TRIP", "CREATE_ORDER", "UPDATE_ORDER",
+            "APPROVE_REGISTRATION", "REJECT_REGISTRATION", "CREATE_USER", "UPDATE_USER",
+            "PASSWORD_CHANGE"
+        };
+
+        // Generate audit logs for the last 30 days
+        for (int i = 0; i < 150; i++) { // 150 audit entries
+            User randomUser = allUsers.get(random.nextInt(allUsers.size()));
+            String action = actions[random.nextInt(actions.length)];
+
+            AuditLog auditLog = new AuditLog();
+            auditLog.setAction(action);
+            auditLog.setUsername(randomUser.getUsername());
+            auditLog.setRole(randomUser.getRole().getRoleName());
+
+            // Generate realistic details based on action
+            String details = generateAuditDetails(action, randomUser);
+            auditLog.setDetails(details);
+
+            // Random timestamp within last 30 days
+            auditLog.setTimestamp(now.minusDays(random.nextInt(30)));
+            auditLog.setSuccess(true); // Most operations succeed
+
+            auditLogs.add(auditLog);
+        }
+
+        // Add some failed operations for realism
+        for (int i = 0; i < 10; i++) {
+            User randomUser = allUsers.get(random.nextInt(allUsers.size()));
+            AuditLog failedLog = new AuditLog();
+            failedLog.setAction("LOGIN");
+            failedLog.setUsername(randomUser.getUsername());
+            failedLog.setRole(randomUser.getRole().getRoleName());
+            failedLog.setDetails("Failed login attempt - invalid credentials from IP 192.168.1." + random.nextInt(255));
+            failedLog.setTimestamp(now.minusDays(random.nextInt(7)));
+            failedLog.setSuccess(false);
+
+            auditLogs.add(failedLog);
+        }
+
+        auditLogRepository.saveAll(auditLogs);
+        System.out.println("Seeded " + auditLogs.size() + " audit logs");
+    }
+
+    private String generateAuditDetails(String action, User user) {
+        switch (action) {
+            case "LOGIN":
+                return "User logged in from IP 192.168.1." + random.nextInt(255);
+            case "LOGOUT":
+                return "User logged out";
+            case "CREATE_VEHICLE":
+                return "Created vehicle with license plate " + generateRandomLicensePlate();
+            case "UPDATE_VEHICLE":
+                return "Updated vehicle information";
+            case "DELETE_VEHICLE":
+                return "Deleted vehicle " + generateRandomLicensePlate();
+            case "CREATE_TRIP":
+                return "Created new trip #" + random.nextInt(1000);
+            case "UPDATE_TRIP":
+                return "Updated trip details";
+            case "ASSIGN_TRIP":
+                return "Assigned trip #" + random.nextInt(1000) + " to driver";
+            case "CREATE_ORDER":
+                return "Created order #" + random.nextInt(1000) + " for customer";
+            case "UPDATE_ORDER":
+                return "Updated order status and details";
+            case "APPROVE_REGISTRATION":
+                return "Approved registration request for new user";
+            case "REJECT_REGISTRATION":
+                return "Rejected registration request due to incomplete documents";
+            case "CREATE_USER":
+                return "Created new user account";
+            case "UPDATE_USER":
+                return "Updated user profile information";
+            case "SYSTEM_BACKUP":
+                return "Performed system backup";
+            case "PASSWORD_CHANGE":
+                return "Changed user password";
+            default:
+                return "Performed " + action + " operation";
+        }
+    }
+
+    private String generateRandomLicensePlate() {
+        String[] prefixes = {"51A", "51B", "51C", "51D", "29A", "30A"};
+        String prefix = prefixes[random.nextInt(prefixes.length)];
+        int number = 10000 + random.nextInt(90000);
+        return prefix + "-" + number;
+    }
+
+    @Transactional
+    private void seedDeliveryConfirmations() {
+        System.out.println("Seeding delivery confirmations for completed trips...");
+
+        // Get completed trips with their orders eagerly loaded
+        List<Trip> completedTrips = tripRepository.findCompletedTripsWithOrders();
+
+        // Get all trip assignments for completed trips
+        List<TripAssignment> allAssignments = tripAssignmentRepository.findAll().stream()
+            .filter(ta -> "completed".equals(ta.getStatus()) &&
+                         completedTrips.stream().anyMatch(t -> t.getTripId().equals(ta.getTrip().getTripId())))
+            .toList();
+
+        List<DeliveryConfirmation> confirmations = new ArrayList<>();
+
+        for (Trip trip : completedTrips) {
+            if (!"completed".equals(trip.getStatus())) {
+                continue;
+            }
+
+            // Only add confirmations for trips that actually have orders (skip if no orders)
+            if (trip.getOrders() == null || trip.getOrders().isEmpty()) {
+                continue;
+            }
+
+            // Get the driver who completed this trip
+            TripAssignment assignment = allAssignments.stream()
+                    .filter(ta -> trip.getTripId().equals(ta.getTrip().getTripId()) && "completed".equals(ta.getStatus()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (assignment == null) continue;
+
+            // Create delivery confirmation
+            DeliveryConfirmation confirmation = new DeliveryConfirmation();
+            confirmation.setTrip(trip);
+
+            // Randomly choose confirmation type
+            String[] confirmationTypes = {"SIGNATURE", "PHOTO", "OTP"};
+            String confirmationType = confirmationTypes[random.nextInt(confirmationTypes.length)];
+            confirmation.setConfirmationType(confirmationType);
+
+            // Add type-specific data
+            switch (confirmationType) {
+                case "SIGNATURE":
+                    confirmation.setSignatureData("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+                    confirmation.setRecipientName("Nguyen Van A");
+                    break;
+                case "PHOTO":
+                    confirmation.setPhotoData("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+                    confirmation.setRecipientName("Tran Thi B");
+                    break;
+                case "OTP":
+                    confirmation.setOtpCode("123456");
+                    confirmation.setRecipientName("Le Van C");
+                    break;
+            }
+
+            confirmation.setNotes("Package delivered successfully. Customer satisfied with service.");
+            confirmation.setConfirmedBy(assignment.getDriver().getDriverId());
+            confirmation.setConfirmedAt(trip.getActualArrival());
+
+            confirmations.add(confirmation);
+        }
+
+        deliveryConfirmationRepository.saveAll(confirmations);
+        System.out.println("Seeded " + confirmations.size() + " delivery confirmations");
+    }
+
+    // private void seedTripProgressEvents() {
+    //     System.out.println("Seeding trip progress events for demo...");
+    //     // Commented out - repository not fully implemented
+    // }
 }

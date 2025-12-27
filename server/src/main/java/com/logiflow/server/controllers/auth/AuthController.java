@@ -38,4 +38,10 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, null, e.getMessage()));
         }
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestParam String username) {
+        authService.logout(username);
+        return ResponseEntity.ok().build();
+    }
 }

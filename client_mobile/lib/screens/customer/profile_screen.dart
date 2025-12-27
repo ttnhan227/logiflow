@@ -6,6 +6,7 @@ import '../../services/upload/upload_service.dart';
 import '../../services/auth/auth_service.dart';
 import '../../services/api_client.dart';
 import '../../models/customer/customer_profile.dart';
+import 'customer_profile_edit_screen.dart';
 
 class CustomerProfileScreen extends StatefulWidget {
   const CustomerProfileScreen({super.key});
@@ -17,18 +18,7 @@ class CustomerProfileScreen extends StatefulWidget {
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   CustomerProfile? _profile;
   bool _isLoading = true;
-  bool _isEditing = false;
   String? _error;
-
-  final _fullNameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _companyNameController = TextEditingController();
-  final _companyCodeController = TextEditingController();
-  String? _paymentMethod;
-
-  XFile? _selectedImage;
-  bool _isUploading = false;
 
   String _getImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return '';
@@ -49,57 +39,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _companyNameController.dispose();
-    _companyCodeController.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickAndUploadImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile == null) return; // User canceled
-
-    // Immediately start upload
-    setState(() {
-      _selectedImage = pickedFile;
-      _isUploading = true;
-      _error = null;
-    });
-
-    try {
-      final file = File(_selectedImage!.path);
-      final uploadResponse = await uploadService.uploadProfilePicture(file);
-
-      if (uploadResponse.path.isNotEmpty) {
-        // Update profile with new path
-        final request = UpdateProfileRequest(
-          profilePictureUrl: uploadResponse.path,
-        );
-
-        final updatedProfile = await customerService.updateProfile(request);
-
-        await authService.updateCurrentUserProfileImage(updatedProfile.profilePictureUrl ?? '');
-        setState(() {
-          _profile = updatedProfile;
-          _selectedImage = null;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated successfully')),
-        );
-      }
-    } catch (e) {
-      setState(() => _error = e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to upload image: $e')),
-      );
-    } finally {
-      setState(() => _isUploading = false);
-    }
   }
 
   Future<void> _loadProfile() async {
@@ -113,54 +53,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
 
       setState(() {
         _profile = profile;
-        // Populate controllers if we have data
-        if (profile.fullName != null) _fullNameController.text = profile.fullName!;
-        if (profile.phone != null) _phoneController.text = profile.phone!;
-        if (profile.address != null) _addressController.text = profile.address!;
-        if (profile.companyName != null) _companyNameController.text = profile.companyName!;
-        if (profile.companyCode != null) _companyCodeController.text = profile.companyCode!;
-        _paymentMethod = profile.paymentMethod;
       });
     } catch (e) {
       setState(() => _error = e.toString());
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    if (_profile == null) return;
-
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final request = UpdateProfileRequest(
-        fullName: _fullNameController.text.trim().isNotEmpty ? _fullNameController.text.trim() : null,
-        phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
-        address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
-        companyName: _companyNameController.text.trim().isNotEmpty ? _companyNameController.text.trim() : null,
-        companyCode: _companyCodeController.text.trim().isNotEmpty ? _companyCodeController.text.trim() : null,
-        paymentMethod: _paymentMethod,
-      );
-
-      final updatedProfile = await customerService.updateProfile(request);
-
-      setState(() {
-        _profile = updatedProfile;
-        _isEditing = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
-      );
-    } catch (e) {
-      setState(() => _error = e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e')),
-      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -173,19 +68,14 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         title: const Text('My Profile'),
         actions: [
           IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: _isLoading ? null : (_isEditing ? _saveProfile : () {
-              setState(() => _isEditing = true);
-            }),
-          ),
-          if (_isEditing) IconButton(
-            icon: const Icon(Icons.cancel),
+            icon: const Icon(Icons.edit),
             onPressed: () {
-              setState(() {
-                _isEditing = false;
-                // Reset form data
-                _loadProfile();
-              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CustomerProfileEditScreen(),
+                ),
+              ).then((_) => _loadProfile()); // Refresh after edit
             },
           ),
         ],
@@ -193,38 +83,36 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Error: $_error', textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadProfile,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: $_error', textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadProfile,
+                    child: const Text('Retry'),
                   ),
-                )
-              : _profile == null
-                  ? const Center(
-                      child: Text('No profile data available'),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProfilePicture(),
-                          const SizedBox(height: 16),
-                          _buildProfileCard(),
-                          const SizedBox(height: 16),
-                          _buildAccountStatsCard(),
-                        ],
-                      ),
-                    ),
+                ],
+              ),
+            )
+          : _profile == null
+          ? const Center(child: Text('No profile data available'))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfilePicture(),
+                  const SizedBox(height: 16),
+                  _buildProfileCard(),
+                  const SizedBox(height: 16),
+                  _buildAccountStatsCard(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -244,41 +132,25 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             const SizedBox(height: 12),
             _buildInfoRow('Email', _profile!.email),
             const SizedBox(height: 16),
-            if (_isEditing) ...[
-              _buildTextField('Full Name', _fullNameController),
-              const SizedBox(height: 16),
-              _buildTextField('Phone Number', _phoneController),
-              const SizedBox(height: 16),
-              _buildTextField('Address', _addressController, maxLines: 3),
-              const SizedBox(height: 16),
-              _buildPaymentMethodDropdown(),
-              const SizedBox(height: 24),
-              const Text(
-                'Company Information (Optional)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField('Company Name', _companyNameController),
-              const SizedBox(height: 16),
-              _buildTextField('Company Code', _companyCodeController),
-            ] else ...[
-              _buildInfoRow('Full Name', _profile!.fullName ?? 'Not set'),
-              const SizedBox(height: 12),
-              _buildInfoRow('Phone', _profile!.phone ?? 'Not set'),
-              const SizedBox(height: 12),
-              _buildInfoRow('Address', _profile!.address ?? 'Not set'),
-              const SizedBox(height: 12),
-              _buildInfoRow('Payment Method', _getPaymentMethodDisplay(_profile!.paymentMethod)),
-              const SizedBox(height: 16),
-              const Text(
-                'Company Information',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _buildInfoRow('Company Name', _profile!.companyName ?? 'Not set'),
-              const SizedBox(height: 12),
-              _buildInfoRow('Company Code', _profile!.companyCode ?? 'Not set'),
-            ],
+            _buildInfoRow('Full Name', _profile!.fullName ?? 'Not set'),
+            const SizedBox(height: 12),
+            _buildInfoRow('Phone', _profile!.phone ?? 'Not set'),
+            const SizedBox(height: 12),
+            _buildInfoRow('Address', _profile!.address ?? 'Not set'),
+            const SizedBox(height: 12),
+            _buildInfoRow(
+              'Payment Method',
+              _getPaymentMethodDisplay(_profile!.paymentMethod),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Company Information',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow('Company Name', _profile!.companyName ?? 'Not set'),
+            const SizedBox(height: 12),
+            _buildInfoRow('Company Code', _profile!.companyCode ?? 'Not set'),
           ],
         ),
       ),
@@ -301,7 +173,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             const SizedBox(height: 12),
             _buildInfoRow('Total Orders', _profile!.totalOrders.toString()),
             const SizedBox(height: 12),
-            _buildInfoRow('Total Spent', '\$${_profile!.totalSpent.toStringAsFixed(2)}'),
+            _buildInfoRow(
+              'Total Spent',
+              '\$${_profile!.totalSpent.toStringAsFixed(2)}',
+            ),
           ],
         ),
       ),
@@ -319,41 +194,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
         ),
-        Expanded(
-          child: Text(value),
-        ),
+        Expanded(child: Text(value)),
       ],
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller, {int maxLines = 1}) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-      maxLines: maxLines,
-    );
-  }
-
-  Widget _buildPaymentMethodDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _paymentMethod,
-      decoration: const InputDecoration(
-        labelText: 'Preferred Payment Method',
-        border: OutlineInputBorder(),
-      ),
-      items: const [
-        DropdownMenuItem(value: null, child: Text('Not specified')),
-        DropdownMenuItem(value: 'cash', child: Text('Cash on Delivery')),
-        DropdownMenuItem(value: 'credit_card', child: Text('Credit Card')),
-        DropdownMenuItem(value: 'debit_card', child: Text('Debit Card')),
-        DropdownMenuItem(value: 'digital_wallet', child: Text('Digital Wallet')),
-      ],
-      onChanged: (value) {
-        setState(() => _paymentMethod = value);
-      },
     );
   }
 
@@ -369,27 +211,17 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _selectedImage != null
-              ? CircleAvatar(
-                  radius: 50,
-                  backgroundImage: FileImage(File(_selectedImage!.path)),
-                )
-              : CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey[200],
-                  backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-                  child: imageUrl.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.grey) : null,
-                ),
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.grey[200],
+              backgroundImage: imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
+                  : null,
+              child: imageUrl.isEmpty
+                  ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                  : null,
+            ),
             const SizedBox(height: 16),
-            if (_isEditing) ...[
-              ElevatedButton.icon(
-                onPressed: _isUploading ? null : _pickAndUploadImage,
-                icon: _isUploading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.photo_library),
-                label: Text(_isUploading ? 'Uploading...' : 'Update Profile Picture'),
-              ),
-            ],
           ],
         ),
       ),

@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 import '../../services/driver/driver_service.dart';
-import '../../services/upload/upload_service.dart';
-import '../../services/auth/auth_service.dart';
 import '../../services/api_client.dart';
 import '../../models/driver/driver_profile.dart';
-import '../../models/driver/update_driver_profile_request.dart';
 import 'driver_settings_screen.dart';
+import 'driver_profile_edit_screen.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -19,14 +15,7 @@ class DriverProfileScreen extends StatefulWidget {
 class _DriverProfileScreenState extends State<DriverProfileScreen> {
   DriverProfile? _profile;
   bool _isLoading = true;
-  bool _isEditing = false;
   String? _error;
-
-  final _fullNameController = TextEditingController();
-  final _phoneController = TextEditingController();
-
-  XFile? _selectedImage;
-  bool _isUploading = false;
 
   String _getImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return '';
@@ -46,52 +35,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
-    _phoneController.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickAndUploadImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile == null) return;
-
-    setState(() {
-      _selectedImage = pickedFile;
-      _isUploading = true;
-      _error = null;
-    });
-
-    try {
-      final file = File(_selectedImage!.path);
-      final uploadResponse = await uploadService.uploadProfilePicture(file);
-
-      if (uploadResponse.path.isNotEmpty) {
-        final request = UpdateDriverProfileRequest(
-          profilePictureUrl: uploadResponse.path,
-        );
-
-        final updatedProfile = await driverService.updateProfile(request);
-
-        await authService.updateCurrentUserProfileImage(updatedProfile.profilePictureUrl ?? '');
-        setState(() {
-          _profile = updatedProfile;
-          _selectedImage = null;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated successfully')),
-        );
-      }
-    } catch (e) {
-      setState(() => _error = e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to upload image: $e')),
-      );
-    } finally {
-      setState(() => _isUploading = false);
-    }
   }
 
   Future<void> _loadProfile() async {
@@ -105,45 +49,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
       setState(() {
         _profile = profile;
-        if (profile.fullName != null) _fullNameController.text = profile.fullName!;
-        if (profile.phone != null) _phoneController.text = profile.phone!;
       });
     } catch (e) {
       setState(() => _error = e.toString());
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    if (_profile == null) return;
-
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final request = UpdateDriverProfileRequest(
-        fullName: _fullNameController.text.trim().isNotEmpty ? _fullNameController.text.trim() : null,
-        phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
-      );
-
-      final updatedProfile = await driverService.updateProfile(request);
-
-      setState(() {
-        _profile = updatedProfile;
-        _isEditing = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
-      );
-    } catch (e) {
-      setState(() => _error = e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e')),
-      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -160,23 +68,21 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const DriverSettingsScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const DriverSettingsScreen(),
+                ),
               );
             },
           ),
           IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: _isLoading ? null : (_isEditing ? _saveProfile : () {
-              setState(() => _isEditing = true);
-            }),
-          ),
-          if (_isEditing) IconButton(
-            icon: const Icon(Icons.cancel),
+            icon: const Icon(Icons.edit),
             onPressed: () {
-              setState(() {
-                _isEditing = false;
-                _loadProfile();
-              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DriverProfileEditScreen(),
+                ),
+              ).then((_) => _loadProfile()); // Refresh after edit
             },
           ),
         ],
@@ -184,40 +90,38 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Error: $_error', textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadProfile,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: $_error', textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadProfile,
+                    child: const Text('Retry'),
                   ),
-                )
-              : _profile == null
-                  ? const Center(
-                      child: Text('No profile data available'),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProfilePicture(),
-                          const SizedBox(height: 16),
-                          _buildPersonalInfoCard(),
-                          const SizedBox(height: 16),
-                          _buildPerformanceCard(),
-                          const SizedBox(height: 16),
-                          _buildAccountCard(),
-                        ],
-                      ),
-                    ),
+                ],
+              ),
+            )
+          : _profile == null
+          ? const Center(child: Text('No profile data available'))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfilePicture(),
+                  const SizedBox(height: 16),
+                  _buildPersonalInfoCard(),
+                  const SizedBox(height: 16),
+                  _buildPerformanceCard(),
+                  const SizedBox(height: 16),
+                  _buildAccountCard(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -233,27 +137,17 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _selectedImage != null
-                ? CircleAvatar(
-                    radius: 50,
-                    backgroundImage: FileImage(File(_selectedImage!.path)),
-                  )
-                : CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.grey[200],
-                    backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-                    child: imageUrl.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.grey) : null,
-                  ),
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.grey[200],
+              backgroundImage: imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
+                  : null,
+              child: imageUrl.isEmpty
+                  ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                  : null,
+            ),
             const SizedBox(height: 16),
-            if (_isEditing) ...[
-              ElevatedButton.icon(
-                onPressed: _isUploading ? null : _pickAndUploadImage,
-                icon: _isUploading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.photo_library),
-                label: Text(_isUploading ? 'Uploading...' : 'Update Profile Picture'),
-              ),
-            ],
           ],
         ),
       ),
@@ -276,26 +170,24 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             const SizedBox(height: 12),
             _buildInfoRow('Email', _profile!.email),
             const SizedBox(height: 12),
-            _buildInfoRow('License Number', _profile!.driverLicenseNumber ?? 'Not available'),
+            _buildInfoRow(
+              'License Number',
+              _profile!.driverLicenseNumber ?? 'Not available',
+            ),
             const SizedBox(height: 12),
-            _buildInfoRow('License Expires', _profile!.licenseExpiryDate ?? 'Not available'),
+            _buildInfoRow(
+              'License Expires',
+              _profile!.licenseExpiryDate ?? 'Not available',
+            ),
             const SizedBox(height: 16),
-            if (_isEditing) ...[
-              _buildTextField('Full Name', _fullNameController),
-              const SizedBox(height: 16),
-              _buildTextField('Phone Number', _phoneController),
-            ] else ...[
-              _buildInfoRow('Full Name', _profile!.fullName ?? 'Not set'),
-              const SizedBox(height: 12),
-              _buildInfoRow('Phone', _profile!.phone ?? 'Not set'),
-            ],
+            _buildInfoRow('Full Name', _profile!.fullName ?? 'Not set'),
+            const SizedBox(height: 12),
+            _buildInfoRow('Phone', _profile!.phone ?? 'Not set'),
           ],
         ),
       ),
     );
   }
-
-
 
   Widget _buildPerformanceCard() {
     return Card(
@@ -315,17 +207,29 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 const SizedBox(width: 4),
                 Text(
                   '${_profile!.rating.toStringAsFixed(1)} Rating',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _buildInfoRow('Total Deliveries', _profile!.totalDeliveries.toString()),
+            _buildInfoRow(
+              'Total Deliveries',
+              _profile!.totalDeliveries.toString(),
+            ),
             const SizedBox(height: 12),
-            _buildInfoRow('Total Earnings', '\$${_profile!.totalEarnings.toStringAsFixed(2)}'),
+            _buildInfoRow(
+              'Total Earnings',
+              '\$${_profile!.totalEarnings.toStringAsFixed(2)}',
+            ),
             if (_profile!.averageDeliveryTime != null) ...[
               const SizedBox(height: 12),
-              _buildInfoRow('Avg Delivery Time', '${_profile!.averageDeliveryTime!.toStringAsFixed(1)} min'),
+              _buildInfoRow(
+                'Avg Delivery Time',
+                '${_profile!.averageDeliveryTime!.toStringAsFixed(1)} min',
+              ),
             ],
           ],
         ),
@@ -349,9 +253,15 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Text('Status: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                const Text(
+                  'Status: ',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(_profile!.status),
                     borderRadius: BorderRadius.circular(12),
@@ -384,21 +294,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
         ),
-        Expanded(
-          child: Text(value),
-        ),
+        Expanded(child: Text(value)),
       ],
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller, {int maxLines = 1}) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-      maxLines: maxLines,
     );
   }
 

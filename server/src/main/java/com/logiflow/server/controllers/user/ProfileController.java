@@ -45,4 +45,17 @@ public class ProfileController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PutMapping("/profile/password")
+    public ResponseEntity<Void> changePassword(Authentication authentication,
+                                             @RequestParam String currentPassword,
+                                             @RequestParam String newPassword) {
+        try {
+            String username = authentication.getName();
+            profileService.changePassword(username, currentPassword, newPassword);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

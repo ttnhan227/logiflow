@@ -51,7 +51,7 @@ class DriverOrder {
 
   factory DriverOrder.fromJson(Map<String, dynamic> json) {
     return DriverOrder(
-      orderId: json['orderId'],
+      orderId: (json['orderId'] as num).toInt(),
       customerName: json['customerName'],
       customerPhone: json['customerPhone'],
       pickupAddress: json['pickupAddress'],

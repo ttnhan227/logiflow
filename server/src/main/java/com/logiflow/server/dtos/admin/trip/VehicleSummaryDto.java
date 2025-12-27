@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public class VehicleSummaryDto {
     private Integer vehicleId;
     private String licensePlate;
-    private Integer capacity;
+    private java.math.BigDecimal capacityTons;
     private String vehicleType;
     private String status;
     // Add more fields as needed
@@ -20,7 +20,7 @@ public class VehicleSummaryDto {
         return new VehicleSummaryDto(
             vehicle.getVehicleId(),
             vehicle.getLicensePlate(),
-            vehicle.getCapacity(),
+            vehicle.getCapacityTons(),
             vehicle.getVehicleType(),
             vehicle.getStatus()
         );

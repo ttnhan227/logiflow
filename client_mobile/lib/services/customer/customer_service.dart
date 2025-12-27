@@ -62,7 +62,9 @@ class CustomerService {
   // Track order in real-time
   Future<TrackOrderResponse> trackOrder(int orderId) async {
     try {
-      final response = await apiClient.get('$baseEndpoint/orders/$orderId/track');
+      final response = await apiClient.get(
+        '$baseEndpoint/orders/$orderId/track',
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -123,6 +125,28 @@ class CustomerService {
       }
     } catch (e) {
       throw Exception('Failed to get order history: $e');
+    }
+  }
+
+  // Change password
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      final response = await apiClient.put(
+        '/user/profile/password',
+        queryParams: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to change password: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Failed to change password: $e');
     }
   }
 }

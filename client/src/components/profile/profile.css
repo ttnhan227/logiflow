@@ -602,6 +602,14 @@
   transform: none;
 }
 
+/* Form Error Styles */
+.form-error {
+  color: var(--profile-danger);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .profile-page-container {

@@ -71,7 +71,7 @@ public class DriverDtos {
 
         private String vehicleType;
         private String vehiclePlate;
-        private Integer vehicleCapacity;
+        private BigDecimal vehicleCapacity;
 
         private String delayReason;
         private Integer slaExtensionMinutes;

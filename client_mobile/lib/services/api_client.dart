@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://192.168.1.66:8080/api';
+  static const String baseUrl = 'http://172.16.1.200:8080/api';
   static String get baseImageUrl => baseUrl.replaceFirst('/api', '');
   final http.Client _client = http.Client();
 
@@ -11,9 +11,7 @@ class ApiClient {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer ${token.replaceAll('"', '')}';
@@ -31,7 +29,10 @@ class ApiClient {
     return response;
   }
 
-  Future<http.Response> post(String endpoint, {Map<String, dynamic>? body}) async {
+  Future<http.Response> post(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
     final url = Uri.parse('$baseUrl$endpoint');
     final headers = await getHeaders();
 
@@ -44,8 +45,15 @@ class ApiClient {
     return response;
   }
 
-  Future<http.Response> put(String endpoint, {Map<String, dynamic>? body}) async {
-    final url = Uri.parse('$baseUrl$endpoint');
+  Future<http.Response> put(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParams,
+  }) async {
+    Uri url = Uri.parse('$baseUrl$endpoint');
+    if (queryParams != null && queryParams.isNotEmpty) {
+      url = url.replace(queryParameters: queryParams);
+    }
     final headers = await getHeaders();
 
     final response = await _client.put(

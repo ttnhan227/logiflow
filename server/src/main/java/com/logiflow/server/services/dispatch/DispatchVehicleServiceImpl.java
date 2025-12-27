@@ -56,7 +56,7 @@ public class DispatchVehicleServiceImpl implements DispatchVehicleService {
     }
 
     private VehicleDto toVehicleDto(Vehicle v) {
-        return new VehicleDto(v.getVehicleId(), v.getVehicleType(), v.getLicensePlate(), v.getCapacity(), v.getStatus(), v.getRequiredLicense());
+        return new VehicleDto(v.getVehicleId(), v.getVehicleType(), v.getLicensePlate(), v.getCapacityTons(), v.getStatus(), v.getRequiredLicense());
     }
 
     @Getter
@@ -64,15 +64,15 @@ public class DispatchVehicleServiceImpl implements DispatchVehicleService {
         private Integer vehicleId;
         private String vehicleType;
         private String licensePlate;
-        private Integer capacity;
+        private java.math.BigDecimal capacityTons;
         private String status;
         private String requiredLicense;
 
-        public VehicleDto(Integer vehicleId, String vehicleType, String licensePlate, Integer capacity, String status, String requiredLicense) {
+        public VehicleDto(Integer vehicleId, String vehicleType, String licensePlate, java.math.BigDecimal capacityTons, String status, String requiredLicense) {
             this.vehicleId = vehicleId;
             this.vehicleType = vehicleType;
             this.licensePlate = licensePlate;
-            this.capacity = capacity;
+            this.capacityTons = capacityTons;
             this.status = status;
             this.requiredLicense = requiredLicense;
         }

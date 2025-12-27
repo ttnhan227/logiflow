@@ -9,4 +9,6 @@ public interface AuthService {
     AuthResponse login(LoginRequest loginRequest);
 
     AuthResponse register(RegisterRequest registerRequest);
+
+    void logout(String username);
 }

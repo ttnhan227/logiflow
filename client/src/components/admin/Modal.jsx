@@ -32,6 +32,8 @@ const Modal = ({
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [onOverlayClick]);
 
+  if (!isOpen) return null;
+
   return (
     <div className="modal-overlay" onClick={handleBackdropClick}>
       <div className={`modal modal-${size}`}>

@@ -55,7 +55,7 @@ const normalizeTrips = (trips = []) =>
     } : null,
     vehicle: trip.vehicle ? {
       plate: trip.vehicle.licensePlate,
-      capacity: trip.vehicle.capacity,
+      capacityTons: trip.vehicle.capacityTons,
       type: trip.vehicle.vehicleType,
       status: trip.vehicle.status,
     } : null,

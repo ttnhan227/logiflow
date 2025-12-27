@@ -31,7 +31,7 @@ class DriverTrip {
 
   factory DriverTrip.fromJson(Map<String, dynamic> json) {
     return DriverTrip(
-      tripId: json['tripId'],
+      tripId: (json['tripId'] as num).toInt(),
       routeName: json['routeName'],
       status: json['status'],
       assignmentStatus: json['assignmentStatus'],
@@ -39,7 +39,7 @@ class DriverTrip {
       scheduledArrival: json['scheduledArrival'],
       vehiclePlate: json['vehiclePlate'],
       distance: json['distance']?.toDouble(),
-      estimatedDuration: json['estimatedDuration'],
+      estimatedDuration: (json['estimatedDuration'] as num?)?.toInt(),
       departureLocation: json['departureLocation'],
       arrivalLocation: json['arrivalLocation'],
       pickupTypes: json['pickupTypes'],
@@ -111,7 +111,7 @@ class DriverTripDetail {
 
   factory DriverTripDetail.fromJson(Map<String, dynamic> json) {
     return DriverTripDetail(
-      tripId: json['tripId'],
+      tripId: (json['tripId'] as num).toInt(),
       routeName: json['routeName'],
       status: json['status'],
       assignmentStatus: json['assignmentStatus'],
@@ -122,13 +122,19 @@ class DriverTripDetail {
       actualArrival: json['actualArrival'],
       vehiclePlate: json['vehiclePlate'],
       vehicleType: json['vehicleType'],
-      vehicleCapacity: json['vehicleCapacity'],
+      vehicleCapacity: json['vehicleCapacity'] is int
+          ? json['vehicleCapacity']
+          : (json['vehicleCapacity'] as num?)?.toInt(),
       delayReason: json['delayReason'],
-      slaExtensionMinutes: json['slaExtensionMinutes'],
+      slaExtensionMinutes: json['slaExtensionMinutes'] is int
+          ? json['slaExtensionMinutes']
+          : (json['slaExtensionMinutes'] as num?)?.toInt(),
       delayStatus: json['delayStatus'],
       delayAdminComment: json['delayAdminComment'],
       orders: json['orders'] != null
-          ? (json['orders'] as List).map((o) => DriverOrder.fromJson(o)).toList()
+          ? (json['orders'] as List)
+                .map((o) => DriverOrder.fromJson(o))
+                .toList()
           : null,
       notes: json['notes'],
       driverLat: json['driverLat']?.toDouble(),

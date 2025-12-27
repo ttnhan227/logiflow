@@ -377,7 +377,7 @@ public class DriverServiceImpl implements DriverService {
         if (t.getVehicle() != null) {
             dto.setVehicleType(t.getVehicle().getVehicleType());
             dto.setVehiclePlate(t.getVehicle().getLicensePlate());
-            dto.setVehicleCapacity(t.getVehicle().getCapacity());
+            dto.setVehicleCapacity(t.getVehicle().getCapacityTons());
         }
 
         dto.setDelayReason(t.getDelayReason());
