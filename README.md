@@ -1,165 +1,109 @@
-# LogiFlow - Intelligent Heavy Logistics Management System
+# LogiFlow — Backend-Driven Logistics Management Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-21%2B-blue)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6%2B-brightgreen)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-19.1.1%2B-61DAFB)](https://reactjs.org/)
-[![Flutter](https://img.shields.io/badge/Flutter-3.9.2%2B-02569B)](https://flutter.dev/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5%2B-brightgreen)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-19-61DAFB)](https://reactjs.org/)
+[![Flutter](https://img.shields.io/badge/Flutter-3.9%2B-02569B)](https://flutter.dev/)
 
-LogiFlow is an intelligent logistics management system designed to automate and optimize heavy freight transportation operations. The system specializes in managing containers and heavy cargo with smart driver assignment, real-time tracking, and comprehensive compliance monitoring.
+LogiFlow is a full-stack logistics management system designed to simulate real-world heavy freight operations. The platform manages container workflows, driver allocation, compliance monitoring, and real-time tracking across web and mobile clients.
 
-## 🚀 Quick Start
+Developed as a team project, where I led the backend architecture and infrastructure design.
 
-This project consists of three main components that must be set up in order:
+## 👤 My Role & Backend Ownership
 
-### Prerequisites
-- **Java 21+** - For backend development
-- **Node.js 18+** - For web frontend development
-- **Flutter SDK 3.9.2+** - For mobile app development
-- **PostgreSQL 15+** - Database server (with PostGIS extension recommended)
-- **IntelliJ IDEA** - For Spring Boot backend
-- **Android Studio** - For Flutter mobile development
+In this project, I was responsible for designing and implementing the entire backend foundation, including:
 
-## 🛠️ Installation & Setup
+- **Architecture Lead**: Designed the layered structure and established backend standards for the team.
+- **Security & Auth**: Designed JWT-based stateless authentication and Spring Security configuration with role-based authorization.
+- **Database Schema**: Designed the database schema and managed complex entity relationships (OneToMany, ManyToOne).
+- **Infrastructure**: Implemented centralized exception handling and structured the service layer to ensure business logic remains isolated from API contracts.
 
-### 1. Backend (Spring Boot) - IntelliJ IDEA
+Other team members implemented features and developed the frontend and mobile applications based on this backend infrastructure.
 
-**Requirements:**
-- Java 21+
-- PostgreSQL 15+ with PostGIS
-- Maven 3.6+
+## 🧱 System Architecture
 
-**Setup Steps:**
-1. Open the `server` directory in IntelliJ IDEA
-2. Configure database connection in `server/src/main/resources/application.properties`
-3. Ensure PostgreSQL is running and database is created
-4. Run the application using IntelliJ's Spring Boot run configuration
+The backend follows a layered architecture inspired by production practices:
+`Controller → Service → Repository → Database`
 
-**Database Configuration:**
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/logiflow
-spring.datasource.username=your_db_username
-spring.datasource.password=your_db_password
-spring.jpa.hibernate.ddl-auto=create
-```
+### Key Design Decisions
+- **Separation of Concerns**: Business logic is strictly isolated in the service layer, while controllers manage HTTP request/response cycles.
+- **DTO Pattern**: Used to prevent exposing internal domain models and maintain clean, stable API contracts.
+- **Stateless Auth**: Leveraged JWT to allow horizontal scalability without server-side sessions.
+- **RBAC**: Role-based access control via Spring Security filters to ensure secure operation across different user types.
 
-**Additional Required Settings:**
-Before running the application, configure these settings in `application.properties`:
+## 🧠 Engineering Decisions
 
-```properties
-# Cloudinary Configuration (for file uploads)
-cloudinary.cloud-name=your_cloud_name
-cloudinary.api-key=your_api_key
-cloudinary.api-secret=your_api_secret
+### Secure Stateless Authentication
+Implemented JWT-based authentication with Spring Security instead of session-based auth to support scalability and clean client–server separation. Role-based access control protects endpoints for Admin, Dispatcher, Driver, and Customer roles.
 
-# OCR Configuration (Tesseract)
-ocr.tessdata.path=C:/Program Files/Tesseract-OCR/tessdata
+### Database & Relationship Design
+Structured relational mappings (OneToMany, ManyToOne) with proper constraints and cascade rules. Handled serialization and lazy-loading concerns to avoid common JPA pitfalls.
 
-# Mistral AI Configuration
-spring.ai.mistralai.api-key=your_mistral_api_key
+### External Service Integration
+Integrated Cloudinary, Tesseract OCR, Mistral AI, PayPal Sandbox, and SMTP services with externalized configuration to maintain security and modularity.
 
-# Email Configuration (SMTP)
-spring.mail.username=your_email@gmail.com
-spring.mail.password=your_app_password
+## 🔐 Security Implementation
+- **JWT-based authentication** for stateless session management.
+- **BCrypt password hashing** for secure credential storage.
+- **Role-based endpoint protection** via Spring Security.
+- **Secure configuration** for external services (Cloudinary, PayPal, Email, AI APIs) via externalized properties.
 
-# PayPal Configuration (Sandbox)
-paypal.client.id=your_paypal_client_id
-paypal.client.secret=your_paypal_client_secret
-```
+## 🌐 Core Capabilities
+- **Role-aware driver assignment workflow**
+- **Container and cargo management**
+- **Real-time tracking integration**
+- **OCR-based document digitization** (Tesseract)
+- **AI-powered logistics insights** (Mistral AI)
+- **Secure payment processing** (PayPal Sandbox)
+- **Automated email notifications** (SMTP)
+- **Swagger API documentation**
 
-**OCR Setup (Tesseract):**
-The application uses Tesseract OCR for document processing. Install Tesseract OCR:
-1. Download from: https://github.com/UB-Mannheim/tesseract/wiki
-2. Install to default location: `C:\Program Files\Tesseract-OCR\`
-3. Download language data files (`eng` and `vie`) to the `tessdata` folder
-4. Verify the path in `application.properties` matches your installation
+## 🛠 Tech Stack
 
-### 2. Web Frontend (React) - Command Prompt
+**Backend:**
+- Java 21
+- Spring Boot 3.5+
+- Spring Security
+- PostgreSQL 15 (PostGIS support)
+- Maven
 
-**Requirements:**
-- Node.js 18+
-- npm or yarn
+**Web Frontend:**
+- React 19 + Vite
 
-**Setup Steps:**
-1. Open Command Prompt and navigate to the `client` directory
-2. Install dependencies: `npm install`
-3. Start development server: `npm run dev`
-4. Open browser to `http://localhost:5173`
+**Mobile:**
+- Flutter 3.9+
 
-**Available Scripts:**
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
+**External Integrations:**
+- Cloudinary (File Storage)
+- Tesseract OCR (Document Processing)
+- Mistral AI (AI Features)
+- PayPal Sandbox (Payments)
 
-### 3. Mobile App (Flutter) - Android Studio
-
-**Requirements:**
-- Flutter SDK 3.9.2+
-- Dart SDK 3.9.2+
-- Android Studio with Flutter plugin
-- Android device/emulator or iOS device/simulator
-
-**Setup Steps:**
-1. Open the `client_mobile` directory in Android Studio
-2. Update API configuration: Open `lib/services/api_client.dart` and change the `baseUrl` to your computer's IP address (replace `192.168.1.60` with your IP)
-3. Ensure Flutter SDK is properly configured
-4. Run `flutter pub get` to install dependencies
-5. Connect Android device or start emulator
-6. Run the app from Android Studio
-
-**API Configuration:**
-The mobile app connects to the backend API. Update the IP address in `lib/services/api_client.dart`:
-```dart
-static const String baseUrl = 'http://YOUR_IP_ADDRESS:8080/api';
-```
-To find your IP address, run `ipconfig` in Command Prompt and use your network adapter's IPv4 address.
-
-**Development Commands:**
-- `flutter pub get` - Install dependencies
-- `flutter run` - Run on connected device/emulator
-- `flutter build apk` - Build Android APK
-
-## 📱 Usage
-
-### Backend API
-- Base URL: `http://localhost:8080`
-- API documentation available at `/swagger-ui.html`
-- Authentication required for most endpoints
-
-### Web Application
-- Access at `http://localhost:5173`
-- Login with appropriate user credentials
-- Different dashboards for Admin, Dispatcher, Driver, and Customer roles
-
-### Mobile Application
-- Install on Android/iOS device
-- Login with driver or customer account
-- Real-time GPS tracking and notifications
-
-## 🏗️ Project Structure
-
+## 🏗 Project Structure
 ```
 logiflow/
-├── server/                      # Backend (Spring Boot)
-│   ├── src/main/java/com/logiflow/server/
-│   │   ├── controllers/         # REST API endpoints
-│   │   ├── services/           # Business logic
-│   │   ├── models/             # JPA entities
-│   │   └── repositories/       # Data access layer
-│   └── src/main/resources/application.properties
-├── client/                      # Web Frontend (React + Vite)
-│   ├── src/
-│   │   ├── components/         # React components
-│   │   └── services/           # API services
-│   └── package.json
-└── client_mobile/              # Mobile App (Flutter)
-    ├── lib/
-    │   ├── screens/           # UI screens
-    │   ├── services/          # API services
-    │   └── models/            # Data models
-    └── pubspec.yaml
+├── server/          # Spring Boot backend
+├── client/          # React web application
+└── client_mobile/   # Flutter mobile application
 ```
 
-## 📝 License
+## 🚀 Future Improvements
+- **Dockerization**: Containerization of all services for simplified, consistent deployment.
+- **CI/CD Pipeline**: Automated testing and deployment workflows.
+- **Monitoring & Logging**: Implementing centralized logging and performance monitoring.
+- **Cloud Migration**: Deployment to cloud platforms (AWS/Azure) for production scalability.
+
+## ⚙️ Running Locally (Simplified)
+
+1. **Configure PostgreSQL**: Ensure database is running and accessible.
+2. **Update Properties**: Configure `application.properties` with database credentials and API keys for external services.
+3. **Run Backend**: Start the Spring Boot application from the `server` directory.
+4. **Start Web Frontend**: Navigate to `client`, run `npm install` and `npm run dev`.
+5. **Run Mobile Client (Optional)**: Open `client_mobile` in Android Studio/VS Code and run on an emulator/device.
+
+Detailed configuration steps are available in the project folders.
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
