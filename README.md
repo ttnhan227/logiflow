@@ -19,12 +19,14 @@ In this project, I was responsible for designing and implementing the entire bac
 - **Database Schema**: Designed the database schema and managed complex entity relationships (OneToMany, ManyToOne).
 - **Infrastructure**: Implemented centralized exception handling and structured the service layer to ensure business logic remains isolated from API contracts.
 
-Other team members implemented features and developed the frontend and mobile applications based on this backend infrastructure.
+Other team members built application features and client interfaces on top of the backend architecture I established.
 
 ## 🧱 System Architecture
 
 The backend follows a layered architecture inspired by production practices:
 `Controller → Service → Repository → Database`
+
+The system is designed with a layered backend architecture and stateless authentication to support scalability and maintain a clean separation of concerns.
 
 ### Key Design Decisions
 - **Separation of Concerns**: Business logic is strictly isolated in the service layer, while controllers manage HTTP request/response cycles.
@@ -32,22 +34,19 @@ The backend follows a layered architecture inspired by production practices:
 - **Stateless Auth**: Leveraged JWT to allow horizontal scalability without server-side sessions.
 - **RBAC**: Role-based access control via Spring Security filters to ensure secure operation across different user types.
 
-## 🧠 Engineering Decisions
+## 🔐 Security & Auth Design
 
 ### Secure Stateless Authentication
-Implemented JWT-based authentication with Spring Security instead of session-based auth to support scalability and clean client–server separation. Role-based access control protects endpoints for Admin, Dispatcher, Driver, and Customer roles.
+JWT-based authentication is used with Spring Security to enable stateless sessions and horizontal scalability. Role-based access control (RBAC) enforces authorization across Admin, Dispatcher, Driver, and Customer roles.
+
+### Credentials & Protection
+Passwords are stored with BCrypt hashing. Sensitive external service credentials are externalized (properties/environment) to avoid embedding secrets in code.
 
 ### Database & Relationship Design
-Structured relational mappings (OneToMany, ManyToOne) with proper constraints and cascade rules. Handled serialization and lazy-loading concerns to avoid common JPA pitfalls.
+Relational mappings (OneToMany, ManyToOne) include explicit constraints and cascade rules. Serialization and lazy-loading are handled carefully to avoid common JPA pitfalls.
 
-### External Service Integration
-Integrated Cloudinary, Tesseract OCR, Mistral AI, PayPal Sandbox, and SMTP services with externalized configuration to maintain security and modularity.
-
-## 🔐 Security Implementation
-- **JWT-based authentication** for stateless session management.
-- **BCrypt password hashing** for secure credential storage.
-- **Role-based endpoint protection** via Spring Security.
-- **Secure configuration** for external services (Cloudinary, PayPal, Email, AI APIs) via externalized properties.
+### External Integrations
+Cloudinary, Tesseract OCR, Mistral AI, PayPal Sandbox, and SMTP are integrated through well-scoped adapters and externalized configuration to preserve modularity and security.
 
 ## 🌐 Core Capabilities
 - **Role-aware driver assignment workflow**
@@ -88,11 +87,11 @@ logiflow/
 └── client_mobile/   # Flutter mobile application
 ```
 
-## 🚀 Future Improvements
-- **Dockerization**: Containerization of all services for simplified, consistent deployment.
-- **CI/CD Pipeline**: Automated testing and deployment workflows.
-- **Monitoring & Logging**: Implementing centralized logging and performance monitoring.
-- **Cloud Migration**: Deployment to cloud platforms (AWS/Azure) for production scalability.
+## 🚀 Production Hardening Roadmap
+- **Containerization with Docker**: Build and publish container images for all services.
+- **CI/CD pipeline integration**: Automate build, test, and deployment workflows.
+- **Centralized logging & monitoring**: Implement aggregated logs, metrics, and alerting.
+- **Cloud deployment (AWS/Azure)**: Prepare infra-as-code and secure cloud deployments for production.
 
 ## ⚙️ Running Locally (Simplified)
 
