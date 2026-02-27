@@ -136,10 +136,28 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
             throw new RuntimeException("Driver already has an active trip assignment. Drivers can only have one active trip at a time.");
         }
 
-        // License requirement (existing behavior)
-        if (vehicle.getRequiredLicense() != null && driver.getLicenseType() != null
-                && !vehicle.getRequiredLicense().equalsIgnoreCase(driver.getLicenseType())) {
-            throw new RuntimeException("Driver license (" + driver.getLicenseType() + ") does not match vehicle requirement (" + vehicle.getRequiredLicense() + ")");
+        // License requirement with hierarchy (higher licenses can operate lower-class vehicles)
+        if (vehicle.getRequiredLicense() != null && driver.getLicenseType() != null) {
+            String driverLicense = driver.getLicenseType().toUpperCase();
+            String requiredLicense = vehicle.getRequiredLicense().toUpperCase();
+
+            // License hierarchy: A1 > B2 > C > D > E > FC
+            java.util.Map<String, Integer> licenseHierarchy = java.util.Map.of(
+                "A1", 6,   // Highest - can operate all vehicles
+                "B2", 5,   // Can operate B2, C, D, E, FC vehicles
+                "C", 4,    // Can operate C, D, E, FC vehicles
+                "D", 3,    // Can operate D, E, FC vehicles
+                "E", 2,    // Can operate E, FC vehicles
+                "FC", 1    // Can only operate FC vehicles
+            );
+
+            Integer driverLevel = licenseHierarchy.get(driverLicense);
+            Integer requiredLevel = licenseHierarchy.get(requiredLicense);
+
+            // Invalid license types or driver license below requirement
+            if (driverLevel == null || requiredLevel == null || driverLevel < requiredLevel) {
+                throw new RuntimeException("Driver license (" + driver.getLicenseType() + ") insufficient for vehicle requirement (" + vehicle.getRequiredLicense() + "). Need " + requiredLicense + " or higher license class.");
+            }
         }
 
         // Compliance / rest: reuse current worklog logic
@@ -211,14 +229,30 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
             reasons.add("Rest/compliance OK");
         }
 
-        // 4) License
+        // 4) License with hierarchy
         if (vehicle != null && vehicle.getRequiredLicense() != null) {
-            if (d.getLicenseType() == null || !vehicle.getRequiredLicense().equalsIgnoreCase(d.getLicenseType())) {
+            String driverLicense = d.getLicenseType() != null ? d.getLicenseType().toUpperCase() : null;
+            String requiredLicense = vehicle.getRequiredLicense().toUpperCase();
+
+            // License hierarchy: A1 > B2 > C > D > E > FC
+            java.util.Map<String, Integer> licenseHierarchy = java.util.Map.of(
+                "A1", 6,   // Highest - can operate all vehicles
+                "B2", 5,   // Can operate B2, C, D, E, FC vehicles
+                "C", 4,    // Can operate C, D, E, FC vehicles
+                "D", 3,    // Can operate D, E, FC vehicles
+                "E", 2,    // Can operate E, FC vehicles
+                "FC", 1    // Can only operate FC vehicles
+            );
+
+            Integer driverLevel = driverLicense != null ? licenseHierarchy.get(driverLicense) : null;
+            Integer requiredLevel = licenseHierarchy.get(requiredLicense);
+
+            if (driverLevel == null || requiredLevel == null || driverLevel < requiredLevel) {
                 eligible = false;
-                reasons.add("License mismatch (need " + vehicle.getRequiredLicense() + ")");
+                reasons.add("License insufficient (need " + requiredLicense + " or higher, have " + (d.getLicenseType() != null ? d.getLicenseType() : "none") + ")");
             } else {
                 score += 20;
-                reasons.add("License match");
+                reasons.add("License compatible (" + d.getLicenseType() + " ≥ " + requiredLicense + ")");
             }
         }
 
