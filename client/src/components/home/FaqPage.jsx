@@ -61,11 +61,11 @@ const FaqPage = () => {
       questions: [
         {
           question: "How do I become a LogiFlow driver?",
-          answer: "To join our driver network:\n1. Apply through our driver registration page\n2. Provide valid Vietnamese driver's license (A1, A2, B1, or higher)\n3. Complete our background verification process\n4. Attend driver orientation and training\n5. Complete vehicle inspection if applicable\n\nRequirements include being 18+ years old and having a clean driving record."
+          answer: "To apply as a LogiFlow driver:\n1. Submit your driver application through our website\n2. Upload your valid Vietnamese driver's license and CV\n3. Complete the required contact and profile details\n4. Wait for our team to review your application\n5. If shortlisted, we will contact you for an interview and next steps\n\nRequirements include being 18+ years old, having a clean driving record, and meeting our document screening requirements."
         },
         {
           question: "What vehicle types can I use?",
-          answer: "Drivers can register:\n- Motorcycles (under 175cc) for urban deliveries\n- Vans and trucks for larger shipments\n- All vehicles must be properly licensed, insured, and pass our safety inspection\n- Eco-friendly and newer vehicles are preferred"
+          answer: "Drivers may apply with:\n- Motorcycles (under 175cc) for urban deliveries\n- Vans and trucks for larger shipments\n- Any vehicle used for work must be properly licensed, insured, and pass our safety inspection\n- Eco-friendly and newer vehicles are preferred"
         },
         {
           question: "How much can I earn as a driver?",

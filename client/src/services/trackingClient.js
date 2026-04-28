@@ -1,5 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { backendBaseUrl } from '../config/env';
 
 class TrackingClient {
   constructor() {
@@ -12,8 +13,7 @@ class TrackingClient {
     if (this.isConnected) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
-      const backendUrl = 'http://localhost:8080';
-      const socketUrl = `${backendUrl}/ws/tracking`;
+      const socketUrl = `${backendBaseUrl}/ws/tracking`;
 
       const socket = new SockJS(socketUrl);
       this.client = new Client({

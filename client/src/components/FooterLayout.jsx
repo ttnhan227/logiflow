@@ -32,7 +32,7 @@ const FooterLayout = ({ showFooter }) => {
           <h3 className="footer-heading">Support</h3>
           <ul className="footer-links">
             <li><a href="/faq">FAQ</a></li>
-            <li><a href="/drivers">Join as Driver</a></li>
+            <li><a href="/drivers">Apply as Driver</a></li>
             <li><a href="/mobile-app">Mobile App</a></li>
           </ul>
         </div>

@@ -214,14 +214,20 @@ public class NotificationService {
     }
 
     /**
-     * Send notification about new registration request (websocket + database)
+     * Send notification about a new driver application or customer registration request.
      */
     public void notifyNewRegistrationRequest(String username, String role, Integer requestId) {
+        boolean isDriver = "DRIVER".equalsIgnoreCase(role);
+        String title = isDriver ? "New Driver Application" : "New Registration Request";
+        String message = isDriver
+            ? "New driver application from: " + username
+            : "New " + role + " registration from: " + username;
+
         AdminNotificationDto websocketNotification = AdminNotificationDto.of(
             "REGISTRATION_REQUEST",
             "INFO",
-            "New Registration Request",
-            "New " + role + " registration from: " + username,
+            title,
+            message,
             "/admin/registration-requests/" + requestId,
             "Review Request"
         );
@@ -231,8 +237,8 @@ public class NotificationService {
         Notification dbNotification = new Notification(
             Notification.NotificationType.REGISTRATION_REQUEST,
             "INFO",
-            "New Registration Request",
-            "New " + role + " registration from: " + username,
+            title,
+            message,
             "/admin/registration-requests/" + requestId,
             "Review Request",
             requestId,  // relatedEntityId = requestId

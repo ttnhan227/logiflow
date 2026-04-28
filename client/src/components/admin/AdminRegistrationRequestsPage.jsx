@@ -166,7 +166,7 @@ const AdminRegistrationRequestsPage = () => {
       {/* Header */}
       <div className="admin-page-header">
         <h1>📋 Registration Requests</h1>
-        <p>Review and approve driver and customer registration applications</p>
+        <p>Review driver applications and customer registration requests</p>
       </div>
 
       {/* Error banner */}

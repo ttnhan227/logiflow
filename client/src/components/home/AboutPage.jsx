@@ -141,7 +141,7 @@ const AboutPage = () => {
         </p>
         <div className="btn-group">
           <Link to="/register/driver" className="btn btn-ghost">
-            Join as Driver
+            Apply as Driver
           </Link>
           <Link to="/contact" className="btn btn-ghost">
             Contact Us

@@ -33,7 +33,7 @@ const MainLayout = () => {
     const onUserUpdated = (e) => {
       try {
         setUser(e?.detail || authService.getCurrentUser());
-      } catch (ex) {
+      } catch {
         setUser(authService.getCurrentUser());
       }
     };
@@ -248,7 +248,7 @@ const MainLayout = () => {
                         setDropdownOpen(null);
                       }}
                     >
-                      🚗 Join as Driver
+                      🚗 Apply as Driver
                     </Link>
                     <Link
                       to="/register/customer"

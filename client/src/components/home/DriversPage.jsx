@@ -401,8 +401,8 @@ const DriversPage = () => {
             maxWidth: '600px',
             margin: '0 auto 2rem'
           }}>
-            Join thousands of successful drivers earning with LogiFlow.
-            Apply now and get approved in as little as 48 hours.
+            Apply to join the LogiFlow driver network.
+            Submit your documents now and we will contact shortlisted applicants for the next step.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/register/driver" style={{

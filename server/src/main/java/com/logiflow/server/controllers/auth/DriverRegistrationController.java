@@ -31,7 +31,7 @@ public class DriverRegistrationController {
         try {
             registrationRequestService.createDriverRequest(request);
             return ResponseEntity.ok(new AuthResponse(null, null, null, null,
-                    "Driver registration request submitted successfully. Please wait for admin approval."));
+                    "Driver application submitted successfully. Please wait for the review result by email."));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(new AuthResponse(null, null, null, null, ex.getMessage()));
         }
@@ -74,18 +74,18 @@ public class DriverRegistrationController {
 
                 response.put("success", true);
                 response.put("data", extractedData);
-                response.put("message", "License information extracted successfully");
+                response.put("message", "License information extracted successfully with AI");
             } else {
                 response.put("success", false);
                 response.put("error", licenseInfo.getErrorMessage());
-                response.put("message", "OCR extraction failed - manual entry required");
+                response.put("message", "AI extraction failed - manual entry required");
             }
 
             return ResponseEntity.ok(response);
 
         } catch (Throwable e) {
             response.put("success", false);
-            response.put("error", "OCR processing failed: " + e.getMessage());
+            response.put("error", "AI extraction failed: " + e.getMessage());
             response.put("message", "Unable to process license image - please enter information manually");
             return ResponseEntity.status(500).body(response);
         }

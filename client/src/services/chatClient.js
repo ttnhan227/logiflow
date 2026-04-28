@@ -1,5 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { backendBaseUrl } from '../config/env';
 
 class ChatClient {
   constructor() {
@@ -12,9 +13,8 @@ class ChatClient {
     if (this.isConnected) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
-      const backendUrl = 'http://localhost:8080';
       // reuse notifications endpoint for chat messages as well (same broker)
-      const socketUrl = `${backendUrl}/ws/notifications`;
+      const socketUrl = `${backendBaseUrl}/ws/notifications`;
 
       const socket = new SockJS(socketUrl);
       this.client = new Client({

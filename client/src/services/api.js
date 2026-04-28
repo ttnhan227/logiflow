@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { apiBaseUrl } from '../config/env';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   }
@@ -20,6 +21,14 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
+    const requestUrl = error.config?.url || '';
+    const isAuthRequest = requestUrl.includes('/auth/');
+
+    // Keep original axios error for auth endpoints so pages can read HTTP status codes.
+    if (isAuthRequest) {
+      return Promise.reject(error);
+    }
+
     // Only logout on 401 (token invalid/expired), not on 403 (permission denied)
     if (error.response?.status === 401) {
       // Token is invalid or expired - logout user

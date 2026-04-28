@@ -33,6 +33,16 @@ public interface EmailService {
      */
     void sendRegistrationApprovalEmail(String to, String fullName, String username, String tempPassword, String roleName);
 
+        /**
+         * Send driver application acceptance email for interview stage
+         */
+        void sendDriverApplicationAcceptedEmail(String to, String fullName);
+
+        /**
+         * Send driver application rejection email
+         */
+        void sendDriverApplicationRejectedEmail(String to, String fullName);
+
     /**
      * Send test email for SMTP configuration testing
      */

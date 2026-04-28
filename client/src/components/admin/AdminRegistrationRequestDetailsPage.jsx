@@ -16,6 +16,7 @@ const AdminRegistrationRequestDetailsPage = () => {
   const [editedData, setEditedData] = useState({});
   const [approvalSuccess, setApprovalSuccess] = useState(false);
   const [finalCredentials, setFinalCredentials] = useState(null);
+  const [approvalMessage, setApprovalMessage] = useState('');
 
   // Determine if this is a driver or customer registration
   const isDriverRegistration = request?.role?.roleName === 'DRIVER';
@@ -53,6 +54,12 @@ const AdminRegistrationRequestDetailsPage = () => {
   };
 
   const handleApproveClick = () => {
+    if (isDriverRegistration) {
+      setGeneratedCredentials(null);
+      setShowApprovalModal(true);
+      return;
+    }
+
     // Generate preview credentials for review
     const fallbackUsername = isDriverRegistration ? 'driver' : 'customer';
     const baseUsername = (request.email || request.fullName || fallbackUsername)
@@ -77,6 +84,13 @@ const AdminRegistrationRequestDetailsPage = () => {
     try {
       const response = await api.post(`/admin/registration-requests/${requestId}/approve`);
       const message = response.data || '';
+
+      if (isDriverRegistration) {
+        setApprovalMessage(message);
+        setApprovalSuccess(true);
+        setRequest((prev) => ({ ...prev, status: 'APPROVED' }));
+        return;
+      }
 
       // Parse credentials from response message
       // Expected format: "Request approved successfully. Created driver account username='john.doe' with temporary password='AbCdEf123'."
@@ -220,12 +234,16 @@ const AdminRegistrationRequestDetailsPage = () => {
   };
 
   // Show success screen after account creation
-  if (approvalSuccess && finalCredentials) {
+  if (approvalSuccess && (isDriverRegistration || finalCredentials)) {
     return (
       <div className="admin-page-container">
         <div className="admin-page-header">
-          <h1>✅ Account Created Successfully</h1>
-          <p>{isDriverRegistration ? 'Driver' : 'Customer'} account has been created and credentials sent via email</p>
+          <h1>{isDriverRegistration ? '✅ Interview Invitation Sent' : '✅ Account Created Successfully'}</h1>
+          <p>
+            {isDriverRegistration
+              ? 'The driver has been moved to the interview stage and notified by email.'
+              : 'Customer account has been created and credentials sent via email'}
+          </p>
         </div>
 
         <div className="admin-details-container">
@@ -243,65 +261,79 @@ const AdminRegistrationRequestDetailsPage = () => {
                   ✓
                 </div>
                 <h3 style={{ color: '#10b981', margin: '0 0 8px 0' }}>
-                  {isDriverRegistration ? 'Driver' : 'Customer'} Account Created Successfully!
+                  {isDriverRegistration ? 'Driver application approved for interview' : 'Customer account created successfully'}
                 </h3>
                 <p style={{ color: '#6b7280', margin: 0 }}>
-                  The {isDriverRegistration ? 'driver' : 'customer'} has been notified via email with their login credentials.
+                  {isDriverRegistration
+                    ? 'The applicant has been notified that the profile passed review and the next step is interview scheduling.'
+                    : 'The customer has been notified via email with their login credentials.'}
                 </p>
               </div>
 
-              <div style={{
-                backgroundColor: '#f0f9ff',
-                padding: '20px',
-                borderRadius: '8px',
-                border: '1px solid #0ea5e9',
-                marginBottom: '24px'
-              }}>
-                <h4 style={{ margin: '0 0 16px 0', color: '#0c4a6e' }}>📧 Credentials Sent to {isDriverRegistration ? 'Driver' : 'Customer'}</h4>
-
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '600', color: '#374151' }}>Username:</span>
-                    <code style={{
-                      backgroundColor: '#e0f2fe',
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      fontFamily: 'monospace',
-                      color: '#0369a1',
-                      fontSize: '14px'
-                    }}>
-                      {finalCredentials.username}
-                    </code>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '600', color: '#374151' }}>Temporary Password:</span>
-                    <code style={{
-                      backgroundColor: '#e0f2fe',
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      fontFamily: 'monospace',
-                      color: '#0369a1',
-                      fontSize: '14px'
-                    }}>
-                      {finalCredentials.password}
-                    </code>
-                  </div>
-                </div>
-
+              {isDriverRegistration ? (
                 <div style={{
-                  marginTop: '16px',
-                  padding: '12px',
-                  backgroundColor: '#dbeafe',
-                  border: '1px solid #3b82f6',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: '#1e40af'
+                  backgroundColor: '#f0f9ff',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  border: '1px solid #0ea5e9',
+                  marginBottom: '24px'
                 }}>
-                  <strong>📧 Email Notification:</strong> The {isDriverRegistration ? 'driver' : 'customer'} will receive an email at <strong>{request.email}</strong>
-                  with instructions on how to log in and change their password.
+                  <h4 style={{ margin: '0 0 16px 0', color: '#0c4a6e' }}>📧 Interview-stage Email Sent</h4>
+                  <p style={{ margin: '0 0 12px 0', color: '#334155' }}>
+                    The driver will receive the update at <strong>{request.email}</strong>.
+                  </p>
+                  <div style={{
+                    padding: '12px',
+                    backgroundColor: '#e0f2fe',
+                    border: '1px solid #7dd3fc',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    color: '#0f172a'
+                  }}>
+                    {approvalMessage || 'The application passed initial review. The applicant will be contacted for interview if shortlisted.'}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div style={{
+                  backgroundColor: '#f0f9ff',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  border: '1px solid #0ea5e9',
+                  marginBottom: '24px'
+                }}>
+                  <h4 style={{ margin: '0 0 16px 0', color: '#0c4a6e' }}>📧 Credentials Sent to Customer</h4>
+
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '600', color: '#374151' }}>Username:</span>
+                      <code style={{
+                        backgroundColor: '#e0f2fe',
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        color: '#0369a1',
+                        fontSize: '14px'
+                      }}>
+                        {finalCredentials.username}
+                      </code>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '600', color: '#374151' }}>Temporary Password:</span>
+                      <code style={{
+                        backgroundColor: '#e0f2fe',
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        color: '#0369a1',
+                        fontSize: '14px'
+                      }}>
+                        {finalCredentials.password}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div style={{
                 backgroundColor: '#f0fdf4',
@@ -379,7 +411,7 @@ const AdminRegistrationRequestDetailsPage = () => {
                     onClick={handleApproveClick}
                     disabled={actionLoading}
                   >
-                    {actionLoading ? '⏳ Processing...' : '✓ Approve'}
+                    {actionLoading ? '⏳ Processing...' : isDriverRegistration ? '✓ Move to Interview' : '✓ Approve'}
                   </button>
                   <button
                     className="btn btn-danger"
@@ -866,56 +898,75 @@ const AdminRegistrationRequestDetailsPage = () => {
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
           }}>
             <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ margin: '0 0 8px 0', color: '#1f2937' }}>Review Account Creation</h2>
+              <h2 style={{ margin: '0 0 8px 0', color: '#1f2937' }}>{isDriverRegistration ? 'Review Interview Invitation' : 'Review Account Creation'}</h2>
               <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
-                Please review the account details that will be created for this {isDriverRegistration ? 'driver' : 'customer'}.
+                {isDriverRegistration
+                  ? 'Please confirm that this driver application should move to the interview stage.'
+                  : `Please review the account details that will be created for this ${isDriverRegistration ? 'driver' : 'customer'}.`}
               </p>
             </div>
 
             <div style={{ marginBottom: '24px' }}>
-              <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#1f2937' }}>Account Credentials</h3>
+              {!isDriverRegistration && (
+                <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#1f2937' }}>Account Credentials</h3>
 
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '600', color: '#374151' }}>Username:</span>
-                    <code style={{
-                      backgroundColor: '#e5e7eb',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontFamily: 'monospace',
-                      color: '#1f2937'
-                    }}>
-                      {generatedCredentials?.username}
-                    </code>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '600', color: '#374151' }}>Username:</span>
+                      <code style={{
+                        backgroundColor: '#e5e7eb',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        color: '#1f2937'
+                      }}>
+                        {generatedCredentials?.username}
+                      </code>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '600', color: '#374151' }}>Temporary Password:</span>
+                      <code style={{
+                        backgroundColor: '#e5e7eb',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        color: '#1f2937'
+                      }}>
+                        {generatedCredentials?.password}
+                      </code>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '600', color: '#374151' }}>Temporary Password:</span>
-                    <code style={{
-                      backgroundColor: '#e5e7eb',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontFamily: 'monospace',
-                      color: '#1f2937'
-                    }}>
-                      {generatedCredentials?.password}
-                    </code>
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '12px',
+                    backgroundColor: '#fef3c7',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    color: '#92400e'
+                  }}>
+                    <strong>⚠️ Important:</strong> The customer will receive these credentials via email after account creation. Make sure the email address is correct.
                   </div>
                 </div>
+              )}
 
-                <div style={{
-                  marginTop: '16px',
-                  padding: '12px',
-                  backgroundColor: '#fef3c7',
-                  border: '1px solid #f59e0b',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: '#92400e'
-                }}>
-                  <strong>⚠️ Important:</strong> The {isDriverRegistration ? 'driver' : 'customer'} will receive these credentials via email after account creation. Make sure the email address is correct.
+              {isDriverRegistration && (
+                <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#1f2937' }}>Interview-stage Update</h3>
+                  <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.7' }}>
+                    Approving this request will:
+                    <ul style={{ margin: '8px 0 0 18px' }}>
+                      <li>mark the driver application as approved for the next stage</li>
+                      <li>send an email saying the application passed review</li>
+                      <li>tell the applicant that your team will contact them for interview</li>
+                      <li>not create a login account yet</li>
+                    </ul>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div style={{ marginTop: '16px' }}>
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#1f2937' }}>Account Details</h3>
@@ -947,7 +998,7 @@ const AdminRegistrationRequestDetailsPage = () => {
                 onClick={handleConfirmApproval}
                 disabled={actionLoading}
               >
-                {actionLoading ? '⏳ Creating Account...' : '✓ Create Account'}
+                {actionLoading ? (isDriverRegistration ? '⏳ Sending Interview Email...' : '⏳ Creating Account...') : (isDriverRegistration ? '✓ Send Interview Update' : '✓ Create Account')}
               </button>
             </div>
           </div>

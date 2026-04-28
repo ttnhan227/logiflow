@@ -132,8 +132,8 @@ public class AdminRegistrationRequestController {
 
         RegistrationRequest req = reqOpt.get();
 
-        // Note: OCR extraction is performed during initial registration, not here
-        // This keeps the controller simple and avoids complex OCR logic in admin views
+        // Note: AI license extraction is performed during initial registration, not here
+        // This keeps the controller simple and avoids extraction logic in admin views
 
         return ResponseEntity.ok(req);
     }
@@ -149,11 +149,34 @@ public class AdminRegistrationRequestController {
             return ResponseEntity.badRequest().body("Request already processed");
         }
 
-        // Admin creates credentials upon approval (driver does NOT set username/password)
+        if (req.getRole() != null && "DRIVER".equalsIgnoreCase(req.getRole().getRoleName())) {
+            req.setStatus(RegistrationRequest.RequestStatus.APPROVED);
+            registrationRequestRepository.save(req);
+
+            logger.info("Attempting to send driver application acceptance email to: {}", req.getEmail());
+            try {
+                emailService.sendDriverApplicationAcceptedEmail(req.getEmail(), req.getFullName());
+                logger.info("Driver application acceptance email sent successfully to: {}", req.getEmail());
+            } catch (Exception e) {
+                logger.error("Failed to send driver application acceptance email to {}: {}", req.getEmail(), e.getMessage(), e);
+            }
+
+            auditLogService.log(
+                "APPROVE_REGISTRATION",
+                "admin",
+                "ADMIN",
+                "Moved driver application to interview stage for: " + req.getEmail()
+            );
+
+            return ResponseEntity.ok(
+                "Driver application approved for interview stage. Notification email sent to " + req.getEmail() + "."
+            );
+        }
+
+        // Customer flow keeps account creation on approval.
         String generatedUsername = generateUniqueUsername(req);
         String tempPassword = generateTempPassword();
 
-        // Create user
         User user = new User();
         user.setUsername(generatedUsername);
         user.setPasswordHash(passwordEncoder.encode(tempPassword));
@@ -165,26 +188,8 @@ public class AdminRegistrationRequestController {
         user.setRole(req.getRole());
         user.setIsActive(true);
         userRepository.save(user);
-        // Create role-specific entity
-        if (req.getRole() != null && "DRIVER".equalsIgnoreCase(req.getRole().getRoleName())) {
-            // If approving a driver, create Driver entity
-            Driver driver = new Driver();
-            driver.setUser(user);
 
-            // Map license fields from registration request
-            driver.setLicenseType(req.getLicenseType() != null ? req.getLicenseType() : "");
-            driver.setLicenseNumber(req.getLicenseNumber());
-            if (req.getLicenseExpiry() != null) {
-                driver.setLicenseExpiryDate(req.getLicenseExpiry());
-            }
-            driver.setLicenseIssueDate(req.getLicenseIssueDate());
-
-            // Default yearsExperience to 0
-            driver.setYearsExperience(0);
-            // healthStatus default is FIT from entity
-            // status default is available
-            driverRepository.save(driver);
-        } else if (req.getRole() != null && "CUSTOMER".equalsIgnoreCase(req.getRole().getRoleName())) {
+        if (req.getRole() != null && "CUSTOMER".equalsIgnoreCase(req.getRole().getRoleName())) {
             // If approving a customer, create Customer entity
             Customer customer = new Customer();
             customer.setUser(user);
@@ -247,6 +252,16 @@ public class AdminRegistrationRequestController {
         }
         req.setStatus(RegistrationRequest.RequestStatus.REJECTED);
         registrationRequestRepository.save(req);
+
+        if (req.getRole() != null && "DRIVER".equalsIgnoreCase(req.getRole().getRoleName())) {
+            logger.info("Attempting to send driver application rejection email to: {}", req.getEmail());
+            try {
+                emailService.sendDriverApplicationRejectedEmail(req.getEmail(), req.getFullName());
+                logger.info("Driver application rejection email sent successfully to: {}", req.getEmail());
+            } catch (Exception e) {
+                logger.error("Failed to send driver application rejection email to {}: {}", req.getEmail(), e.getMessage(), e);
+            }
+        }
 
         auditLogService.log(
             "REJECT_REGISTRATION",

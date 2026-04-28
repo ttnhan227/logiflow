@@ -1617,8 +1617,8 @@ public class DatabaseSeeder implements CommandLineRunner {
             notifications.add(new Notification(
                 Notification.NotificationType.REGISTRATION_REQUEST,
                 "INFO",
-                "New Registration Request",
-                "New driver registration request from john.smith@example.com requires approval.",
+                "New Driver Application",
+                "New driver application from john.smith@example.com requires review.",
                 "/admin/registration-requests",
                 "Review Request",
                 null,

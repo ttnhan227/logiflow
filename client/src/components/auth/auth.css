@@ -55,7 +55,7 @@
   font-size: 0.9rem;
 }
 
-.ocr-error-message {
+.ai-extraction-error-message {
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
   background-color: #fef2f2;
@@ -169,6 +169,34 @@
 
 .driver-register-card {
   max-width: 700px;
+}
+
+.application-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.application-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.application-overview-card strong {
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.application-overview-card span {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .auth-header {
@@ -357,9 +385,6 @@
 }
 
 .btn-remove {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   background: rgba(244, 67, 54, 0.9);
   color: white;
   border: none;
@@ -372,6 +397,17 @@
 
 .btn-remove:hover {
   background: #f44336;
+}
+
+.license-preview .btn-remove {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.upload-card {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
 }
 
 /* Tips Box */
@@ -718,7 +754,7 @@
   grid-column: 1 / -1;
 }
 
-.ocr-warning {
+.ai-extraction-warning {
   background-color: #fef3c7 !important;
   border: 1px solid #f59e0b !important;
   border-radius: 8px !important;
@@ -726,12 +762,12 @@
   margin-top: 20px !important;
 }
 
-.ocr-warning div:first-child {
+.ai-extraction-warning div:first-child {
   font-weight: 600;
   color: #92400e;
   margin-bottom: 8px;
 }
 
-.ocr-warning div:last-child {
+.ai-extraction-warning div:last-child {
   color: #78350f;
 }

@@ -1,6 +1,7 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import authService from './auth/authService';
+import { backendBaseUrl } from '../config/env';
 
 class NotificationClient {
   constructor() {
@@ -22,9 +23,7 @@ class NotificationClient {
     }
 
     this.connectPromise = new Promise((resolve, reject) => {
-      // Use the same backend URL as API, but for WebSocket
-      const backendUrl = 'http://localhost:8080'; // Match api.js baseURL
-      const socketUrl = `${backendUrl}/ws/notifications`;
+      const socketUrl = `${backendBaseUrl}/ws/notifications`;
 
       console.log('Connecting to SockJS:', socketUrl);
       const socket = new SockJS(socketUrl);

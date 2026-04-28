@@ -67,8 +67,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     return <div>Loading...</div>;
   }
 
-  // Only redirect to login if coming from login page
-  if (!authState.user && location.state?.from === '/login') {
+  if (!authState.user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -266,11 +265,6 @@ function App() {
           <Route path="/admin/vehicles" element={
             <ProtectedRoute requiredRole="ADMIN">
               <AdminVehiclesPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/reports" element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminReportsPage />
             </ProtectedRoute>
           } />
         </Route>

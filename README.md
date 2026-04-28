@@ -1,108 +1,114 @@
-# LogiFlow — Backend-Driven Logistics Management Platform
+# LogiFlow
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Java](https://img.shields.io/badge/Java-21%2B-blue)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5%2B-brightgreen)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-19-61DAFB)](https://reactjs.org/)
-[![Flutter](https://img.shields.io/badge/Flutter-3.9%2B-02569B)](https://flutter.dev/)
+Full-stack logistics platform for freight operations with role-based workflows, dispatch planning, live tracking, and integrated document/payment pipelines.
 
-LogiFlow is a full-stack logistics management system designed to simulate real-world heavy freight operations. The platform manages container workflows, driver allocation, compliance monitoring, and real-time tracking across web and mobile clients.
+## Tech Stack
 
-Developed as a team project, where I led the backend architecture and infrastructure design.
+**Backend:** Java 21, Spring Boot 3.5+, Spring Security, JPA/Hibernate, PostgreSQL 15 (PostGIS), JWT, Maven
 
-## 👤 My Role & Backend Ownership
+**Frontend:** React 19, Vite
 
-In this project, I was responsible for designing and implementing the entire backend foundation, including:
+**Mobile:** Flutter 3.9+
 
-- **Architecture Lead**: Designed the layered structure and established backend standards for the team.
-- **Security & Auth**: Designed JWT-based stateless authentication and Spring Security configuration with role-based authorization.
-- **Database Schema**: Designed the database schema and managed complex entity relationships (OneToMany, ManyToOne).
-- **Infrastructure**: Implemented centralized exception handling and structured the service layer to ensure business logic remains isolated from API contracts.
+**Integrations:** Cloudinary, Tesseract OCR, Mistral AI, PayPal Sandbox, SMTP
 
-Other team members built application features and client interfaces on top of the backend architecture I established.
+## Features
 
-## 🧱 System Architecture
+- **Role-Based Platform** - Separate capabilities for Admin, Dispatcher, Driver, and Customer users.
+- **Dispatch and Trip Management** - Trip creation, assignment, rerouting, cancellation, and delivery confirmation workflows.
+- **Order Lifecycle Operations** - Customer order creation and dispatch-side planning and updates.
+- **Live Tracking and Maps** - GPS location updates, history tracking, geocoding, routing, and route optimization.
+- **Registration Review Flow** - Driver/customer onboarding with admin approval and status control.
+- **OCR Document Processing** - Driver license extraction to reduce manual registration input.
+- **Payment Request Workflow** - PayPal sandbox integration with request, reminder, and status tracking.
+- **Notification and Chat Modules** - In-app notifications and trip/order conversation endpoints.
 
-The backend follows a layered architecture inspired by production practices:
-`Controller → Service → Repository → Database`
+## Architecture
 
-The system is designed with a layered backend architecture and stateless authentication to support scalability and maintain a clean separation of concerns.
+**Three-Tier Design:** Controllers -> Services -> Repositories with clear separation of API, business logic, and persistence
 
-### Key Design Decisions
-- **Separation of Concerns**: Business logic is strictly isolated in the service layer, while controllers manage HTTP request/response cycles.
-- **DTO Pattern**: Used to prevent exposing internal domain models and maintain clean, stable API contracts.
-- **Stateless Auth**: Leveraged JWT to allow horizontal scalability without server-side sessions.
-- **RBAC**: Role-based access control via Spring Security filters to ensure secure operation across different user types.
+**Role-Aware Access:** JWT authentication with Spring Security role checks across admin, dispatch, driver, and customer routes
 
-## 🔐 Security & Auth Design
+**Operational Domain Modeling:** Strong relational schema for users, trips, orders, vehicles, registration requests, and audit trails
 
-### Secure Stateless Authentication
-JWT-based authentication is used with Spring Security to enable stateless sessions and horizontal scalability. Role-based access control (RBAC) enforces authorization across Admin, Dispatcher, Driver, and Customer roles.
+**Key Patterns:**
+- DTO-based API contracts to avoid exposing internal entities.
+- Centralized exception handling and consistent error responses.
+- Adapter-style service integration for OCR, AI, payment, upload, and email providers.
+- Role-specific endpoint grouping to keep modules isolated and maintainable.
 
-### Credentials & Protection
-Passwords are stored with BCrypt hashing. Sensitive external service credentials are externalized (properties/environment) to avoid embedding secrets in code.
+## Permissions
 
-### Database & Relationship Design
-Relational mappings (OneToMany, ManyToOne) include explicit constraints and cascade rules. Serialization and lazy-loading are handled carefully to avoid common JPA pitfalls.
+| Feature | Admin | Dispatcher | Driver | Customer |
+|---------|:-----:|:----------:|:------:|:--------:|
+| Manage users and system settings | Y | | | |
+| Create and assign trips | Y | Y | | |
+| Execute trip operations | | Y | Y | |
+| Create and track orders | | | | Y |
+| View and manage notifications | Y | Y | Y | Y |
 
-### External Integrations
-Cloudinary, Tesseract OCR, Mistral AI, PayPal Sandbox, and SMTP are integrated through well-scoped adapters and externalized configuration to preserve modularity and security.
+## Setup
 
-## 🌐 Core Capabilities
-- **Role-aware driver assignment workflow**
-- **Container and cargo management**
-- **Real-time tracking integration**
-- **OCR-based document digitization** (Tesseract)
-- **AI-powered logistics insights** (Mistral AI)
-- **Secure payment processing** (PayPal Sandbox)
-- **Automated email notifications** (SMTP)
-- **Swagger API documentation**
-
-## 🛠 Tech Stack
-
-**Backend:**
-- Java 21
-- Spring Boot 3.5+
-- Spring Security
-- PostgreSQL 15 (PostGIS support)
-- Maven
-
-**Web Frontend:**
-- React 19 + Vite
-
-**Mobile:**
-- Flutter 3.9+
-
-**External Integrations:**
-- Cloudinary (File Storage)
-- Tesseract OCR (Document Processing)
-- Mistral AI (AI Features)
-- PayPal Sandbox (Payments)
-
-## 🏗 Project Structure
+### Backend
+```bash
+cd server
+# configure src/main/resources/application.properties
+mvn spring-boot:run
 ```
-logiflow/
-├── server/          # Spring Boot backend
-├── client/          # React web application
-└── client_mobile/   # Flutter mobile application
+API: http://localhost:8080
+
+### Frontend
+```bash
+cd client
+npm install
+npm run dev
+```
+App: http://localhost:5173
+
+### Mobile (Optional)
+```bash
+cd client_mobile
+flutter pub get
+flutter run
 ```
 
-## 🚀 Production Hardening Roadmap
-- **Containerization with Docker**: Build and publish container images for all services.
-- **CI/CD pipeline integration**: Automate build, test, and deployment workflows.
-- **Centralized logging & monitoring**: Implement aggregated logs, metrics, and alerting.
-- **Cloud deployment (AWS/Azure)**: Prepare infra-as-code and secure cloud deployments for production.
+## API Surface
 
-## ⚙️ Running Locally (Simplified)
+- **Auth Module** - Registration, login, logout, JWT-based session flow.
+- **Registration Module** - Driver/customer onboarding requests with admin review pipeline.
+- **Dispatch Module** - Order planning, trip creation, assignment, reroute, and status transitions.
+- **Driver Module** - Trip acceptance/execution, location updates, schedule and delivery actions.
+- **Customer Module** - Order creation, tracking, profile, and history endpoints.
+- **Admin Module** - User management, registration approvals, oversight, reports, and audit logs.
 
-1. **Configure PostgreSQL**: Ensure database is running and accessible.
-2. **Update Properties**: Configure `application.properties` with database credentials and API keys for external services.
-3. **Run Backend**: Start the Spring Boot application from the `server` directory.
-4. **Start Web Frontend**: Navigate to `client`, run `npm install` and `npm run dev`.
-5. **Run Mobile Client (Optional)**: Open `client_mobile` in Android Studio/VS Code and run on an emulator/device.
+For complete route details, use the project's Swagger/OpenAPI docs when running the backend locally.
 
-Detailed configuration steps are available in the project folders.
+## Implementation Highlights
 
-## 📄 License
+**Approval-Gated Onboarding**
+- Registration requests are submitted first, then approved/rejected by admin review.
+- User accounts are provisioned after approval with role-specific entity creation.
+- Audit logging is captured for approval/rejection actions.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**OCR-Assisted Driver Intake**
+- License fields can be extracted from image URLs during registration.
+- Extraction falls back to manual entry when OCR confidence is insufficient.
+- Date normalization is applied before returning extracted data to clients.
+
+**Dispatch-Centric Trip Lifecycle**
+- Trips support create, assign, status update, reroute, and cancel operations.
+- Delivery confirmation endpoints support post-delivery verification.
+- Driver and dispatcher modules consume the same trip lifecycle model.
+
+**Integrated Operations Stack**
+- Maps endpoints support geocoding, distance, directions, and route optimization.
+- Payment endpoints support PayPal order creation and status handling.
+- Notification and chat endpoints support cross-role operational communication.
+
+## What This Demonstrates
+
+- Full-stack logistics platform design with enterprise-style modular backend architecture.
+- Role-based authorization applied across multiple operational domains.
+- Real-world workflow modeling for registration, dispatch, delivery, and payment.
+- Practical integration of OCR, AI, maps, notifications, and payment services.
+- API design that supports both React web and Flutter mobile clients.

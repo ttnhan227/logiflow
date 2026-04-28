@@ -259,6 +259,28 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    public void sendDriverApplicationAcceptedEmail(String to, String fullName) {
+        try {
+            String subject = "LogiFlow Driver Application Update";
+            String htmlContent = buildDriverApplicationAcceptedEmail(fullName);
+            sendHtmlEmail(to, subject, htmlContent);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to send driver application acceptance email", e);
+        }
+    }
+
+    @Override
+    public void sendDriverApplicationRejectedEmail(String to, String fullName) {
+        try {
+            String subject = "LogiFlow Driver Application Update";
+            String htmlContent = buildDriverApplicationRejectedEmail(fullName);
+            sendHtmlEmail(to, subject, htmlContent);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to send driver application rejection email", e);
+        }
+    }
+
     private String buildRegistrationApprovalEmail(String fullName, String username, String tempPassword, String roleName) {
         // Escape HTML content to prevent XSS
         String escapedFullName = HtmlUtils.htmlEscape(fullName != null ? fullName : "Valued User");
@@ -350,6 +372,91 @@ public class EmailServiceImpl implements EmailService {
                 "<p>This email was sent by LogiFlow Logistics Management System</p>" +
                 "<p>© 2024 LogiFlow. All rights reserved.</p>" +
                 "<p>If you did not request this account or believe this email was sent in error, please contact our support team immediately.</p>" +
+                "</div>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+    }
+
+    private String buildDriverApplicationAcceptedEmail(String fullName) {
+        String escapedFullName = HtmlUtils.htmlEscape(fullName != null ? fullName : "Applicant");
+
+        return "<!DOCTYPE html>" +
+                "<html>" +
+                "<head>" +
+                "<meta charset='UTF-8'>" +
+                "<title>Driver Application Update</title>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }" +
+                ".container { max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }" +
+                ".header { text-align: center; margin-bottom: 24px; }" +
+                ".logo { font-size: 24px; font-weight: bold; color: #2c3e50; }" +
+                ".status-box { background-color: #ecfdf5; border: 1px solid #10b981; padding: 20px; border-radius: 8px; margin: 20px 0; }" +
+                ".steps-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0; }" +
+                ".footer { text-align: center; margin-top: 30px; color: #7f8c8d; font-size: 12px; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class='container'>" +
+                "<div class='header'>" +
+                "<div class='logo'>LogiFlow</div>" +
+                "<h1 style='margin: 10px 0; color: #047857;'>Driver Application Update</h1>" +
+                "</div>" +
+                "<p>Dear " + escapedFullName + ",</p>" +
+                "<div class='status-box'>" +
+                "<h2 style='margin: 0 0 10px 0; color: #047857;'>Your application passed the initial review</h2>" +
+                "<p style='margin: 0; color: #374151;'>Our team would like to move your application to the interview stage.</p>" +
+                "</div>" +
+                "<div class='steps-box'>" +
+                "<h3 style='margin-top: 0; color: #1f2937;'>What happens next</h3>" +
+                "<ul style='margin: 0; padding-left: 20px; color: #4b5563; line-height: 1.7;'>" +
+                "<li>Our recruitment or operations team will contact you using your submitted phone number or email.</li>" +
+                "<li>If shortlisted, you will be invited to an interview or screening call.</li>" +
+                "<li>Final acceptance will be confirmed after the interview stage.</li>" +
+                "</ul>" +
+                "</div>" +
+                "<p>Thank you for your interest in joining LogiFlow.</p>" +
+                "<div class='footer'>" +
+                "<p>This email was sent by LogiFlow Logistics Management System</p>" +
+                "<p>© 2024 LogiFlow. All rights reserved.</p>" +
+                "</div>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+    }
+
+    private String buildDriverApplicationRejectedEmail(String fullName) {
+        String escapedFullName = HtmlUtils.htmlEscape(fullName != null ? fullName : "Applicant");
+
+        return "<!DOCTYPE html>" +
+                "<html>" +
+                "<head>" +
+                "<meta charset='UTF-8'>" +
+                "<title>Driver Application Update</title>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }" +
+                ".container { max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }" +
+                ".header { text-align: center; margin-bottom: 24px; }" +
+                ".logo { font-size: 24px; font-weight: bold; color: #2c3e50; }" +
+                ".status-box { background-color: #fef2f2; border: 1px solid #ef4444; padding: 20px; border-radius: 8px; margin: 20px 0; }" +
+                ".footer { text-align: center; margin-top: 30px; color: #7f8c8d; font-size: 12px; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class='container'>" +
+                "<div class='header'>" +
+                "<div class='logo'>LogiFlow</div>" +
+                "<h1 style='margin: 10px 0; color: #b91c1c;'>Driver Application Update</h1>" +
+                "</div>" +
+                "<p>Dear " + escapedFullName + ",</p>" +
+                "<div class='status-box'>" +
+                "<h2 style='margin: 0 0 10px 0; color: #b91c1c;'>Your application was not selected at this stage</h2>" +
+                "<p style='margin: 0; color: #374151;'>Thank you for applying to LogiFlow. After review, we will not be moving forward with the application at this time.</p>" +
+                "</div>" +
+                "<p>We appreciate your interest and encourage you to apply again in the future if your profile changes.</p>" +
+                "<div class='footer'>" +
+                "<p>This email was sent by LogiFlow Logistics Management System</p>" +
+                "<p>© 2024 LogiFlow. All rights reserved.</p>" +
                 "</div>" +
                 "</div>" +
                 "</body>" +

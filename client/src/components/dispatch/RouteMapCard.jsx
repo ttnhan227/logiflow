@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { dispatchRouteService } from '../../services';
+import { apiBaseUrl } from '../../config/env';
 
 // Vietnam boundaries (approximate)
 const VIETNAM_BOUNDS = {
@@ -77,7 +78,7 @@ const buildServerDirectionsUrl = (coords, profile = 'truck') => {
         includeGeometry: 'true',
         profile,
     });
-    return `http://localhost:8080/api/maps/directions?${params.toString()}`;
+    return `${apiBaseUrl}/maps/directions?${params.toString()}`;
 };
 
 // Get OSRM route (same as admin page)
