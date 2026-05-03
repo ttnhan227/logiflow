@@ -3,7 +3,6 @@ package com.logiflow.server.controllers.test;
 import com.logiflow.server.dtos.notification.AdminNotificationDto;
 import com.logiflow.server.services.email.EmailService;
 import com.logiflow.server.websocket.NotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,11 +12,13 @@ import java.util.Map;
 @RequestMapping("/api/test")
 public class TestController {
 
-    @Autowired
-    private NotificationService notificationService;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
 
-    @Autowired
-    private EmailService emailService;
+    public TestController(NotificationService notificationService, EmailService emailService) {
+        this.notificationService = notificationService;
+        this.emailService = emailService;
+    }
 
     /**
      * Send a test notification to all admins

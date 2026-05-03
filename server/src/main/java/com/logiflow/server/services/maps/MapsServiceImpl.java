@@ -6,6 +6,8 @@ import com.logiflow.server.dtos.maps.DistanceResultDto;
 import com.logiflow.server.dtos.maps.OptimizeRequestDto;
 import com.logiflow.server.dtos.maps.OptimizedRouteDto;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class MapsServiceImpl implements MapsService {
+
+    private static final Logger log = LoggerFactory.getLogger(MapsServiceImpl.class);
 
     private final RestTemplate restTemplate;
     private long lastRequestTime = 0;
@@ -146,11 +150,12 @@ public class MapsServiceImpl implements MapsService {
                     }
                 } catch (Exception inner) {
                     // Log the failed URL and continue to next attempt
-                    System.err.println("Geocoding attempt failed for url: " + url + " -> " + inner.getMessage());
+                    log.error("Geocoding attempt failed for url: {} -> {}",
+                        url, inner.getMessage());
                 }
             }
         } catch (Exception e) {
-            System.err.println("Geocoding error: " + e.getMessage());
+            log.error("Geocoding error: {}", e.getMessage());
             e.printStackTrace();
         }
 
@@ -181,7 +186,7 @@ public class MapsServiceImpl implements MapsService {
                 return result.get("display_name").toString();
             }
         } catch (Exception e) {
-            System.err.println("Reverse geocoding error: " + e.getMessage());
+            log.error("Reverse geocoding error: {}", e.getMessage());
             e.printStackTrace();
         }
 
@@ -266,7 +271,7 @@ public class MapsServiceImpl implements MapsService {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Routing error: " + e.getMessage());
+            log.error("Routing error: {}", e.getMessage());
             e.printStackTrace();
         }
 
@@ -391,7 +396,7 @@ public class MapsServiceImpl implements MapsService {
             return suggestions.stream().limit(limit).collect(Collectors.toList());
 
         } catch (Exception e) {
-            System.err.println("Address suggestions failed: " + e.getMessage());
+            log.error("Address suggestions failed: {}", e.getMessage());
             // Return empty list - no hardcoded fallback
             return Collections.emptyList();
         }

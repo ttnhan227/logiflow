@@ -20,10 +20,12 @@ import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,7 +45,7 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
-
+    private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
 
     private void applyPickupInfo(Order order, Order.PickupType pickupType, String containerNumber, String terminalName, String warehouseName, String dockNumber) {
         order.setPickupType(pickupType);
@@ -80,26 +82,30 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
+    private final TripRepository tripRepository;
+    private final ShippingFeeCalculator shippingFeeCalculator;
+    private final MapsService mapsService;
+    private final NotificationService notificationService;
+    private final PaymentService paymentService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private TripRepository tripRepository;
-
-    @Autowired
-    private ShippingFeeCalculator shippingFeeCalculator;
-
-    @Autowired(required = false)
-    private MapsService mapsService;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private PaymentService paymentService;
+    public OrderServiceImpl(
+            OrderRepository orderRepository,
+            UserRepository userRepository,
+            TripRepository tripRepository,
+            ShippingFeeCalculator shippingFeeCalculator,
+            @Nullable MapsService mapsService,
+            NotificationService notificationService,
+            PaymentService paymentService) {
+        this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
+        this.tripRepository = tripRepository;
+        this.shippingFeeCalculator = shippingFeeCalculator;
+        this.mapsService = mapsService;
+        this.notificationService = notificationService;
+        this.paymentService = paymentService;
+    }
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -245,7 +251,7 @@ public class OrderServiceImpl implements OrderService {
             }
         } catch (Exception e) {
             // Log error but don't fail the order creation
-            System.err.println("Failed to send notification for new order: " + e.getMessage());
+            log.error("Failed to send notification for new order: {}", e.getMessage());
         }
 
         return OrderDto.fromOrder(orderWithRelations);
@@ -337,7 +343,7 @@ public class OrderServiceImpl implements OrderService {
                             order.setDistanceKm(distanceKm);
                         }
                     } catch (Exception e) {
-                        System.err.println("Row " + rowNumber + ": Failed to calculate distance: " + e.getMessage());
+                        log.error("Row {}: Failed to calculate distance: {}", rowNumber, e.getMessage());
                     }
                 }
 
@@ -559,7 +565,7 @@ public class OrderServiceImpl implements OrderService {
             paymentService.sendPaymentRequest(orderId);
         } catch (Exception e) {
             // Log error but don't fail the operation
-            System.err.println("Failed to send payment request for order #" + orderId + ": " + e.getMessage());
+            log.error("Failed to send payment request for order #{}: {}", orderId, e.getMessage());
         }
     }
 

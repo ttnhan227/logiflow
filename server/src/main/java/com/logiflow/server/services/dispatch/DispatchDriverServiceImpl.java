@@ -4,7 +4,6 @@ import com.logiflow.server.dtos.dispatch.AvailableDriverDto;
 import com.logiflow.server.models.Driver;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -15,11 +14,15 @@ import java.util.stream.Collectors;
 @Service
 public class DispatchDriverServiceImpl implements DispatchDriverService {
 
-    @Autowired
-    private DriverRepository driverRepository;
+    private final DriverRepository driverRepository;
+    private final DriverWorkLogRepository driverWorkLogRepository;
 
-    @Autowired
-    private DriverWorkLogRepository driverWorkLogRepository;
+    public DispatchDriverServiceImpl(
+            DriverRepository driverRepository,
+            DriverWorkLogRepository driverWorkLogRepository) {
+        this.driverRepository = driverRepository;
+        this.driverWorkLogRepository = driverWorkLogRepository;
+    }
 
     @Override
     public List<AvailableDriverDto> getAvailableDrivers(LocalDateTime at) {
@@ -56,14 +59,14 @@ public class DispatchDriverServiceImpl implements DispatchDriverService {
     }
 
     @Override
-    public List<?> getAllDrivers() {
+    public List<DriverDto> getAllDrivers() {
         return driverRepository.findAll().stream()
                 .map(this::toDriverDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<?> getAvailableDriversList() {
+    public List<DriverDto> getAvailableDriversList() {
         return driverRepository.findByStatus("available").stream()
                 .map(this::toDriverDto)
                 .collect(Collectors.toList());

@@ -5,7 +5,6 @@ import com.logiflow.server.dtos.admin.trip.TripOversightDto;
 import com.logiflow.server.dtos.admin.trip.TripOversightListResponse;
 import com.logiflow.server.services.admin.TripOversightService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,8 +14,11 @@ import java.util.List;
 @RequestMapping("/api/admin/trips")
 public class TripOversightController {
 
-    @Autowired
-    private TripOversightService tripOversightService;
+    private final TripOversightService tripOversightService;
+
+    public TripOversightController(TripOversightService tripOversightService) {
+        this.tripOversightService = tripOversightService;
+    }
 
     @GetMapping("/{tripId}")
     public ResponseEntity<TripOversightDto> getTripOversight(@PathVariable Integer tripId) {

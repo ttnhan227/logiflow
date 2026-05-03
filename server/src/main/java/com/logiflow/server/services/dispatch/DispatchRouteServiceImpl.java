@@ -3,10 +3,10 @@ package com.logiflow.server.services.dispatch;
 import com.logiflow.server.dtos.dispatch.RouteDto;
 import com.logiflow.server.models.Order;
 import com.logiflow.server.models.Route;
+import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.route.RouteRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,10 +16,14 @@ import java.util.stream.Collectors;
 @Service
 public class DispatchRouteServiceImpl implements DispatchRouteService {
 
-    @Autowired
-    private RouteRepository routeRepository;
-
+    private final RouteRepository routeRepository;
+    private final OrderRepository orderRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public DispatchRouteServiceImpl(RouteRepository routeRepository, OrderRepository orderRepository) {
+        this.routeRepository = routeRepository;
+        this.orderRepository = orderRepository;
+    }
 
     @Override
     public RouteDto getRouteById(Integer routeId) {
@@ -36,21 +40,23 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
     }
 
     @Override
-    public RouteDto createTripRoute(List<Order> orders, String routeName) {
-        if (orders == null || orders.isEmpty()) {
-            throw new IllegalArgumentException("Orders cannot be null or empty");
+    public RouteDto createTripRoute(List<Integer> orderIds, String routeName) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            throw new IllegalArgumentException("orderIds cannot be null or empty");
         }
 
-        // Create waypoints from all order coordinates
+        List<Order> orders = orderRepository.findAllById(orderIds);
+        if (orders.size() != orderIds.size()) {
+            throw new IllegalArgumentException("Some orders not found");
+        }
+
         List<Map<String, Object>> waypoints = new ArrayList<>();
         BigDecimal totalFee = BigDecimal.ZERO;
-        List<String> orderIds = new ArrayList<>();
+        List<String> idStrings = new ArrayList<>();
 
-        // Sort orders by ID for consistent sequence
         orders.sort(Comparator.comparing(Order::getOrderId));
 
         for (Order order : orders) {
-            // Add pickup waypoint
             if (order.getPickupLat() != null && order.getPickupLng() != null) {
                 Map<String, Object> pickupPoint = new HashMap<>();
                 pickupPoint.put("lat", order.getPickupLat());
@@ -62,7 +68,6 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
                 waypoints.add(pickupPoint);
             }
 
-            // Add delivery waypoint
             if (order.getDeliveryLat() != null && order.getDeliveryLng() != null) {
                 Map<String, Object> deliveryPoint = new HashMap<>();
                 deliveryPoint.put("lat", order.getDeliveryLat());
@@ -74,15 +79,13 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
                 waypoints.add(deliveryPoint);
             }
 
-            // Accumulate fees
             if (order.getShippingFee() != null) {
                 totalFee = totalFee.add(order.getShippingFee());
             }
 
-            orderIds.add(order.getOrderId().toString());
+            idStrings.add(order.getOrderId().toString());
         }
 
-        // Calculate total distance (sum of all individual order distances)
         BigDecimal totalDistance = BigDecimal.ZERO;
         for (Order order : orders) {
             if (order.getDistanceKm() != null) {
@@ -90,11 +93,10 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
             }
         }
 
-        // Create route entity
         Route route = new Route();
         route.setRouteName(routeName != null ? routeName : "Trip Route");
         route.setRouteType("trip");
-        route.setDistanceKm(totalDistance); // Total distance from all orders
+        route.setDistanceKm(totalDistance);
 
         try {
             route.setWaypoints(objectMapper.writeValueAsString(waypoints));
@@ -102,11 +104,10 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
             throw new RuntimeException("Failed to serialize waypoints", e);
         }
 
-        route.setTotalFee(totalFee); // Total fee from all orders
-        route.setOrderIds(String.join(",", orderIds));
+        route.setTotalFee(totalFee);
+        route.setOrderIds(String.join(",", idStrings));
         route.setIsTripRoute(true);
 
-        Route saved = routeRepository.save(route);
-        return RouteDto.fromRoute(saved);
+        return RouteDto.fromRoute(routeRepository.save(route));
     }
 }

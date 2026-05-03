@@ -1,12 +1,12 @@
 package com.logiflow.server.services.admin;
 
+import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.admin.user_management.*;
 import com.logiflow.server.models.*;
 import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -21,26 +21,33 @@ import java.util.stream.Collectors;
 @Service
 public class UserManagementServiceImpl implements UserManagementService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private static final String SYSTEM_ACTOR = "system";
+    private static final String SYSTEM_ROLE = "SYSTEM";
 
-    @Autowired
-    private RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final CustomerRepository customerRepository;
+    private final DriverRepository driverRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
+    private final com.logiflow.server.services.file.FileStorageService fileStorageService;
 
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private DriverRepository driverRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
-    @Autowired
-    private com.logiflow.server.services.file.FileStorageService fileStorageService;
+    public UserManagementServiceImpl(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            CustomerRepository customerRepository,
+            DriverRepository driverRepository,
+            PasswordEncoder passwordEncoder,
+            AuditLogService auditLogService,
+            com.logiflow.server.services.file.FileStorageService fileStorageService) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.customerRepository = customerRepository;
+        this.driverRepository = driverRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
+        this.fileStorageService = fileStorageService;
+    }
 
     @Override
     @Transactional
@@ -70,9 +77,9 @@ public class UserManagementServiceImpl implements UserManagementService {
         User savedUser = userRepository.save(user);
 
         auditLogService.log(
-            "CREATE_USER",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.CREATE_USER,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Created user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ")"
         );
         return convertToDto(savedUser);
@@ -139,9 +146,9 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
 
         auditLogService.log(
-            "UPDATE_USER",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.UPDATE_USER,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Updated user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ")"
         );
         return convertToDto(savedUser);
@@ -157,9 +164,9 @@ public class UserManagementServiceImpl implements UserManagementService {
         User savedUser = userRepository.save(user);
 
         auditLogService.log(
-            "TOGGLE_USER_STATUS",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.TOGGLE_USER_STATUS,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Toggled status for user: " + savedUser.getUsername() + " (ID: " + savedUser.getUserId() + ") to " + savedUser.getIsActive()
         );
         return convertToDto(savedUser);

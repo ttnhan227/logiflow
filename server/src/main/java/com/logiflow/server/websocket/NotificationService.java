@@ -8,23 +8,26 @@ import com.logiflow.server.models.Notification;
 import com.logiflow.server.models.User;
 import com.logiflow.server.repositories.notification.NotificationRepository;
 import com.logiflow.server.repositories.user.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class NotificationService {
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
 
-    @Autowired
-    private NotificationRepository notificationRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private DriverRepository driverRepository;
+    public NotificationService(
+            SimpMessagingTemplate messagingTemplate,
+            NotificationRepository notificationRepository,
+            UserRepository userRepository,
+            DriverRepository driverRepository) {
+        this.messagingTemplate = messagingTemplate;
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+        this.driverRepository = driverRepository;
+    }
 
     private String resolveDriverUsername(Integer driverId) {
         if (driverId == null) return null;

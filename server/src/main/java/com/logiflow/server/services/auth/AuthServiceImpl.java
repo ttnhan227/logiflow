@@ -1,5 +1,6 @@
 package com.logiflow.server.services.auth;
 
+import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.auth.AuthResponse;
 import com.logiflow.server.dtos.auth.LoginRequest;
 import com.logiflow.server.dtos.auth.RegisterRequest;
@@ -13,7 +14,6 @@ import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.admin.AuditLogService;
 import com.logiflow.server.utils.JwtUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,29 +28,33 @@ import java.util.List;
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+    private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RegistrationRequestRepository registrationRequestRepository;
+    private final AuditLogService auditLogService;
 
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private RegistrationRequestRepository registrationRequestRepository;
-
-    @Autowired
-    private AuditLogService auditLogService;
+    public AuthServiceImpl(
+            AuthenticationManager authenticationManager,
+            JwtUtils jwtUtils,
+            UserRepository userRepository,
+            CustomerRepository customerRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            RegistrationRequestRepository registrationRequestRepository,
+            AuditLogService auditLogService) {
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+        this.userRepository = userRepository;
+        this.customerRepository = customerRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.registrationRequestRepository = registrationRequestRepository;
+        this.auditLogService = auditLogService;
+    }
 
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
@@ -67,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Audit log the login
         auditLogService.log(
-            "LOGIN",
+            AuditActions.LOGIN,
             user.getUsername(),
             user.getRole() != null ? user.getRole().getRoleName() : "",
             "User logged in from IP (not captured)"
@@ -144,7 +148,7 @@ public class AuthServiceImpl implements AuthService {
         if (user != null) {
             // Audit log the logout
             auditLogService.log(
-                "LOGOUT",
+                AuditActions.LOGOUT,
                 username,
                 user.getRole() != null ? user.getRole().getRoleName() : "",
                 "User logged out"

@@ -2,7 +2,8 @@ package com.logiflow.server.services.dispatch;
 
 import com.logiflow.server.models.Order;
 import com.logiflow.server.services.admin.SystemSettingsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -16,8 +17,13 @@ import java.util.Optional;
 @Component
 public class ShippingFeeCalculator {
 
-    @Autowired
-    private SystemSettingsService systemSettingsService;
+    private static final Logger log = LoggerFactory.getLogger(ShippingFeeCalculator.class);
+
+    private final SystemSettingsService systemSettingsService;
+
+    public ShippingFeeCalculator(SystemSettingsService systemSettingsService) {
+        this.systemSettingsService = systemSettingsService;
+    }
 
     // Default fallback values (used if system settings are not configured)
     private static final BigDecimal DEFAULT_BASE_FEE = new BigDecimal("20");
@@ -99,7 +105,8 @@ public class ShippingFeeCalculator {
             }
             return defaultValue;
         } catch (Exception e) {
-            System.out.println("Error retrieving system setting " + category + "." + key + ": " + e.getMessage());
+            log.error("Error retrieving system setting {}.{}: {}",
+                category, key, e.getMessage());
             return defaultValue;
         }
     }

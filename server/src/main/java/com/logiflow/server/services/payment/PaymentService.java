@@ -38,4 +38,9 @@ public interface PaymentService {
      * Find order ID by PayPal order ID
      */
     Integer findOrderIdByPaypalOrderId(String paypalOrderId);
+
+    /**
+     * Get order summary information used for payment confirmation pages.
+     */
+    Map<String, Object> getOrderPaymentSummary(Integer orderId);
 }

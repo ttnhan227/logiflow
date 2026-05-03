@@ -12,13 +12,8 @@ import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.services.maps.MapsService;
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,18 +21,34 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatchingService {
 
-    @Autowired private TripRepository tripRepository;
-    @Autowired private DriverRepository driverRepository;
-    @Autowired private VehicleRepository vehicleRepository;
-    @Autowired private TripAssignmentRepository tripAssignmentRepository;
-    @Autowired private DriverWorkLogRepository driverWorkLogRepository;
-    @Autowired private MapsService mapsService;
+    private final TripRepository tripRepository;
+    private final DriverRepository driverRepository;
+    private final VehicleRepository vehicleRepository;
+    private final TripAssignmentRepository tripAssignmentRepository;
+    private final DriverWorkLogRepository driverWorkLogRepository;
+    private final MapsService mapsService;
+
+    public TripAssignmentMatchingServiceImpl(
+            TripRepository tripRepository,
+            DriverRepository driverRepository,
+            VehicleRepository vehicleRepository,
+            TripAssignmentRepository tripAssignmentRepository,
+            DriverWorkLogRepository driverWorkLogRepository,
+            MapsService mapsService) {
+        this.tripRepository = tripRepository;
+        this.driverRepository = driverRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+        this.driverWorkLogRepository = driverWorkLogRepository;
+        this.mapsService = mapsService;
+    }
 
     @Override
     @Transactional(readOnly = true)

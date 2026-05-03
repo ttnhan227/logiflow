@@ -15,7 +15,6 @@ import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,51 +26,63 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.logiflow.server.constants.AuditActions;
+import com.logiflow.server.constants.TripStatus;
 import com.logiflow.server.dtos.dispatch.TripCancelRequest;
 import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
 import com.logiflow.server.services.dispatch.TripAssignmentMatchingService;
 import com.logiflow.server.services.admin.AuditLogService;
 import com.logiflow.server.websocket.NotificationService;
 import com.logiflow.server.services.payment.PaymentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class TripServiceImpl implements TripService {
 
-    @Autowired
-    private TripRepository tripRepository;
+    private static final Logger log = LoggerFactory.getLogger(TripServiceImpl.class);
+    private static final String SYSTEM_ACTOR = "system";
+    private static final String SYSTEM_ROLE = "SYSTEM";
 
-    @Autowired
-    private VehicleRepository vehicleRepository;
+    private final TripRepository tripRepository;
+    private final VehicleRepository vehicleRepository;
+    private final RouteRepository routeRepository;
+    private final OrderRepository orderRepository;
+    private final DriverRepository driverRepository;
+    private final TripAssignmentRepository tripAssignmentRepository;
+    private final DeliveryConfirmationRepository deliveryConfirmationRepository;
+    private final TripProgressEventRepository tripProgressEventRepository;
+    private final TripAssignmentMatchingService tripAssignmentMatchingService;
+    private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
+    private final PaymentService paymentService;
 
-    @Autowired
-    private RouteRepository routeRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private DriverRepository driverRepository;
-
-    @Autowired
-    private TripAssignmentRepository tripAssignmentRepository;
-
-    @Autowired
-    private DeliveryConfirmationRepository deliveryConfirmationRepository;
-
-    @Autowired
-    private TripProgressEventRepository tripProgressEventRepository;
-
-    @Autowired
-    private TripAssignmentMatchingService tripAssignmentMatchingService;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private PaymentService paymentService;
+    public TripServiceImpl(
+            TripRepository tripRepository,
+            VehicleRepository vehicleRepository,
+            RouteRepository routeRepository,
+            OrderRepository orderRepository,
+            DriverRepository driverRepository,
+            TripAssignmentRepository tripAssignmentRepository,
+            DeliveryConfirmationRepository deliveryConfirmationRepository,
+            TripProgressEventRepository tripProgressEventRepository,
+            TripAssignmentMatchingService tripAssignmentMatchingService,
+            AuditLogService auditLogService,
+            NotificationService notificationService,
+            PaymentService paymentService) {
+        this.tripRepository = tripRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.routeRepository = routeRepository;
+        this.orderRepository = orderRepository;
+        this.driverRepository = driverRepository;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+        this.deliveryConfirmationRepository = deliveryConfirmationRepository;
+        this.tripProgressEventRepository = tripProgressEventRepository;
+        this.tripAssignmentMatchingService = tripAssignmentMatchingService;
+        this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
+        this.paymentService = paymentService;
+    }
 
     @Override
     @Transactional
@@ -100,7 +111,7 @@ public class TripServiceImpl implements TripService {
         trip.setTripType(request.getTripType());
         trip.setScheduledDeparture(request.getScheduledDeparture());
         trip.setScheduledArrival(request.getScheduledArrival());
-        trip.setStatus("scheduled");
+        trip.setStatus(TripStatus.SCHEDULED);
         trip.setCreatedAt(LocalDateTime.now());
 
         Trip savedTrip = tripRepository.save(trip);
@@ -153,13 +164,13 @@ public class TripServiceImpl implements TripService {
 
         // Sort by newest first, then by status priority for same creation date
         Map<String, Integer> statusPriority = Map.of(
-            "scheduled", 1,  // Highest priority - trips ready to be assigned
-            "assigned", 2,   // Driver assigned but not started
-            "in_progress", 3, // Currently active trips
-            "delayed", 4,    // Delayed trips (still active)
-            "arrived", 5,    // Arrived at destination
-            "completed", 6,  // Finished trips
-            "cancelled", 7   // Cancelled trips (lowest priority)
+            TripStatus.SCHEDULED,   1,  // Highest priority - trips ready to be assigned
+            TripStatus.ASSIGNED,    2,  // Driver assigned but not started
+            TripStatus.IN_PROGRESS, 3,  // Currently active trips
+            TripStatus.DELAYED,     4,  // Delayed trips (still active)
+            TripStatus.ARRIVED,     5,  // Arrived at destination
+            TripStatus.COMPLETED,   6,  // Finished trips
+            TripStatus.CANCELLED,   7   // Cancelled trips (lowest priority)
         );
 
         allTrips.sort((a, b) -> {
@@ -266,13 +277,13 @@ public class TripServiceImpl implements TripService {
         tripProgressEventRepository.flush();
 
         // Update driver status to reflect assignment
-        driver.setStatus("assigned");
+        driver.setStatus(TripStatus.ASSIGNED);
         driverRepository.save(driver);
 
         // When assigning a trip to a driver, set status to "assigned" (not "in_progress")
         // The trip becomes "in_progress" only when the driver accepts and starts it
-        if (trip.getStatus() == null || trip.getStatus().equalsIgnoreCase("scheduled")) {
-            trip.setStatus("assigned");
+        if (trip.getStatus() == null || trip.getStatus().equalsIgnoreCase(TripStatus.SCHEDULED)) {
+            trip.setStatus(TripStatus.ASSIGNED);
         }
         Trip saved = tripRepository.save(trip);
 
@@ -284,22 +295,21 @@ public class TripServiceImpl implements TripService {
             notificationService.sendTripNotification(
                 driver.getDriverId(),
                 tripId,
-                "TRIP_ASSIGNED",
+                AuditActions.TRIP_ASSIGNED,
                 message,
-                "ASSIGNED"
+                TripStatus.ASSIGNED
             );
         } catch (Exception e) {
-            // Log error but don't fail the assignment
-            System.err.println("Failed to send driver assignment notification: " + e.getMessage());
+            log.error("Failed to send driver assignment notification: {}", e.getMessage());
         }
 
         // Audit the critical trip assignment operation
         String driverUsername = driver.getUser() != null ? driver.getUser().getUsername() : "Unknown";
         String vehiclePlate = vehicle != null ? vehicle.getLicensePlate() : "Unknown";
         auditLogService.log(
-            "TRIP_ASSIGNED",
-            "dispatcher", // TODO: replace with actual username from context
-            "DISPATCHER", // TODO: replace with actual role from context
+            AuditActions.TRIP_ASSIGNED,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             String.format("Trip #%d assigned to driver %s (%s) with vehicle %s",
                 tripId, driverUsername, driver.getDriverId(), vehiclePlate)
         );
@@ -334,26 +344,26 @@ public class TripServiceImpl implements TripService {
 
 
         LocalDateTime now = LocalDateTime.now();
-        if ("in_progress".equalsIgnoreCase(newStatus) && trip.getActualDeparture() == null) {
+        if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus) && trip.getActualDeparture() == null) {
             trip.setActualDeparture(now);
         }
-        if ("completed".equalsIgnoreCase(newStatus) && trip.getActualArrival() == null) {
+        if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus) && trip.getActualArrival() == null) {
             trip.setActualArrival(now);
         }
 
         if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
             for (TripAssignment assignment : trip.getTripAssignments()) {
-                if ("in_progress".equalsIgnoreCase(newStatus)) {
-                    assignment.setStatus("in_progress");
-                } else if ("completed".equalsIgnoreCase(newStatus)) {
-                    assignment.setStatus("completed");
+                if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus)) {
+                    assignment.setStatus(TripStatus.IN_PROGRESS);
+                } else if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus)) {
+                    assignment.setStatus(TripStatus.COMPLETED);
                     // Reset driver status to available when trip is completed
                     if (assignment.getDriver() != null) {
                         assignment.getDriver().setStatus("available");
                         driverRepository.save(assignment.getDriver());
                     }
-                } else if ("cancelled".equalsIgnoreCase(newStatus)) {
-                    assignment.setStatus("cancelled");
+                } else if (TripStatus.CANCELLED.equalsIgnoreCase(newStatus)) {
+                    assignment.setStatus(TripStatus.CANCELLED);
                     // Reset driver status to available when trip is cancelled
                     if (assignment.getDriver() != null) {
                         assignment.getDriver().setStatus("available");
@@ -365,7 +375,7 @@ public class TripServiceImpl implements TripService {
         }
 
         if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
-            if ("completed".equalsIgnoreCase(newStatus)) {
+            if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus)) {
                 for (Order order : trip.getOrders()) {
                     if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED || 
                         order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
@@ -384,14 +394,14 @@ public class TripServiceImpl implements TripService {
                                 // Send payment request email with PayPal link
                                 paymentService.sendPaymentRequest(order.getOrderId());
                             } catch (Exception e) {
-                                // Log error but don't fail the trip completion
-                                System.err.println("Failed to send delivery notification/payment request for order #" + order.getOrderId() + ": " + e.getMessage());
+                                log.error("Failed to send delivery notification/payment request for order #{}: {}",
+                                    order.getOrderId(), e.getMessage());
                             }
                         }
                     }
                 }
                 orderRepository.saveAll(trip.getOrders());
-            } else if ("cancelled".equalsIgnoreCase(newStatus)) {
+            } else if (TripStatus.CANCELLED.equalsIgnoreCase(newStatus)) {
                 // Business rule: cancelling a trip should unassign orders so they can be re-dispatched
                 for (Order order : trip.getOrders()) {
                     if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED ||
@@ -401,7 +411,7 @@ public class TripServiceImpl implements TripService {
                     }
                 }
                 orderRepository.saveAll(trip.getOrders());
-            } else if ("in_progress".equalsIgnoreCase(newStatus)) {
+            } else if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus)) {
                 for (Order order : trip.getOrders()) {
                     if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED) {
                         order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
@@ -427,10 +437,10 @@ public class TripServiceImpl implements TripService {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
 
-        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("completed")) {
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.COMPLETED)) {
             throw new RuntimeException("Cannot reroute a completed trip");
         }
-        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("cancelled")) {
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.CANCELLED)) {
             throw new RuntimeException("Cannot reroute a cancelled trip");
         }
 
@@ -460,19 +470,19 @@ public class TripServiceImpl implements TripService {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
 
-        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("completed")) {
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.COMPLETED)) {
             throw new RuntimeException("Cannot cancel a completed trip");
         }
-        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase("cancelled")) {
+        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.CANCELLED)) {
             return TripDto.fromTrip(trip);
         }
 
-        trip.setStatus("cancelled");
+        trip.setStatus(TripStatus.CANCELLED);
 
         // Cancel assignments and release driver
         if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
             for (TripAssignment assignment : trip.getTripAssignments()) {
-                assignment.setStatus("cancelled");
+                assignment.setStatus(TripStatus.CANCELLED);
                 if (assignment.getDriver() != null) {
                     assignment.getDriver().setStatus("available");
                     driverRepository.save(assignment.getDriver());
@@ -501,9 +511,9 @@ public class TripServiceImpl implements TripService {
 
         // Audit the critical trip cancellation operation
         auditLogService.log(
-            "TRIP_CANCELLED",
-            "dispatcher", // TODO: replace with actual username from context
-            "DISPATCHER", // TODO: replace with actual role from context
+            AuditActions.TRIP_CANCELLED,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             String.format("Trip #%d cancelled | Reason: %s | Orders affected: %d",
                 tripId,
                 request.getReason() != null ? request.getReason() : "No reason provided",
@@ -539,12 +549,12 @@ public class TripServiceImpl implements TripService {
             return false;
         }
         String lower = status.toLowerCase();
-        return lower.equals("assigned") || 
-               lower.equals("in_progress") || 
-               lower.equals("delayed") || 
-               lower.equals("completed") || 
-               lower.equals("cancelled") ||
-               lower.equals("scheduled");
+        return lower.equals(TripStatus.ASSIGNED) ||
+               lower.equals(TripStatus.IN_PROGRESS) ||
+               lower.equals(TripStatus.DELAYED) ||
+               lower.equals(TripStatus.COMPLETED) ||
+               lower.equals(TripStatus.CANCELLED) ||
+               lower.equals(TripStatus.SCHEDULED);
     }
 
     @Override
@@ -586,12 +596,12 @@ public class TripServiceImpl implements TripService {
 
         String lower = status.trim().toLowerCase();
         return switch (lower) {
-            case "pending", "scheduled" -> "scheduled";
-            case "active", "in-progress", "in_progress", "inprogress" -> "in_progress";
-            case "completed", "complete", "finished" -> "completed";
-            case "cancelled", "canceled" -> "cancelled";
-            case "assigned" -> "assigned";
-            case "delayed" -> "delayed";
+            case "pending", "scheduled" -> TripStatus.SCHEDULED;
+            case "active", "in-progress", "in_progress", "inprogress" -> TripStatus.IN_PROGRESS;
+            case "completed", "complete", "finished" -> TripStatus.COMPLETED;
+            case "cancelled", "canceled" -> TripStatus.CANCELLED;
+            case "assigned" -> TripStatus.ASSIGNED;
+            case "delayed" -> TripStatus.DELAYED;
             default -> status.trim();
         };
     }

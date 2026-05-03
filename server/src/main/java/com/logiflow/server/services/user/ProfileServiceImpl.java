@@ -1,5 +1,6 @@
 package com.logiflow.server.services.user;
 
+import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.user.ProfileDto;
 import com.logiflow.server.models.Driver;
 import com.logiflow.server.models.User;
@@ -8,42 +9,44 @@ import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.services.file.FileStorageService;
 import com.logiflow.server.services.admin.AuditLogService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.logiflow.server.services.file.FileStorageService;
 
 @Service
 public class ProfileServiceImpl implements ProfileService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
+    private final DriverRepository driverRepository;
+    private final TripAssignmentRepository tripAssignmentRepository;
+    private final DriverWorkLogRepository driverWorkLogRepository;
+    private final OrderRepository orderRepository;
+    private final AuditLogService auditLogService;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private FileStorageService fileStorageService;
-
-    @Autowired
-    private DriverRepository driverRepository;
-
-    @Autowired
-    private TripAssignmentRepository tripAssignmentRepository;
-
-    @Autowired
-    private DriverWorkLogRepository driverWorkLogRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public ProfileServiceImpl(
+            UserRepository userRepository,
+            FileStorageService fileStorageService,
+            DriverRepository driverRepository,
+            TripAssignmentRepository tripAssignmentRepository,
+            DriverWorkLogRepository driverWorkLogRepository,
+            OrderRepository orderRepository,
+            AuditLogService auditLogService,
+            PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
+        this.driverRepository = driverRepository;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+        this.driverWorkLogRepository = driverWorkLogRepository;
+        this.orderRepository = orderRepository;
+        this.auditLogService = auditLogService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public ProfileDto getProfile(String username) {
@@ -186,7 +189,7 @@ public class ProfileServiceImpl implements ProfileService {
 
         // Audit log the password change
         auditLogService.log(
-            "PASSWORD_CHANGE",
+            AuditActions.PASSWORD_CHANGE,
             username,
             user.getRole() != null ? user.getRole().getRoleName() : "",
             "User changed password"

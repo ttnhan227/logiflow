@@ -5,7 +5,6 @@ import com.logiflow.server.models.Vehicle;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,21 +13,23 @@ import java.util.stream.Collectors;
 @Service
 public class DispatchVehicleServiceImpl implements DispatchVehicleService {
 
-    @Autowired
-    private VehicleRepository vehicleRepository;
+    private final VehicleRepository vehicleRepository;
+    private final DriverRepository driverRepository;
 
-    @Autowired
-    private DriverRepository driverRepository;
+    public DispatchVehicleServiceImpl(VehicleRepository vehicleRepository, DriverRepository driverRepository) {
+        this.vehicleRepository = vehicleRepository;
+        this.driverRepository = driverRepository;
+    }
 
     @Override
-    public List<?> getAllVehicles() {
+    public List<VehicleDto> getAllVehicles() {
         return vehicleRepository.findAll().stream()
                 .map(this::toVehicleDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<?> getAvailableVehicles() {
+    public List<VehicleDto> getAvailableVehicles() {
         // Return all vehicles so frontend can display them and grey out unavailable ones
         return vehicleRepository.findAll().stream()
                 .map(this::toVehicleDto)

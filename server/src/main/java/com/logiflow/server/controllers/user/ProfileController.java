@@ -2,7 +2,6 @@ package com.logiflow.server.controllers.user;
 
 import com.logiflow.server.dtos.user.ProfileDto;
 import com.logiflow.server.services.user.ProfileService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -11,8 +10,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/user")
 public class ProfileController {
 
-    @Autowired
-    private ProfileService profileService;
+    private final ProfileService profileService;
+
+    public ProfileController(ProfileService profileService) {
+        this.profileService = profileService;
+    }
 
     @GetMapping("/profile")
     public ResponseEntity<ProfileDto> getProfile(Authentication authentication) {

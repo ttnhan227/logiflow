@@ -2,7 +2,6 @@ package com.logiflow.server.controllers.dispatch;
 
 import com.logiflow.server.dtos.dispatch.AvailableDriverDto;
 import com.logiflow.server.services.dispatch.DispatchDriverService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,8 +16,11 @@ import java.util.List;
 @RequestMapping("/api/dispatch")
 public class DriverAvailabilityController {
 
-    @Autowired
-    private DispatchDriverService dispatchDriverService;
+    private final DispatchDriverService dispatchDriverService;
+
+    public DriverAvailabilityController(DispatchDriverService dispatchDriverService) {
+        this.dispatchDriverService = dispatchDriverService;
+    }
 
     @GetMapping("/drivers/availability")
     public ResponseEntity<List<AvailableDriverDto>> getAvailableDrivers(

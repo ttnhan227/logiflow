@@ -1,9 +1,9 @@
 package com.logiflow.server.services.admin;
 
+import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.admin.audit.AuditLogDto;
 import com.logiflow.server.models.AuditLog;
 import com.logiflow.server.repositories.audit.AuditLogRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,18 +59,16 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Transactional(readOnly = true)
     public List<String> getAvailableActions() {
         return Arrays.asList(
-            "LOGIN", "LOGOUT", "PASSWORD_CHANGE",
-            "CREATE_USER", "UPDATE_USER", "TOGGLE_USER_STATUS",
-            "CREATE_SETTING", "UPDATE_SETTING", "DELETE_SETTING",
-            "CREATE_VEHICLE", "UPDATE_VEHICLE", "DELETE_VEHICLE",
-            "CREATE_ROUTE", "UPDATE_ROUTE", "DELETE_ROUTE",
-            "APPROVE_REGISTRATION", "REJECT_REGISTRATION",
-            "UPDATE_REGISTRATION_REQUEST",
-            // Trip management
-            "TRIP_ASSIGNED", "TRIP_CANCELLED", "ADMIN_UPDATE_TRIP_STATUS",
-            // Critical override actions
-            "FORCE_DISPATCH_REST_VIOLATION", "MANUAL_SLA_EXTENSION",
-            "OVERRIDE_TRIP_ASSIGNMENT", "BYPASS_COMPLIANCE_CHECK"
+            AuditActions.LOGIN, AuditActions.LOGOUT, AuditActions.PASSWORD_CHANGE,
+            AuditActions.CREATE_USER, AuditActions.UPDATE_USER, AuditActions.TOGGLE_USER_STATUS,
+            AuditActions.CREATE_SETTING, AuditActions.UPDATE_SETTING, AuditActions.DELETE_SETTING,
+            AuditActions.CREATE_VEHICLE, AuditActions.UPDATE_VEHICLE, AuditActions.DELETE_VEHICLE,
+            AuditActions.CREATE_ROUTE, AuditActions.UPDATE_ROUTE, AuditActions.DELETE_ROUTE,
+            AuditActions.APPROVE_REGISTRATION, AuditActions.REJECT_REGISTRATION,
+            AuditActions.UPDATE_REGISTRATION_REQUEST,
+            AuditActions.TRIP_ASSIGNED, AuditActions.TRIP_CANCELLED, AuditActions.ADMIN_UPDATE_TRIP_STATUS,
+            AuditActions.FORCE_DISPATCH_REST_VIOLATION, AuditActions.MANUAL_SLA_EXTENSION,
+            AuditActions.OVERRIDE_TRIP_ASSIGNMENT, AuditActions.BYPASS_COMPLIANCE_CHECK
         );
     }
 

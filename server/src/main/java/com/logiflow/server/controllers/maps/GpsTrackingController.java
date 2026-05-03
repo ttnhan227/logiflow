@@ -15,7 +15,8 @@
 package com.logiflow.server.controllers.maps;
 
 import com.logiflow.server.services.driver.DriverService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -28,10 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 public class GpsTrackingController {
+    private static final Logger log = LoggerFactory.getLogger(GpsTrackingController.class);
+
     private final SimpMessagingTemplate messagingTemplate;
     private final DriverService driverService;
 
-    @Autowired
     public GpsTrackingController(SimpMessagingTemplate messagingTemplate, DriverService driverService) {
         this.messagingTemplate = messagingTemplate;
         this.driverService = driverService;
@@ -44,15 +46,15 @@ public class GpsTrackingController {
     @MessageMapping("/tracking") // Client sends to /app/tracking
     @SendTo("/topic/locations")  // Broadcast to /topic/locations
     public LocationMessage receiveLocation(LocationMessage message, SimpMessageHeaderAccessor headerAccessor) {
-        System.out.println("DEBUG: GPS WebSocket message received: " + message);
+        log.debug("GPS WebSocket message received: {}", message);
 
         // Get authenticated driverId from session attributes (set by JwtHandshakeInterceptor as "userId")
         String driverId = (String) headerAccessor.getSessionAttributes().get("userId");
-        System.out.println("DEBUG: Authenticated driverId from session: " + driverId);
+        log.debug("Authenticated driverId from session: {}", driverId);
 
         if (driverId != null && message != null && message.getTripId() != null) {
-            System.out.println("DEBUG: Processing GPS update - driver: " + driverId + ", trip: " + message.getTripId() +
-                             ", lat: " + message.getLatitude() + ", lng: " + message.getLongitude());
+            log.debug("Processing GPS update - driver: {}, trip: {}, lat: {}, lng: {}",
+                driverId, message.getTripId(), message.getLatitude(), message.getLongitude());
 
             // Ignore driverId from client, use authenticated one
             LocationMessage serverMessage = new LocationMessage(driverId, message.getTripId(), message.getLatitude(), message.getLongitude());
@@ -65,29 +67,29 @@ public class GpsTrackingController {
 
             // Update database for consistency (don't let DB errors break WebSocket)
             try {
-                System.out.println("DEBUG: Updating database for driver " + driverId);
+                log.debug("Updating database for driver {}", driverId);
                 // Get driver by username first, then update location
                 com.logiflow.server.models.Driver driver = driverService.getCurrentDriver(driverId);
                 if (driver != null) {
                     Integer driverIntId = driver.getDriverId();
                     String driverUsername = driver.getUser().getUsername();
-                    System.out.println("DEBUG: Found driver - ID: " + driverIntId + ", Username: " + driverUsername);
+                    log.debug("Found driver - ID: {}, Username: {}", driverIntId, driverUsername);
 
                     driverService.updateMyLocation(
                         driverIntId,  // Use integer driver ID
                         BigDecimal.valueOf(message.getLatitude()),
                         BigDecimal.valueOf(message.getLongitude())
                     );
-                    System.out.println("DEBUG: Database updated successfully for driver: " + driverUsername);
+                    log.debug("Database updated successfully for driver: {}", driverUsername);
                 } else {
-                    System.err.println("ERROR: Driver lookup returned null for username: " + driverId);
+                    log.warn("Driver lookup returned null for username: {}", driverId);
                 }
             } catch (Exception e) {
                 // Log error but don't fail the WebSocket response
-                System.err.println("ERROR: Failed to update driver location in database: " + e.getMessage());
+                log.error("Failed to update driver location in database: {}", e.getMessage());
                 // Don't print full stack trace for LazyInitializationException
-                if (!e.getMessage().contains("LazyInitializationException")) {
-                    e.printStackTrace();
+                if (e.getMessage() != null && !e.getMessage().contains("LazyInitializationException")) {
+                    log.error("Stack trace:", e);
                 }
             }
 
@@ -96,7 +98,7 @@ public class GpsTrackingController {
 
             return serverMessage; // Broadcast to /topic/locations
         } else {
-            System.out.println("WARN: Invalid GPS message - driverId: " + driverId + ", message: " + message);
+            log.warn("Invalid GPS message - driverId: {}, message: {}", driverId, message);
         }
         return null;
     }

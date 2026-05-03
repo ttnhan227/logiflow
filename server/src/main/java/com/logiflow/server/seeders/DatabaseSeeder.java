@@ -19,7 +19,6 @@ import com.logiflow.server.repositories.audit.AuditLogRepository;
 import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
 // import com.logiflow.server.repositories.trip.TripProgressEventRepository; // Commented out - repository needs to be created
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -45,28 +44,62 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private static final String PLACEHOLDER_PROFILE_IMAGE_URL = "https://res.cloudinary.com/dpp97gxhf/image/upload/v1765183836/logiflow/profile-pictures/75af113f-26e7-40aa-856a-017e28495325.jpg";
 
-    @Autowired private RoleRepository roleRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private DriverRepository driverRepository;
-    @Autowired private VehicleRepository vehicleRepository;
-    @Autowired private RouteRepository routeRepository;
-    @Autowired private TripRepository tripRepository;
-    @Autowired private OrderRepository orderRepository;
-    @Autowired private TripAssignmentRepository tripAssignmentRepository;
-    @Autowired private RegistrationRequestRepository registrationRequestRepository;
-    @Autowired private DriverWorkLogRepository driverWorkLogRepository;
-    @Autowired private CustomerRepository customerRepository;
-    @Autowired private SystemSettingRepository systemSettingRepository;
-    @Autowired private PaymentRepository paymentRepository;
-    @Autowired private NotificationRepository notificationRepository;
-    @Autowired private AuditLogRepository auditLogRepository;
-    @Autowired private DeliveryConfirmationRepository deliveryConfirmationRepository;
-    // @Autowired private TripProgressEventRepository tripProgressEventRepository; // Commented out
-    @Autowired private PasswordEncoder passwordEncoder;
-
-
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
+    private final VehicleRepository vehicleRepository;
+    private final RouteRepository routeRepository;
+    private final TripRepository tripRepository;
+    private final OrderRepository orderRepository;
+    private final TripAssignmentRepository tripAssignmentRepository;
+    private final RegistrationRequestRepository registrationRequestRepository;
+    private final DriverWorkLogRepository driverWorkLogRepository;
+    private final CustomerRepository customerRepository;
+    private final SystemSettingRepository systemSettingRepository;
+    private final PaymentRepository paymentRepository;
+    private final NotificationRepository notificationRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final DeliveryConfirmationRepository deliveryConfirmationRepository;
+    private final PasswordEncoder passwordEncoder;
 
     private final Random random = new Random();
+
+    public DatabaseSeeder(
+            RoleRepository roleRepository,
+            UserRepository userRepository,
+            DriverRepository driverRepository,
+            VehicleRepository vehicleRepository,
+            RouteRepository routeRepository,
+            TripRepository tripRepository,
+            OrderRepository orderRepository,
+            TripAssignmentRepository tripAssignmentRepository,
+            RegistrationRequestRepository registrationRequestRepository,
+            DriverWorkLogRepository driverWorkLogRepository,
+            CustomerRepository customerRepository,
+            SystemSettingRepository systemSettingRepository,
+            PaymentRepository paymentRepository,
+            NotificationRepository notificationRepository,
+            AuditLogRepository auditLogRepository,
+            DeliveryConfirmationRepository deliveryConfirmationRepository,
+            PasswordEncoder passwordEncoder) {
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.driverRepository = driverRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.routeRepository = routeRepository;
+        this.tripRepository = tripRepository;
+        this.orderRepository = orderRepository;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+        this.registrationRequestRepository = registrationRequestRepository;
+        this.driverWorkLogRepository = driverWorkLogRepository;
+        this.customerRepository = customerRepository;
+        this.systemSettingRepository = systemSettingRepository;
+        this.paymentRepository = paymentRepository;
+        this.notificationRepository = notificationRepository;
+        this.auditLogRepository = auditLogRepository;
+        this.deliveryConfirmationRepository = deliveryConfirmationRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public void run(String... args) throws Exception {

@@ -18,6 +18,8 @@ import com.logiflow.server.services.admin.SystemSettingsService;
 import com.logiflow.server.services.payment.PaymentService;
 
 import java.math.BigDecimal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -28,7 +30,7 @@ import java.util.Optional;
 @Transactional
 public class DriverServiceImpl implements DriverService {
 
-
+    private static final Logger log = LoggerFactory.getLogger(DriverServiceImpl.class);
 
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
@@ -318,7 +320,8 @@ public class DriverServiceImpl implements DriverService {
             }
             return defaultValue;
         } catch (Exception e) {
-            System.out.println("Error retrieving system setting " + category + "." + key + ": " + e.getMessage());
+            log.error("Error retrieving system setting {}.{}: {}",
+                category, key, e.getMessage());
             return defaultValue;
         }
     }
@@ -612,7 +615,8 @@ public class DriverServiceImpl implements DriverService {
                 .orElseThrow(() -> new RuntimeException("Order not found in this trip"));
 
         // Debug logging
-        System.out.println("DEBUG: updateOrderStatus - orderId: " + orderId + ", currentStatus: " + order.getOrderStatus() + ", requestedStatus: " + status);
+        log.debug("updateOrderStatus - orderId: {}, currentStatus: {}, requestedStatus: {}",
+            orderId, order.getOrderStatus(), status);
 
         // Validate status transitions
         Order.OrderStatus currentStatus = order.getOrderStatus();
@@ -655,8 +659,8 @@ public class DriverServiceImpl implements DriverService {
                 try {
                     paymentService.sendPaymentRequest(order.getOrderId());
                 } catch (Exception e) {
-                    // Log error but don't fail the order update
-                    System.err.println("Failed to send payment request for order #" + orderId + ": " + e.getMessage());
+                    log.error("Failed to send payment request for order #{}: {}",
+                        orderId, e.getMessage());
                 }
             }
         }

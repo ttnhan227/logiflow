@@ -2,13 +2,10 @@ package com.logiflow.server.services.payment;
 
 import com.logiflow.server.models.Order;
 import com.logiflow.server.models.Payment;
-import com.logiflow.server.models.User;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.payment.PaymentRepository;
-import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.email.EmailService;
 import com.logiflow.server.websocket.NotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -16,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,23 +22,24 @@ public class PaymentServiceImpl implements PaymentService {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
-    @Autowired
-    private PayPalService payPalService;
+    private final PayPalService payPalService;
+    private final EmailService emailService;
+    private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
+    private final NotificationService notificationService;
 
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private PaymentRepository paymentRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private NotificationService notificationService;
+    public PaymentServiceImpl(
+            PayPalService payPalService,
+            EmailService emailService,
+            OrderRepository orderRepository,
+            PaymentRepository paymentRepository,
+            NotificationService notificationService) {
+        this.payPalService = payPalService;
+        this.emailService = emailService;
+        this.orderRepository = orderRepository;
+        this.paymentRepository = paymentRepository;
+        this.notificationService = notificationService;
+    }
 
     /**
      * Send payment request email to customer with PayPal link
@@ -323,5 +322,23 @@ public class PaymentServiceImpl implements PaymentService {
             logger.error("Failed to find order by PayPal order ID {}: {}", paypalOrderId, e.getMessage(), e);
             return null;
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getOrderPaymentSummary(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("orderId", orderId);
+        summary.put("customerName", order.getCustomer() != null ? order.getCustomer().getFullName() : "Customer");
+        summary.put("shippingFee", order.getShippingFee());
+        summary.put("pickupAddress", order.getPickupAddress());
+        summary.put("deliveryAddress", order.getDeliveryAddress());
+        summary.put("packageDetails", order.getPackageDetails());
+        summary.put("weightTons", order.getWeightTons());
+        summary.put("distanceKm", order.getDistanceKm());
+        return summary;
     }
 }

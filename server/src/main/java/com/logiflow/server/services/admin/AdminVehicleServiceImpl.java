@@ -1,5 +1,8 @@
 package com.logiflow.server.services.admin;
 
+import com.logiflow.server.constants.AuditActions;
+import com.logiflow.server.constants.VehicleStatus;
+import com.logiflow.server.constants.VehicleType;
 import com.logiflow.server.dtos.admin.vehicle.CreateVehicleDto;
 import com.logiflow.server.dtos.admin.vehicle.UpdateVehicleDto;
 import com.logiflow.server.dtos.admin.vehicle.VehicleDto;
@@ -19,6 +22,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminVehicleServiceImpl implements AdminVehicleService {
 
+    private static final String SYSTEM_ACTOR = "system";
+    private static final String SYSTEM_ROLE = "SYSTEM";
+
     private final VehicleRepository vehicleRepository;
     private final TripRepository tripRepository;
     private final AuditLogService auditLogService;
@@ -32,24 +38,24 @@ public class AdminVehicleServiceImpl implements AdminVehicleService {
         
         // Count by status
         stats.setAvailableVehicles((int) allVehicles.stream()
-                .filter(v -> "available".equalsIgnoreCase(v.getStatus()))
+                .filter(v -> VehicleStatus.AVAILABLE.equalsIgnoreCase(v.getStatus()))
                 .count());
         stats.setInUseVehicles((int) allVehicles.stream()
-                .filter(v -> "in_use".equalsIgnoreCase(v.getStatus()))
+                .filter(v -> VehicleStatus.IN_USE.equalsIgnoreCase(v.getStatus()))
                 .count());
         stats.setMaintenanceVehicles((int) allVehicles.stream()
-                .filter(v -> "maintenance".equalsIgnoreCase(v.getStatus()))
+                .filter(v -> VehicleStatus.MAINTENANCE.equalsIgnoreCase(v.getStatus()))
                 .count());
         
         // Count by type
         stats.setVans((int) allVehicles.stream()
-                .filter(v -> "van".equalsIgnoreCase(v.getVehicleType()))
+                .filter(v -> VehicleType.VAN.equalsIgnoreCase(v.getVehicleType()))
                 .count());
         stats.setTrucks((int) allVehicles.stream()
-                .filter(v -> "truck".equalsIgnoreCase(v.getVehicleType()))
+                .filter(v -> VehicleType.TRUCK.equalsIgnoreCase(v.getVehicleType()))
                 .count());
         stats.setContainers((int) allVehicles.stream()
-                .filter(v -> "container".equalsIgnoreCase(v.getVehicleType()))
+                .filter(v -> VehicleType.CONTAINER.equalsIgnoreCase(v.getVehicleType()))
                 .count());
         
         return stats;
@@ -100,15 +106,15 @@ public class AdminVehicleServiceImpl implements AdminVehicleService {
         vehicle.setCurrentLocationLng(createVehicleDto.getCurrentLocationLng());
 
         // Status and metadata
-        vehicle.setStatus(createVehicleDto.getStatus() != null ? createVehicleDto.getStatus() : "available");
+        vehicle.setStatus(createVehicleDto.getStatus() != null ? createVehicleDto.getStatus() : VehicleStatus.AVAILABLE);
         vehicle.setCreatedAt(LocalDateTime.now());
 
         Vehicle savedVehicle = vehicleRepository.save(vehicle);
 
         auditLogService.log(
-            "CREATE_VEHICLE",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.CREATE_VEHICLE,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Created vehicle: " + savedVehicle.getLicensePlate() + " (ID: " + savedVehicle.getVehicleId() + ")"
         );
 
@@ -154,9 +160,9 @@ public class AdminVehicleServiceImpl implements AdminVehicleService {
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
 
         auditLogService.log(
-            "UPDATE_VEHICLE",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.UPDATE_VEHICLE,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Updated vehicle: " + updatedVehicle.getLicensePlate() + " (ID: " + updatedVehicle.getVehicleId() + ")"
         );
 
@@ -171,8 +177,8 @@ public class AdminVehicleServiceImpl implements AdminVehicleService {
         
         // Check if vehicle has active trips
         long activeTripsCount = tripRepository.countByVehicleAndStatusIn(
-                vehicle, 
-                List.of("pending", "in_progress")
+                vehicle,
+                List.of("pending", com.logiflow.server.constants.TripStatus.IN_PROGRESS)
         );
         
         if (activeTripsCount > 0) {
@@ -180,9 +186,9 @@ public class AdminVehicleServiceImpl implements AdminVehicleService {
         }
         
         auditLogService.log(
-            "DELETE_VEHICLE",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.DELETE_VEHICLE,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Deleted vehicle: " + vehicle.getLicensePlate() + " (ID: " + vehicle.getVehicleId() + ")"
         );
         

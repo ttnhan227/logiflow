@@ -3,7 +3,6 @@ package com.logiflow.server.controllers.dispatch;
 import com.logiflow.server.dtos.admin.notification.NotificationDto;
 import com.logiflow.server.models.Notification;
 import com.logiflow.server.repositories.notification.NotificationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +16,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/dispatch/notifications")
 public class DispatchNotificationController {
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
+
+    public DispatchNotificationController(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
+    }
 
     // GET /api/dispatch/notifications?page=0&size=20 - Get all notifications
     @GetMapping

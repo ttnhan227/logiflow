@@ -1,16 +1,12 @@
 package com.logiflow.server.controllers.customer;
 
 import com.logiflow.server.services.payment.PaymentService;
-import com.logiflow.server.models.Order;
-import com.logiflow.server.repositories.order.OrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/payment")
@@ -18,11 +14,11 @@ public class PaymentController {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
-    @Autowired
-    private PaymentService paymentService;
+    private final PaymentService paymentService;
 
-    @Autowired
-    private OrderRepository orderRepository;
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
 
     /**
      * Create PayPal payment order
@@ -156,41 +152,33 @@ public class PaymentController {
      */
     private String generateSuccessHtml(Integer orderId) {
         try {
-            // Get real order data
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            Map<String, Object> summary = paymentService.getOrderPaymentSummary(orderId);
             String orderDetails;
 
-            if (orderOpt.isPresent()) {
-                Order order = orderOpt.get();
-                String customerName = order.getCustomer() != null ? order.getCustomer().getFullName() : "Customer";
-                String shippingFee = order.getShippingFee() != null ? "VND " + String.format("%,.0f", order.getShippingFee()) : "N/A";
-                String pickupAddress = order.getPickupAddress() != null ? order.getPickupAddress() : "N/A";
-                String deliveryAddress = order.getDeliveryAddress() != null ? order.getDeliveryAddress() : "N/A";
-                String packageDetails = order.getPackageDetails() != null ? order.getPackageDetails() : "N/A";
-                String weight = order.getWeightTons() != null ? order.getWeightTons() + " tons" : "N/A";
-                String distance = order.getDistanceKm() != null ? order.getDistanceKm() + " km" : "N/A";
+            String customerName = summary.get("customerName") != null ? String.valueOf(summary.get("customerName")) : "Customer";
+            String shippingFee = summary.get("shippingFee") != null ? "VND " + String.format("%,.0f", summary.get("shippingFee")) : "N/A";
+            String pickupAddress = summary.get("pickupAddress") != null ? String.valueOf(summary.get("pickupAddress")) : "N/A";
+            String deliveryAddress = summary.get("deliveryAddress") != null ? String.valueOf(summary.get("deliveryAddress")) : "N/A";
+            String packageDetails = summary.get("packageDetails") != null ? String.valueOf(summary.get("packageDetails")) : "N/A";
+            String weight = summary.get("weightTons") != null ? summary.get("weightTons") + " tons" : "N/A";
+            String distance = summary.get("distanceKm") != null ? summary.get("distanceKm") + " km" : "N/A";
 
-                orderDetails = "<div style='background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;'>" +
-                    "<h3 style='margin: 0 0 15px 0; color: #374151;'>Order Details</h3>" +
-                    "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>" +
-                    "<p style='margin: 5px 0;'><strong>Order ID:</strong> #" + orderId + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Customer:</strong> " + customerName + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Status:</strong> <span style='color: #10b981; font-weight: bold;'>Payment Completed</span></p>" +
-                    "<p style='margin: 5px 0;'><strong>Amount Paid:</strong> " + shippingFee + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Pickup:</strong> " + pickupAddress + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Delivery:</strong> " + deliveryAddress + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Package:</strong> " + packageDetails + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Weight:</strong> " + weight + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Distance:</strong> " + distance + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Payment Date:</strong> " + java.time.LocalDate.now() + "</p>" +
-                    "<p style='margin: 5px 0;'><strong>Confirmation:</strong> <span style='color: #059669; font-weight: bold;'>Transaction Processed</span></p>" +
-                    "</div>" +
-                    "</div>";
-            } else {
-                orderDetails = "<div style='background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;'>" +
-                    "<p style='margin: 0; color: #1976d2;'>Order #" + orderId + " payment processed successfully!</p>" +
-                    "</div>";
-            }
+            orderDetails = "<div style='background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;'>" +
+                "<h3 style='margin: 0 0 15px 0; color: #374151;'>Order Details</h3>" +
+                "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>" +
+                "<p style='margin: 5px 0;'><strong>Order ID:</strong> #" + orderId + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Customer:</strong> " + customerName + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Status:</strong> <span style='color: #10b981; font-weight: bold;'>Payment Completed</span></p>" +
+                "<p style='margin: 5px 0;'><strong>Amount Paid:</strong> " + shippingFee + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Pickup:</strong> " + pickupAddress + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Delivery:</strong> " + deliveryAddress + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Package:</strong> " + packageDetails + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Weight:</strong> " + weight + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Distance:</strong> " + distance + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Payment Date:</strong> " + java.time.LocalDate.now() + "</p>" +
+                "<p style='margin: 5px 0;'><strong>Confirmation:</strong> <span style='color: #059669; font-weight: bold;'>Transaction Processed</span></p>" +
+                "</div>" +
+                "</div>";
 
             return "<!DOCTYPE html>" +
                 "<html lang='en'>" +

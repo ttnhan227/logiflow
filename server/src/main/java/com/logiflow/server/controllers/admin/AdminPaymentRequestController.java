@@ -2,7 +2,6 @@ package com.logiflow.server.controllers.admin;
 
 import com.logiflow.server.dtos.admin.AdminPaymentRequestDtos.*;
 import com.logiflow.server.services.admin.AdminPaymentRequestService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +14,11 @@ import java.util.List;
 @RequestMapping("/api/admin/payment-requests")
 public class AdminPaymentRequestController {
 
-    @Autowired
-    private AdminPaymentRequestService paymentRequestService;
+    private final AdminPaymentRequestService paymentRequestService;
+
+    public AdminPaymentRequestController(AdminPaymentRequestService paymentRequestService) {
+        this.paymentRequestService = paymentRequestService;
+    }
 
     /**
      * Get all delivered orders that need payment review

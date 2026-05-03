@@ -2,6 +2,7 @@ package com.logiflow.server.utils;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -11,7 +12,12 @@ import java.util.Date;
 
 @Component
 public class JwtUtils {
-    private final String secret = "AIzaSyBhPSOMmpIh0enn94-eGKx0nM6tI8nxdG8";
+    private final String secret;
+
+    public JwtUtils(@Value("${app.jwt.secret:logiflow-dev-secret-change-me-in-production}") String secret) {
+        this.secret = secret;
+    }
+
     public String generateToken(String username, String role){
         return Jwts.builder()
                 .setSubject(username)

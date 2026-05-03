@@ -7,7 +7,6 @@ import com.logiflow.server.dtos.dispatch.OrderListResponse;
 import com.logiflow.server.dtos.dispatch.OrderUpdateRequest;
 import com.logiflow.server.services.dispatch.OrderService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,8 +19,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/dispatch")
 public class OrderController {
 
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
+
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
+    }
 
     @GetMapping("/orders")
     public ResponseEntity<OrderListResponse> getOrders(

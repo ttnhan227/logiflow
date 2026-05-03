@@ -1,11 +1,11 @@
 package com.logiflow.server.services.admin;
 
+import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.admin.system.SystemSettingDto;
 import com.logiflow.server.dtos.admin.system.SystemSettingCreationDto;
 import com.logiflow.server.dtos.admin.system.SystemSettingUpdateDto;
 import com.logiflow.server.models.SystemSetting;
 import com.logiflow.server.repositories.system.SystemSettingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -19,14 +19,18 @@ import java.util.stream.Collectors;
 @Service
 public class SystemSettingsServiceImpl implements SystemSettingsService {
 
-    @Autowired
-    private SystemSettingRepository systemSettingRepository;
+    private static final String SYSTEM_ACTOR = "system";
+    private static final String SYSTEM_ROLE = "SYSTEM";
 
-    @Autowired
-    private AuditLogService auditLogService;
+    private final SystemSettingRepository systemSettingRepository;
+    private final AuditLogService auditLogService;
+
+    public SystemSettingsServiceImpl(SystemSettingRepository systemSettingRepository, AuditLogService auditLogService) {
+        this.systemSettingRepository = systemSettingRepository;
+        this.auditLogService = auditLogService;
+    }
 
     // TODO: Add encryption service when implementing encryption feature
-    // @Autowired
     // private EncryptionService encryptionService;
 
     @Override
@@ -50,9 +54,9 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
         SystemSetting savedSetting = systemSettingRepository.save(setting);
 
         auditLogService.log(
-            "CREATE_SETTING",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.CREATE_SETTING,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Created setting: [" + savedSetting.getCategory() + "] " + savedSetting.getKey() + " (ID: " + savedSetting.getSettingId() + ")"
         );
         return convertToDto(savedSetting);
@@ -86,9 +90,9 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
         SystemSetting savedSetting = systemSettingRepository.save(setting);
 
         auditLogService.log(
-            "UPDATE_SETTING",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.UPDATE_SETTING,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Updated setting: [" + savedSetting.getCategory() + "] " + savedSetting.getKey() + " (ID: " + savedSetting.getSettingId() + ")"
         );
         return convertToDto(savedSetting);
@@ -102,9 +106,9 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
         }
         systemSettingRepository.deleteById(settingId);
         auditLogService.log(
-            "DELETE_SETTING",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.DELETE_SETTING,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             "Deleted setting with ID: " + settingId
         );
     }

@@ -1,7 +1,6 @@
 package com.logiflow.server.controllers.dispatch;
 
 import com.logiflow.server.services.dispatch.DispatchDriverService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +12,11 @@ import java.util.Map;
 @RequestMapping("/api/dispatch/drivers")
 public class DispatchDriverController {
 
-    @Autowired
-    private DispatchDriverService dispatchDriverService;
+    private final DispatchDriverService dispatchDriverService;
+
+    public DispatchDriverController(DispatchDriverService dispatchDriverService) {
+        this.dispatchDriverService = dispatchDriverService;
+    }
 
     @GetMapping
     public ResponseEntity<?> getAllDrivers() {

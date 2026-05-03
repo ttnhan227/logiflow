@@ -1,20 +1,29 @@
 package com.logiflow.server.services.registration;
 
+import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.auth.DriverRegistrationRequest;
 import com.logiflow.server.dtos.auth.CustomerRegistrationRequest;
+import com.logiflow.server.dtos.auth.LicenseInfoDto;
+import com.logiflow.server.models.Customer;
 import com.logiflow.server.models.RegistrationRequest;
 import com.logiflow.server.models.Role;
+import com.logiflow.server.models.User;
+import com.logiflow.server.repositories.customer.CustomerRepository;
 import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.services.admin.AuditLogService;
+import com.logiflow.server.services.email.EmailService;
 import com.logiflow.server.websocket.NotificationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -23,6 +32,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
@@ -33,7 +46,11 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
     private final RegistrationRequestRepository registrationRequestRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final CustomerRepository customerRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
     private final MistralAiChatModel mistralChatModel;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
@@ -45,12 +62,20 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
             RegistrationRequestRepository registrationRequestRepository,
             UserRepository userRepository,
             RoleRepository roleRepository,
+            CustomerRepository customerRepository,
             NotificationService notificationService,
+            EmailService emailService,
+            PasswordEncoder passwordEncoder,
+            AuditLogService auditLogService,
             MistralAiChatModel mistralChatModel) {
         this.registrationRequestRepository = registrationRequestRepository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.customerRepository = customerRepository;
         this.notificationService = notificationService;
+        this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
         this.mistralChatModel = mistralChatModel;
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClient.newHttpClient();
@@ -145,6 +170,205 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
             customerRole.getRoleName(),
             saved.getRequestId()
         );
+    }
+
+    // ======= Admin operations =======
+
+    @Override
+    public List<RegistrationRequest> getAllRequests() {
+        return registrationRequestRepository.findAll();
+    }
+
+    @Override
+    public Optional<RegistrationRequest> getRequestById(Integer id) {
+        return registrationRequestRepository.findById(id);
+    }
+
+    @Override
+    public String approveRequest(Integer id, String adminUsername) {
+        RegistrationRequest req = registrationRequestRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (req.getStatus() != RegistrationRequest.RequestStatus.PENDING) {
+            throw new IllegalStateException("Request already processed");
+        }
+
+        if (req.getRole() != null && "DRIVER".equalsIgnoreCase(req.getRole().getRoleName())) {
+            req.setStatus(RegistrationRequest.RequestStatus.APPROVED);
+            registrationRequestRepository.save(req);
+
+            try {
+                emailService.sendDriverApplicationAcceptedEmail(req.getEmail(), req.getFullName());
+            } catch (Exception e) {
+                logger.error("Failed to send driver acceptance email to {}: {}", req.getEmail(), e.getMessage(), e);
+            }
+
+            auditLogService.log(AuditActions.APPROVE_REGISTRATION, adminUsername, "ADMIN",
+                    "Moved driver application to interview stage for: " + req.getEmail());
+
+            return "Driver application approved for interview stage. Notification email sent to " + req.getEmail() + ".";
+        }
+
+        String generatedUsername = generateUniqueUsername(req);
+        String tempPassword = generateTempPassword();
+
+        User user = new User();
+        user.setUsername(generatedUsername);
+        user.setPasswordHash(passwordEncoder.encode(tempPassword));
+        user.setEmail(req.getEmail());
+        user.setPhone(req.getPhone());
+        user.setFullName(req.getFullName());
+        user.setDateOfBirth(req.getDateOfBirth());
+        user.setAddress(req.getAddress());
+        user.setRole(req.getRole());
+        user.setIsActive(true);
+        userRepository.save(user);
+
+        if (req.getRole() != null && "CUSTOMER".equalsIgnoreCase(req.getRole().getRoleName())) {
+            Customer customer = new Customer();
+            customer.setUser(user);
+            customer.setCompanyName(req.getCompanyName());
+            customer.setCompanyCode(generateCompanyCode(req.getCompanyName()));
+            customer.setDefaultDeliveryAddress(req.getCompanyAddress());
+            customer.setTotalOrders(0);
+            customer.setTotalSpent(BigDecimal.ZERO);
+            customerRepository.save(customer);
+        }
+
+        req.setStatus(RegistrationRequest.RequestStatus.APPROVED);
+        registrationRequestRepository.save(req);
+
+        try {
+            emailService.sendRegistrationApprovalEmail(
+                user.getEmail(), user.getFullName(), user.getUsername(),
+                tempPassword, req.getRole().getRoleName());
+        } catch (Exception e) {
+            logger.error("Failed to send approval email to {}: {}", user.getEmail(), e.getMessage(), e);
+        }
+
+        auditLogService.log(AuditActions.APPROVE_REGISTRATION, adminUsername, "ADMIN",
+                "Approved registration for: " + user.getUsername() + " (Role: " + req.getRole().getRoleName() + ")");
+
+        return "Request approved. Created account username='" + user.getUsername() +
+               "' with temporary password='" + tempPassword + "'. Welcome email sent to " + user.getEmail() + ".";
+    }
+
+    @Override
+    public String rejectRequest(Integer id, String adminUsername) {
+        RegistrationRequest req = registrationRequestRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (req.getStatus() != RegistrationRequest.RequestStatus.PENDING) {
+            throw new IllegalStateException("Request already processed");
+        }
+
+        req.setStatus(RegistrationRequest.RequestStatus.REJECTED);
+        registrationRequestRepository.save(req);
+
+        if (req.getRole() != null && "DRIVER".equalsIgnoreCase(req.getRole().getRoleName())) {
+            try {
+                emailService.sendDriverApplicationRejectedEmail(req.getEmail(), req.getFullName());
+            } catch (Exception e) {
+                logger.error("Failed to send driver rejection email to {}: {}", req.getEmail(), e.getMessage(), e);
+            }
+        }
+
+        auditLogService.log(AuditActions.REJECT_REGISTRATION, adminUsername, "ADMIN",
+                "Rejected registration for: " + req.getEmail() +
+                (req.getRole() != null ? " (Role: " + req.getRole().getRoleName() + ")" : ""));
+
+        return "Request rejected successfully";
+    }
+
+    @Override
+    public RegistrationRequest updateRequest(Integer id, Map<String, Object> updates, String adminUsername) {
+        RegistrationRequest req = registrationRequestRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (req.getStatus() != RegistrationRequest.RequestStatus.PENDING) {
+            throw new IllegalStateException("Cannot edit a processed request");
+        }
+
+        if (updates.containsKey("fullName")) req.setFullName((String) updates.get("fullName"));
+        if (updates.containsKey("phone")) req.setPhone((String) updates.get("phone"));
+        if (updates.containsKey("address")) req.setAddress((String) updates.get("address"));
+        if (updates.containsKey("licenseNumber")) req.setLicenseNumber((String) updates.get("licenseNumber"));
+        if (updates.containsKey("licenseType")) req.setLicenseType((String) updates.get("licenseType"));
+        if (updates.containsKey("emergencyContactName")) req.setEmergencyContactName((String) updates.get("emergencyContactName"));
+        if (updates.containsKey("emergencyContactPhone")) req.setEmergencyContactPhone((String) updates.get("emergencyContactPhone"));
+
+        if (updates.containsKey("dateOfBirth")) {
+            String s = (String) updates.get("dateOfBirth");
+            req.setDateOfBirth(s != null && !s.trim().isEmpty() ? LocalDate.parse(s) : null);
+        }
+        if (updates.containsKey("licenseExpiry")) {
+            String s = (String) updates.get("licenseExpiry");
+            req.setLicenseExpiry(s != null && !s.trim().isEmpty() ? LocalDate.parse(s) : null);
+        }
+
+        RegistrationRequest saved = registrationRequestRepository.save(req);
+
+        auditLogService.log(AuditActions.UPDATE_REGISTRATION_REQUEST, adminUsername, "ADMIN",
+                "Updated registration request for: " + req.getEmail());
+
+        return saved;
+    }
+
+    // ======= Username / password / company code helpers =======
+
+    private String generateUniqueUsername(RegistrationRequest req) {
+        String base;
+        if (req.getEmail() != null && req.getEmail().contains("@")) {
+            base = req.getEmail().substring(0, req.getEmail().indexOf('@'));
+        } else if (req.getFullName() != null && !req.getFullName().isBlank()) {
+            base = req.getFullName().trim().toLowerCase().replaceAll("[^a-z0-9]+", ".");
+        } else {
+            base = "driver";
+        }
+
+        base = base.toLowerCase();
+        if (base.length() > 30) base = base.substring(0, 30);
+        if (base.isBlank()) base = "driver";
+
+        String candidate = base;
+        int attempt = 0;
+        while (userRepository.findByUsername(candidate).isPresent()) {
+            attempt++;
+            candidate = base + "." + (1000 + (int) (Math.random() * 9000));
+            if (attempt > 20) {
+                candidate = "driver." + UUID.randomUUID().toString().substring(0, 8);
+                break;
+            }
+        }
+        return candidate;
+    }
+
+    private String generateTempPassword() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
+    private String generateCompanyCode(String companyName) {
+        if (companyName == null || companyName.trim().isEmpty()) {
+            return "COMP" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        }
+
+        String base = companyName.trim().toUpperCase()
+            .replaceAll("[^A-Z0-9]", "")
+            .substring(0, Math.min(8, companyName.length()));
+
+        if (base.length() < 4) base = "COMP" + base;
+
+        String candidate = base;
+        int attempt = 0;
+        while (customerRepository.findByCompanyCode(candidate).isPresent()) {
+            attempt++;
+            candidate = base + (100 + (int) (Math.random() * 900));
+            if (attempt > 20) {
+                candidate = "COMP" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+                break;
+            }
+        }
+        return candidate;
     }
 
     public LicenseInfo extractLicenseInfo(String imageUrl) {
@@ -462,7 +686,18 @@ public class RegistrationRequestServiceImpl implements RegistrationRequestServic
         public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
     }
 
-    public LicenseInfo extractLicenseInfoFromUrl(String imageUrl) {
-        return extractLicenseInfo(imageUrl);
+    public LicenseInfoDto extractLicenseInfoFromUrl(String imageUrl) {
+        LicenseInfo info = extractLicenseInfo(imageUrl);
+        LicenseInfoDto dto = new LicenseInfoDto();
+        dto.setLicenseNumber(info.getLicenseNumber());
+        dto.setLicenseType(info.getLicenseType());
+        dto.setExpiryDate(info.getExpiryDate());
+        dto.setIssueDate(info.getLicenseIssueDate());
+        dto.setFullName(info.getFullName());
+        dto.setDateOfBirth(info.getDateOfBirth());
+        dto.setAddress(info.getAddress());
+        dto.setExtractionSuccessful(info.isExtractionSuccessful());
+        dto.setErrorMessage(info.getErrorMessage());
+        return dto;
     }
 }

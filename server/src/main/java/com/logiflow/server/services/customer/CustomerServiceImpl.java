@@ -10,6 +10,8 @@ import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.websocket.NotificationService;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class CustomerServiceImpl implements CustomerService {
 
-
+    private static final Logger log = LoggerFactory.getLogger(CustomerServiceImpl.class);
 
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -116,7 +118,7 @@ public class CustomerServiceImpl implements CustomerService {
                 savedOrder.getPriorityLevel().toString()
             );
         } catch (Exception e) {
-            System.err.println("Failed to send dispatcher notification for new order: " + e.getMessage());
+            log.error("Failed to send dispatcher notification for new order: {}", e.getMessage());
         }
 
         return mapToOrderDto(savedOrder);
@@ -471,7 +473,7 @@ public class CustomerServiceImpl implements CustomerService {
                     order.getDeliveryLat().doubleValue(), order.getDeliveryLng().doubleValue()
                 );
                 distanceKm = BigDecimal.valueOf(distance);
-                System.out.println("Calculated distance using coordinates: " + distanceKm + " km");
+                log.debug("Calculated distance using coordinates: {} km", distanceKm);
             }
             // Option 2: Fallback to address-based geocoding if coordinates not available
             else if (order.getPickupAddress() != null && !order.getPickupAddress().trim().isEmpty() &&
@@ -486,10 +488,10 @@ public class CustomerServiceImpl implements CustomerService {
                     // Convert meters to km
                     distanceKm = BigDecimal.valueOf(distanceResult.getDistanceMeters())
                         .divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP);
-                    System.out.println("Calculated distance using addresses: " + distanceKm + " km");
+                    log.debug("Calculated distance using addresses: {} km", distanceKm);
                 } else {
-                    System.err.println("Failed to geocode addresses for distance calculation: " +
-                        order.getPickupAddress() + " -> " + order.getDeliveryAddress());
+                    log.error("Failed to geocode addresses for distance calculation: {} -> {}",
+                        order.getPickupAddress(), order.getDeliveryAddress());
                 }
             }
 
@@ -503,17 +505,16 @@ public class CustomerServiceImpl implements CustomerService {
                     order
                 );
                 order.setShippingFee(fee);
-                System.out.println("Calculated shipping fee: " + fee + " VND");
+                log.debug("Calculated shipping fee: {} VND", fee);
             } else {
                 // No distance calculation possible
                 order.setDistanceKm(null);
                 order.setShippingFee(null);
-                System.err.println("No distance calculation method available for order");
+                log.error("No distance calculation method available for order");
             }
 
         } catch (Exception e) {
-            System.err.println("Error calculating distance and fee: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error calculating distance and fee: {}", e.getMessage());
             // Leave distance and fee as null if calculation fails
             order.setDistanceKm(null);
             order.setShippingFee(null);

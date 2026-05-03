@@ -9,7 +9,6 @@ import com.logiflow.server.dtos.dispatch.TripCancelRequest;
 import com.logiflow.server.dtos.dispatch.TripRerouteRequest;
 import com.logiflow.server.services.dispatch.TripService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +18,11 @@ import java.util.Map;
 @RequestMapping("/api/dispatch")
 public class TripController {
 
-    @Autowired
-    private TripService tripService;
+    private final TripService tripService;
+
+    public TripController(TripService tripService) {
+        this.tripService = tripService;
+    }
 
     @GetMapping("/trips")
     public ResponseEntity<?> getTrips(

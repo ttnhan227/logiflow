@@ -3,8 +3,8 @@ package com.logiflow.server.controllers.auth;
 import com.logiflow.server.dtos.auth.AuthResponse;
 import com.logiflow.server.dtos.auth.DriverRegistrationRequest;
 import com.logiflow.server.dtos.auth.CustomerRegistrationRequest;
+import com.logiflow.server.dtos.auth.LicenseInfoDto;
 import com.logiflow.server.services.registration.RegistrationRequestService;
-import com.logiflow.server.services.registration.RegistrationRequestServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,11 +19,9 @@ import java.util.Map;
 public class DriverRegistrationController {
 
     private final RegistrationRequestService registrationRequestService;
-    private final RegistrationRequestServiceImpl registrationRequestServiceImpl;
 
-    public DriverRegistrationController(RegistrationRequestService registrationRequestService, RegistrationRequestServiceImpl registrationRequestServiceImpl) {
+    public DriverRegistrationController(RegistrationRequestService registrationRequestService) {
         this.registrationRequestService = registrationRequestService;
-        this.registrationRequestServiceImpl = registrationRequestServiceImpl;
     }
 
     @PostMapping("/driver")
@@ -60,8 +58,7 @@ public class DriverRegistrationController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            RegistrationRequestServiceImpl.LicenseInfo licenseInfo = 
-                registrationRequestServiceImpl.extractLicenseInfoFromUrl(imageUrl);
+            LicenseInfoDto licenseInfo = registrationRequestService.extractLicenseInfoFromUrl(imageUrl);
 
             if (licenseInfo.isExtractionSuccessful()) {
                 Map<String, String> extractedData = new HashMap<>();

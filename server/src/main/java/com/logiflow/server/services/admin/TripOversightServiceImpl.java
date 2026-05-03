@@ -1,5 +1,6 @@
- package com.logiflow.server.services.admin;
+package com.logiflow.server.services.admin;
 
+import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.admin.trip.TripOversightDto;
 import com.logiflow.server.dtos.admin.trip.TripOversightListResponse;
 import com.logiflow.server.dtos.dispatch.OrderCreateRequest;
@@ -17,8 +18,6 @@ import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.dispatch.ShippingFeeCalculator;
 import com.logiflow.server.services.maps.MapsService;
-import com.logiflow.server.services.maps.MapsService;
-import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.websocket.NotificationService;
 import com.logiflow.server.utils.OrderFileParser;
 // import removed: DriverComplianceService
@@ -26,10 +25,12 @@ import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,17 +51,25 @@ import java.util.stream.Collectors;
 @Service
 public class TripOversightServiceImpl implements TripOversightService {
 
-    @Autowired
-    private TripRepository tripRepository;
+    private static final Logger log = LoggerFactory.getLogger(TripOversightServiceImpl.class);
+    private static final String SYSTEM_ACTOR = "system";
+    private static final String SYSTEM_ROLE = "SYSTEM";
 
-    @Autowired(required = false)
-    private TripAssignmentRepository tripAssignmentRepository;
+    private final TripRepository tripRepository;
+    private final TripAssignmentRepository tripAssignmentRepository;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private AuditLogService auditLogService;
+    public TripOversightServiceImpl(
+            TripRepository tripRepository,
+            @Nullable TripAssignmentRepository tripAssignmentRepository,
+            NotificationService notificationService,
+            AuditLogService auditLogService) {
+        this.tripRepository = tripRepository;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+        this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
+    }
 
     @Override
     public TripOversightDto getTripOversight(Integer tripId) {
@@ -169,16 +178,15 @@ public class TripOversightServiceImpl implements TripOversightService {
             throw new RuntimeException("Status is required");
         }
 
-        // TODO: Validate status against allowed values when Trip model has enum status
-        // For now, accept any string but could add validation
+        // Validation can be tightened when Trip status is migrated to an enum.
         trip.setStatus(status);
         Trip savedTrip = tripRepository.save(trip);
 
         // Audit the admin trip status update
         auditLogService.log(
-            "ADMIN_UPDATE_TRIP_STATUS",
-            "admin", // TODO: replace with actual username from context
-            "ADMIN", // TODO: replace with actual role from context
+            AuditActions.ADMIN_UPDATE_TRIP_STATUS,
+            SYSTEM_ACTOR,
+            SYSTEM_ROLE,
             String.format("Trip #%d status changed from '%s' to '%s'",
                 tripId, oldStatus != null ? oldStatus : "null", status)
         );
@@ -308,9 +316,11 @@ public class TripOversightServiceImpl implements TripOversightService {
                             customerMessage,
                             trip.getStatus() != null ? trip.getStatus() : "unknown"
                         );
-                        System.out.println("DEBUG: Sent DELAY_UPDATE notification to customer " + customerUsername + " for order " + order.getOrderId());
-                    } catch (Exception e) {
-                        System.err.println("Failed to send delay update notification to customer " + customerUsername + ": " + e.getMessage());
+                        log.debug("Sent DELAY_UPDATE notification to customer {} for order {}",
+                            customerUsername, order.getOrderId());
+                    } catch (Exception ex) {
+                        log.error("Failed to send delay update notification to customer {}: {}",
+                            customerUsername, ex.getMessage());
                     }
                 }
             }
