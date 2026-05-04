@@ -25,10 +25,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    }
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        // Skip JWT authentication for WebSocket endpoints and registration endpoints
         return path.startsWith("/ws/") || path.startsWith("/api/registration/");
     }
 
@@ -38,28 +36,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwtToken = null;
         String userId = null;
         String role = null;
-        
+
         if (token != null && token.startsWith("Bearer ")) {
             jwtToken = token.substring(7);
             userId = jwtUtils.extractUsername(jwtToken);
             role = jwtUtils.extractRole(jwtToken);
         }
-        
+
         if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtils.validateToken(jwtToken, userId)) {
-                // Create authorities based on roles
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                 if (role != null && !role.isEmpty()) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
                 }
-                
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userId, null, authorities);
+                        userId, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
         filterChain.doFilter(request, response);
-
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.logiflow.server.controllers.admin;
+package com.logiflow.server.controllers.admin;
 
 import com.logiflow.server.models.RegistrationRequest;
 import com.logiflow.server.services.registration.RegistrationRequestService;
