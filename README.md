@@ -68,6 +68,37 @@ docs/                   Architecture notes and repository assessment
 
 Prerequisites: Java 21, Maven 3.9+, Node.js 24+, npm, PostgreSQL 15+, and optionally Flutter 3.x.
 
+### Docker Compose
+
+Docker Desktop is the only prerequisite for the containerized web stack.
+
+```bash
+cp .env.docker.example .env
+docker compose up -d --build
+```
+
+On Windows PowerShell, copy the environment file with:
+
+```powershell
+Copy-Item .env.docker.example .env
+docker compose up -d --build
+```
+
+Open `http://localhost:5173`. The Vite development server runs in the frontend container, the API is exposed at `http://localhost:8080`, and PostgreSQL at `localhost:5432`. The first startup creates the schema and demo data, so it can take longer than subsequent starts.
+
+Useful lifecycle commands:
+
+```bash
+docker compose ps
+docker compose logs -f backend
+docker compose down
+docker compose down -v  # also deletes the local database volume
+```
+
+Set integration credentials in `.env` when Cloudinary, Mistral AI, SMTP, or PayPal behavior is needed. The Flutter app runs natively and connects to the exposed backend port; it is not a long-running Compose service.
+
+### Manual setup
+
 1. Create a PostgreSQL database named `logiflow`.
 2. Copy `server/.env.example` to a local secret file or export the listed variables in your shell. `JWT_SECRET` is required and must contain at least 32 characters. Provider credentials are needed only for their integrations.
 3. Start the backend:

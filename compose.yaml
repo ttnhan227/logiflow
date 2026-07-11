@@ -1,0 +1,67 @@
+name: logiflow
+
+services:
+  database:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-logiflow}
+      POSTGRES_USER: ${POSTGRES_USER:-logiflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-logiflow-local-password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-logiflow} -d ${POSTGRES_DB:-logiflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./server
+    environment:
+      DATABASE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-logiflow}
+      DATABASE_USERNAME: ${POSTGRES_USER:-logiflow}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-logiflow-local-password}
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-before-deployment}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-36000000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      MISTRAL_AI_API_KEY: ${MISTRAL_AI_API_KEY:-not-configured}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_RETURN_URL: ${PAYPAL_RETURN_URL:-http://localhost:8080/api/payment/return}
+      PAYPAL_CANCEL_URL: ${PAYPAL_CANCEL_URL:-http://localhost:8080/api/payment/cancel}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 45s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./client
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080/api}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

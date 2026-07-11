@@ -1,4 +1,7 @@
 import React from 'react';
+// JSX member tags are not recognized as variable usage by the current lint parser.
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, Typography, Button, Box, Grid, Paper } from '@mui/material';
 import {

@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+// JSX member tags are not recognized as variable usage by the current lint parser.
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, TextField, Button, Typography, Box, Alert, InputAdornment } from '@mui/material';
 import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
