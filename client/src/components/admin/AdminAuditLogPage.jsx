@@ -44,9 +44,10 @@ const AdminAuditLogPage = () => {
   };
 
   // Fetch logs on component mount (no filters)
+  // The initial query intentionally runs once; subsequent queries are user-driven.
   useEffect(() => { 
     fetchLogs(filters); 
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleInputChange = e => {
     const { name, value } = e.target;

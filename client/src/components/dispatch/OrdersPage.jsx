@@ -12,7 +12,7 @@ const OrdersPage = () => {
   const [pickupTypeFilter, setPickupTypeFilter] = useState(''); // '', 'PORT_TERMINAL', 'WAREHOUSE'
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const size = 10;
 
   const fetch = async () => {
     setLoading(true);

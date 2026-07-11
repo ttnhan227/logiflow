@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { FaMapMarkedAlt, FaUserCheck, FaBuilding, FaChartLine } from 'react-icons/fa';
 import './home.css';
 

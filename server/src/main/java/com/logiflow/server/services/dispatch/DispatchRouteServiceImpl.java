@@ -8,6 +8,8 @@ import com.logiflow.server.repositories.route.RouteRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import com.logiflow.server.exceptions.BusinessRuleException;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -28,7 +30,7 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
     @Override
     public RouteDto getRouteById(Integer routeId) {
         Route route = routeRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Route not found with id: " + routeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with id: " + routeId));
         return RouteDto.fromRoute(route);
     }
 
@@ -42,12 +44,12 @@ public class DispatchRouteServiceImpl implements DispatchRouteService {
     @Override
     public RouteDto createTripRoute(List<Integer> orderIds, String routeName) {
         if (orderIds == null || orderIds.isEmpty()) {
-            throw new IllegalArgumentException("orderIds cannot be null or empty");
+            throw new BusinessRuleException("orderIds cannot be null or empty");
         }
 
         List<Order> orders = orderRepository.findAllById(orderIds);
         if (orders.size() != orderIds.size()) {
-            throw new IllegalArgumentException("Some orders not found");
+            throw new BusinessRuleException("Some orders were not found");
         }
 
         List<Map<String, Object>> waypoints = new ArrayList<>();

@@ -10,6 +10,8 @@ jobs:
   backend:
     name: Backend build
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci-only-secret-that-is-longer-than-32-characters
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v4

@@ -367,10 +367,12 @@ const UserManagementPage = () => {
     }
   };
 
+  // Initial load; mutation handlers explicitly refresh the list.
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // sortByRolePriority is a module-stable comparator.
   useEffect(() => {
     let result = users;
     // Filter by role
@@ -389,7 +391,7 @@ const UserManagementPage = () => {
     result = sortByRolePriority(result);
     setFilteredUsers(result);
     setPage(0);
-  }, [searchTerm, roleFilter, users]);
+  }, [searchTerm, roleFilter, users]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleStatus = async (user) => {
     try {

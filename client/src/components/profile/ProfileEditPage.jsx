@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { profileService, uploadService, authService } from '../../services';
+import { profileService, uploadService } from '../../services';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import './profile.css';

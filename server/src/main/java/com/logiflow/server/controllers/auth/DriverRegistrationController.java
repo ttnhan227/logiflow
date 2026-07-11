@@ -82,7 +82,7 @@ public class DriverRegistrationController {
 
         } catch (Throwable e) {
             response.put("success", false);
-            response.put("error", "AI extraction failed: " + e.getMessage());
+            response.put("error", "License extraction is temporarily unavailable");
             response.put("message", "Unable to process license image - please enter information manually");
             return ResponseEntity.status(500).body(response);
         }

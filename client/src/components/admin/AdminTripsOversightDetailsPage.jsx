@@ -101,25 +101,6 @@ const AdminTripsOversightDetailsPage = () => {
     loadTrip();
   }, [tripId]);
 
-  const handleOverride = async (targetStatus = 'ASSIGNED') => {
-    if (!window.confirm(`Override and set trip ${trip.tripId} to ${targetStatus}?`)) return;
-    setActingId(trip.tripId);
-    try {
-      await tripsOversightService.updateTripOrderStatus(trip.tripId, targetStatus);
-
-      // Refresh trip data - force re-render by updating state
-      setTrip(null); // Clear current data first
-      const updatedTrip = await tripsOversightService.getTripOversight(trip.tripId);
-      setTrip(updatedTrip);
-
-      alert(`Trip ${trip.tripId} status updated to ${targetStatus}.`);
-    } catch (err) {
-      alert('Failed to override status.');
-    } finally {
-      setActingId(null);
-    }
-  };
-
   const handleDelayResponse = async (response, customExtensionMinutes = null) => {
     let confirmationMessage = `Are you sure you want to ${response.toLowerCase()} this trip delay report?`;
     if (response === 'APPROVED' && customExtensionMinutes !== null) {
@@ -657,13 +638,11 @@ const AdminTripsOversightDetailsPage = () => {
                   );
                 }
 
-                const allPoints = [];
                 const pickupPoints = [];
                 const deliveryPoints = [];
-                let totalDistance = 0;
 
                 // Collect all pickup and delivery points (same logic as RouteMapCard)
-                orders.forEach((order, index) => {
+                orders.forEach((order) => {
                   if (order.pickupLat && order.pickupLng) {
                     pickupPoints.push({
                       id: `pickup-${order.orderId}`,
@@ -687,9 +666,6 @@ const AdminTripsOversightDetailsPage = () => {
                     });
                   }
                   // Add individual order distance
-                  if (order.distanceKm) {
-                    totalDistance += Number(order.distanceKm);
-                  }
                 });
 
                 // Create connected route path: Order1 Pickup→Delivery → Order2 Pickup→Delivery → etc.

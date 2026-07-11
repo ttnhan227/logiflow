@@ -3,7 +3,7 @@ import './ChatPopup.css';
 import { chatService } from '../../services';
 import notificationClient from '../../services/notificationClient';
 
-const ChatPopup = ({ tripId, driverId, trip }) => {
+const ChatPopup = ({ tripId, driverId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -12,7 +12,6 @@ const ChatPopup = ({ tripId, driverId, trip }) => {
   const [error, setError] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef(null);
-  const previousMessageCountRef = useRef(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

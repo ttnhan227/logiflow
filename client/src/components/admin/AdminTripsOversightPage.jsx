@@ -23,8 +23,6 @@ const riskTone = {
   UNKNOWN: { bg: '#e5e7eb', color: '#111827' },
 };
 
-const formatTime = (ts) => (ts ? new Date(ts).toLocaleString() : 'N/A');
-
 const RiskTag = ({ risk }) => {
   const tone = riskTone[risk] || riskTone.UNKNOWN;
   return (
@@ -45,7 +43,6 @@ const AdminTripsOversightPage = () => {
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [actingId, setActingId] = useState(null);
-  const [meta, setMeta] = useState(null);
   const [page, setPage] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const pageSize = 10;
@@ -55,9 +52,8 @@ const AdminTripsOversightPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const { items, meta: m } = await tripsOversightService.getTripsOversight({ size: 1000 });
+        const { items } = await tripsOversightService.getTripsOversight({ size: 1000 });
         setTrips(items);
-        setMeta(m);
       } catch (err) {
         setError('Failed to load trips oversight data');
       } finally {

@@ -28,7 +28,7 @@ const authService = {
 
     try {
       window.dispatchEvent(new CustomEvent('userUpdated', { detail: userObj }));
-    } catch (e) {
+    } catch {
       window.dispatchEvent(new Event('userUpdated'));
     }
     

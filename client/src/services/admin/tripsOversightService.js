@@ -115,8 +115,7 @@ const extractCity = (address) => {
 // Get trips oversight - now returns trip data instead of flattened orders
 const getTripsOversight = async (params = {}) => {
   const merged = { page: 0, size: 50, ...params };
-  try {
-    const res = await api.get('/admin/trips/oversight', { params: merged });
+  const res = await api.get('/admin/trips/oversight', { params: merged });
     // Backend now returns { trips: [...], meta: {...} } instead of { orders: [...], ... }
     const payload = Array.isArray(res.data?.trips) ? res.data.trips : res.data;
     const meta = {
@@ -127,10 +126,7 @@ const getTripsOversight = async (params = {}) => {
       hasNext: res.data?.hasNext ?? false,
       hasPrevious: res.data?.hasPrevious ?? false,
     };
-    return { items: normalizeTrips(payload || []), meta };
-  } catch (err) {
-    throw err;
-  }
+  return { items: normalizeTrips(payload || []), meta };
 };
 
 // Update trip status (was updateTripOrderStatus)
@@ -156,12 +152,8 @@ const respondToTripDelayReport = async (tripId, response, extensionMinutes) => {
 
 // Get trips with pending delay reports
 const getTripsWithDelayReports = async () => {
-  try {
-    const res = await api.get('/admin/trips/delay-reports');
-    return normalizeTrips(res.data || []);
-  } catch (err) {
-    throw err;
-  }
+  const res = await api.get('/admin/trips/delay-reports');
+  return normalizeTrips(res.data || []);
 };
 
 export const tripsOversightService = {

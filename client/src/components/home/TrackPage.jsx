@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import authService from '../../services/auth/authService';
 import customerService from '../../services/customerService';
 import Modal from '../admin/Modal';
@@ -12,7 +12,6 @@ const TrackPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
     const currentUser = authService.getCurrentUser();

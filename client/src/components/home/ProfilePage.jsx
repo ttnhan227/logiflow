@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { profileService, uploadService, authService } from '../../services';
+import { profileService, uploadService } from '../../services';
 import api from '../../services/api';
 import './home.css';
 
@@ -56,7 +56,7 @@ const ProfilePage = () => {
 
     try {
       setUploading(true);
-      const data = await uploadService.uploadProfilePicture(file, (progressEvent) => {
+      const data = await uploadService.uploadProfilePicture(file, (_progressEvent) => {
         // progress handling could be added
       });
       if (data && data.path) {

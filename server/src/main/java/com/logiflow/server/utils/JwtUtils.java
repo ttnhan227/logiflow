@@ -13,9 +13,15 @@ import java.util.Date;
 @Component
 public class JwtUtils {
     private final String secret;
+    private final long expirationMs;
 
-    public JwtUtils(@Value("${app.jwt.secret:logiflow-dev-secret-change-me-in-production}") String secret) {
+    public JwtUtils(@Value("${app.jwt.secret}") String secret,
+                    @Value("${app.jwt.expiration-ms}") long expirationMs) {
+        if (secret == null || secret.length() < 32) {
+            throw new IllegalArgumentException("JWT_SECRET must contain at least 32 characters");
+        }
         this.secret = secret;
+        this.expirationMs = expirationMs;
     }
 
     public String generateToken(String username, String role){
@@ -23,7 +29,7 @@ public class JwtUtils {
                 .setSubject(username)
                 .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis()+1000*60*60*10))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(secretToKey(secret))
                 .compact();
     }
@@ -36,8 +42,8 @@ public class JwtUtils {
                     .parseClaimsJws(token)
                     .getBody()
                     .get("role", String.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid token", e);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new io.jsonwebtoken.JwtException("Invalid token", e);
         }
     }
     private SecretKey secretToKey(String secret){
@@ -58,8 +64,8 @@ public class JwtUtils {
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid token", e);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new io.jsonwebtoken.JwtException("Invalid token", e);
         }
     }
     public boolean isTokenExpired(String token){
@@ -74,8 +80,8 @@ public class JwtUtils {
                     .parseClaimsJws(token)
                     .getBody()
                     .getExpiration();
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid token", e);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new io.jsonwebtoken.JwtException("Invalid token", e);
         }
     }
     public boolean validateToken(String token, String username){

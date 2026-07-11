@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, tripService, orderService, dispatchVehicleService, dispatchRouteService} from '../../services';
+import { tripService, orderService, dispatchVehicleService, dispatchRouteService } from '../../services';
 import RouteMapCard from './RouteMapCard';
 import './dispatch.css';
 import './modern-dispatch.css';
@@ -114,7 +114,8 @@ const TripCreatePage = () => {
             return [...vehicles].sort((a, b) => {
                 const aAvailable = a.status === 'available';
                 const bAvailable = b.status === 'available';
-                return bAvailable ? 1 : -1; // available first
+                if (aAvailable !== bAvailable) return aAvailable ? -1 : 1;
+                return 0;
             });
         }
 

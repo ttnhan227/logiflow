@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import paymentRequestService from '../../services/admin/paymentRequestService';
 import './admin.css';
 
 const AdminPaymentRequestPage = () => {
-    const navigate = useNavigate();
     const [customers, setCustomers] = useState([]);
     const [filteredCustomers, setFilteredCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -37,10 +35,11 @@ const AdminPaymentRequestPage = () => {
         }
     };
 
+    // Initial dashboard fetch; actions refresh the data explicitly after mutations.
     useEffect(() => {
         loadData();
         loadStatistics();
-    }, []); // Load data once on mount
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- initial load only
 
     // Filter customers based on search and filter criteria
     useEffect(() => {

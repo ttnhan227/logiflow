@@ -83,11 +83,6 @@ const NotificationBell = () => {
     return userRole === 'DISPATCHER' ? dispatchNotificationService : notificationService;
   }, [userRole]);
 
-  // Get appropriate WebSocket topic based on role
-  const getWebSocketTopic = useCallback(() => {
-    return userRole === 'DISPATCHER' ? '/topic/dispatcher/notifications' : '/topic/admin/notifications';
-  }, [userRole]);
-
   // Get appropriate navigation path based on role
   const getNotificationsPath = useCallback(() => {
     return userRole === 'DISPATCHER' ? '/dispatch/notifications' : '/admin/notifications';

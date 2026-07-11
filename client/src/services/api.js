@@ -35,13 +35,13 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-      return Promise.reject({ error: 'Session expired. Please login again.' });
+      return Promise.reject(new Error('Session expired. Please log in again.'));
     }
     
     // For 403, let the component handle it (user is authenticated but lacks permission)
     if (error.response?.status === 403) {
       const errorData = error.response?.data;
-      return Promise.reject(errorData || { error: 'You do not have permission to access this resource' });
+      return Promise.reject(errorData || new Error('You do not have permission to access this resource'));
     }
     
     // Handle other error responses
@@ -50,10 +50,10 @@ api.interceptors.response.use(
     
     // If response body is empty (400 from upload), provide generic message
     if (error.response?.status === 400 && !errorMessage) {
-      return Promise.reject('Validation error: Invalid file or request');
+      return Promise.reject(new Error('Validation error: invalid file or request'));
     }
     
-    return Promise.reject(errorData || errorMessage);
+    return Promise.reject(errorData || new Error(errorMessage));
   }
 );
 

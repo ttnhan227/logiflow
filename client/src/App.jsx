@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { authService } from './services';
 import './App.css';
 import './components/layout.css';
+import './styles/enterprise-theme.css';
 import MainLayout from './components/MainLayout';
 import AdminSideNav from './components/admin/AdminSideNav';
 import LoginPage from "./components/auth/LoginPage";
@@ -17,39 +18,38 @@ import FaqPage from "./components/home/FaqPage";
 import BusinessPage from "./components/home/BusinessPage";
 import DriversPage from "./components/home/DriversPage";
 import MobileAppPage from "./components/home/MobileAppPage";
-import AdminDashboardPage from "./components/admin/AdminDashboardPage";
-
-import AdminDriverManagementPage from "./components/admin/AdminDriverManagementPage";
-import AdminCustomerManagementPage from "./components/admin/AdminCustomerManagementPage";
-import AdminDispatcherManagementPage from "./components/admin/AdminDispatcherManagementPage";
-import AdminUserDetailsPage from "./components/admin/AdminUserDetailsPage";
-import AdminUserEditPage from "./components/admin/AdminUserEditPage";
-import AdminSystemOverviewPage from "./components/admin/AdminSystemOverviewPage";
-import AdminAuditLogPage from "./components/admin/AdminAuditLogPage";
-import AdminRegistrationRequestsPage from "./components/admin/AdminRegistrationRequestsPage";
-import AdminRegistrationRequestDetailsPage from "./components/admin/AdminRegistrationRequestDetailsPage";
-import AdminVehiclesPage from "./components/admin/AdminVehiclesPage";
-import AdminReportsPage from "./components/admin/AdminReportsPage";
-import AdminTripsOversightPage from "./components/admin/AdminTripsOversightPage";
-import AdminTripsOversightDetailsPage from "./components/admin/AdminTripsOversightDetailsPage";
-import AdminNotificationsPage from "./components/admin/AdminNotificationsPage";
-import AdminPaymentRequestPage from "./components/admin/AdminPaymentRequestPage";
+const AdminDashboardPage = lazy(() => import('./components/admin/AdminDashboardPage'));
+const AdminDriverManagementPage = lazy(() => import('./components/admin/AdminDriverManagementPage'));
+const AdminCustomerManagementPage = lazy(() => import('./components/admin/AdminCustomerManagementPage'));
+const AdminDispatcherManagementPage = lazy(() => import('./components/admin/AdminDispatcherManagementPage'));
+const AdminUserDetailsPage = lazy(() => import('./components/admin/AdminUserDetailsPage'));
+const AdminUserEditPage = lazy(() => import('./components/admin/AdminUserEditPage'));
+const AdminSystemOverviewPage = lazy(() => import('./components/admin/AdminSystemOverviewPage'));
+const AdminAuditLogPage = lazy(() => import('./components/admin/AdminAuditLogPage'));
+const AdminRegistrationRequestsPage = lazy(() => import('./components/admin/AdminRegistrationRequestsPage'));
+const AdminRegistrationRequestDetailsPage = lazy(() => import('./components/admin/AdminRegistrationRequestDetailsPage'));
+const AdminVehiclesPage = lazy(() => import('./components/admin/AdminVehiclesPage'));
+const AdminReportsPage = lazy(() => import('./components/admin/AdminReportsPage'));
+const AdminTripsOversightPage = lazy(() => import('./components/admin/AdminTripsOversightPage'));
+const AdminTripsOversightDetailsPage = lazy(() => import('./components/admin/AdminTripsOversightDetailsPage'));
+const AdminNotificationsPage = lazy(() => import('./components/admin/AdminNotificationsPage'));
+const AdminPaymentRequestPage = lazy(() => import('./components/admin/AdminPaymentRequestPage'));
 import DriverRegisterPage from "./components/auth/DriverRegisterPage";
 import CustomerRegisterPage from "./components/auth/CustomerRegisterPage";
 import NotFoundPage from "./components/common/NotFoundPage";
 import UnauthorizedPage from "./components/common/UnauthorizedPage";
 import ProfilePage from "./components/profile/ProfilePage";
 import ProfileEditPage from "./components/profile/ProfileEditPage";
-import OrdersPage from "./components/dispatch/OrdersPage";
-import OrderImportPage from "./components/dispatch/OrderImportPage";
-import DispatchOrderDetailPage from "./components/dispatch/DispatchOrderDetailPage";
-import AvailableDriversPage from './components/dispatch/AvailableDriversPage';
-import TripsPage from "./components/dispatch/TripsPage";
-import TripCreatePage from "./components/dispatch/TripCreatePage";
-import TripDetailPage from "./components/dispatch/TripDetailPage";
-import TripAssignPage from "./components/dispatch/TripAssignPage";
-import DispatchNotificationsPage from "./components/dispatch/DispatchNotificationsPage";
-import DispatchReportsPage from "./components/dispatch/DispatchReportsPage";
+const OrdersPage = lazy(() => import('./components/dispatch/OrdersPage'));
+const OrderImportPage = lazy(() => import('./components/dispatch/OrderImportPage'));
+const DispatchOrderDetailPage = lazy(() => import('./components/dispatch/DispatchOrderDetailPage'));
+const AvailableDriversPage = lazy(() => import('./components/dispatch/AvailableDriversPage'));
+const TripsPage = lazy(() => import('./components/dispatch/TripsPage'));
+const TripCreatePage = lazy(() => import('./components/dispatch/TripCreatePage'));
+const TripDetailPage = lazy(() => import('./components/dispatch/TripDetailPage'));
+const TripAssignPage = lazy(() => import('./components/dispatch/TripAssignPage'));
+const DispatchNotificationsPage = lazy(() => import('./components/dispatch/DispatchNotificationsPage'));
+const DispatchReportsPage = lazy(() => import('./components/dispatch/DispatchReportsPage'));
 import DispatchLayout from "./components/dispatch/DispatchLayout";
 
 
@@ -97,6 +97,7 @@ const AuthRedirect = () => {
 function App() {
   return (
     <Router>
+      <Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}>
       <Routes>
         {/* Public routes with MainLayout */}
         <Route element={<MainLayout />}>
@@ -282,6 +283,7 @@ function App() {
         {/* 404 - Not Found */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Suspense>
     </Router>
   );
 }

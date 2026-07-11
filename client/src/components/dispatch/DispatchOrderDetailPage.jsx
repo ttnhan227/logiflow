@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { orderService } from '../../services';
 import './dispatch.css';
 import './modern-dispatch.css';
 
 const DispatchOrderDetailPage = () => {
   const { orderId } = useParams();
-  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -14,16 +13,11 @@ const DispatchOrderDetailPage = () => {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({});
 
-  useEffect(() => {
-    loadOrder();
-  }, [orderId]);
-
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const o = await orderService.getOrderById(Number(orderId));
-      console.log('Order loaded:', o, 'customerId:', o?.customerId, 'nested customer:', o?.customer); // DEBUG
       setOrder(o);
     } catch (ex) {
       console.error('Failed to load order', ex);
@@ -31,7 +25,11 @@ const DispatchOrderDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder]);
 
   const getStatusColor = (status) => {
     switch(status) {

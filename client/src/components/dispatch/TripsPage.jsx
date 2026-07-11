@@ -11,7 +11,7 @@ const TripsPage = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const size = 10;
   const [error, setError] = useState(null);
 
   const fetch = async () => {

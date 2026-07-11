@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Card, CardContent, TextField, Button, Typography, Box, Alert, InputAdornment } from '@mui/material';
 import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import { authService } from '../../services';

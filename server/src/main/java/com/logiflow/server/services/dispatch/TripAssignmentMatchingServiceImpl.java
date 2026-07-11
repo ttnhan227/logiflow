@@ -13,6 +13,7 @@ import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.services.maps.MapsService;
 import org.springframework.stereotype.Service;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -57,7 +58,7 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
         if (limit > 50) limit = 50;
 
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id: " + tripId));
 
         Vehicle vehicle = trip.getVehicle();
 

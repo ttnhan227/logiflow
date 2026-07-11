@@ -4,6 +4,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/main_layout.dart';
 import 'services/auth/auth_service.dart';
 import 'models/user.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,10 +18,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LogiFlow Mobile',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: const AuthWrapper(),
     );
   }

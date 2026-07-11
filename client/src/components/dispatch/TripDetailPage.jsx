@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import { tripService, trackingClient } from '../../services';
 import RouteMapCard from './RouteMapCard';
 import ChatPopup from '../common/ChatPopup';
@@ -37,13 +37,12 @@ const driverIcon = new L.Icon({
 
 const TripDetailPage = () => {
   const { tripId } = useParams();
-  const navigate = useNavigate();
   const location = useLocation();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [distanceEstimate, setDistanceEstimate] = useState(null);
-  const [feeEstimate, setFeeEstimate] = useState(null);
+  const [, setDistanceEstimate] = useState(null);
+  const [, setFeeEstimate] = useState(null);
 
   const [deliveryConfirmation, setDeliveryConfirmation] = useState(null);
   const [podLoading, setPodLoading] = useState(false);
@@ -55,13 +54,15 @@ const TripDetailPage = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [routeWaypoints, setRouteWaypoints] = useState([]);
   const [delayInfo, setDelayInfo] = useState(null);
-  const [delayLoading, setDelayLoading] = useState(false);
+  const [, setDelayLoading] = useState(false);
 
+  // Reload when the selected trip or navigation refresh state changes.
   useEffect(() => {
     loadTrip();
-  }, [tripId, location.state]);
+  }, [tripId, location.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Connect + subscribe to trip-scoped live location topic
+  // Re-fetch only after a live progress event for this trip.
   useEffect(() => {
     let mounted = true;
     const run = async () => {
@@ -95,7 +96,7 @@ const TripDetailPage = () => {
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- focus refresh uses current route
 
   const loadTrip = async () => {
     setLoading(true);

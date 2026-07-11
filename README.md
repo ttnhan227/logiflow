@@ -1,114 +1,140 @@
 # LogiFlow
 
-Full-stack logistics platform for freight operations with role-based workflows, dispatch planning, live tracking, and integrated document/payment pipelines.
+LogiFlow is a full-stack logistics operations platform for coordinating customer orders, dispatch planning, driver trips, tracking, documents, and payments.
 
-## Tech Stack
+## Overview
 
-**Backend:** Java 21, Spring Boot 3.5+, Spring Security, JPA/Hibernate, PostgreSQL 15 (PostGIS), JWT, Maven
+The application gives administrators, dispatchers, drivers, and customers role-specific workflows across a shared freight lifecycle. Its technically interesting areas are approval-gated onboarding, trip state management, live GPS updates, route planning, OCR-assisted document intake, payment requests, notifications, and support for both web and mobile clients.
 
-**Frontend:** React 19, Vite
+## Key features
 
-**Mobile:** Flutter 3.9+
+- JWT authentication and backend-enforced role authorization
+- Driver and customer registration with administrator review
+- Order planning, driver assignment, rerouting, cancellation, and delivery confirmation
+- GPS location history, geocoding, directions, and route optimization
+- OCR-assisted driver-license intake with manual fallback
+- PayPal sandbox payment requests, reminders, and status tracking
+- Notifications, operational chat, reporting, and audit logs
 
-**Integrations:** Cloudinary, Tesseract OCR, Mistral AI, PayPal Sandbox, SMTP
+## Tech stack
 
-## Features
-
-- **Role-Based Platform** - Separate capabilities for Admin, Dispatcher, Driver, and Customer users.
-- **Dispatch and Trip Management** - Trip creation, assignment, rerouting, cancellation, and delivery confirmation workflows.
-- **Order Lifecycle Operations** - Customer order creation and dispatch-side planning and updates.
-- **Live Tracking and Maps** - GPS location updates, history tracking, geocoding, routing, and route optimization.
-- **Registration Review Flow** - Driver/customer onboarding with admin approval and status control.
-- **OCR Document Processing** - Driver license extraction to reduce manual registration input.
-- **Payment Request Workflow** - PayPal sandbox integration with request, reminder, and status tracking.
-- **Notification and Chat Modules** - In-app notifications and trip/order conversation endpoints.
+- Backend: Java 21, Spring Boot 3.5, Spring Security, JPA/Hibernate, Maven
+- Web: React 19, Vite, Axios, Material UI, Ant Design, Leaflet
+- Mobile: Flutter/Dart with Android foreground GPS tracking
+- Data: PostgreSQL 15/PostGIS
+- Integrations: Cloudinary, Mistral AI, SMTP, PayPal Sandbox
+- Testing/CI: JUnit 5, Spring MVC Test, ESLint, GitHub Actions
 
 ## Architecture
 
-**Three-Tier Design:** Controllers -> Services -> Repositories with clear separation of API, business logic, and persistence
+```text
+React web client ---------+
+                          +--> Spring Boot REST/WebSocket API --> PostgreSQL
+Flutter mobile client ----+                 |
+                                            +--> Maps / Cloudinary / OCR
+                                            +--> PayPal / SMTP
+```
 
-**Role-Aware Access:** JWT authentication with Spring Security role checks across admin, dispatch, driver, and customer routes
+HTTP controllers delegate business rules to services, which use repositories for persistence and provider adapters for external systems. DTOs define most public contracts, JWT claims establish identity and role, and Spring Security protects role-specific route groups. Errors use a structured response containing a timestamp, HTTP status, stable error code, safe message, request path, and optional field errors.
 
-**Operational Domain Modeling:** Strong relational schema for users, trips, orders, vehicles, registration requests, and audit trails
+## Main roles
 
-**Key Patterns:**
-- DTO-based API contracts to avoid exposing internal entities.
-- Centralized exception handling and consistent error responses.
-- Adapter-style service integration for OCR, AI, payment, upload, and email providers.
-- Role-specific endpoint grouping to keep modules isolated and maintainable.
+| Role | Primary capabilities |
+|---|---|
+| Admin | Review registrations, manage users/vehicles/settings, inspect operations, reports, payments, and audit logs |
+| Dispatcher | Plan orders and trips, assign drivers/vehicles, reroute operations, and monitor progress |
+| Driver | Accept and execute trips, publish location, chat, and confirm delivery |
+| Customer | Create and track orders, manage profile, view history, and complete payment workflows |
 
-## Permissions
+## Important workflows
 
-| Feature | Admin | Dispatcher | Driver | Customer |
-|---------|:-----:|:----------:|:------:|:--------:|
-| Manage users and system settings | Y | | | |
-| Create and assign trips | Y | Y | | |
-| Execute trip operations | | Y | Y | |
-| Create and track orders | | | | Y |
-| View and manage notifications | Y | Y | Y | Y |
+```text
+Registration -> validation -> admin review -> role-specific account creation -> audit/email
+Order -> dispatch planning -> driver/vehicle assignment -> trip events -> delivery confirmation
+Delivery -> payment request -> PayPal sandbox -> status update -> invoice/history
+```
 
-## Setup
+## Project structure
 
-### Backend
+```text
+server/                 Spring Boot API, domain, services, persistence, integrations
+client/src/             React pages, reusable components, and API services
+client_mobile/lib/      Flutter screens, models, and platform services
+docs/                   Architecture notes and repository assessment
+.github/workflows/      Backend, frontend, and mobile CI validation
+```
+
+## Local setup
+
+Prerequisites: Java 21, Maven 3.9+, Node.js 24+, npm, PostgreSQL 15+, and optionally Flutter 3.x.
+
+1. Create a PostgreSQL database named `logiflow`.
+2. Copy `server/.env.example` to a local secret file or export the listed variables in your shell. `JWT_SECRET` is required and must contain at least 32 characters. Provider credentials are needed only for their integrations.
+3. Start the backend:
+
 ```bash
 cd server
-# configure src/main/resources/application.properties
 mvn spring-boot:run
 ```
-API: http://localhost:8080
 
-### Frontend
+4. Start the web client in another terminal:
+
 ```bash
 cd client
-npm install
+npm ci
 npm run dev
 ```
-App: http://localhost:5173
 
-### Mobile (Optional)
+5. Optionally start the mobile client:
+
 ```bash
 cd client_mobile
 flutter pub get
 flutter run
 ```
 
-## API Surface
+The API runs at `http://localhost:8080`; the web client defaults to `http://localhost:5173`. This repository does not currently include a verified public demo or OpenAPI UI, so none is claimed.
 
-- **Auth Module** - Registration, login, logout, JWT-based session flow.
-- **Registration Module** - Driver/customer onboarding requests with admin review pipeline.
-- **Dispatch Module** - Order planning, trip creation, assignment, reroute, and status transitions.
-- **Driver Module** - Trip acceptance/execution, location updates, schedule and delivery actions.
-- **Customer Module** - Order creation, tracking, profile, and history endpoints.
-- **Admin Module** - User management, registration approvals, oversight, reports, and audit logs.
+## Environment variables
 
-For complete route details, use the project's Swagger/OpenAPI docs when running the backend locally.
+See [`server/.env.example`](server/.env.example). Never commit populated secrets. Credentials previously present in repository history must be rotated before any deployment.
 
-## Implementation Highlights
+## Testing
 
-**Approval-Gated Onboarding**
-- Registration requests are submitted first, then approved/rejected by admin review.
-- User accounts are provisioned after approval with role-specific entity creation.
-- Audit logging is captured for approval/rejection actions.
+```bash
+cd server && mvn test
+cd client && npm ci && npm run lint && npm run build
+cd client_mobile && flutter pub get && flutter analyze && flutter test
+```
 
-**OCR-Assisted Driver Intake**
-- License fields can be extracted from image URLs during registration.
-- Extraction falls back to manual entry when OCR confidence is insufficient.
-- Date normalization is applied before returning extracted data to clients.
+GitHub Actions runs backend tests, frontend lint/build, and Flutter analysis. The web production build and strict lint command pass locally with no lint findings. Current automated coverage is limited; authorization, trip transitions, payment ownership, exception handling, and critical UI workflows remain the highest-priority additions.
 
-**Dispatch-Centric Trip Lifecycle**
-- Trips support create, assign, status update, reroute, and cancel operations.
-- Delivery confirmation endpoints support post-delivery verification.
-- Driver and dispatcher modules consume the same trip lifecycle model.
+## Engineering decisions
 
-**Integrated Operations Stack**
-- Maps endpoints support geocoding, distance, directions, and route optimization.
-- Payment endpoints support PayPal order creation and status handling.
-- Notification and chat endpoints support cross-role operational communication.
+- DTO contracts reduce accidental persistence-model exposure; remaining entity-returning endpoints are documented cleanup work.
+- Role authorization is enforced in Spring Security rather than relying on hidden frontend controls.
+- External credentials and deployment origins are environment-driven, keeping source configuration portable and safe.
+- A centralized error envelope gives clients stable codes without exposing stack traces, SQL errors, or provider details.
+- Provider integrations remain behind services so core workflows can be tested without invoking external systems.
 
-## What This Demonstrates
+## Challenges and lessons learned
 
-- Full-stack logistics platform design with enterprise-style modular backend architecture.
-- Role-based authorization applied across multiple operational domains.
-- Real-world workflow modeling for registration, dispatch, delivery, and payment.
-- Practical integration of OCR, AI, maps, notifications, and payment services.
-- API design that supports both React web and Flutter mobile clients.
+- Supporting web and mobile clients exposes contract inconsistencies quickly; stable DTOs and error shapes matter more than client-specific workarounds.
+- Logistics workflows require explicit transition and ownership rules, not just endpoint-level role checks.
+- External integrations need optional local configuration, safe failure behavior, and tests at adapter boundaries.
+
+## Future improvements
+
+- Complete controller migration to centralized exceptions and eliminate public entity responses
+- Add ownership/security tests and Testcontainers integration coverage
+- Publish OpenAPI documentation and Docker Compose development infrastructure
+- Consolidate frontend auth/error state and migrate API contracts to TypeScript
+- Add an instrumented demo environment and workflow screenshots
+
+## Contribution
+
+The Git history identifies Tran Trong Nhan as the primary committer in the available recent history. More specific leadership or team-scope claims should be added only after contributors verify them.
+
+## CV and interview notes
+
+Portfolio wording and implementation-grounded interview preparation are available in [`docs/cv-interview-readiness.md`](docs/cv-interview-readiness.md).

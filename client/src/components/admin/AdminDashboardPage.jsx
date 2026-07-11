@@ -42,12 +42,7 @@ const AdminDashboardPage = () => {
     loadDashboardData();
   }, []);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getActivityIcon = (activityType) => {
+  const _getActivityIcon = (activityType) => {
     switch (activityType) {
       case 'USER_LOGIN': return '✅';
       case 'LOGIN_FAILED': return '❌';
@@ -56,12 +51,6 @@ const AdminDashboardPage = () => {
       case 'COMPLIANCE_ALERT': return '🚨';
       default: return '📌';
     }
-  };
-
-  const getActivityClass = (activityType, success) => {
-    if (activityType === 'COMPLIANCE_ALERT' || activityType === 'LOGIN_FAILED') return 'error';
-    if (success) return 'success';
-    return '';
   };
 
   const CustomTooltip = ({ active, payload }) => {
@@ -113,29 +102,15 @@ const AdminDashboardPage = () => {
   }
 
   const {
-    userStats,
-    fleetOverview,
-    recentActivities,
+    userStats: _userStats,
     operationsOverview,
     fleetLifecycle,
     complianceStatus,
-    financialPerformance,
     activeOperations,
     systemHealth
   } = dashboardData || {};
 
 
-
-  const totalActiveUsers = (userStats?.activeDispatchers || 0) +
-                          (userStats?.activeDrivers || 0);
-
-  // Prepare data for charts
-  const fleetAgeData = fleetLifecycle?.vehicleAgeGroups ?
-    Object.entries(fleetLifecycle.vehicleAgeGroups).map(([key, value]) => ({
-      name: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      value,
-      color: key.includes('0-2') ? '#10b981' : key.includes('2-4') ? '#f59e0b' : '#ef4444'
-    })) : [];
 
   // Color mapping for different vehicle types
   const getVehicleTypeColor = (vehicleType) => {

@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { customerRegistrationService, uploadService, api } from '../../services';
+import { Link } from 'react-router-dom';
+import { customerRegistrationService, uploadService } from '../../services';
 import './auth.css';
 
 const CustomerRegisterPage = () => {
-  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,7 +39,7 @@ const CustomerRegisterPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileUpload = (fieldName, fileNameField, urlField) => (e) => {
+  const handleFileUpload = (fieldName, fileNameField) => (e) => {
     const file = e.target.files[0];
     if (file) {
       // Validate file type
@@ -150,7 +149,7 @@ const CustomerRegisterPage = () => {
       await uploadDocuments();
 
       // Submit registration
-      const data = await customerRegistrationService.registerCustomer({
+      await customerRegistrationService.registerCustomer({
         companyName: formData.companyName,
         companyTaxId: formData.companyTaxId,
         companyIndustry: formData.companyIndustry,
@@ -420,7 +419,7 @@ const CustomerRegisterPage = () => {
                     <input
                       type="file"
                       accept="image/*,.pdf"
-                      onChange={handleFileUpload('businessLicense', 'businessLicenseName', 'businessLicenseUrl')}
+                      onChange={handleFileUpload('businessLicense', 'businessLicenseName')}
                       style={{ display: 'none' }}
                     />
                     <div className="upload-placeholder">
@@ -461,7 +460,7 @@ const CustomerRegisterPage = () => {
                     <input
                       type="file"
                       accept="image/*,.pdf"
-                      onChange={handleFileUpload('taxCertificate', 'taxCertificateName', 'taxCertificateUrl')}
+                      onChange={handleFileUpload('taxCertificate', 'taxCertificateName')}
                       style={{ display: 'none' }}
                     />
                     <div className="upload-placeholder">

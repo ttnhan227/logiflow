@@ -8,7 +8,7 @@ const AdminSideNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(authService.getCurrentUser());
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -26,7 +26,7 @@ const AdminSideNav = () => {
     const handleUserUpdated = (e) => {
       try {
         setUser(e?.detail || authService.getCurrentUser());
-      } catch (ex) {
+      } catch {
         setUser(authService.getCurrentUser());
       }
     };

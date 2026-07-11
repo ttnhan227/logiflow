@@ -45,7 +45,11 @@ class NotificationClient {
           // Clear any existing subscriptions before re-subscribing
           try {
             this.subscriptions.forEach(sub => {
-              try { sub.unsubscribe(); } catch (e) {}
+              try {
+                sub.unsubscribe();
+              } catch {
+                // A stale subscription may already be closed.
+              }
             });
           } finally {
             this.subscriptions = [];

@@ -5,7 +5,7 @@ import './admin.css';
 
 // --- Reusable Sub-Components with CSS Classes ---
 
-const StatCard = ({ title, value, subtext, icon, trend, color, tooltip }) => (
+const StatCard = ({ title, value, subtext, icon, color, tooltip }) => (
   <div className="stat-card-reports" style={{ borderLeftColor: color }} title={tooltip}>
     <div className="stat-card-content">
       <div className="stat-card-header">
@@ -45,9 +45,10 @@ const AdminReportsPage = () => {
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [showDriverDetailModal, setShowDriverDetailModal] = useState(false);
 
+  // Date changes are the only trigger; the loader reads the same date snapshot.
   useEffect(() => {
     loadReportData();
-  }, [dateRange]);
+  }, [dateRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadReportData = async () => {
     try {
@@ -100,6 +101,7 @@ const AdminReportsPage = () => {
 
   return (
     <div className="dashboard-container" style={{ backgroundColor: '#f3f4f6', minHeight: '100vh', padding: '24px' }}>
+      {error && <div className="error-banner" role="alert">{error}</div>}
 
       {/* Header & Controls Section */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '20px', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>

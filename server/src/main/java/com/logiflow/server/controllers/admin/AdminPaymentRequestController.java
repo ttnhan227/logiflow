@@ -77,7 +77,7 @@ public class AdminPaymentRequestController {
             paymentRequestService.sendPaymentRequest(orderId);
             return ResponseEntity.ok("Payment request sent successfully for order #" + orderId);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to send payment request: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Failed to send payment request");
         }
     }
 
@@ -90,7 +90,7 @@ public class AdminPaymentRequestController {
             paymentRequestService.sendPaymentRequests(orderIds);
             return ResponseEntity.ok("Payment requests sent successfully for " + orderIds.size() + " orders");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to send payment requests: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Failed to send payment requests");
         }
     }
 

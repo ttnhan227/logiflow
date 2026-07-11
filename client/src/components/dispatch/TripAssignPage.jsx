@@ -50,6 +50,7 @@ const TripAssignPage = () => {
     }
   };
 
+  // Reload only when the route selects a different trip.
   useEffect(() => {
     const load = async () => {
       setError(null);
@@ -74,7 +75,7 @@ const TripAssignPage = () => {
       loadRecommendations();
     };
     load();
-  }, [tripId]);
+  }, [tripId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isLicenseCompatible = (driverLicense, requiredLicense) => {
     if (!requiredLicense) return true; // No requirement

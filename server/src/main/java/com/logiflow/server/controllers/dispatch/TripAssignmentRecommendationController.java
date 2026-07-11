@@ -2,15 +2,17 @@ package com.logiflow.server.controllers.dispatch;
 
 import com.logiflow.server.dtos.dispatch.RecommendedDriverDto;
 import com.logiflow.server.services.dispatch.TripAssignmentMatchingService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
 @RequestMapping("/api/dispatch")
+@Validated
 public class TripAssignmentRecommendationController {
 
     private final TripAssignmentMatchingService matchingService;
@@ -25,15 +27,8 @@ public class TripAssignmentRecommendationController {
     @GetMapping("/trips/{tripId}/recommended-drivers")
     public ResponseEntity<?> getRecommendedDrivers(
             @PathVariable Integer tripId,
-            @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit
+            @RequestParam(name = "limit", required = false, defaultValue = "10") @Min(1) @Max(50) Integer limit
     ) {
-        try {
-            List<RecommendedDriverDto> result = matchingService.recommendDrivers(tripId, limit);
-            return ResponseEntity.ok(result);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(matchingService.recommendDrivers(tripId, limit));
     }
 }

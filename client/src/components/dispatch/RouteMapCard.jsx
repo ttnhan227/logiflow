@@ -200,13 +200,12 @@ const RouteMapCard = ({ routeId, orders, feePerKm = 12, onDistanceChange }) => {
     const tripData = useMemo(() => {
         if (!orders || orders.length === 0) return null;
 
-        const allPoints = [];
         const pickupPoints = [];
         const deliveryPoints = [];
         let totalDistance = 0;
 
         // Collect all pickup and delivery points
-        orders.forEach((order, index) => {
+        orders.forEach((order) => {
             if (order.pickupLat && order.pickupLng) {
                 pickupPoints.push({
                     id: `pickup-${order.orderId}`,

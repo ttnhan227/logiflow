@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { profileService, authService } from '../../services';
+import { profileService } from '../../services';
 import api from '../../services/api';
 import PasswordChangeModal from './PasswordChangeModal';
 import './profile.css';

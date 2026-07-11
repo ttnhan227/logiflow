@@ -51,7 +51,6 @@ const MapController = ({ center, zoom }) => {
 };
 
 const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick }) => {
-  const [selectedRegion, setSelectedRegion] = useState(null);
   const [mapView, setMapView] = useState({ center: [15.8, 107.0], zoom: 6 });
 
   const stats = useMemo(() => {
@@ -66,7 +65,6 @@ const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick 
   }, [activeDrivers]);
 
   const handleRegionSelect = (key) => {
-    setSelectedRegion(key);
     setMapView({ center: VIETNAM_REGIONS[key].center, zoom: 7 });
     if (onRegionClick) onRegionClick(key, VIETNAM_REGIONS[key]);
   };
@@ -149,7 +147,7 @@ const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick 
                   dashArray: '0'
                 }}
                 eventHandlers={{
-                  click: () => setSelectedRegion(key)
+                  click: () => handleRegionSelect(key)
                 }}
               >
                 <Popup>

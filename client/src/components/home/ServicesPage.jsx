@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import { Row, Col } from 'antd';
 import './home.css';

@@ -19,6 +19,7 @@ import 'customer/track_orders_screen.dart';
 import 'customer/order_history_screen.dart';
 import 'customer/profile_screen.dart';
 import 'home/home_screen.dart';
+import '../theme/app_theme.dart';
 
 // Custom Scrolling Text Widget - FIXED VERSION
 class ScrollingTextWidget extends StatefulWidget {
@@ -70,7 +71,7 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
             final textSpan = TextSpan(
               text: widget.text,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.success,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -101,7 +102,7 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
                         Text(
                           widget.text,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.success,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -110,7 +111,7 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
                         Text(
                           widget.text,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.success,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -252,15 +253,17 @@ class _MainLayoutState extends State<MainLayout> {
         '🚛 Live GPS Tracking - Trip #${gpsTrackingService.currentTripId} | Driver: ${_currentUser?.username ?? 'Unknown'} | Location Sharing Active | Updated: $formattedTime | Speed: ~${(Random().nextDouble() * 60 + 20).toInt()}km/h | ETA: ~${Random().nextInt(30) + 15} mins | 🔄';
 
     return Container(
-      height: 40,
-      color: Colors.green.shade700,
+      constraints: const BoxConstraints(minHeight: 42),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF0FDF4),
+        border: Border(top: BorderSide(color: Color(0xFFBBF7D0))),
+      ),
       child: Row(
         children: [
           // GPS Icon
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.0),
-            child: Icon(Icons.gps_fixed, color: Colors.white, size: 18),
-          ),
+          const Icon(Icons.gps_fixed, color: AppTheme.success, size: 18),
+          const SizedBox(width: 8),
 
           // Scrolling Text - takes up most space
           Expanded(child: ScrollingTextWidget(text: scrollingText)),
@@ -619,8 +622,8 @@ class _MainLayoutState extends State<MainLayout> {
         },
         type: BottomNavigationBarType.fixed,
         items: bottomNavItems,
-        selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
         showUnselectedLabels: true,
       ),
     );

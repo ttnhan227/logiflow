@@ -65,57 +65,116 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - kToolbarHeight,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/logiflow-smarter_logistics-seamless_flow.png',
-                height: 200,
-                width: 200,
-              ),
-              const SizedBox(height: 40),
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: AutofillGroup(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Image.asset(
+                            'assets/logiflow-smarter_logistics-seamless_flow.png',
+                            height: 88,
+                            width: 88,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Sign in to LogiFlow',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Access assigned trips, tracking, and customer operations.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _usernameController,
+                          autofillHints: const [AutofillHints.username],
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Username',
+                            prefixIcon: Icon(Icons.person_outline, size: 20),
+                          ),
+                          enabled: !_isLoading,
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: _passwordController,
+                          autofillHints: const [AutofillHints.password],
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) {
+                            if (!_isLoading) _login();
+                          },
+                          decoration: const InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(Icons.lock_outline, size: 20),
+                          ),
+                          obscureText: true,
+                          enabled: !_isLoading,
+                        ),
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.errorContainer,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.error.withValues(alpha: .25),
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _login,
+                          child: _isLoading
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Sign in'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                enabled: !_isLoading,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
-                enabled: !_isLoading,
-              ),
-              const SizedBox(height: 16),
-              if (_errorMessage != null)
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator()
-                      : const Text('Login'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -1,12 +1,10 @@
 package com.logiflow.server.controllers.dispatch;
 
 import com.logiflow.server.services.dispatch.DispatchDriverService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dispatch/drivers")
@@ -19,22 +17,12 @@ public class DispatchDriverController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllDrivers() {
-        try {
-            List<?> drivers = dispatchDriverService.getAllDrivers();
-            return ResponseEntity.ok(drivers);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<List<?>> getAllDrivers() {
+        return ResponseEntity.ok(dispatchDriverService.getAllDrivers());
     }
 
     @GetMapping("/available")
-    public ResponseEntity<?> getAvailableDrivers() {
-        try {
-            List<?> drivers = dispatchDriverService.getAvailableDriversList();
-            return ResponseEntity.ok(drivers);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<List<?>> getAvailableDrivers() {
+        return ResponseEntity.ok(dispatchDriverService.getAvailableDriversList());
     }
 }

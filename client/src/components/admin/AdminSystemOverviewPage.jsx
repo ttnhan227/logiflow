@@ -14,11 +14,6 @@ const emptyForm = {
   description: '',
 };
 
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleString();
-};
-
 const StatCard = ({ title, value, unit = '', highlight = false }) => (
   <div className={`stat-card ${highlight ? 'highlight' : ''}`}>
     <div className="stat-title">{title}</div>
@@ -26,7 +21,7 @@ const StatCard = ({ title, value, unit = '', highlight = false }) => (
   </div>
 );
 
-const Section = ({ title, children, columns = 1 }) => (
+const Section = ({ title, children }) => (
   <div className="dashboard-section">
     <h2 className="section-title">{title}</h2>
     <div 
@@ -105,7 +100,7 @@ const AdminSystemOverviewPage = () => {
       setSettings(data.content);
       setTotalElements(data.totalElements);
       setPage(data.number);
-    } catch (e) {
+    } catch {
       setSettingsError('Failed to load settings');
     } finally {
       setSettingsLoading(false);
@@ -113,9 +108,10 @@ const AdminSystemOverviewPage = () => {
   };
 
   // Initial fetch for settings
+  // Settings are loaded once; filters are applied only through explicit user actions.
   useEffect(() => {
     fetchSettings(0, filters);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const fetchDashboardData = async () => {

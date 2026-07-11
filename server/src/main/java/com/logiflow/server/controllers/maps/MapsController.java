@@ -8,6 +8,13 @@ import com.logiflow.server.dtos.maps.OptimizedRouteDto;
 import com.logiflow.server.services.maps.MapsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +24,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/maps")
+@Validated
 public class MapsController {
 
     private final MapsService mapsService;
@@ -30,7 +38,7 @@ public class MapsController {
      * GET /api/maps/geocode?address=...
      */
     @GetMapping("/geocode")
-    public ResponseEntity<GeocodeResultDto> geocodeAddress(@RequestParam String address) {
+    public ResponseEntity<GeocodeResultDto> geocodeAddress(@RequestParam @NotBlank String address) {
         try {
             GeocodeResultDto result = mapsService.geocodeAddress(address);
             if (result == null) {
@@ -47,7 +55,9 @@ public class MapsController {
      * GET /api/maps/reverse-geocode?lat=...&lng=...
      */
     @GetMapping("/reverse-geocode")
-    public ResponseEntity<?> reverseGeocode(@RequestParam double lat, @RequestParam double lng) {
+    public ResponseEntity<?> reverseGeocode(
+            @RequestParam @DecimalMin("-90.0") @DecimalMax("90.0") double lat,
+            @RequestParam @DecimalMin("-180.0") @DecimalMax("180.0") double lng) {
         try {
             String address = mapsService.reverseGeocode(lat, lng);
             if (address != null) {
@@ -56,7 +66,7 @@ public class MapsController {
                 return ResponseEntity.badRequest().body("Reverse geocoding failed");
             }
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error during reverse geocoding: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of("error", "Reverse geocoding is temporarily unavailable"));
         }
     }
 
@@ -66,8 +76,8 @@ public class MapsController {
      */
     @GetMapping("/distance")
     public ResponseEntity<DistanceResultDto> calculateDistance(
-            @RequestParam String origin,
-            @RequestParam String destination) {
+            @RequestParam @NotBlank String origin,
+            @RequestParam @NotBlank String destination) {
         try {
             DistanceResultDto result = mapsService.calculateDistance(origin, destination);
             if (result == null) {
@@ -88,8 +98,8 @@ public class MapsController {
      */
     @GetMapping("/suggest-addresses")
     public ResponseEntity<List<String>> suggestAddresses(
-            @RequestParam String query,
-            @RequestParam(required = false, defaultValue = "10") int limit) {
+            @RequestParam @NotBlank String query,
+            @RequestParam(required = false, defaultValue = "10") @Min(1) @Max(50) int limit) {
         try {
             List<String> suggestions = mapsService.getBasicAddressSuggestions(query, limit);
             return ResponseEntity.ok(suggestions);
@@ -132,7 +142,7 @@ public class MapsController {
      * @return Optimized route with total distance, duration, waypoint order and route geometry
      */
     @PostMapping("/optimize-route")
-    public ResponseEntity<?> optimizeRoute(@RequestBody OptimizeRequestDto request) {
+    public ResponseEntity<?> optimizeRoute(@Valid @RequestBody OptimizeRequestDto request) {
         try {
             OptimizedRouteDto result = mapsService.optimizeRoute(request);
             if (result == null) {
@@ -143,7 +153,7 @@ public class MapsController {
             // Return specific parsing/geocoding errors back to the client
             return ResponseEntity.badRequest().body(iae.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Internal server error during route optimization: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of("error", "Route optimization is temporarily unavailable"));
         }
     }
 }

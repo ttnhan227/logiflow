@@ -4,6 +4,8 @@ import com.logiflow.server.constants.AuditActions;
 import com.logiflow.server.dtos.user.ProfileDto;
 import com.logiflow.server.models.Driver;
 import com.logiflow.server.models.User;
+import com.logiflow.server.exceptions.BusinessRuleException;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
 import com.logiflow.server.repositories.order.OrderRepository;
@@ -51,7 +53,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public ProfileDto getProfile(String username) {
         User user = userRepository.findByUsernameWithRole(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return buildProfileDto(user);
     }
@@ -59,7 +61,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public ProfileDto getProfileByUserId(Integer userId) {
         User user = userRepository.findByIdWithRole(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return buildProfileDto(user);
     }
@@ -67,14 +69,14 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public ProfileDto updateProfile(String username, com.logiflow.server.dtos.user.ProfileUpdateDto profileUpdateDto) {
         User user = userRepository.findByUsernameWithRole(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String oldProfilePicture = user.getProfilePictureUrl();
 
         // If email is being updated, ensure uniqueness
         if (profileUpdateDto.getEmail() != null && !profileUpdateDto.getEmail().equalsIgnoreCase(user.getEmail())) {
             userRepository.findByEmail(profileUpdateDto.getEmail()).ifPresent(u -> {
-                throw new RuntimeException("Email already exists");
+                throw new BusinessRuleException("Email already exists");
             });
             user.setEmail(profileUpdateDto.getEmail());
         }
@@ -171,16 +173,16 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public void changePassword(String username, String currentPassword, String newPassword) {
         User user = userRepository.findByUsernameWithRole(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new BusinessRuleException("Current password is incorrect");
         }
 
         // Validate new password
         if (newPassword == null || newPassword.length() < 6) {
-            throw new RuntimeException("New password must be at least 6 characters long");
+            throw new BusinessRuleException("New password must be at least 6 characters long");
         }
 
         // Update password

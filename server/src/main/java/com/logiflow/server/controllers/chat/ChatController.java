@@ -28,7 +28,7 @@ public class ChatController {
             List<ChatMessageDto> messages = chatService.getTripMessages(tripId);
             return ResponseEntity.ok(messages);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to load trip messages"));
         }
     }
 
@@ -44,7 +44,7 @@ public class ChatController {
             ChatMessageDto sent = chatService.sendToTripDriver(request.getTripId(), username, role, request.getContent());
             return ResponseEntity.ok(sent);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to send the message"));
         }
     }
 
@@ -54,7 +54,7 @@ public class ChatController {
             List<ChatMessageDto> messages = chatService.getOrderMessages(orderId);
             return ResponseEntity.ok(messages);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to load order messages"));
         }
     }
 
@@ -70,7 +70,7 @@ public class ChatController {
             ChatMessageDto sent = chatService.sendToOrderCustomer(request.getOrderId(), username, role, request.getContent());
             return ResponseEntity.ok(sent);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Unable to send the message"));
         }
     }
 }

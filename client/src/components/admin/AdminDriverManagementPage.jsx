@@ -149,7 +149,7 @@ const ActionsMenu = ({ user, onEdit, onDelete, onViewDetails }) => {
 };
 
 // Modal for Add/Edit
-const DriverModal = ({ driver, onClose, onSave, roles }) => {
+const DriverModal = ({ driver, onClose, onSave, roles: _roles }) => {
   const [form, setForm] = useState({
     id: driver?.id || null,
     username: driver?.username || '',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import './modal.css';
 
 /**
@@ -21,16 +21,16 @@ const Modal = ({
     }
   };
 
-  const handleEscapeKey = (e) => {
+  const handleEscapeKey = useCallback((e) => {
     if (e.key === 'Escape' && onOverlayClick) {
       onClose();
     }
-  };
+  }, [onClose, onOverlayClick]);
 
   React.useEffect(() => {
     document.addEventListener('keydown', handleEscapeKey);
     return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, [onOverlayClick]);
+  }, [handleEscapeKey]);
 
   if (!isOpen) return null;
 

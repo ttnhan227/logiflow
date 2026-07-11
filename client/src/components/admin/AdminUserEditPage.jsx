@@ -19,7 +19,7 @@ const AdminUserEditPage = () => {
     role: '',
     active: true,
   });
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
