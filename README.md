@@ -140,32 +140,17 @@ cd client_mobile && flutter pub get && flutter analyze && flutter test
 
 GitHub Actions runs backend tests, frontend lint/build, and Flutter analysis. The web production build and strict lint command pass locally with no lint findings. Current automated coverage is limited; authorization, trip transitions, payment ownership, exception handling, and critical UI workflows remain the highest-priority additions.
 
-## Engineering decisions
+## Technical highlights
 
-- DTO contracts reduce accidental persistence-model exposure; remaining entity-returning endpoints are documented cleanup work.
-- Role authorization is enforced in Spring Security rather than relying on hidden frontend controls.
-- External credentials and deployment origins are environment-driven, keeping source configuration portable and safe.
-- A centralized error envelope gives clients stable codes without exposing stack traces, SQL errors, or provider details.
-- Provider integrations remain behind services so core workflows can be tested without invoking external systems.
+- Role-based access control with Spring Security and JWT authentication
+- Consistent API responses through DTOs and centralized error handling
+- Environment-based configuration for credentials and deployment settings
+- Service-based integrations for payments, email, storage, maps, and AI features
+- Shared backend APIs for the React web application and Flutter mobile application
 
-## Challenges and lessons learned
+## Roadmap
 
-- Supporting web and mobile clients exposes contract inconsistencies quickly; stable DTOs and error shapes matter more than client-specific workarounds.
-- Logistics workflows require explicit transition and ownership rules, not just endpoint-level role checks.
-- External integrations need optional local configuration, safe failure behavior, and tests at adapter boundaries.
-
-## Future improvements
-
-- Complete controller migration to centralized exceptions and eliminate public entity responses
-- Add ownership/security tests and Testcontainers integration coverage
-- Publish OpenAPI documentation and Docker Compose development infrastructure
-- Consolidate frontend auth/error state and migrate API contracts to TypeScript
-- Add an instrumented demo environment and workflow screenshots
-
-## Contribution
-
-The Git history identifies Tran Trong Nhan as the primary committer in the available recent history. More specific leadership or team-scope claims should be added only after contributors verify them.
-
-## CV and interview notes
-
-Portfolio wording and implementation-grounded interview preparation are available in [`docs/cv-interview-readiness.md`](docs/cv-interview-readiness.md).
+- Expand authorization and integration test coverage
+- Complete DTO adoption across remaining endpoints
+- Improve shared frontend authentication and error handling
+- Add workflow screenshots and a hosted demo
