@@ -46,14 +46,21 @@ api.interceptors.response.use(
     
     // Handle other error responses
     const errorData = error.response?.data;
-    const errorMessage = errorData?.message || error.message || 'An error occurred';
-    
-    // If response body is empty (400 from upload), provide generic message
-    if (error.response?.status === 400 && !errorMessage) {
-      return Promise.reject(new Error('Validation error: invalid file or request'));
-    }
-    
-    return Promise.reject(errorData || new Error(errorMessage));
+    const message =
+      (typeof errorData === 'string' && errorData.trim().length > 0 ? errorData : null) ||
+      errorData?.message ||
+      (errorData?.fieldErrors ? Object.values(errorData.fieldErrors).join('; ') : null) ||
+      error.message ||
+      'An unexpected error occurred';
+
+    const normalizedError = new Error(message);
+    normalizedError.response = error.response;
+    normalizedError.data = errorData;
+    normalizedError.status = error.response?.status;
+    normalizedError.code = errorData?.error || error.code;
+    normalizedError.fieldErrors = errorData?.fieldErrors;
+
+    return Promise.reject(normalizedError);
   }
 );
 

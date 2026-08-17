@@ -27,4 +27,6 @@ public interface AdminPaymentRequestService {
     List<PaymentHistoryDto> getCustomerPaymentHistory(String customerName);
 
     List<CustomerOrdersDto> getCustomersWithOrders();
+
+    PaymentRequestSummaryDto getPaymentRequestSummary(List<Integer> orderIds);
 }

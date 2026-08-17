@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -73,12 +72,8 @@ public class AdminPaymentRequestController {
      */
     @PostMapping("/{orderId}/send-request")
     public ResponseEntity<String> sendPaymentRequest(@PathVariable Integer orderId) {
-        try {
-            paymentRequestService.sendPaymentRequest(orderId);
-            return ResponseEntity.ok("Payment request sent successfully for order #" + orderId);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to send payment request");
-        }
+        paymentRequestService.sendPaymentRequest(orderId);
+        return ResponseEntity.ok("Payment request sent successfully for order #" + orderId);
     }
 
     /**
@@ -86,12 +81,8 @@ public class AdminPaymentRequestController {
      */
     @PostMapping("/send-requests")
     public ResponseEntity<String> sendPaymentRequests(@RequestBody List<Integer> orderIds) {
-        try {
-            paymentRequestService.sendPaymentRequests(orderIds);
-            return ResponseEntity.ok("Payment requests sent successfully for " + orderIds.size() + " orders");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to send payment requests");
-        }
+        paymentRequestService.sendPaymentRequests(orderIds);
+        return ResponseEntity.ok("Payment requests sent successfully for " + orderIds.size() + " orders");
     }
 
     /**
@@ -135,14 +126,7 @@ public class AdminPaymentRequestController {
      */
     @PostMapping("/summary")
     public ResponseEntity<PaymentRequestSummaryDto> getPaymentRequestSummary(@RequestBody List<Integer> orderIds) {
-        // This would need to be implemented in the service layer
-        // For now, return a basic summary
-        PaymentRequestSummaryDto summary = new PaymentRequestSummaryDto();
-        summary.setTotalOrders(orderIds.size());
-        summary.setSelectedOrders(orderIds.size());
-        summary.setTotalAmount(BigDecimal.ZERO); // Would calculate from actual order amounts
-        summary.setOrders(List.of()); // Would populate with actual order data
-
+        PaymentRequestSummaryDto summary = paymentRequestService.getPaymentRequestSummary(orderIds);
         return ResponseEntity.ok(summary);
     }
 }

@@ -348,8 +348,8 @@ public class PaymentController {
             "<p>You can try again whenever you're ready.</p>" +
             "</div>" +
             "<div class='actions'>" +
-            "<a href='http://localhost:5173/customer/orders' class='btn btn-primary'>Back to Orders</a>" +
-            "<a href='http://localhost:5173' class='btn btn-secondary'>Continue Shopping</a>" +
+            "<a href='http://localhost:5173/track' class='btn btn-primary'>Track Shipment</a>" +
+            "<a href='http://localhost:5173' class='btn btn-secondary'>Back to Home</a>" +
             "</div>" +
             "</div>" +
             "</div>" +

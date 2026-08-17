@@ -1,6 +1,7 @@
 package com.logiflow.server.controllers.upload;
 
 import com.logiflow.server.dtos.upload.UploadResponse;
+import com.logiflow.server.exceptions.BusinessRuleException;
 import com.logiflow.server.services.file.FileStorageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,85 +25,61 @@ public class UploadController {
 
     @PostMapping(value = "/profile-picture", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> uploadProfilePicture(Authentication authentication, @RequestParam("file") MultipartFile file) {
-        try {
-            // Ensure the caller is authenticated. Security configuration requires authentication for /api/**,
-            // but double-check here to provide a clear 401 when called without auth.
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            if (file == null || file.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String path = fileStorageService.storeProfilePicture(file);
-            UploadResponse response = new UploadResponse(path);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            // For now, return 400 Bad Request for validation/IO errors with no body
-            return ResponseEntity.badRequest().build();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+
+        if (file == null || file.isEmpty()) {
+            throw new BusinessRuleException("Profile picture file cannot be empty");
+        }
+
+        String path = fileStorageService.storeProfilePicture(file);
+        UploadResponse response = new UploadResponse(path);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(value = "/license-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> uploadLicenseImage(@RequestParam("file") MultipartFile file) {
-        try {
-            if (file == null || file.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String path = fileStorageService.storeLicenseImage(file);
-            UploadResponse response = new UploadResponse(path);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+        if (file == null || file.isEmpty()) {
+            throw new BusinessRuleException("License image file cannot be empty");
         }
+
+        String path = fileStorageService.storeLicenseImage(file);
+        UploadResponse response = new UploadResponse(path);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(value = "/cv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> uploadCV(@RequestParam("file") MultipartFile file) {
-        try {
-            if (file == null || file.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String path = fileStorageService.storeCV(file);
-            UploadResponse response = new UploadResponse(path);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+        if (file == null || file.isEmpty()) {
+            throw new BusinessRuleException("CV file cannot be empty");
         }
+
+        String path = fileStorageService.storeCV(file);
+        UploadResponse response = new UploadResponse(path);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(value = "/business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> uploadBusinessLicense(@RequestParam("file") MultipartFile file) {
-        try {
-            if (file == null || file.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String path = fileStorageService.storeBusinessLicense(file);
-            UploadResponse response = new UploadResponse(path);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+        if (file == null || file.isEmpty()) {
+            throw new BusinessRuleException("Business license file cannot be empty");
         }
+
+        String path = fileStorageService.storeBusinessLicense(file);
+        UploadResponse response = new UploadResponse(path);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(value = "/tax-certificate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> uploadTaxCertificate(@RequestParam("file") MultipartFile file) {
-        try {
-            if (file == null || file.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String path = fileStorageService.storeTaxCertificate(file);
-            UploadResponse response = new UploadResponse(path);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+        if (file == null || file.isEmpty()) {
+            throw new BusinessRuleException("Tax certificate file cannot be empty");
         }
+
+        String path = fileStorageService.storeTaxCertificate(file);
+        UploadResponse response = new UploadResponse(path);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-
 }
+

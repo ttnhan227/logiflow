@@ -217,7 +217,46 @@ public class AdminPaymentRequestServiceImpl implements AdminPaymentRequestServic
                 .collect(Collectors.toList());
     }
 
+
+    @Override
+    public PaymentRequestSummaryDto getPaymentRequestSummary(List<Integer> orderIds) {
+        PaymentRequestSummaryDto summary = new PaymentRequestSummaryDto();
+        if (orderIds == null || orderIds.isEmpty()) {
+            summary.setTotalOrders(0);
+            summary.setSelectedOrders(0);
+            summary.setTotalAmount(BigDecimal.ZERO);
+            summary.setOrders(List.of());
+            return summary;
+        }
+
+        List<Order> orders = orderRepository.findAllById(orderIds);
+        List<PaymentRequestDto> dtoList = orders.stream()
+                .map(this::toPaymentRequestDto)
+                .collect(Collectors.toList());
+
+        BigDecimal totalAmount = orders.stream()
+                .map(Order::getShippingFee)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        summary.setTotalOrders(dtoList.size());
+        summary.setSelectedOrders(dtoList.size());
+        summary.setTotalAmount(totalAmount);
+        summary.setOrders(dtoList);
+        return summary;
+    }
+
     // ======= mapping =======
+
+    private PaymentRequestDto toPaymentRequestDto(Order order) {
+        PaymentRequestDto dto = new PaymentRequestDto();
+        dto.setOrderId(order.getOrderId());
+        dto.setCustomerName(order.getCustomerName());
+        dto.setAmount(order.getShippingFee());
+        String email = order.getCustomer() != null ? order.getCustomer().getEmail() : null;
+        dto.setCustomerEmail(email);
+        return dto;
+    }
 
     private DeliveredOrderDto toDeliveredOrderDto(Order order) {
         DeliveredOrderDto dto = new DeliveredOrderDto();

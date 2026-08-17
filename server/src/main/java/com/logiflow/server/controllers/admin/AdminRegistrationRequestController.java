@@ -33,26 +33,16 @@ public class AdminRegistrationRequestController {
 
     @PostMapping("/{id}/approve")
     public ResponseEntity<String> approveRequest(@PathVariable Integer id, Authentication authentication) {
-        try {
-            String result = registrationRequestService.approveRequest(id, authentication.getName());
-            return ResponseEntity.ok(result);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        String actor = authentication != null ? authentication.getName() : "admin";
+        String result = registrationRequestService.approveRequest(id, actor);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/{id}/reject")
     public ResponseEntity<String> rejectRequest(@PathVariable Integer id, Authentication authentication) {
-        try {
-            String result = registrationRequestService.rejectRequest(id, authentication.getName());
-            return ResponseEntity.ok(result);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        String actor = authentication != null ? authentication.getName() : "admin";
+        String result = registrationRequestService.rejectRequest(id, actor);
+        return ResponseEntity.ok(result);
     }
 
     @PatchMapping("/{id}")
@@ -60,13 +50,8 @@ public class AdminRegistrationRequestController {
             @PathVariable Integer id,
             @RequestBody Map<String, Object> updates,
             Authentication authentication) {
-        try {
-            RegistrationRequest saved = registrationRequestService.updateRequest(id, updates, authentication.getName());
-            return ResponseEntity.ok(saved);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        String actor = authentication != null ? authentication.getName() : "admin";
+        RegistrationRequest saved = registrationRequestService.updateRequest(id, updates, actor);
+        return ResponseEntity.ok(saved);
     }
-}
+}

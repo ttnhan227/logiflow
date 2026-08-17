@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -23,54 +22,38 @@ public class ChatController {
     }
 
     @GetMapping("/trips/{tripId}/messages")
-    public ResponseEntity<?> getTripMessages(@PathVariable Integer tripId) {
-        try {
-            List<ChatMessageDto> messages = chatService.getTripMessages(tripId);
-            return ResponseEntity.ok(messages);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unable to load trip messages"));
-        }
+    public ResponseEntity<List<ChatMessageDto>> getTripMessages(@PathVariable Integer tripId) {
+        List<ChatMessageDto> messages = chatService.getTripMessages(tripId);
+        return ResponseEntity.ok(messages);
     }
 
     @PostMapping("/messages")
-    public ResponseEntity<?> sendMessage(@Valid @RequestBody ChatSendMessageRequest request,
-                                         Authentication authentication) {
-        try {
-            String username = authentication != null ? authentication.getName() : "anonymous";
-            String role = (authentication != null && authentication.getAuthorities() != null)
-                    ? authentication.getAuthorities().stream().findFirst().map(a -> a.getAuthority()).orElse(null)
-                    : null;
+    public ResponseEntity<ChatMessageDto> sendMessage(@Valid @RequestBody ChatSendMessageRequest request,
+                                                      Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
+        String role = (authentication != null && authentication.getAuthorities() != null)
+                ? authentication.getAuthorities().stream().findFirst().map(a -> a.getAuthority()).orElse(null)
+                : null;
 
-            ChatMessageDto sent = chatService.sendToTripDriver(request.getTripId(), username, role, request.getContent());
-            return ResponseEntity.ok(sent);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unable to send the message"));
-        }
+        ChatMessageDto sent = chatService.sendToTripDriver(request.getTripId(), username, role, request.getContent());
+        return ResponseEntity.ok(sent);
     }
 
     @GetMapping("/orders/{orderId}/messages")
-    public ResponseEntity<?> getOrderMessages(@PathVariable Integer orderId) {
-        try {
-            List<ChatMessageDto> messages = chatService.getOrderMessages(orderId);
-            return ResponseEntity.ok(messages);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unable to load order messages"));
-        }
+    public ResponseEntity<List<ChatMessageDto>> getOrderMessages(@PathVariable Integer orderId) {
+        List<ChatMessageDto> messages = chatService.getOrderMessages(orderId);
+        return ResponseEntity.ok(messages);
     }
 
     @PostMapping("/messages/customer")
-    public ResponseEntity<?> sendOrderMessage(@Valid @RequestBody OrderChatSendMessageRequest request,
-                                              Authentication authentication) {
-        try {
-            String username = authentication != null ? authentication.getName() : "anonymous";
-            String role = (authentication != null && authentication.getAuthorities() != null)
-                    ? authentication.getAuthorities().stream().findFirst().map(a -> a.getAuthority()).orElse(null)
-                    : null;
+    public ResponseEntity<ChatMessageDto> sendOrderMessage(@Valid @RequestBody OrderChatSendMessageRequest request,
+                                                           Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
+        String role = (authentication != null && authentication.getAuthorities() != null)
+                ? authentication.getAuthorities().stream().findFirst().map(a -> a.getAuthority()).orElse(null)
+                : null;
 
-            ChatMessageDto sent = chatService.sendToOrderCustomer(request.getOrderId(), username, role, request.getContent());
-            return ResponseEntity.ok(sent);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unable to send the message"));
-        }
+        ChatMessageDto sent = chatService.sendToOrderCustomer(request.getOrderId(), username, role, request.getContent());
+        return ResponseEntity.ok(sent);
     }
 }

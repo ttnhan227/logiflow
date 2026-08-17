@@ -147,15 +147,27 @@ const OrderImportPage = () => {
       )}
 
       {result && (
-        <div style={{ marginTop: 12 }}>
-          <div>Total rows: {result.totalRows}</div>
-          <div>Success: {result.successCount}</div>
-          <div>Failed: {result.failureCount}</div>
+        <div style={{ marginTop: 24, padding: 16, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Import Summary</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div style={{ padding: 12, background: '#ffffff', borderRadius: 6, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Total Processed</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginTop: 4 }}>{result.totalRows ?? 0}</div>
+            </div>
+            <div style={{ padding: 12, background: '#f0fdf4', borderRadius: 6, border: '1px solid #bbf7d0', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: '#166534', fontWeight: 500 }}>Successful</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d', marginTop: 4 }}>{result.successCount ?? 0}</div>
+            </div>
+            <div style={{ padding: 12, background: result.failureCount > 0 ? '#fef2f2' : '#f8fafc', borderRadius: 6, border: result.failureCount > 0 ? '1px solid #fecaca' : '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: result.failureCount > 0 ? '#991b1b' : '#64748b', fontWeight: 500 }}>Failed</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: result.failureCount > 0 ? '#dc2626' : '#64748b', marginTop: 4 }}>{result.failureCount ?? 0}</div>
+            </div>
+          </div>
           {result.errors && result.errors.length > 0 && (
-            <div>
-              <h4>Errors</h4>
-              <ul>
-                {result.errors.map((err, idx) => <li key={idx}>{err}</li>)}
+            <div style={{ padding: 12, background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 6 }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: 13, fontWeight: 600, color: '#9f1239' }}>Import Validation Warnings:</h4>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#be123c' }}>
+                {result.errors.map((err, idx) => <li key={idx} style={{ marginTop: 2 }}>{err}</li>)}
               </ul>
             </div>
           )}
