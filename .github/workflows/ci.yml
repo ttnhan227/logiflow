@@ -67,3 +67,7 @@ jobs:
         run: |
           cd client_mobile
           flutter analyze
+      - name: Run Flutter unit tests
+        run: |
+          cd client_mobile
+          flutter test
