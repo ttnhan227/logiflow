@@ -1,29 +1,22 @@
 import React, { useState } from 'react';
-import Modal from '../admin/Modal';
+import { Modal, Input, Button, Alert } from '@/components/ui';
+import { LuLock } from 'react-icons/lu';
 import { profileService } from '../../services';
-import './profile.css';
 
-const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
+export const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
   const [form, setForm] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error when user starts typing
+    setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -31,19 +24,19 @@ const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
     const newErrors = {};
 
     if (!form.currentPassword.trim()) {
-      newErrors.currentPassword = 'Current password is required';
+      newErrors.currentPassword = 'Current password is required.';
     }
 
     if (!form.newPassword.trim()) {
-      newErrors.newPassword = 'New password is required';
+      newErrors.newPassword = 'New password is required.';
     } else if (form.newPassword.length < 6) {
-      newErrors.newPassword = 'New password must be at least 6 characters';
+      newErrors.newPassword = 'Password must be at least 6 characters.';
     }
 
     if (!form.confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your new password';
+      newErrors.confirmPassword = 'Confirmation password is required.';
     } else if (form.newPassword !== form.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Passwords do not match.';
     }
 
     setErrors(newErrors);
@@ -52,10 +45,7 @@ const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setSubmitting(true);
     try {
@@ -66,14 +56,18 @@ const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
       setForm({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
       });
       setErrors({});
     } catch (error) {
       setSubmitting(false);
-      let errorMessage = error?.response?.data?.message || error?.response?.data || error?.message || 'Failed to change password';
+      let errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        'Failed to change password.';
       if (error?.response?.status === 400) {
-        errorMessage = 'Current password is incorrect';
+        errorMessage = 'Current password is incorrect.';
       }
       setErrors({ general: errorMessage });
     }
@@ -83,97 +77,66 @@ const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="🔐 Change Password"
-      size="medium"
-      isLoading={submitting}
+      title="Change Account Password"
+      description="Update your credentials for accessing the LogiFlow portal."
+      maxWidth="480px"
     >
       {errors.general && (
-        <div className="modal-error" style={{ marginBottom: '20px' }}>
-          {errors.general}
+        <div style={{ marginBottom: '16px' }}>
+          <Alert variant="danger">{errors.general}</Alert>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="modal-form">
-        <div className="form-row full">
-          <div className="form-group">
-            <label>
-              Current Password <span className="required">*</span>
-            </label>
-            <input
-              type="password"
-              name="currentPassword"
-              value={form.currentPassword}
-              onChange={handleInputChange}
-              placeholder="Enter your current password"
-              required
-              disabled={submitting}
-            />
-            {errors.currentPassword && (
-              <div className="form-error">{errors.currentPassword}</div>
-            )}
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <Input
+          label="Current Password *"
+          type="password"
+          name="currentPassword"
+          value={form.currentPassword}
+          onChange={handleInputChange}
+          placeholder="Enter current password"
+          error={errors.currentPassword}
+          leftIcon={<LuLock size={16} />}
+          required
+          disabled={submitting}
+        />
 
-        <div className="form-row full">
-          <div className="form-group">
-            <label>
-              New Password <span className="required">*</span>
-            </label>
-            <input
-              type="password"
-              name="newPassword"
-              value={form.newPassword}
-              onChange={handleInputChange}
-              placeholder="Enter your new password"
-              required
-              disabled={submitting}
-            />
-            <div className="form-help">Minimum 6 characters</div>
-            {errors.newPassword && (
-              <div className="form-error">{errors.newPassword}</div>
-            )}
-          </div>
-        </div>
+        <Input
+          label="New Password *"
+          type="password"
+          name="newPassword"
+          value={form.newPassword}
+          onChange={handleInputChange}
+          placeholder="Minimum 6 characters"
+          hint="Must contain at least 6 characters."
+          error={errors.newPassword}
+          leftIcon={<LuLock size={16} />}
+          required
+          disabled={submitting}
+        />
 
-        <div className="form-row full">
-          <div className="form-group">
-            <label>
-              Confirm New Password <span className="required">*</span>
-            </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleInputChange}
-              placeholder="Confirm your new password"
-              required
-              disabled={submitting}
-            />
-            {errors.confirmPassword && (
-              <div className="form-error">{errors.confirmPassword}</div>
-            )}
-          </div>
+        <Input
+          label="Confirm New Password *"
+          type="password"
+          name="confirmPassword"
+          value={form.confirmPassword}
+          onChange={handleInputChange}
+          placeholder="Re-enter new password"
+          error={errors.confirmPassword}
+          leftIcon={<LuLock size={16} />}
+          required
+          disabled={submitting}
+        />
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" loading={submitting}>
+            Update Password
+          </Button>
         </div>
       </form>
-
-      <div className="modal-footer">
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={onClose}
-          disabled={submitting}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn"
-          onClick={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? '⏳ Changing...' : '🔐 Change Password'}
-        </button>
-      </div>
     </Modal>
   );
 };

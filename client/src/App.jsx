@@ -1,9 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { authService } from './services';
-import './App.css';
-import './components/layout.css';
-import './styles/enterprise-theme.css';
+
 import MainLayout from './components/MainLayout';
 import AdminSideNav from './components/admin/AdminSideNav';
 import LoginPage from "./components/auth/LoginPage";
@@ -18,6 +16,7 @@ import FaqPage from "./components/home/FaqPage";
 import BusinessPage from "./components/home/BusinessPage";
 import DriversPage from "./components/home/DriversPage";
 import MobileAppPage from "./components/home/MobileAppPage";
+import InsightsPage from "./components/home/InsightsPage";
 const AdminDashboardPage = lazy(() => import('./components/admin/AdminDashboardPage'));
 const AdminDriverManagementPage = lazy(() => import('./components/admin/AdminDriverManagementPage'));
 const AdminCustomerManagementPage = lazy(() => import('./components/admin/AdminCustomerManagementPage'));
@@ -111,6 +110,8 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/business" element={<BusinessPage />} />
+          <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/news" element={<InsightsPage />} />
           <Route path="/mobile-app" element={<MobileAppPage />} />
           <Route path="/drivers" element={<DriversPage />} />
           <Route path="/profile" element={<ProfilePage />} />

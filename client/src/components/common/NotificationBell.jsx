@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import notificationClient from '../../services/notificationClient';
 import { notificationService } from '../../services/admin/notificationService';
 import { dispatchNotificationService } from '../../services/dispatch/dispatchNotificationService';
-import { authService } from '../../services';
-import './NotificationBell.css';
+import authService from '../../services/auth/authService';
+import { LuBell, LuCheck, LuTrash2, LuExternalLink, LuTriangleAlert, LuInfo } from 'react-icons/lu';
 
 const NotificationBell = () => {
   const [realTimeNotifications, setRealTimeNotifications] = useState([]);
@@ -17,7 +17,6 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  // Determine user role and appropriate service
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
@@ -29,20 +28,16 @@ const NotificationBell = () => {
     return role === 'DISPATCHER' ? dispatchNotificationService : notificationService;
   };
 
-  // Load database notifications on mount
   const loadDbNotifications = useCallback(async (roleOverride) => {
     const roleToUse = roleOverride || userRole;
-    if (!roleToUse) return; // Wait for role to be determined
-    
+    if (!roleToUse) return;
+
     try {
-      console.log('[NotificationBell] loading DB notifications for role:', roleToUse);
       const service = getNotificationServiceForRole(roleToUse);
       const [allNotifications, count] = await Promise.all([
         service.getAllNotifications(0, 10),
         service.getUnreadCount()
       ]);
-
-      console.log('[NotificationBell] DB notifications loaded:', allNotifications?.length || 0);
 
       setDbNotifications(allNotifications.map(n => ({
         ...n,
@@ -78,62 +73,49 @@ const NotificationBell = () => {
     return () => window.removeEventListener('userUpdated', onUserUpdated);
   }, [loadDbNotifications]);
 
-  // Get appropriate notification service based on role
   const getNotificationService = useCallback(() => {
     return userRole === 'DISPATCHER' ? dispatchNotificationService : notificationService;
   }, [userRole]);
 
-  // Get appropriate navigation path based on role
   const getNotificationsPath = useCallback(() => {
     return userRole === 'DISPATCHER' ? '/dispatch/notifications' : '/admin/notifications';
   }, [userRole]);
 
-  // Merge notifications selectively (show recent ones)
   useEffect(() => {
-    const recentDb = dbNotifications.slice(0, 5); // Show only 5 most recent DB notifications
+    const recentDb = dbNotifications.slice(0, 6);
     const combined = [...realTimeNotifications, ...recentDb];
-
-    // Sort by timestamp (newest first)
     combined.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     setNotifications(combined);
-
-    // Calculate unread count from both sources
     const unreadRealTime = realTimeNotifications.filter(n => !n.isRead).length;
     const unreadDb = dbNotifications.filter(n => !n.isRead).length;
     setUnreadCount(unreadRealTime + unreadDb);
   }, [realTimeNotifications, dbNotifications]);
 
   useEffect(() => {
-    // Connect to notification service ONCE (do not re-run on role changes)
     notificationClient.connect()
       .then(() => {
         setIsConnected(true);
-        console.log('Notification service connected');
       })
       .catch(error => {
         console.error('Failed to connect to notification service:', error);
       });
 
-    // Add notification listener for real-time notifications
     const handleNotification = (notification) => {
-      console.log('Received real-time notification:', notification);
       const enhancedNotification = {
         ...notification,
-        id: `rt-${Date.now()}`, // Add unique ID for real-time notifications
+        id: `rt-${Date.now()}`,
         timestamp: new Date().toISOString(),
         source: 'websocket',
-        // Map actionLabel from WebSocket to actionText for consistency
         actionText: notification.actionLabel
       };
 
       setRealTimeNotifications(prev => [enhancedNotification, ...prev]);
 
-      // Show browser notification if permission granted
       if (Notification.permission === 'granted') {
         new Notification(notification.title, {
           body: notification.message,
-          icon: '/images/logo/logo.png',
+          icon: '/logiflow-smarter_logistics-seamless_flow.png',
           tag: notification.id
         });
       }
@@ -141,12 +123,10 @@ const NotificationBell = () => {
 
     notificationClient.addListener(handleNotification);
 
-    // Request notification permission
     if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    // Close dropdown when clicking outside
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
@@ -161,19 +141,16 @@ const NotificationBell = () => {
   }, []);
 
   useEffect(() => {
-    // Load DB notifications whenever role becomes available/changes (covers relogin)
     loadDbNotifications();
   }, [loadDbNotifications]);
 
   const handleNotificationClick = async (notification) => {
     try {
-      // Mark database notifications as read via API
       if (notification.source === 'database' && !notification.isRead) {
         const service = getNotificationService();
         await service.markAsRead(notification.notificationId);
       }
 
-      // Update local state for all notifications
       if (notification.source === 'database') {
         setDbNotifications(prev =>
           prev.map(n => n.notificationId === notification.notificationId ? { ...n, isRead: true } : n)
@@ -187,7 +164,6 @@ const NotificationBell = () => {
       console.error('Failed to mark notification as read:', error);
     }
 
-    // Navigate to action URL if available
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
       setIsOpen(false);
@@ -196,7 +172,6 @@ const NotificationBell = () => {
 
   const handleMarkAllRead = async () => {
     try {
-      // Mark all database notifications as read via API
       const dbNotificationIds = dbNotifications
         .filter(n => !n.isRead)
         .map(n => n.notificationId);
@@ -206,7 +181,6 @@ const NotificationBell = () => {
         await service.markMultipleAsRead(dbNotificationIds);
       }
 
-      // Mark all read locally
       setDbNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setRealTimeNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch (error) {
@@ -223,23 +197,14 @@ const NotificationBell = () => {
 
   const getSeverityIcon = (severity) => {
     switch (severity) {
-      case 'CRITICAL': return '🔴';
-      case 'WARNING': return '⚠️';
-      case 'INFO': return 'ℹ️';
-      default: return '📢';
-    }
-  };
-
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'CRITICAL': return '#dc2626';
-      case 'WARNING': return '#f59e0b';
-      case 'INFO': return '#3b82f6';
-      default: return '#6366f1';
+      case 'CRITICAL': return <LuTriangleAlert size={15} color="var(--color-danger-600)" />;
+      case 'WARNING': return <LuTriangleAlert size={15} color="var(--color-warning-600)" />;
+      default: return <LuInfo size={15} color="var(--color-brand-600)" />;
     }
   };
 
   const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
@@ -255,78 +220,205 @@ const NotificationBell = () => {
   };
 
   return (
-    <div className="notification-bell-container" ref={dropdownRef}>
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
       <button
-        className="notification-bell-button"
         onClick={() => setIsOpen(!isOpen)}
         title="Notifications"
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '36px',
+          height: '36px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-default)',
+          backgroundColor: isOpen ? 'var(--color-slate-100)' : 'var(--color-white)',
+          color: 'var(--text-secondary)',
+          cursor: 'pointer',
+          transition: 'all var(--transition-fast)',
+        }}
       >
-        🔔
+        <LuBell size={18} />
         {unreadCount > 0 && (
-          <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          <span
+            style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-4px',
+              minWidth: '18px',
+              height: '18px',
+              padding: '0 4px',
+              borderRadius: 'var(--radius-full)',
+              backgroundColor: 'var(--color-danger-600)',
+              color: 'var(--color-white)',
+              fontSize: '10px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid var(--color-white)',
+            }}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
         )}
-        {isConnected && <span className="connection-indicator"></span>}
+        {isConnected && (
+          <span
+            style={{
+              position: 'absolute',
+              bottom: '2px',
+              right: '2px',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--color-success-600)',
+            }}
+            title="Real-time connected"
+          />
+        )}
       </button>
 
       {isOpen && (
-        <div className="notification-dropdown">
-          <div className="notification-header">
-            <h3>Notifications</h3>
-            <div className="notification-actions">
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            width: '360px',
+            maxHeight: '480px',
+            backgroundColor: 'var(--bg-surface)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-dropdown)',
+            display: 'flex',
+            flexDirection: 'column',
+            zIndex: 1000,
+            overflow: 'hidden',
+            animation: 'fadeIn var(--transition-fast) ease-out',
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: 'var(--bg-surface-subtle)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', color: 'var(--text-primary)' }}>
+                Notifications
+              </span>
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    padding: '1px 6px',
+                    borderRadius: 'var(--radius-full)',
+                    backgroundColor: 'var(--color-brand-100)',
+                    color: 'var(--color-brand-700)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                  }}
+                >
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  title="Mark all read"
+                  style={{
+                    padding: '4px',
+                    color: 'var(--text-secondary)',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <LuCheck size={15} />
+                </button>
+              )}
               {notifications.length > 0 && (
                 <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    navigate(getNotificationsPath());
+                  onClick={handleClearAll}
+                  title="Clear all"
+                  style={{
+                    padding: '4px',
+                    color: 'var(--text-secondary)',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
                   }}
-                  className="action-btn"
-                  title="View all"
                 >
-                  🔍
+                  <LuTrash2 size={15} />
                 </button>
               )}
-              {unreadCount > 0 && (
-                <button onClick={handleMarkAllRead} className="action-btn" title="Mark all read">
-                  ✓
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button onClick={handleClearAll} className="action-btn" title="Clear all">
-                  🗑️
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(getNotificationsPath());
+                }}
+                title="View full notification center"
+                style={{
+                  padding: '4px',
+                  color: 'var(--color-brand-600)',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                }}
+              >
+                <LuExternalLink size={15} />
+              </button>
             </div>
           </div>
 
-          <div className="notification-list">
+          {/* List */}
+          <div style={{ overflowY: 'auto', flex: 1 }}>
             {notifications.length === 0 ? (
-              <div className="no-notifications">
-                <div className="empty-icon">🔕</div>
-                <p>No notifications</p>
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <LuBell size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+                <p style={{ fontSize: 'var(--text-xs)', margin: 0 }}>No notifications at this time</p>
               </div>
             ) : (
-              notifications.map((notification) => (
+              notifications.map((n) => (
                 <div
-                  key={notification.id}
-                  className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
-                  onClick={() => handleNotificationClick(notification)}
+                  key={n.id}
+                  onClick={() => handleNotificationClick(n)}
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    backgroundColor: !n.isRead ? 'var(--color-brand-50)' : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    gap: '10px',
+                    alignItems: 'flex-start',
+                    transition: 'background-color var(--transition-fast)',
+                  }}
                 >
-                  <div
-                    className="notification-severity-indicator"
-                    style={{ backgroundColor: getSeverityColor(notification.severity) }}
-                  ></div>
-                  <div className="notification-content">
-                    <div className="notification-title">
-                      <span className="severity-icon">{getSeverityIcon(notification.severity)}</span>
-                      {notification.title}
+                  <span style={{ marginTop: '2px', flexShrink: 0 }}>
+                    {getSeverityIcon(n.severity)}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
+                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: !n.isRead ? 700 : 600, color: 'var(--text-primary)' }}>
+                        {n.title}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>
+                        {formatTimestamp(n.timestamp)}
+                      </span>
                     </div>
-                    <div className="notification-message">{notification.message}</div>
-                    <div className="notification-footer">
-                      <span className="notification-time">{formatTimestamp(notification.timestamp)}</span>
-                      {notification.actionText && (
-                        <span className="notification-action">{notification.actionText} →</span>
-                      )}
-                    </div>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '3px 0 0 0', lineHeight: 1.35 }}>
+                      {n.message}
+                    </p>
+                    {n.actionText && (
+                      <span style={{ fontSize: '11px', color: 'var(--color-brand-600)', fontWeight: 600, marginTop: '4px', display: 'inline-block' }}>
+                        {n.actionText} →
+                      </span>
+                    )}
                   </div>
                 </div>
               ))

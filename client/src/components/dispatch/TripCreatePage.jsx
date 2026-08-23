@@ -1,874 +1,503 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { tripService, orderService, dispatchVehicleService, dispatchRouteService } from '../../services';
 import RouteMapCard from './RouteMapCard';
-import './dispatch.css';
-import './modern-dispatch.css';
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  Badge,
+  PageHeader,
+  Alert,
+  LoadingSpinner,
+} from '@/components/ui';
+import {
+  LuTruck,
+  LuPackage,
+  LuCalendar,
+  LuMapPin,
+  LuArrowLeft,
+  LuCheck,
+  LuX,
+  LuWarehouse,
+  LuContainer,
+  LuClock,
+} from 'react-icons/lu';
 
-const TripCreatePage = () => {
-    const navigate = useNavigate();
-    const [selectedVehicle, setSelectedVehicle] = useState(null);
+export const TripCreatePage = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialOrderId = searchParams.get('orderId');
+
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [vehicles, setVehicles] = useState([]);
-    const [tripType, setTripType] = useState('delivery');
-    const [scheduledDeparture, setScheduledDeparture] = useState('');
-    const [scheduledArrival, setScheduledArrival] = useState('');
-    const [pendingOrders, setPendingOrders] = useState([]);
-    const [selectedOrderIds, setSelectedOrderIds] = useState([]);
-    const [orderTypeFilter, setOrderTypeFilter] = useState(''); // '', 'PORT_TERMINAL', 'WAREHOUSE'
+  const [tripType, setTripType] = useState('delivery');
+  const [scheduledDeparture, setScheduledDeparture] = useState('');
+  const [scheduledArrival, setScheduledArrival] = useState('');
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+  const [orderTypeFilter, setOrderTypeFilter] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
-    const toLocalDateTimeInputValue = (date) => {
-        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
-        const pad = (n) => String(n).padStart(2, '0');
-        const yyyy = date.getFullYear();
-        const mm = pad(date.getMonth() + 1);
-        const dd = pad(date.getDate());
-        const hh = pad(date.getHours());
-        const min = pad(date.getMinutes());
-        return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  const toLocalDateTimeInputValue = (date) => {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1);
+    const dd = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+
+  const nowMin = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
+  const arrivalMin = useMemo(() => {
+    if (scheduledDeparture) return scheduledDeparture;
+    return nowMin;
+  }, [scheduledDeparture, nowMin]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoadingOrders(true);
+      try {
+        const [ordersRes, vehiclesRes] = await Promise.all([
+          orderService.getOrders({ status: 'PENDING', page: 0, size: 200 }),
+          dispatchVehicleService.getAvailableVehicles(),
+        ]);
+        const orders = ordersRes?.orders || [];
+        setPendingOrders(orders);
+        setVehicles(vehiclesRes || []);
+
+        if (initialOrderId) {
+          const matchingId = Number(initialOrderId);
+          if (orders.some((o) => o.orderId === matchingId)) {
+            setSelectedOrderIds([matchingId]);
+          }
+        }
+      } catch (ex) {
+        console.error(ex);
+        setError(ex?.response?.data?.error || 'Failed to load pending dispatch orders.');
+      } finally {
+        setLoadingOrders(false);
+      }
     };
+    loadData();
+  }, [initialOrderId]);
 
-    const nowMin = useMemo(() => toLocalDateTimeInputValue(new Date()), []);
-    const arrivalMin = useMemo(() => {
-        if (scheduledDeparture) return scheduledDeparture;
-        return nowMin;
-    }, [scheduledDeparture, nowMin]);
+  const toggleOrder = (orderId) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
+    );
+  };
 
-    useEffect(() => {
-        const loadData = async () => {
-            setLoadingOrders(true);
-            try {
-                const [ordersRes, vehiclesRes] = await Promise.all([
-                    orderService.getOrders({ status: 'PENDING', page: 0, size: 200 }),
-                    dispatchVehicleService.getAvailableVehicles(),
-                ]);
-                setPendingOrders(ordersRes?.orders || []);
-                setVehicles(vehiclesRes || []);
-            } catch (ex) {
-                console.error(ex);
-                setError(ex?.response?.data?.error || 'Failed to load data');
-            } finally {
-                setLoadingOrders(false);
-            }
-        };
-        loadData();
-    }, []);
+  const selectedOrdersData = useMemo(() => {
+    const selected = pendingOrders.filter((o) => selectedOrderIds.includes(o.orderId));
+    if (selected.length === 0) return null;
 
-    const toggleOrder = (orderId) => {
-        setSelectedOrderIds((prev) =>
-            prev.includes(orderId)
-                ? prev.filter(id => id !== orderId)
-                : [...prev, orderId]
-        );
+    const totalDistance = selected.reduce((sum, order) => sum + (order.distanceKm || 0), 0);
+    const totalFee = selected.reduce((sum, order) => sum + (order.shippingFee || 0), 0);
+    const totalWeightTons = selected.reduce((sum, order) => sum + (order.weightTons || 0), 0);
+    const orderCount = selected.length;
+
+    return {
+      orders: selected,
+      totalDistance,
+      totalFee,
+      totalWeightTons,
+      orderCount,
     };
+  }, [selectedOrderIds, pendingOrders]);
 
-    const formatMoney = (amount) => {
-        if (amount == null) return '—';
-        try {
-            return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 });
-        } catch (_err) {
-            return `${amount} VND`;
+  const validationInfo = useMemo(() => {
+    if (!selectedOrdersData?.totalWeightTons || vehicles.length === 0) {
+      return { maxCapacityTons: 0, exceedsAllVehicles: false };
+    }
+
+    const totalWeight = selectedOrdersData.totalWeightTons;
+    const availableVehicles = vehicles.filter((v) => v.status === 'available');
+    const maxCapacityTons =
+      availableVehicles.length > 0 ? Math.max(...availableVehicles.map((v) => v.capacityTons || 0)) : 0;
+    const exceedsAllVehicles = totalWeight > maxCapacityTons;
+
+    return { maxCapacityTons, exceedsAllVehicles };
+  }, [vehicles, selectedOrdersData?.totalWeightTons]);
+
+  const sortedVehicles = useMemo(() => {
+    if (!selectedOrdersData?.totalWeightTons) {
+      return [...vehicles].sort((a, b) => {
+        const aAvailable = a.status === 'available';
+        const bAvailable = b.status === 'available';
+        if (aAvailable !== bAvailable) return aAvailable ? -1 : 1;
+        return 0;
+      });
+    }
+
+    const totalWeight = selectedOrdersData.totalWeightTons;
+    return [...vehicles].sort((a, b) => {
+      const aAvailable = a.status === 'available';
+      const bAvailable = b.status === 'available';
+      if (aAvailable !== bAvailable) return bAvailable ? 1 : -1;
+
+      const aCapacityTons = a.capacityTons || 0;
+      const bCapacityTons = b.capacityTons || 0;
+      const aCanHandle = aCapacityTons >= totalWeight;
+      const bCanHandle = bCapacityTons >= totalWeight;
+
+      if (aCanHandle !== bCanHandle) return bCanHandle ? 1 : -1;
+      if (aCanHandle && bCanHandle) {
+        return aCapacityTons - totalWeight - (bCapacityTons - totalWeight);
+      }
+      return totalWeight - aCapacityTons - (totalWeight - bCapacityTons);
+    });
+  }, [vehicles, selectedOrdersData?.totalWeightTons]);
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!selectedVehicle || !scheduledDeparture || !scheduledArrival || selectedOrderIds.length === 0) {
+      setError('Please select a commercial vehicle, departure/arrival schedule, and at least one order.');
+      return;
+    }
+
+    if (selectedVehicle.status !== 'available') {
+      setError('The selected vehicle is currently not in available state.');
+      return;
+    }
+
+    const selectedOrders = pendingOrders.filter((o) => selectedOrderIds.includes(o.orderId));
+    const invalids = [];
+    for (const o of selectedOrders) {
+      if (!o.pickupType) {
+        invalids.push(`#${o.orderId} missing pickup type`);
+        continue;
+      }
+      if (o.pickupType === 'PORT_TERMINAL' && (!o.containerNumber || !String(o.containerNumber).trim())) {
+        invalids.push(`#${o.orderId} requires container number for seaport drayage`);
+      }
+    }
+    if (invalids.length > 0) {
+      setError(`Some orders have incomplete parameters: ${invalids.join('; ')}`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const route = await dispatchRouteService.createTripRoute(
+        selectedOrderIds,
+        `Trip Route: ${selectedOrderIds.length} orders consolidated`
+      );
+
+      const payload = {
+        vehicleId: Number(selectedVehicle.vehicleId),
+        routeId: Number(route.routeId),
+        tripType,
+        scheduledDeparture: new Date(scheduledDeparture).toISOString(),
+        scheduledArrival: new Date(scheduledArrival).toISOString(),
+        orderIds: selectedOrderIds,
+      };
+
+      const createdTrip = await tripService.createTrip(payload);
+      setSuccess('Trip created successfully! Redirecting to manifest oversight...');
+      setTimeout(() => navigate(`/dispatch/trips/${createdTrip.tripId}`), 800);
+    } catch (ex) {
+      console.error(ex);
+      setError(ex?.response?.data?.error || ex?.message || 'Failed to create trip manifest.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Create Linehaul Trip"
+        description="Consolidate pending orders, allocate transport vehicle, and compute optimized multi-stop route."
+        badge={<Badge variant="brand">Trip Builder</Badge>}
+        actions={
+          <Link to="/dispatch/trips">
+            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
+              Back to Trips
+            </Button>
+          </Link>
         }
-    };
+      />
 
-    const selectedOrdersData = useMemo(() => {
-        const selected = pendingOrders.filter(o => selectedOrderIds.includes(o.orderId));
-        if (selected.length === 0) return null;
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-        // Calculate totals for all selected orders
-        const totalDistance = selected.reduce((sum, order) => sum + (order.distanceKm || 0), 0);
-        const totalFee = selected.reduce((sum, order) => sum + (order.shippingFee || 0), 0);
-        const totalWeightTons = selected.reduce((sum, order) => sum + (order.weightTons || 0), 0); // Keep in tons
-        const orderCount = selected.length;
+      {success && (
+        <Alert variant="success" onClose={() => setSuccess(null)}>
+          {success}
+        </Alert>
+      )}
 
-        return {
-            orders: selected,
-            totalDistance,
-            totalFee,
-            totalWeightTons,
-            orderCount
-        };
-    }, [selectedOrderIds, pendingOrders]);
+      <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Fleet & Schedule Parameters */}
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+            1. Vehicle & Schedule Configuration
+          </h3>
 
-    // Calculate validation info
-    const validationInfo = useMemo(() => {
-        if (!selectedOrdersData?.totalWeightTons || vehicles.length === 0) {
-            return { maxCapacityTons: 0, exceedsAllVehicles: false };
-        }
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <div>
+              <Select
+                label={`Commercial Vehicle ${
+                  selectedOrdersData?.totalWeightTons
+                    ? `(Consolidated Weight: ${selectedOrdersData.totalWeightTons.toFixed(1)} T)`
+                    : ''
+                }`}
+                value={selectedVehicle ? selectedVehicle.vehicleId : ''}
+                onChange={(e) => {
+                  const v = vehicles.find((x) => x.vehicleId === Number(e.target.value));
+                  setSelectedVehicle(v || null);
+                }}
+                options={[
+                  { value: '', label: '-- Select Commercial Vehicle --' },
+                  ...sortedVehicles.map((v) => {
+                    const capacityTons = v.capacityTons || 0;
+                    const totalWeight = selectedOrdersData?.totalWeightTons || 0;
+                    const canHandle = capacityTons >= totalWeight;
+                    const isAvailable = v.status === 'available';
+                    const remaining = capacityTons - totalWeight;
 
-        const totalWeight = selectedOrdersData.totalWeightTons;
-        const availableVehicles = vehicles.filter(v => v.status === 'available');
-        const maxCapacityTons = availableVehicles.length > 0 ? Math.max(...availableVehicles.map(v => v.capacityTons || 0)) : 0;
-        const exceedsAllVehicles = totalWeight > maxCapacityTons;
-
-        return { maxCapacityTons, exceedsAllVehicles };
-    }, [vehicles, selectedOrdersData?.totalWeightTons]);
-
-    // Sort vehicles: available first, then by weight capacity suitability
-    const sortedVehicles = useMemo(() => {
-        if (!selectedOrdersData?.totalWeightTons) {
-            // If no weight selected, sort by availability
-            return [...vehicles].sort((a, b) => {
-                const aAvailable = a.status === 'available';
-                const bAvailable = b.status === 'available';
-                if (aAvailable !== bAvailable) return aAvailable ? -1 : 1;
-                return 0;
-            });
-        }
-
-        const totalWeight = selectedOrdersData.totalWeightTons;
-        return [...vehicles].sort((a, b) => {
-            const aAvailable = a.status === 'available';
-            const bAvailable = b.status === 'available';
-
-            // Available vehicles first
-            if (aAvailable !== bAvailable) return bAvailable ? 1 : -1;
-
-            const aCapacityTons = a.capacityTons || 0;
-            const bCapacityTons = b.capacityTons || 0;
-
-            // Vehicles that can handle the weight come first
-            const aCanHandle = aCapacityTons >= totalWeight;
-            const bCanHandle = bCapacityTons >= totalWeight;
-
-            if (aCanHandle !== bCanHandle) return bCanHandle ? 1 : -1;
-
-            // Within suitable vehicles, sort by remaining capacity (ascending = better fit)
-            if (aCanHandle && bCanHandle) {
-                const aRemaining = aCapacityTons - totalWeight;
-                const bRemaining = bCapacityTons - totalWeight;
-                return aRemaining - bRemaining;
-            }
-
-            // For vehicles that can't handle, sort by how close they are to capacity
-            const aDiff = totalWeight - aCapacityTons;
-            const bDiff = totalWeight - bCapacityTons;
-            return aDiff - bDiff;
-        });
-    }, [vehicles, selectedOrdersData?.totalWeightTons]);
-
-    const onSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
-        setSuccess(null);
-
-        if (!selectedVehicle || !scheduledDeparture || !scheduledArrival || selectedOrderIds.length === 0) {
-            setError('Please fill all required fields and select at least one order');
-            return;
-        }
-
-        if (selectedVehicle.status !== 'available') {
-            setError('Selected vehicle is not available for trips. Please choose an available vehicle.');
-            return;
-        }
-
-        // Validate selected orders have pickupType and required dependent fields
-        const selectedOrders = pendingOrders.filter(o => selectedOrderIds.includes(o.orderId));
-        const invalids = [];
-        for (const o of selectedOrders) {
-            if (!o.pickupType) {
-                invalids.push(`#${o.orderId} missing pickup type`);
-                continue;
-            }
-            if (o.pickupType === 'PORT_TERMINAL' && (!o.containerNumber || !String(o.containerNumber).trim())) {
-                invalids.push(`#${o.orderId} requires container number for port pickup`);
-            }
-        }
-        if (invalids.length > 0) {
-            setError(`Some orders are incomplete: ${invalids.join('; ')}`);
-            return;
-        }
-
-        setLoading(true);
-        try {
-            // Create trip route from selected orders
-            const route = await dispatchRouteService.createTripRoute(
-                selectedOrderIds,
-                `Trip: ${selectedOrderIds.length} orders`
-            );
-
-            const payload = {
-                vehicleId: Number(selectedVehicle.vehicleId),
-                routeId: Number(route.routeId),
-                tripType,
-                scheduledDeparture: new Date(scheduledDeparture).toISOString(),
-                scheduledArrival: new Date(scheduledArrival).toISOString(),
-                orderIds: selectedOrderIds,
-            };
-
-            const createdTrip = await tripService.createTrip(payload);
-            setSuccess('Trip created successfully');
-            setTimeout(() => navigate(`/dispatch/trips/${createdTrip.tripId}`), 800);
-        } catch (ex) {
-            console.error(ex);
-            setError(ex?.response?.data?.error || ex?.message || 'Failed to create trip');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="modern-container">
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">Create Trip</h1>
-                    <p className="page-subtitle">Enter trip details and assign orders</p>
-                </div>
-                <div className="header-actions">
-                    <button type="button" onClick={() => navigate('/dispatch/trips')} className="btn-secondary">
-                        ← Back to Trips
-                    </button>
-                </div>
+                    return {
+                      value: v.vehicleId,
+                      label: `${v.vehicleType} (${v.licensePlate || 'No Plate'}) [${capacityTons}T] ${
+                        !isAvailable ? '(Unavailable)' : !canHandle ? '(Over Capacity)' : `(${remaining.toFixed(1)}T free)`
+                      }`,
+                    };
+                  }),
+                ]}
+              />
             </div>
 
-            <form className="detail-card" style={{ padding: '1.5rem' }} onSubmit={onSubmit}>
-                <div className="card-body" style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-                    <div className="form-group">
-                        <label>Vehicle {selectedOrdersData?.totalWeightTons ? `(Total weight: ${selectedOrdersData.totalWeightTons.toLocaleString()} t)` : ''}</label>
-                        <select value={selectedVehicle ? selectedVehicle.vehicleId : ''} onChange={e => {
-                            const v = vehicles.find(x => x.vehicleId === Number(e.target.value));
-                            setSelectedVehicle(v || null);
-                        }}>
-                            <option value="">-- Select Vehicle --</option>
-                            {sortedVehicles.map(v => {
-                                const capacityTons = v.capacityTons || 0;
-                                const totalWeight = selectedOrdersData?.totalWeightTons || 0;
-                                const canHandle = capacityTons >= totalWeight;
-                                const isAvailable = v.status === 'available';
-                                const remaining = capacityTons - totalWeight;
-                                const isUsable = canHandle && isAvailable;
+            <Select
+              label="Trip Type"
+              value={tripType}
+              onChange={(e) => setTripType(e.target.value)}
+              options={[
+                { value: 'delivery', label: 'Direct Delivery Linehaul' },
+                { value: 'pickup', label: 'Consolidation Pickup' },
+                { value: 'transfer', label: 'Hub-to-Hub Cross-dock Transfer' },
+              ]}
+            />
 
-                                return (
-                                    <option
-                                        key={v.vehicleId}
-                                        value={v.vehicleId}
-                                        disabled={!isUsable}
-                                        style={{
-                                            color: isUsable ? 'inherit' : '#9ca3af',
-                                            fontStyle: isUsable ? 'normal' : 'italic'
-                                        }}
-                                    >
-                                        {isUsable ? '✅' : (!isAvailable ? '⏸️' : '🚫')} {v.vehicleType} ({capacityTons.toLocaleString()} t)
-                                        {totalWeight > 0 && (
-                                            canHandle
-                                                ? ` - ${remaining.toLocaleString()} t remaining`
-                                                : ` - ${Math.abs(remaining).toLocaleString()} t over capacity`
-                                        )}
-                                        {!isAvailable && ` - ${v.status}`}
-                                        {v.requiredLicense && ` - License: ${v.requiredLicense}`}
-                                    </option>
-                                );
-                            })}
-                        </select>
-                        {selectedOrdersData?.totalWeightTons > 0 && (
-                            <div style={{
-                                marginTop: '0.5rem',
-                                fontSize: '0.75rem',
-                                color: '#6b7280',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}>
-                                <span>💡 Vehicles are sorted by suitability for your cargo weight</span>
-                            </div>
-                        )}
-                    </div>
-                    {/* Route selection removed — AI auto-selects based on order addresses */}
-                    <div className="form-group">
-                        <label>Trip Type</label>
-                        <select value={tripType} onChange={e => setTripType(e.target.value)}>
-                            <option value="delivery">Delivery</option>
-                            <option value="pickup">Pickup</option>
-                            <option value="transfer">Transfer</option>
-                        </select>
-                    </div>
-                    <div className="form-group">
-                        <label>Scheduled Departure</label>
-                        <input
-                            type="datetime-local"
-                            value={scheduledDeparture}
-                            min={nowMin}
-                            onChange={e => setScheduledDeparture(e.target.value)}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Scheduled Arrival</label>
-                        <input
-                            type="datetime-local"
-                            value={scheduledArrival}
-                            min={arrivalMin}
-                            onChange={e => setScheduledArrival(e.target.value)}
-                        />
-                    </div>
+            <Input
+              label="Scheduled Departure Time *"
+              type="datetime-local"
+              value={scheduledDeparture}
+              min={nowMin}
+              onChange={(e) => setScheduledDeparture(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Scheduled Arrival Time *"
+              type="datetime-local"
+              value={scheduledArrival}
+              min={arrivalMin}
+              onChange={(e) => setScheduledArrival(e.target.value)}
+              required
+            />
+          </div>
+        </Card>
+
+        {/* Selected Orders Summary Bar */}
+        {selectedOrdersData && (
+          <Card style={{ padding: '20px', backgroundColor: 'var(--bg-surface-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Consolidated Orders ({selectedOrdersData.orderCount})
+                </span>
+                <Badge variant="brand" size="sm">
+                  {selectedOrdersData.totalWeightTons.toFixed(1)} T Payload
+                </Badge>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 'var(--text-xs)' }}>
+                <span>Est. Linehaul Distance: <strong>{selectedOrdersData.totalDistance.toFixed(1)} km</strong></span>
+                <span>Combined Revenue: <strong>{Number(selectedOrdersData.totalFee).toLocaleString()} VND</strong></span>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedOrderIds([])}>
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+
+            {/* List of selected pills */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {selectedOrdersData.orders.map((o) => (
+                <div
+                  key={o.orderId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--color-white)',
+                    border: '1px solid var(--border-default)',
+                    fontSize: 'var(--text-xs)',
+                  }}
+                >
+                  <strong style={{ color: 'var(--color-brand-700)' }}>#{o.orderId}</strong>
+                  <span>{o.customerName}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>({o.weightTons}T)</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleOrder(o.orderId)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0 2px' }}
+                  >
+                    <LuX size={13} />
+                  </button>
                 </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
-                {selectedOrdersData && selectedOrdersData.orders.length > 0 && (
-                    <div style={{ marginTop: '1rem' }}>
-                        <div style={{
+        {/* Order Selection Grid */}
+        <Card style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+                2. Select Pending Orders to Consolidate
+              </h3>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                Click orders to include them in this multi-stop trip manifest.
+              </span>
+            </div>
+
+            <div style={{ width: '180px' }}>
+              <Select
+                value={orderTypeFilter}
+                onChange={(e) => setOrderTypeFilter(e.target.value)}
+                options={[
+                  { value: '', label: 'All Pickup Types' },
+                  { value: 'PORT_TERMINAL', label: 'Port Terminal' },
+                  { value: 'WAREHOUSE', label: 'Warehouse Hub' },
+                  { value: 'STANDARD', label: 'Standard Delivery' },
+                ]}
+              />
+            </div>
+          </div>
+
+          {loadingOrders ? (
+            <div style={{ padding: '32px 0' }}>
+              <LoadingSpinner text="Loading pending orders..." />
+            </div>
+          ) : pendingOrders.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+              No pending orders are currently awaiting trip assignment.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+              {pendingOrders
+                .filter((o) => !orderTypeFilter || o.pickupType === orderTypeFilter)
+                .map((o) => {
+                  const isSelected = selectedOrderIds.includes(o.orderId);
+
+                  return (
+                    <div
+                      key={o.orderId}
+                      onClick={() => toggleOrder(o.orderId)}
+                      style={{
+                        padding: '14px',
+                        borderRadius: 'var(--radius-lg)',
+                        border: isSelected ? '2px solid var(--color-brand-600)' : '1px solid var(--border-default)',
+                        backgroundColor: isSelected ? 'var(--color-brand-50)' : 'var(--color-white)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        transition: 'all var(--transition-fast)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-brand-700)' }}>
+                            #{o.orderId}
+                          </span>
+                          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {o.customerName}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: isSelected ? 'none' : '1px solid var(--border-default)',
+                            backgroundColor: isSelected ? 'var(--color-brand-600)' : 'transparent',
+                            color: 'var(--color-white)',
                             display: 'flex',
-                            justifyContent: 'space-between',
                             alignItems: 'center',
-                            marginBottom: '0.75rem'
-                        }}>
-                            <h4 style={{
-                                margin: 0,
-                                color: '#1e293b',
-                                fontSize: '1rem',
-                                fontWeight: '600'
-                            }}>
-                                Selected Orders ({selectedOrdersData.orderCount})
-                            </h4>
-                            <button
-                                onClick={() => setSelectedOrderIds([])}
-                                style={{
-                                    padding: '0.25rem 0.5rem',
-                                    backgroundColor: '#f3f4f6',
-                                    color: '#6b7280',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    fontSize: '0.75rem',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Clear All
-                            </button>
-                        </div>
-
-                        <div style={{
-                            backgroundColor: '#f8fafc',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            padding: '1rem',
-                            fontSize: '0.875rem'
-                        }}>
-                            {/* Header Row */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: '80px 1fr 140px 100px 100px 40px',
-                                gap: '0.75rem',
-                                padding: '0.5rem 0',
-                                borderBottom: '2px solid #e5e7eb',
-                                fontWeight: '600',
-                                color: '#374151',
-                                fontSize: '0.75rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em'
-                            }}>
-                                <div>Order</div>
-                                <div>Customer</div>
-                                <div>Type</div>
-                                <div>Distance</div>
-                                <div>Fee</div>
-                                <div></div>
-                            </div>
-
-                            {/* Order Rows */}
-                            {selectedOrdersData.orders.map((order, index) => (
-                                <div key={order.orderId} style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '80px 1fr 140px 100px 100px 40px',
-                                    gap: '0.75rem',
-                                    alignItems: 'center',
-                                    padding: '0.75rem 0',
-                                    borderBottom: index < selectedOrdersData.orders.length - 1 ? '1px solid #e5e7eb' : 'none'
-                                }}>
-                                    {/* Order ID */}
-                                    <div>
-                                        <span style={{
-                                            backgroundColor: '#3b82f6',
-                                            color: 'white',
-                                            padding: '0.125rem 0.375rem',
-                                            borderRadius: '4px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: '600'
-                                        }}>
-                                            #{order.orderId}
-                                        </span>
-                                    </div>
-
-                                    {/* Customer Name */}
-                                    <div style={{
-                                        fontWeight: '500',
-                                        color: '#374151',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap'
-                                    }}>
-                                        {order.customerName}
-                                    </div>
-
-                                    {/* Pickup Type */}
-                                    <div>
-                                        {order.pickupType && (
-                                            <span style={{
-                                                backgroundColor:
-                                                    order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
-                                                    order.pickupType === 'WAREHOUSE' ? '#dbeafe' : '#f0fdf4',
-                                                color:
-                                                    order.pickupType === 'PORT_TERMINAL' ? '#92400e' :
-                                                    order.pickupType === 'WAREHOUSE' ? '#0c4a6e' : '#166534',
-                                                padding: '0.125rem 0.375rem',
-                                                borderRadius: '4px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: '500',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.25rem',
-                                                width: 'fit-content'
-                                            }}>
-                                                <span>
-                                                    {order.pickupType === 'PORT_TERMINAL' ? '🚢' :
-                                                     order.pickupType === 'WAREHOUSE' ? '🏭' : '📦'}
-                                                </span>
-                                                <span style={{
-                                                    maxWidth: '100px',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap'
-                                                }}>
-                                                    {order.pickupType}
-                                                </span>
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Distance */}
-                                    <div style={{
-                                        color: '#6b7280',
-                                        textAlign: 'right'
-                                    }}>
-                                        📍 {order.distanceKm ? `${order.distanceKm.toFixed(1)}km` : '—'}
-                                    </div>
-
-                                    {/* Fee */}
-                                    <div style={{
-                                        color: '#059669',
-                                        fontWeight: '600',
-                                        textAlign: 'right'
-                                    }}>
-                                        {order.shippingFee ? formatMoney(order.shippingFee) : '—'}
-                                    </div>
-
-                                    {/* Remove Button */}
-                                    <div style={{ textAlign: 'center' }}>
-                                        <button
-                                            onClick={() => toggleOrder(order.orderId)}
-                                            style={{
-                                                backgroundColor: 'transparent',
-                                                border: 'none',
-                                                color: '#9ca3af',
-                                                cursor: 'pointer',
-                                                fontSize: '1.25rem',
-                                                padding: '0.25rem',
-                                                borderRadius: '4px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                width: '24px',
-                                                height: '24px'
-                                            }}
-                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
-                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {/* Summary */}
-                            <div style={{
-                                marginTop: '1rem',
-                                paddingTop: '1rem',
-                                borderTop: '1px solid #e5e7eb',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                                gap: '1rem'
-                            }}>
-                                <span style={{
-                                    fontWeight: '600',
-                                    color: '#374151'
-                                }}>
-                                    Trip Summary:
-                                </span>
-                                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                                    <span style={{ color: '#6b7280' }}>
-                                        📏 {selectedOrdersData.totalDistance > 0 ? `${selectedOrdersData.totalDistance.toFixed(1)} km` : '—'}
-                                    </span>
-                                    <span style={{
-                                        color: selectedOrdersData.totalWeightTons > 0 ? '#059669' : '#6b7280',
-                                        fontWeight: '600'
-                                    }}>
-                                        ⚖️ {selectedOrdersData.totalWeightTons > 0 ? `${selectedOrdersData.totalWeightTons.toLocaleString()} t` : '—'}
-                                    </span>
-                                    <span style={{
-                                        color: '#059669',
-                                        fontWeight: '600'
-                                    }}>
-                                        💰 {selectedOrdersData.totalFee > 0 ? formatMoney(selectedOrdersData.totalFee) : '—'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Weight Validation Warning */}
-                {validationInfo.exceedsAllVehicles && (
-                    <div style={{
-                        marginTop: '1rem',
-                        padding: '1rem',
-                        backgroundColor: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '8px',
-                        color: '#dc2626',
-                        fontSize: '0.875rem'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-                            <strong>Weight Limit Exceeded</strong>
-                        </div>
-                        <p style={{ margin: 0, marginBottom: '0.5rem' }}>
-                            Total selected weight ({selectedOrdersData.totalWeightTons.toLocaleString()} t) exceeds the maximum vehicle capacity ({validationInfo.maxCapacityTons.toLocaleString()} t).
-                        </p>
-                        <p style={{ margin: 0, fontSize: '0.8rem' }}>
-                            Please remove some orders or contact fleet management for larger vehicles.
-                        </p>
-                    </div>
-                )}
-
-                <div className="detail-card" style={{ marginTop: '1rem', padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: '600' }}>Select Pending Orders</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: '500' }}>Filter by type:</span>
-                            <select
-                                value={orderTypeFilter}
-                                onChange={e => setOrderTypeFilter(e.target.value)}
-                                style={{
-                                    padding: '0.375rem 0.75rem',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    fontSize: '0.875rem',
-                                    backgroundColor: 'white',
-                                    color: '#374151',
-                                    minWidth: '140px'
-                                }}
-                            >
-                                <option value="">All Types</option>
-                                <option value="PORT_TERMINAL">🚢 Port Terminal</option>
-                                <option value="WAREHOUSE">🏭 Warehouse</option>
-                                <option value="STANDARD">📦 Standard</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {loadingOrders && (
-                        <div style={{
-                            display: 'flex',
                             justifyContent: 'center',
-                            alignItems: 'center',
-                            padding: '2rem',
-                            backgroundColor: '#f8fafc',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <div className="spinner" style={{ width: '20px', height: '20px' }}></div>
-                                <span style={{ color: '#64748b' }}>Loading pending orders...</span>
-                            </div>
+                          }}
+                        >
+                          {isSelected && <LuCheck size={12} />}
                         </div>
-                    )}
+                      </div>
 
-                    {!loadingOrders && pendingOrders.length === 0 && (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '3rem 2rem',
-                            backgroundColor: '#f8fafc',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0'
-                        }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📦</div>
-                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#475569' }}>No pending orders</h4>
-                            <p style={{ margin: 0, color: '#64748b' }}>All orders have been assigned or there are no available orders.</p>
+                      {/* Route overview */}
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          📍 <strong>From:</strong> {o.pickupAddress}
                         </div>
-                    )}
-
-                    {!loadingOrders && pendingOrders.length > 0 && (
-                        <div style={{
-                            display: 'grid',
-                            gap: '0.75rem',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))'
-                        }}>
-                            {pendingOrders
-                                .filter(o => !orderTypeFilter || o.pickupType === orderTypeFilter)
-                                .map((o) => {
-                                    const isSelected = selectedOrderIds.includes(o.orderId);
-                                    return (
-                                        <div
-                                            key={o.orderId}
-                                            onClick={() => toggleOrder(o.orderId)}
-                                            style={{
-                                                position: 'relative',
-                                                backgroundColor: isSelected ? '#eff6ff' : 'white',
-                                                border: isSelected ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-                                                borderRadius: '12px',
-                                                padding: '1rem',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.15)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
-                                                transform: isSelected ? 'translateY(-2px)' : 'none'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (!isSelected) {
-                                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                                                    e.currentTarget.style.transform = 'translateY(-1px)';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (!isSelected) {
-                                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                                                    e.currentTarget.style.transform = 'none';
-                                                }
-                                            }}
-                                        >
-                                            {/* Selection Checkbox */}
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '1rem',
-                                                right: '1rem',
-                                                width: '20px',
-                                                height: '20px',
-                                                borderRadius: '50%',
-                                                backgroundColor: isSelected ? '#3b82f6' : '#ffffff',
-                                                border: isSelected ? '2px solid #3b82f6' : '2px solid #d1d5db',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                                                transition: 'all 0.2s ease'
-                                            }}>
-                                                {isSelected && (
-                                                    <span style={{
-                                                        color: 'white',
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold',
-                                                        lineHeight: 1
-                                                    }}>✓</span>
-                                                )}
-                                            </div>
-
-                                            {/* Order Header */}
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.75rem',
-                                                marginBottom: '0.75rem'
-                                            }}>
-                                                <div style={{
-                                                    backgroundColor: '#f1f5f9',
-                                                    color: '#475569',
-                                                    fontSize: '0.875rem',
-                                                    fontWeight: '600',
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '6px'
-                                                }}>
-                                                    #{o.orderId}
-                                                </div>
-                                                <div style={{
-                                                    fontSize: '1rem',
-                                                    fontWeight: '600',
-                                                    color: '#1e293b',
-                                                    flex: 1
-                                                }}>
-                                                    {o.customerName}
-                                                </div>
-                                            </div>
-
-                                            {/* Route Information */}
-                                            <div style={{
-                                                marginBottom: '0.75rem',
-                                                padding: '0.5rem',
-                                                backgroundColor: '#f8fafc',
-                                                borderRadius: '6px',
-                                                border: '1px solid #e2e8f0'
-                                            }}>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    marginBottom: '0.25rem'
-                                                }}>
-                                                    <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>📍</span>
-                                                    <span style={{
-                                                        fontSize: '0.875rem',
-                                                        color: '#374151',
-                                                        flex: 1,
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap'
-                                                    }}>
-                                                        {o.pickupAddress}
-                                                    </span>
-                                                </div>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    margin: '0.25rem 0'
-                                                }}>
-                                                    <div style={{
-                                                        width: '20px',
-                                                        height: '1px',
-                                                        backgroundColor: '#d1d5db',
-                                                        position: 'relative'
-                                                    }}>
-                                                        <div style={{
-                                                            position: 'absolute',
-                                                            top: '-3px',
-                                                            left: '50%',
-                                                            transform: 'translateX(-50%)',
-                                                            width: '0',
-                                                            height: '0',
-                                                            borderLeft: '3px solid transparent',
-                                                            borderRight: '3px solid transparent',
-                                                            borderTop: '3px solid #d1d5db'
-                                                        }}></div>
-                                                    </div>
-                                                </div>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem'
-                                                }}>
-                                                    <span style={{ color: '#10b981', fontSize: '0.875rem' }}>🎯</span>
-                                                    <span style={{
-                                                        fontSize: '0.875rem',
-                                                        color: '#374151',
-                                                        flex: 1,
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap'
-                                                    }}>
-                                                        {o.deliveryAddress}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Order Details */}
-                                            <div style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                flexWrap: 'wrap',
-                                                gap: '0.5rem'
-                                            }}>
-                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                    {o.weightTons && (
-                                                        <span style={{
-                                                            backgroundColor: '#fef3c7',
-                                                            color: '#92400e',
-                                                            padding: '0.125rem 0.375rem',
-                                                            borderRadius: '4px',
-                                                            fontSize: '0.75rem',
-                                                            fontWeight: '500'
-                                                        }}>
-                                                            ⚖️ {o.weightTons}t
-                                                        </span>
-                                                    )}
-                                                    {o.pickupType && (
-                                                        <span style={{
-                                                            backgroundColor:
-                                                                o.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
-                                                                o.pickupType === 'WAREHOUSE' ? '#dbeafe' :
-                                                                '#f0fdf4',
-                                                            color:
-                                                                o.pickupType === 'PORT_TERMINAL' ? '#92400e' :
-                                                                o.pickupType === 'WAREHOUSE' ? '#0c4a6e' :
-                                                                '#166534',
-                                                            padding: '0.125rem 0.375rem',
-                                                            borderRadius: '4px',
-                                                            fontSize: '0.75rem',
-                                                            fontWeight: '600'
-                                                        }}>
-                                                            {o.pickupType === 'PORT_TERMINAL' ? '🚢' :
-                                                             o.pickupType === 'WAREHOUSE' ? '🏭' : '📦'} {o.pickupType}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div style={{
-                                                    fontSize: '0.875rem',
-                                                    color: '#059669',
-                                                    fontWeight: '600'
-                                                }}>
-                                                    {o.shippingFee ? formatMoney(o.shippingFee) : 'TBD'}
-                                                </div>
-                                            </div>
-
-                                            {/* Container/Warehouse Info */}
-                                            {(o.containerNumber || o.terminalName || o.warehouseName || o.dockNumber) && (
-                                                <div style={{
-                                                    marginTop: '0.5rem',
-                                                    padding: '0.375rem 0.5rem',
-                                                    backgroundColor: '#f8fafc',
-                                                    borderRadius: '4px',
-                                                    border: '1px solid #e2e8f0',
-                                                    fontSize: '0.75rem',
-                                                    color: '#64748b'
-                                                }}>
-                                                    {o.pickupType === 'PORT_TERMINAL' && (
-                                                        <div>
-                                                            {o.containerNumber && <span>🧾 Container: {o.containerNumber}</span>}
-                                                            {o.containerNumber && o.terminalName && <span> • </span>}
-                                                            {o.terminalName && <span>⚓ Terminal: {o.terminalName}</span>}
-                                                        </div>
-                                                    )}
-                                                    {o.pickupType === 'WAREHOUSE' && (
-                                                        <div>
-                                                            {o.warehouseName && <span>🏭 Warehouse: {o.warehouseName}</span>}
-                                                            {o.warehouseName && o.dockNumber && <span> • </span>}
-                                                            {o.dockNumber && <span>🚪 Dock: {o.dockNumber}</span>}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          🎯 <strong>To:</strong> {o.deliveryAddress}
                         </div>
-                    )}
-                </div>
+                      </div>
 
-                {selectedOrdersData && selectedOrdersData.orders.length > 0 && (
-                    <>
-                        <div className="info-pill" style={{ marginTop: '1rem' }}>
-                            Trip Route: {selectedOrdersData.orders.length} order{selectedOrdersData.orders.length > 1 ? 's' : ''} selected
+                      {/* Tags */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '4px' }}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <Badge variant="neutral" size="sm">
+                            {o.weightTons ? `${o.weightTons} T` : '0 T'}
+                          </Badge>
+                          {o.pickupType && o.pickupType !== 'STANDARD' && (
+                            <Badge variant="warning" size="sm">
+                              {o.pickupType}
+                            </Badge>
+                          )}
                         </div>
-                        <RouteMapCard
-                            orders={selectedOrdersData.orders}
-                        />
-                    </>
-                )}
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-brand-700)' }}>
+                          {o.shippingFee ? `${Number(o.shippingFee).toLocaleString()} VND` : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </Card>
 
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-                    <button className="btn-primary" type="submit" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Trip'}
-                    </button>
-                    <button className="btn-secondary" type="button" onClick={() => navigate('/dispatch/trips')}>
-                        Cancel
-                    </button>
-                </div>
+        {/* Live Route Map Telemetry */}
+        {selectedOrdersData && selectedOrdersData.orders.length > 0 && (
+          <RouteMapCard orders={selectedOrdersData.orders} />
+        )}
 
-                {error && <div className="error" style={{ marginTop: '1rem' }}>{error}</div>}
-                {success && <div className="success" style={{ marginTop: '1rem' }}>{success}</div>}
-            </form>
+        {/* Action Controls */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <Button type="button" variant="outline" onClick={() => navigate('/dispatch/trips')} disabled={loading}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" loading={loading} leftIcon={<LuTruck size={16} />}>
+            Create Dispatch Trip Manifest
+          </Button>
         </div>
-    );
+      </form>
+    </div>
+  );
 };
 
 export default TripCreatePage;

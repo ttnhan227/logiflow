@@ -1,17 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import auditLogService from '../../services/admin/auditLogService';
-import './admin.css';
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  Badge,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuShieldAlert,
+  LuSearch,
+  LuRefreshCw,
+  LuActivity,
+} from 'react-icons/lu';
 
-const AdminAuditLogPage = () => {
+export const AdminAuditLogPage = () => {
   const [logs, setLogs] = useState([]);
   const [filters, setFilters] = useState({ username: '', role: '', action: '', from: '', to: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [roles, setRoles] = useState([]);
   const [actions, setActions] = useState([]);
 
-  // Fetch available roles and actions on mount
   useEffect(() => {
     const fetchOptions = async () => {
       try {
@@ -33,171 +53,142 @@ const AdminAuditLogPage = () => {
     setError('');
     try {
       const params = {};
-      Object.entries(searchFilters).forEach(([k, v]) => { if (v) params[k] = v; });
+      Object.entries(searchFilters).forEach(([k, v]) => {
+        if (v) params[k] = v;
+      });
       const data = await auditLogService.searchLogs(params);
-      setLogs(data);
+      setLogs(data || []);
     } catch {
-      setError('Failed to load audit logs');
+      setError('Failed to query system security audit logs.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch logs on component mount (no filters)
-  // The initial query intentionally runs once; subsequent queries are user-driven.
-  useEffect(() => { 
-    fetchLogs(filters); 
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchLogs(filters);
+  }, []);
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     const updatedFilters = { ...filters, [name]: value };
     setFilters(updatedFilters);
-    // Dynamically fetch logs as user types or changes filters
     fetchLogs(updatedFilters);
   };
 
   const handleClearFilters = () => {
-    const clearedFilters = { username: '', role: '', action: '', from: '', to: '' };
-    setFilters(clearedFilters);
-    fetchLogs(clearedFilters);
+    const cleared = { username: '', role: '', action: '', from: '', to: '' };
+    setFilters(cleared);
+    fetchLogs(cleared);
   };
 
   return (
-    <div className="admin-page-container">
-      {/* Header */}
-      <div className="admin-page-header">
-        <h1>📝 Audit Logs</h1>
-        <p>Track system activities and user actions</p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Enterprise Compliance & Security Audit Logs"
+        description="Immutable system-wide ledger of user authentication, route overrides, driver assignment modifications, and tariff events."
+        badge={<Badge variant="brand">SOC 2 Audit Trail</Badge>}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => fetchLogs(filters)} loading={loading} leftIcon={<LuRefreshCw size={14} />}>
+            Refresh Ledger
+          </Button>
+        }
+      />
 
-      {/* Error Banner */}
-      {error && <div className="error-banner">{error}</div>}
+      {error && (
+        <Alert variant="danger" onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Filters (Collapsible) */}
-      <div className="admin-page-filters">
-        <button
-          className={`admin-filters-toggle ${filtersCollapsed ? 'collapsed' : ''}`}
-          onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-        >
-          🔍 Filters & Search
-        </button>
-        <form
-          className={`admin-filters-content ${filtersCollapsed ? 'collapsed' : ''}`}
-        >
-          <div className="filters-grid">
-            <input
-              name="username"
-              value={filters.username}
-              onChange={handleInputChange}
-              placeholder="🧑 Username"
-            />
-            <select
-              name="role"
-              value={filters.role}
-              onChange={handleInputChange}
-            >
-              <option value="">👔 All Roles</option>
-              {roles.map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-            <select
-              name="action"
-              value={filters.action}
-              onChange={handleInputChange}
-            >
-              <option value="">⚡ All Actions</option>
-              {actions.map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-            <input
-              name="from"
-              type="datetime-local"
-              value={filters.from}
-              onChange={handleInputChange}
-              title="From date"
-            />
-            <input
-              name="to"
-              type="datetime-local"
-              value={filters.to}
-              onChange={handleInputChange}
-              title="To date"
-            />
+      {/* Filter toolbar */}
+      <Card style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+          <Input
+            name="username"
+            value={filters.username}
+            onChange={handleInputChange}
+            placeholder="Search by operator username..."
+          />
+          <Select
+            name="role"
+            value={filters.role}
+            onChange={handleInputChange}
+            options={[
+              { value: '', label: 'All Security Roles' },
+              ...roles.map((r) => ({ value: r, label: r })),
+            ]}
+          />
+          <Select
+            name="action"
+            value={filters.action}
+            onChange={handleInputChange}
+            options={[
+              { value: '', label: 'All Audited Actions' },
+              ...actions.map((a) => ({ value: a, label: a })),
+            ]}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Button variant="outline" size="md" onClick={handleClearFilters} style={{ width: '100%' }}>
+              Reset Filters
+            </Button>
           </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-            <button
-              type="button"
-              className="btn btn-secondary btn-small"
-              onClick={handleClearFilters}
-            >
-              ✕ Clear All Filters
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+      </Card>
 
       {/* Logs Table */}
-      {loading ? (
-        <div className="loading-state">
-          <span className="loading-spinner"></span> Loading audit logs...
-        </div>
-      ) : logs.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📝</div>
-          <div className="empty-state-title">No audit logs found</div>
-          <div className="empty-state-description">
-            {Object.values(filters).some(v => v) ? 'Try adjusting your filters' : 'No activity recorded yet'}
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Querying cryptographic audit trail..." />
           </div>
-        </div>
-      ) : (
-        <div className="admin-table-wrapper">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Action</th>
-                <th>Details</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map(log => (
-                <tr key={log.id}>
-                  <td>
-                    <code style={{ fontSize: '12px' }}>
-                      {log.timestamp?.replace('T', ' ').slice(0, 19)}
-                    </code>
-                  </td>
-                  <td>{log.username}</td>
-                  <td>
-                    <span style={{ fontWeight: '600', color: '#64748b' }}>
-                      {log.role}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>
+        ) : logs.length === 0 ? (
+          <EmptyState
+            icon={<LuShieldAlert size={36} color="var(--color-slate-400)" />}
+            title="No audit log entries found"
+            description="Adjust your search parameters or query another date window."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead style={{ width: '180px' }}>Timestamp (UTC)</TableHead>
+                <TableHead>Operator Identity</TableHead>
+                <TableHead>Security Role</TableHead>
+                <TableHead>Audited Operation</TableHead>
+                <TableHead>Execution Details</TableHead>
+                <TableHead style={{ textAlign: 'right' }}>Security Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell style={{ fontSize: '11px', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                    {log.timestamp ? new Date(log.timestamp).toLocaleString() : '—'}
+                  </TableCell>
+                  <TableCell style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{log.username}</TableCell>
+                  <TableCell>
+                    <Badge variant="neutral" size="sm">
+                      {log.role || 'USER'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <code style={{ fontSize: '11px', color: 'var(--color-brand-700)', backgroundColor: 'var(--bg-surface-subtle)', padding: '2px 6px', borderRadius: 'var(--radius-sm)' }}>
                       {log.action}
-                    </span>
-                  </td>
-                  <td>{log.details}</td>
-                  <td>
-                    <span
-                      className={`status ${log.success ? 'success' : 'error'}`}
-                    >
-                      {log.success ? '✓ Success' : '✗ Failed'}
-                    </span>
-                  </td>
-                </tr>
+                    </code>
+                  </TableCell>
+                  <TableCell style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{log.details}</TableCell>
+                  <TableCell style={{ textAlign: 'right' }}>
+                    <Badge variant={log.success ? 'success' : 'danger'} size="sm" dot>
+                      {log.success ? 'Success' : 'Security Alert'}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
     </div>
   );
 };

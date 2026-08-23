@@ -1,152 +1,151 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import './home.css';
+import { Button, Card, CardContent, Badge, PageHeader } from '@/components/ui';
+import {
+  LuMapPin,
+  LuBuilding2,
+  LuTruck,
+  LuZap,
+  LuCalendar,
+  LuFactory,
+  LuArrowRight,
+} from 'react-icons/lu';
 
-// Custom marker icons
-const createIcon = (color) => new Icon({
-  iconUrl: `data:image/svg+xml;base64,${btoa(`
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="${color}"/>
-      <circle cx="12" cy="9" r="3" fill="white"/>
-    </svg>
-  `)}`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 24],
-  popupAnchor: [0, -24]
-});
+// Create crisp SVG DivIcons for Leaflet
+const createPinIcon = (color, label) =>
+  divIcon({
+    className: 'custom-map-pin',
+    html: `
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: ${color};
+        color: white;
+        border: 2px solid white;
+        border-radius: 9999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        font-family: Inter, sans-serif;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+        white-space: nowrap;
+      ">
+        ${label}
+      </div>
+    `,
+    iconSize: [60, 24],
+    iconAnchor: [30, 12],
+    popupAnchor: [0, -12],
+  });
 
-// HQ marker icon
-const hqIcon = new Icon({
-  iconUrl: `data:image/svg+xml;base64,${btoa(`
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 2L28 12V28H20V18H12V28H4V12L16 2Z" fill="#DC2626"/>
-      <circle cx="16" cy="12" r="4" fill="white"/>
-      <text x="16" y="17" text-anchor="middle" fill="#DC2626" font-size="8" font-weight="bold">HQ</text>
-    </svg>
-  `)}`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32]
-});
+const hqIcon = createPinIcon('#dc2626', 'HQ HCMC');
+const northIcon = createPinIcon('#2563eb', 'North Hub');
+const centralIcon = createPinIcon('#059669', 'Central Hub');
+const southIcon = createPinIcon('#d97706', 'South Hub');
 
-const northIcon = createIcon('#3b82f6');
-const centralIcon = createIcon('#10b981');
-const southIcon = createIcon('#f59e0b');
-
-const CoveragePage = () => {
-  // Major cities with approximate coordinates
+export const CoveragePage = () => {
   const cities = [
-    // Northern Region - Blue markers
-    { name: 'Hanoi', coords: [21.0278, 105.8342], region: 'north' },
-    { name: 'Hai Phong', coords: [20.8460, 106.6881], region: 'north' },
-    { name: 'Quang Ninh', coords: [20.9718, 107.0417], region: 'north' },
-    { name: 'Nam Dinh', coords: [20.4200, 106.1683], region: 'north' },
-
-    // Central Region - Green markers
-    { name: 'Da Nang', coords: [16.0544, 108.2022], region: 'central' },
-    { name: 'Hue', coords: [16.4619, 107.5950], region: 'central' },
-    { name: 'Nha Trang', coords: [12.2388, 109.1967], region: 'central' },
-    { name: 'Quang Ngai', coords: [15.1214, 108.8044], region: 'central' },
-
-    // Southern Region - Orange markers
-    { name: 'Ho Chi Minh City', coords: [10.8231, 106.6297], region: 'south' },
-    { name: 'Can Tho', coords: [10.0458, 105.7469], region: 'south' },
-    { name: 'Vung Tau', coords: [10.4044, 107.1369], region: 'south' },
-    { name: 'Nha Be', coords: [10.6620, 106.7358], region: 'south' }
+    { name: 'Hanoi Terminal', coords: [21.0278, 105.8342], region: 'north', label: 'Hanoi Hub', drivers: '60+' },
+    { name: 'Hai Phong Port Hub', coords: [20.846, 106.6881], region: 'north', label: 'Hai Phong', drivers: '40+' },
+    { name: 'Quang Ninh Hub', coords: [20.9718, 107.0417], region: 'north', label: 'Quang Ninh', drivers: '25+' },
+    { name: 'Da Nang Central Crossdock', coords: [16.0544, 108.2022], region: 'central', label: 'Da Nang Hub', drivers: '45+' },
+    { name: 'Hue Distribution', coords: [16.4619, 107.595], region: 'central', label: 'Hue Hub', drivers: '20+' },
+    { name: 'Nha Trang Marine Hub', coords: [12.2388, 109.1967], region: 'central', label: 'Nha Trang', drivers: '30+' },
+    { name: 'HCMC Primary Gateway', coords: [10.8231, 106.6297], region: 'south', label: 'HCMC Gateway', drivers: '120+' },
+    { name: 'Can Tho Mekong Hub', coords: [10.0458, 105.7469], region: 'south', label: 'Can Tho', drivers: '35+' },
+    { name: 'Vung Tau Port Depot', coords: [10.4044, 107.1369], region: 'south', label: 'Vung Tau', drivers: '30+' },
   ];
 
-  // Headquarters location
   const headquarters = {
-    name: 'LogiFlow Headquarters',
+    name: 'LogiFlow Headquarters & Command Center',
     address: '123 Nguyen Trai Street, District 1',
     city: 'Ho Chi Minh City',
     phone: '+84 1900-1234',
-    email: 'business@logiflow.vn',
-    coords: [10.7757, 106.7009] // District 1, HCMC coordinates
+    email: 'operations@logiflow.vn',
+    coords: [10.7757, 106.7009],
   };
 
   return (
-    <div className="home-container">
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '2rem 1rem'
-      }}>
-        <h1 style={{
-          fontSize: '3rem',
-          fontWeight: '700',
-          color: 'var(--text-color)',
-          marginBottom: '1rem',
-          textAlign: 'center',
-          background: 'linear-gradient(90deg, var(--primary-color), var(--accent))',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
-        }}>
-          Service Coverage
-        </h1>
-        <p style={{
-          textAlign: 'center',
-          fontSize: '1.25rem',
-          color: '#556',
-          marginBottom: '3rem'
-        }}>
-          Nationwide delivery coverage across Vietnam's major cities and provinces.
-        </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
+      <div className="container">
+        <PageHeader
+          badge={<Badge variant="brand">Pan-Vietnam Logistics Network</Badge>}
+          title="Distribution Hubs & Provincial Coverage"
+          description="Direct linehaul services, cross-docking facilities, and last-mile dispatch coverage spanning all 63 provinces across Vietnam."
+        />
+      </div>
 
-        {/* Vietnam Interactive Map */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))',
-          padding: '2rem',
-          borderRadius: '16px',
-          marginBottom: '4rem',
-          boxShadow: '0 4px 20px rgba(59, 130, 246, 0.1)'
-        }}>
-          <h2 style={{ marginBottom: '1.5rem', fontSize: '2rem', textAlign: 'center' }}>Vietnam Coverage Map</h2>
-          <p style={{ color: '#666', textAlign: 'center', marginBottom: '2rem' }}>
-            Click city markers to see delivery information • From northern border to southern tip of Vietnam
-          </p>
+      {/* Interactive Leaflet Map Card */}
+      <section className="container">
+        <Card style={{ overflow: 'hidden', border: '1px solid var(--border-default)' }}>
+          <div
+            style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-surface-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <LuMapPin size={18} color="var(--color-brand-600)" />
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Active Freight Terminals & Hub Routing
+              </span>
+            </div>
 
-          <div style={{
-            height: '400px',
-            width: '100%',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 'var(--text-xs)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#dc2626' }} />
+                <span>Headquarters</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2563eb' }} />
+                <span>North Terminals</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#059669' }} />
+                <span>Central Terminals</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#d97706' }} />
+                <span>South Terminals</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ height: '480px', width: '100%', position: 'relative' }}>
             <MapContainer
-              center={[14.0583, 108.2772]} // Center of Vietnam
+              center={[14.0583, 108.2772]}
               zoom={6}
+              scrollWheelZoom={false}
               style={{ height: '100%', width: '100%' }}
-              zoomControl={true}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
-              {/* Headquarters Marker */}
-              <Marker
-                position={headquarters.coords}
-                icon={hqIcon}
-              >
+              {/* HQ Marker */}
+              <Marker position={headquarters.coords} icon={hqIcon}>
                 <Popup>
-                  <div style={{ textAlign: 'center', padding: '0.5rem' }}>
-                    <strong style={{ color: '#DC2626', fontSize: '1.1rem' }}>
-                      🏢 {headquarters.name}
-                    </strong><br/>
-                    <span style={{ fontSize: '0.9rem', color: '#666' }}>
-                      {headquarters.address}<br/>
-                      {headquarters.city}, Vietnam<br/>
-                      📞 {headquarters.phone}<br/>
-                      ✉️ {headquarters.email}
-                    </span><br/>
-                    <span style={{ color: '#DC2626', fontWeight: 'bold' }}>
-                      Headquarters & Operations Center
-                    </span>
+                  <div style={{ padding: '6px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-danger-600)' }}>
+                      {headquarters.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      {headquarters.address}, {headquarters.city}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      📞 {headquarters.phone} • ✉️ {headquarters.email}
+                    </div>
                   </div>
                 </Popup>
               </Marker>
@@ -156,399 +155,130 @@ const CoveragePage = () => {
                 <Marker
                   key={city.name}
                   position={city.coords}
-                  icon={city.region === 'north' ? northIcon :
-                        city.region === 'central' ? centralIcon : southIcon}
+                  icon={
+                    city.region === 'north'
+                      ? northIcon
+                      : city.region === 'central'
+                      ? centralIcon
+                      : southIcon
+                  }
                 >
                   <Popup>
-                    <div style={{ textAlign: 'center' }}>
-                      <strong>{city.name}</strong><br/>
-                      <span style={{
-                        color: city.region === 'north' ? '#3b82f6' :
-                               city.region === 'central' ? '#10b981' : '#f59e0b'
-                      }}>
-                        {city.region.charAt(0).toUpperCase() + city.region.slice(1)} Region
-                      </span><br/>
-                      🚚 Active delivery service<br/>
-                      📦 Same/next-day available
+                    <div style={{ padding: '4px' }}>
+                      <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{city.name}</strong>
+                      <div style={{ fontSize: '11px', color: 'var(--color-brand-600)', fontWeight: 600, marginTop: '2px' }}>
+                        {city.region.toUpperCase()} OPERATIONAL HUB
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Active Drivers: <strong>{city.drivers}</strong>
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-success-600)', marginTop: '2px' }}>
+                        ✓ FTL & Express Linehaul Ready
+                      </div>
                     </div>
                   </Popup>
                 </Marker>
               ))}
             </MapContainer>
           </div>
+        </Card>
+      </section>
 
-          {/* Legend */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '2rem',
-            marginTop: '1rem',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{
-                width: '24px',
-                height: '24px',
-                backgroundImage: `url("data:image/svg+xml;base64,${btoa(`
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L28 12V28H20V18H12V28H4V12L16 2Z" fill="#DC2626"/>
-                    <circle cx="16" cy="12" r="3" fill="white"/>
-                    <text x="16" y="16" text-anchor="middle" fill="#DC2626" font-size="6" font-weight="bold">HQ</text>
-                  </svg>
-                `)}`,
-                backgroundSize: 'contain',
-                backgroundRepeat: 'no-repeat'
-              }}></div>
-              <span>LogiFlow HQ</span>
+      {/* Regional Operational Details */}
+      <section className="container">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+          {/* North */}
+          <Card style={{ padding: '24px', borderTop: '4px solid #2563eb' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: 0 }}>
+                Northern Corridor
+              </h3>
+              <Badge variant="brand" size="sm">Hanoi Gateway</Badge>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#3b82f6', borderRadius: '50%' }}></div>
-              <span>Northern Cities</span>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+              Connecting Noi Bai Airport, Dinh Vu Seaport (Hai Phong), and Bac Ninh / Hai Duong manufacturing clusters.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+              {['Hanoi', 'Hai Phong', 'Quang Ninh', 'Bac Ninh', 'Hai Duong', 'Nam Dinh'].map((p) => (
+                <span key={p} style={{ padding: '2px 8px', backgroundColor: 'var(--color-slate-100)', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 500 }}>
+                  {p}
+                </span>
+              ))}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
-              <span>Central Cities</span>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              Transit: <strong>Same-day / 24h Next-Flight</strong>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#f59e0b', borderRadius: '50%' }}></div>
-              <span>Southern Cities</span>
+          </Card>
+
+          {/* Central */}
+          <Card style={{ padding: '24px', borderTop: '4px solid #059669' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: 0 }}>
+                Central Coast & Highlands
+              </h3>
+              <Badge variant="success" size="sm">Da Nang Hub</Badge>
             </div>
-          </div>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+              Key cross-dock link bridging North-South linehauls with coastal fisheries, agro-commodities, and industrial ports.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+              {['Da Nang', 'Hue', 'Nha Trang', 'Quang Nam', 'Quang Ngai', 'Binh Dinh'].map((p) => (
+                <span key={p} style={{ padding: '2px 8px', backgroundColor: 'var(--color-slate-100)', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 500 }}>
+                  {p}
+                </span>
+              ))}
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              Transit: <strong>1–2 Business Days</strong>
+            </div>
+          </Card>
+
+          {/* South */}
+          <Card style={{ padding: '24px', borderTop: '4px solid #d97706' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: 0 }}>
+                Southern Mega Hub & Delta
+              </h3>
+              <Badge variant="warning" size="sm">HCMC Command</Badge>
+            </div>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+              Cat Lai port drayage, Binh Duong / Dong Nai factory loops, and cold chain distribution across the Mekong Delta.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+              {['HCMC', 'Binh Duong', 'Dong Nai', 'Can Tho', 'Vung Tau', 'Long An'].map((p) => (
+                <span key={p} style={{ padding: '2px 8px', backgroundColor: 'var(--color-slate-100)', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 500 }}>
+                  {p}
+                </span>
+              ))}
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              Transit: <strong>Same-day / Scheduled Multi-stop</strong>
+            </div>
+          </Card>
         </div>
+      </section>
 
-        {/* Regional Coverage */}
-        <section style={{ marginBottom: '4rem' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontSize: '2.5rem', color: 'var(--text-color)' }}>
-            Regional Coverage
-          </h2>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-            gap: '2rem'
-          }}>
-            {/* Northern Region */}
-            <div style={{
-              padding: '2rem',
-              border: '2px solid #3b82f6',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '1.5rem'
-              }}>
-                <div style={{ fontSize: '2.5rem', marginRight: '1rem' }}>🌆</div>
-                <div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-color)', fontSize: '1.5rem' }}>
-                    Northern Vietnam
-                  </h3>
-                  <p style={{ margin: 0, color: '#666' }}>Red River Delta Region</p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Major Cities:</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {['Hanoi', 'Hai Phong', 'Quang Ninh', 'Bac Ninh', 'Hung Yen', 'Hai Duong', 'Nam Dinh', 'Thanh Hoa'].map(city => (
-                    <span key={city} style={{
-                      padding: '0.25rem 0.75rem',
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      borderRadius: '12px',
-                      fontSize: '0.9rem',
-                      fontWeight: '500'
-                    }}>
-                      {city}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-                  50+ drivers active
-                </div>
-                <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                  Same-day delivery available
-                </div>
-              </div>
-            </div>
-
-            {/* Central Region */}
-            <div style={{
-              padding: '2rem',
-              border: '2px solid #10b981',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02))'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '1.5rem'
-              }}>
-                <div style={{ fontSize: '2.5rem', marginRight: '1rem' }}>🏖️</div>
-                <div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-color)', fontSize: '1.5rem' }}>
-                    Central Vietnam
-                  </h3>
-                  <p style={{ margin: 0, color: '#666' }}>Coastal and Highlands Region</p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Major Cities:</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {['Da Nang', 'Hue', 'Nha Trang', 'Quang Nam', 'Binh Dinh', 'Khanh Hoa', 'Quang Ngai'].map(city => (
-                    <span key={city} style={{
-                      padding: '0.25rem 0.75rem',
-                      background: 'rgba(16, 185, 129, 0.1)',
-                      borderRadius: '12px',
-                      fontSize: '0.9rem',
-                      fontWeight: '500'
-                    }}>
-                      {city}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--accent)' }}>
-                  30+ drivers active
-                </div>
-                <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                  2-5 day delivery available
-                </div>
-              </div>
-            </div>
-
-            {/* Southern Region */}
-            <div style={{
-              padding: '2rem',
-              border: '2px solid #f59e0b',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02))'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '1.5rem'
-              }}>
-                <div style={{ fontSize: '2.5rem', marginRight: '1rem' }}>🌴</div>
-                <div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-color)', fontSize: '1.5rem' }}>
-                    Southern Vietnam
-                  </h3>
-                  <p style={{ margin: 0, color: '#666' }}>Mekong Delta and Southeast Region</p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Major Cities:</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {['Ho Chi Minh City', 'Can Tho', 'Vung Tau', 'Bien Hoa', 'Nha Be', 'Thu Dau Mot'].map(city => (
-                    <span key={city} style={{
-                      padding: '0.25rem 0.75rem',
-                      background: 'rgba(245, 158, 11, 0.1)',
-                      borderRadius: '12px',
-                      fontSize: '0.9rem',
-                      fontWeight: '500'
-                    }}>
-                      {city}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#f59e0b' }}>
-                  70+ drivers active
-                </div>
-                <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                  Express delivery available
-                </div>
-              </div>
-            </div>
-
-            {/* Inter-Province Service */}
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '1.5rem'
-              }}>
-                <div style={{ fontSize: '2.5rem', marginRight: '1rem' }}>🚗</div>
-                <div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-color)', fontSize: '1.5rem' }}>
-                    Nationwide Network
-                  </h3>
-                  <p style={{ margin: 0, color: '#666' }}>Cross-province delivery solutions</p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Service Coverage:</h4>
-                <p style={{ color: '#666', margin: 0, lineHeight: '1.6' }}>
-                  Reliable transportation between all major cities and provinces,
-                  including smaller towns and industrial zones.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-                  63 provinces covered
-                </div>
-                <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                  Dedicated routes available
-                </div>
-              </div>
-            </div>
+      {/* CTA */}
+      <section className="container">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', padding: '32px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' }}>
+          <div>
+            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+              Ship to Any Province with Verified SLAs
+            </h3>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
+              Request quote schedules or review our dedicated linehaul frequency tables.
+            </p>
           </div>
-        </section>
-
-        {/* Service Details */}
-        <section style={{ marginBottom: '4rem' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontSize: '2.5rem', color: 'var(--text-color)' }}>
-            Coverage Details
-          </h2>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '2rem'
-          }}>
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚡</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Express Service</h3>
-              <p style={{ color: '#666', lineHeight: '1.6', marginBottom: '1rem' }}>
-                Same-day delivery in major cities and provincial capitals.
-                Perfect for urgent documents and time-sensitive packages.
-              </p>
-              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-                Available in 15+ cities
-              </div>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📅</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Standard Service</h3>
-              <p style={{ color: '#666', lineHeight: '1.6', marginBottom: '1rem' }}>
-                Reliable 2-3 day delivery service across all regions.
-                Ideal for standard shipping requirements and cost-effective solutions.
-              </p>
-              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-                Full nationwide coverage
-              </div>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏪</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Business Districts</h3>
-              <p style={{ color: '#666', lineHeight: '1.6', marginBottom: '1rem' }}>
-                Dedicated service for industrial zones, business parks,
-                and high-traffic commercial areas with specialized logistics.
-              </p>
-              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-                200+ industrial zones served
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats */}
-        <section style={{
-          background: 'var(--primary-color)',
-          color: 'white',
-          padding: '3rem 1rem',
-          borderRadius: '12px',
-          marginBottom: '4rem',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ marginBottom: '2rem', fontSize: '2rem' }}>Coverage Statistics</h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '2rem',
-            maxWidth: '800px',
-            margin: '0 auto'
-          }}>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>63</div>
-              <div>Provinces & Cities</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>200+</div>
-              <div>Toones of Routes</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>150+</div>
-              <div>Active Drivers</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>99%</div>
-              <div>Coverage Reliability</div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <div style={{
-          textAlign: 'center'
-        }}>
-          <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Ready to Ship Nationwide?</h2>
-          <p style={{ marginBottom: '2rem', color: '#666' }}>
-            Experience reliable delivery across Vietnam with our extensive network.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/track" style={{
-              padding: '1rem 2rem',
-              background: 'var(--primary-color)',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontWeight: '600'
-            }}>
-              Track Your Package
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Link to="/track">
+              <Button variant="primary">Track Existing Cargo</Button>
             </Link>
-            <Link to="/contact" style={{
-              padding: '1rem 2rem',
-              background: 'transparent',
-              color: 'var(--primary-color)',
-              border: '2px solid var(--primary-color)',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontWeight: '600'
-            }}>
-              Get a Quote
+            <Link to="/business">
+              <Button variant="outline">Enterprise Rate Sheet</Button>
             </Link>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

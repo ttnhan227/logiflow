@@ -1,9 +1,32 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { orderService } from '../../services';
-import './dispatch.css';
 import * as XLSX from 'xlsx';
+import {
+  Button,
+  Card,
+  CardContent,
+  Badge,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from '@/components/ui';
+import {
+  LuCloudUpload,
+  LuDownload,
+  LuFileSpreadsheet,
+  LuArrowLeft,
+  LuCircleCheck,
+  LuTriangleAlert,
+  LuFileText,
+} from 'react-icons/lu';
 
-const OrderImportPage = () => {
+export const OrderImportPage = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -26,10 +49,14 @@ const OrderImportPage = () => {
       reader.onload = (evt) => {
         const text = evt.target.result;
         const rows = text.split(/\r?\n/);
-        if (!rows || rows.length === 0) return setError('CSV is empty');
-        const headerLine = rows.find(r => r && r.trim().length > 0) || '';
-        const headers = headerLine.split(',').map(h => h.trim());
-        const dataRows = rows.slice(rows.indexOf(headerLine) + 1).filter(Boolean).slice(0, 5).map(r => r.split(','));
+        if (!rows || rows.length === 0) return setError('CSV file appears to be empty.');
+        const headerLine = rows.find((r) => r && r.trim().length > 0) || '';
+        const headers = headerLine.split(',').map((h) => h.trim());
+        const dataRows = rows
+          .slice(rows.indexOf(headerLine) + 1)
+          .filter(Boolean)
+          .slice(0, 5)
+          .map((r) => r.split(','));
         setPreview({ headers, rows: dataRows });
       };
       reader.readAsText(f, 'UTF-8');
@@ -42,31 +69,29 @@ const OrderImportPage = () => {
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
           const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          if (!json || json.length === 0) return setError('Excel is empty');
-          const headers = json[0].map(h => (h === undefined || h === null) ? '' : String(h).trim());
+          if (!json || json.length === 0) return setError('Excel worksheet is empty.');
+          const headers = json[0].map((h) => (h === undefined || h === null ? '' : String(h).trim()));
           const dataRows = json.slice(1, 6);
           setPreview({ headers, rows: dataRows });
-        } catch (ex) {
-          console.error('Excel parse error', ex);
-          setError('Failed to parse Excel for preview');
+        } catch {
+          setError('Failed to parse Excel file for live preview.');
         }
       };
       reader.readAsArrayBuffer(f);
     } else {
-      setError('Unsupported file type for preview. Server will still accept the file.');
+      setError('Unsupported file type for preview. CSV or Excel (XLSX) required.');
     }
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!file) return setError('Please choose a file');
+    if (!file) return setError('Please select a CSV or Excel manifest file to upload.');
 
-    // basic client-side validation (if preview available)
     if (preview && preview.headers) {
       const missing = getMissingRequiredHeaders(preview.headers);
       if (missing.length > 0) {
-        return setError('Missing required columns: ' + missing.join(', '));
+        return setError('Missing required manifest columns: ' + missing.join(', '));
       }
     }
 
@@ -75,8 +100,7 @@ const OrderImportPage = () => {
       const res = await orderService.importOrders(file);
       setResult(res);
     } catch (err) {
-      console.error(err);
-      setError(err?.message || 'Import failed');
+      setError(err?.response?.data?.message || err?.message || 'Manifest import process failed.');
     } finally {
       setLoading(false);
     }
@@ -93,85 +117,199 @@ const OrderImportPage = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Template download failed', err);
-      setError('Template download failed');
+    } catch {
+      setError('Failed to generate template download.');
     }
   };
 
   return (
-    <div className="container">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Import Order Manifests"
+        description="Bulk upload shipping manifests via formatted CSV or Excel worksheets."
+        badge={<Badge variant="brand">Bulk Ingestion</Badge>}
+        actions={
+          <Link to="/dispatch/orders">
+            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
+              Back to Orders
+            </Button>
+          </Link>
+        }
+      />
 
-      <h2>Import Orders (CSV / Excel)</h2>
-
-      <div className="action-bar">
-        <div>
-          <button className="btn" onClick={() => downloadTemplate('csv')}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><path d="M12 15V3"/></svg>
-            Download CSV
-          </button>
-          <button className="btn" style={{ marginLeft: 8 }} onClick={() => downloadTemplate('xlsx')}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
-            Download Excel
-          </button>
-        </div>
-
-        <div className="spacer" />
-
-        <form onSubmit={onSubmit} style={{ margin: 0 }}>
-          <input type="file" accept=".csv, .xlsx, .xls" onChange={onFileChange} />
-          <button type="submit" className="btn" style={{ marginLeft: 8 }} disabled={loading}>{loading ? 'Importing...' : 'Import'}</button>
-        </form>
-      </div>
-
-      {error && <div className="error">{error}</div>}
-
-      {preview && (
-        <div className="preview">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <strong>Preview (first 5 rows)</strong>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>{preview.rows.length} rows shown</div>
-          </div>
-          <div style={{ marginTop: 6, fontSize: 13, color: '#374151' }}>Headers: {preview.headers.join(', ')}</div>
-          <table>
-            <thead>
-              <tr>{preview.headers.map((h, i) => <th key={i}>{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {preview.rows.map((r, ri) => (
-                <tr key={ri}>{preview.headers.map((_, ci) => <td key={ci}>{r[ci] ?? ''}</td>)}</tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)}>
+          {error}
+        </Alert>
       )}
 
+      {/* Upload & Template Downloads */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        {/* Upload Form Card */}
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+            Upload File
+          </h3>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '0 0 16px 0' }}>
+            Select a structured CSV or XLSX file containing customer orders.
+          </p>
+
+          <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <label
+              style={{
+                border: '2px dashed var(--border-default)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: 'var(--bg-surface-subtle)',
+              }}
+            >
+              <input type="file" accept=".csv, .xlsx, .xls" onChange={onFileChange} style={{ display: 'none' }} />
+              <LuCloudUpload size={28} color="var(--color-brand-600)" />
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
+                {file ? file.name : 'Choose CSV or Excel Spreadsheet'}
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Max file size: 10MB</span>
+            </label>
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!file}
+              loading={loading}
+              leftIcon={<LuCloudUpload size={16} />}
+              style={{ width: '100%' }}
+            >
+              {loading ? 'Processing Orders...' : 'Import Manifest'}
+            </Button>
+          </form>
+        </Card>
+
+        {/* Template Downloads Card */}
+        <Card style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+            Official Import Templates
+          </h3>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+            Ensure your column headers match required system schemas: Customer Name, Pickup Address, Delivery Address, Weight (tons), and Pickup Type.
+          </p>
+
+          <div style={{ display: 'flex', gap: '10px', marginTop: 'auto', paddingTop: '12px' }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadTemplate('csv')}
+              leftIcon={<LuDownload size={14} />}
+            >
+              CSV Template
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadTemplate('xlsx')}
+              leftIcon={<LuFileSpreadsheet size={14} />}
+            >
+              Excel (XLSX) Template
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      {/* Preview Table */}
+      {preview && (
+        <Card style={{ overflow: 'hidden', padding: 0 }}>
+          <div
+            style={{
+              padding: '14px 20px',
+              borderBottom: '1px solid var(--border-default)',
+              backgroundColor: 'var(--bg-surface-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Data Ingestion Preview (First {preview.rows.length} rows)
+            </div>
+            <Badge variant="neutral" size="sm">{preview.headers.length} Columns Detected</Badge>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {preview.headers.map((h, i) => (
+                  <TableHead key={i}>{h}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {preview.rows.map((row, ri) => (
+                <TableRow key={ri}>
+                  {preview.headers.map((_, ci) => (
+                    <TableCell key={ci}>{row[ci] ?? '—'}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {/* Result Metrics */}
       {result && (
-        <div style={{ marginTop: 24, padding: 16, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Import Summary</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
-            <div style={{ padding: 12, background: '#ffffff', borderRadius: 6, border: '1px solid #e2e8f0', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Total Processed</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginTop: 4 }}>{result.totalRows ?? 0}</div>
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 16px 0' }}>
+            Import Execution Summary
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ padding: '14px', backgroundColor: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-md)', textAlign: 'center', border: '1px solid var(--border-default)' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Rows</span>
+              <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, marginTop: '4px', fontVariantNumeric: 'tabular-nums' }}>
+                {result.totalRows ?? 0}
+              </div>
             </div>
-            <div style={{ padding: 12, background: '#f0fdf4', borderRadius: 6, border: '1px solid #bbf7d0', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: '#166534', fontWeight: 500 }}>Successful</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d', marginTop: 4 }}>{result.successCount ?? 0}</div>
+
+            <div style={{ padding: '14px', backgroundColor: 'var(--color-success-50)', borderRadius: 'var(--radius-md)', textAlign: 'center', border: '1px solid var(--color-success-200)' }}>
+              <span style={{ fontSize: '11px', color: 'var(--color-success-700)', textTransform: 'uppercase', fontWeight: 600 }}>Created</span>
+              <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--color-success-700)', marginTop: '4px', fontVariantNumeric: 'tabular-nums' }}>
+                {result.successCount ?? 0}
+              </div>
             </div>
-            <div style={{ padding: 12, background: result.failureCount > 0 ? '#fef2f2' : '#f8fafc', borderRadius: 6, border: result.failureCount > 0 ? '1px solid #fecaca' : '1px solid #e2e8f0', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: result.failureCount > 0 ? '#991b1b' : '#64748b', fontWeight: 500 }}>Failed</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: result.failureCount > 0 ? '#dc2626' : '#64748b', marginTop: 4 }}>{result.failureCount ?? 0}</div>
+
+            <div style={{ padding: '14px', backgroundColor: (result.failureCount || 0) > 0 ? 'var(--color-danger-50)' : 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-md)', textAlign: 'center', border: (result.failureCount || 0) > 0 ? '1px solid var(--color-danger-200)' : '1px solid var(--border-default)' }}>
+              <span style={{ fontSize: '11px', color: (result.failureCount || 0) > 0 ? 'var(--color-danger-700)' : 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Failed</span>
+              <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: (result.failureCount || 0) > 0 ? 'var(--color-danger-700)' : 'var(--text-muted)', marginTop: '4px', fontVariantNumeric: 'tabular-nums' }}>
+                {result.failureCount ?? 0}
+              </div>
             </div>
           </div>
+
           {result.errors && result.errors.length > 0 && (
-            <div style={{ padding: 12, background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 6 }}>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: 13, fontWeight: 600, color: '#9f1239' }}>Import Validation Warnings:</h4>
-              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#be123c' }}>
-                {result.errors.map((err, idx) => <li key={idx} style={{ marginTop: 2 }}>{err}</li>)}
+            <div style={{ padding: '16px', backgroundColor: 'var(--color-danger-50)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-danger-200)' }}>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-danger-900)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <LuTriangleAlert size={15} />
+                Validation Warnings & Error Logs:
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: 'var(--text-xs)', color: 'var(--color-danger-800)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {result.errors.map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
               </ul>
             </div>
           )}
-        </div>
+
+          <div style={{ marginTop: '20px' }}>
+            <Link to="/dispatch/orders">
+              <Button variant="primary">View Dispatch Queue</Button>
+            </Link>
+          </div>
+        </Card>
       )}
     </div>
   );
@@ -179,8 +317,8 @@ const OrderImportPage = () => {
 
 function getMissingRequiredHeaders(headers) {
   const required = ['Customer Name', 'Pickup Address', 'Delivery Address', 'Weight (tons)', 'Pickup Type'];
-  const lower = headers.map(h => String(h).toLowerCase());
-  return required.filter(r => !lower.includes(r.toLowerCase()));
+  const lower = headers.map((h) => String(h).toLowerCase());
+  return required.filter((r) => !lower.includes(r.toLowerCase()));
 }
 
 export default OrderImportPage;

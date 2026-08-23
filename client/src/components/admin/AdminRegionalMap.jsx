@@ -1,61 +1,73 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default marker icons
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Clean modern colors
-const COLORS = {
-  north: '#3b82f6', // Blue
-  central: '#10b981', // Emerald
-  south: '#f59e0b', // Amber
-  bg: '#f8fafc',
-  card: '#ffffff'
-};
+import { divIcon } from 'leaflet';
+import { Card, Badge } from '@/components/ui';
 
 const VIETNAM_REGIONS = {
   north: {
-    name: 'Northern Region',
+    name: 'Northern Corridors',
     cities: 'Hanoi, Hai Phong, Quang Ninh',
-    bounds: [[21.0, 105.0], [23.5, 105.0], [23.5, 108.0], [21.0, 108.0]],
-    center: [21.5, 105.8]
+    bounds: [
+      [21.0, 105.0],
+      [23.5, 105.0],
+      [23.5, 108.0],
+      [21.0, 108.0],
+    ],
+    center: [21.5, 105.8],
   },
   central: {
-    name: 'Central Region',
+    name: 'Central Coastline',
     cities: 'Da Nang, Hue, Nha Trang',
-    bounds: [[14.0, 107.0], [19.0, 107.0], [19.0, 110.0], [14.0, 110.0]],
-    center: [16.0, 108.2]
+    bounds: [
+      [14.0, 107.0],
+      [19.0, 107.0],
+      [19.0, 110.0],
+      [14.0, 110.0],
+    ],
+    center: [16.0, 108.2],
   },
   south: {
-    name: 'Southern Region',
-    cities: 'HCM City, Can Tho, Vung Tau',
-    bounds: [[8.5, 104.5], [12.0, 104.5], [12.0, 107.5], [8.5, 107.5]],
-    center: [10.8, 106.6]
-  }
+    name: 'Southern Commercial Hub',
+    cities: 'Ho Chi Minh City, Can Tho, Vung Tau',
+    bounds: [
+      [8.5, 104.5],
+      [12.0, 104.5],
+      [12.0, 107.5],
+      [8.5, 107.5],
+    ],
+    center: [10.8, 106.6],
+  },
 };
 
-// Component to handle map view animations
 const MapController = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    if (center) map.flyTo(center, zoom || 7, { duration: 1.5 });
+    if (center) map.flyTo(center, zoom || 6, { duration: 1.2 });
   }, [center, zoom, map]);
   return null;
 };
 
-const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick }) => {
-  const [mapView, setMapView] = useState({ center: [15.8, 107.0], zoom: 6 });
+const createDotMarker = (color) =>
+  divIcon({
+    html: `<div style="
+      background-color: ${color};
+      width: 14px;
+      height: 14px;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    "></div>`,
+    className: '',
+    iconSize: [14, 14],
+  });
+
+export const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick }) => {
+  const [mapView, setMapView] = useState({ center: [16.0471, 108.2068], zoom: 6 });
 
   const stats = useMemo(() => {
     const counts = { north: 0, central: 0, south: 0, total: activeDrivers.length };
-    activeDrivers.forEach(d => {
+    activeDrivers.forEach((d) => {
       const lat = parseFloat(d.latitude);
       if (lat > 20) counts.north++;
       else if (lat >= 13) counts.central++;
@@ -70,213 +82,177 @@ const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick 
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: '20px', 
-      fontFamily: 'Inter, system-ui, sans-serif',
-      backgroundColor: COLORS.bg,
-      padding: '20px',
-      borderRadius: '16px'
-    }}>
-      
-      {/* Header Stats Bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
-        <StatCard title="Total Drivers" value={stats.total} color="#64748b" />
-        <StatCard title="North" value={stats.north} color={COLORS.north} onClick={() => handleRegionSelect('north')} />
-        <StatCard title="Central" value={stats.central} color={COLORS.central} onClick={() => handleRegionSelect('central')} />
-        <StatCard title="South" value={stats.south} color={COLORS.south} onClick={() => handleRegionSelect('south')} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Regional Quick Pill Selectors */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+        <button
+          onClick={() => setMapView({ center: [16.0471, 108.2068], zoom: 6 })}
+          style={{
+            padding: '12px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+            Nationwide
+          </span>
+          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {stats.total} Drivers
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleRegionSelect('north')}
+          style={{
+            padding: '12px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ fontSize: '11px', color: 'var(--color-brand-600)', textTransform: 'uppercase', fontWeight: 600 }}>
+            North Hub
+          </span>
+          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {stats.north} Active
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleRegionSelect('central')}
+          style={{
+            padding: '12px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ fontSize: '11px', color: 'var(--color-success-600)', textTransform: 'uppercase', fontWeight: 600 }}>
+            Central Corridor
+          </span>
+          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {stats.central} Active
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleRegionSelect('south')}
+          style={{
+            padding: '12px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ fontSize: '11px', color: 'var(--color-warning-600)', textTransform: 'uppercase', fontWeight: 600 }}>
+            South Commercial
+          </span>
+          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {stats.south} Active
+          </div>
+        </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '20px', height: '600px' }}>
-        
-        {/* Sidebar List */}
-        <div style={{ 
-          width: '300px', 
-          backgroundColor: COLORS.card, 
-          borderRadius: '12px', 
-          padding: '15px',
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-          overflowY: 'auto'
-        }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '15px' }}>Active Fleet</h3>
-          {activeDrivers.slice(0, 10).map((driver) => (
-            <div 
-              key={driver.driverId} 
-              style={{ 
-                padding: '10px', 
-                borderBottom: '1px solid #f1f5f9', 
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', height: '480px' }}>
+        {/* Active Fleet Sidebar */}
+        <div
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-default)',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            gap: '8px',
+          }}
+        >
+          <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            Active Carrier Telemetry
+          </div>
+
+          {activeDrivers.slice(0, 15).map((driver) => (
+            <div
+              key={driver.driverId}
+              onClick={() => setMapView({ center: [driver.latitude, driver.longitude], zoom: 11 })}
+              style={{
+                padding: '8px 10px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-default)',
+                backgroundColor: 'var(--bg-surface-subtle)',
                 cursor: 'pointer',
-                transition: 'background 0.2s'
+                transition: 'background var(--transition-fast)',
               }}
-              onMouseEnter={() => setMapView({ center: [driver.latitude, driver.longitude], zoom: 10 })}
             >
-              <div style={{ fontWeight: '600', fontSize: '13px' }}>{driver.driverName}</div>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>{driver.vehiclePlate} • {driver.tripStatus}</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {driver.driverName}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {driver.vehiclePlate} • {driver.tripStatus}
+              </div>
             </div>
           ))}
-          <div style={{ padding: '10px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-            Showing {Math.min(activeDrivers.length, 10)} of {activeDrivers.length}
-          </div>
+          {activeDrivers.length === 0 && (
+            <div style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '24px' }}>
+              No vehicles currently transmitting GPS telemetry.
+            </div>
+          )}
         </div>
 
-        {/* Map Container */}
-        <div style={{ flex: 1, position: 'relative', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}>
-          <MapContainer
-            center={mapView.center}
-            zoom={mapView.zoom}
-            style={{ height: '100%', width: '100%' }}
-          >
-            {/* Using CartoDB Positron for a modern "Light" look */}
+        {/* Map */}
+        <div style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-default)', position: 'relative' }}>
+          <MapContainer center={mapView.center} zoom={mapView.zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              attribution='&copy; OpenStreetMap'
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-
             <MapController center={mapView.center} zoom={mapView.zoom} />
 
-            {Object.entries(VIETNAM_REGIONS).map(([key, region]) => (
-              <Polygon
-                key={key}
-                positions={region.bounds}
-                pathOptions={{
-                  color: 'transparent',
-                  fillColor: 'transparent',
-                  fillOpacity: 0,
-                  weight: 0,
-                  dashArray: '0'
-                }}
-                eventHandlers={{
-                  click: () => handleRegionSelect(key)
-                }}
-              >
-                <Popup>
-                  <div style={{ padding: '5px' }}>
-                    <strong style={{ color: COLORS[key] }}>{region.name}</strong><br/>
-                    <span style={{ fontSize: '11px' }}>{region.cities}</span>
-                  </div>
-                </Popup>
-              </Polygon>
-            ))}
-
             {activeDrivers.map((driver) => {
-              // Find the corresponding trip for this driver
-              const driverTrip = activeTrips.find(trip =>
-                trip.driver && trip.driver.name === driver.driverName
+              const driverTrip = activeTrips.find(
+                (trip) => trip.driver && trip.driver.name === driver.driverName
               );
 
               return (
                 <Marker
                   key={driver.driverId}
                   position={[driver.latitude, driver.longitude]}
-                  icon={createCustomIcon(driver.tripStatus === 'in_progress' ? COLORS.central : '#94a3b8')}
+                  icon={createDotMarker(driver.tripStatus === 'in_progress' ? '#059669' : '#2563eb')}
                 >
                   <Popup>
-                    <DriverPopup driver={driver} trip={driverTrip} />
+                    <div style={{ padding: '6px', minWidth: '200px' }}>
+                      <strong style={{ fontSize: '13px' }}>{driver.driverName}</strong>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Vehicle: {driver.vehiclePlate}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Status: <strong>{driver.tripStatus}</strong>
+                      </div>
+                      {driverTrip && (
+                        <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid var(--border-default)', fontSize: '11px' }}>
+                          <div>Trip #{driverTrip.tripId}</div>
+                          <div>{driverTrip.originCity} → {driverTrip.destinationCity}</div>
+                        </div>
+                      )}
+                    </div>
                   </Popup>
                 </Marker>
               );
             })}
           </MapContainer>
-
-          {/* Floating Legend */}
-          <div style={{
-            position: 'absolute', bottom: '20px', right: '20px', zIndex: 1000,
-            backgroundColor: 'rgba(255,255,255,0.9)', padding: '12px', borderRadius: '8px',
-            fontSize: '11px', backdropFilter: 'blur(4px)', border: '1px solid #e2e8f0'
-          }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>STATUS</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: COLORS.central }}></span> Moving
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span> Idle
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
 };
-
-// Sub-components for cleaner code
-const StatCard = ({ title, value, color, onClick }) => (
-  <div 
-    onClick={onClick}
-    style={{
-      backgroundColor: COLORS.card, padding: '15px', borderRadius: '12px',
-      boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', borderLeft: `4px solid ${color}`,
-      cursor: onClick ? 'pointer' : 'default'
-    }}
-  >
-    <div style={{ color: '#64748b', fontSize: '12px', fontWeight: '500', textTransform: 'uppercase' }}>{title}</div>
-    <div style={{ fontSize: '24px', fontWeight: '700', color: '#1e293b' }}>{value}</div>
-  </div>
-);
-
-const DriverPopup = ({ driver, trip }) => (
-  <div style={{ minWidth: '250px', padding: '8px', maxWidth: '300px' }}>
-    <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
-      {driver.driverName}
-    </div>
-
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ color: '#64748b' }}>Plate:</span>
-        <span>{driver.vehiclePlate}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ color: '#64748b' }}>Status:</span>
-        <span style={{
-          color: driver.tripStatus === 'in_progress' ? '#059669' : '#475569',
-          fontWeight: 'bold'
-        }}>{driver.tripStatus?.replace('_', ' ')}</span>
-      </div>
-
-      {trip && (
-        <>
-          <div style={{ borderTop: '1px solid #e5e7eb', margin: '8px 0', paddingTop: '8px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '5px' }}>
-              Trip #{trip.tripId}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-              <span style={{ color: '#64748b' }}>Route:</span>
-              <span style={{ fontSize: '11px' }}>{trip.originCity} → {trip.destinationCity}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-              <span style={{ color: '#64748b' }}>ETA:</span>
-              <span style={{ fontSize: '11px' }}>
-                {trip.eta ? new Date(trip.eta).toLocaleTimeString() : 'N/A'}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-              <span style={{ color: '#64748b' }}>Orders:</span>
-              <span style={{ fontSize: '11px' }}>{trip.orders?.length || 0} items</span>
-            </div>
-            {trip.delayReason && (
-              <div style={{ marginTop: '5px', padding: '3px', backgroundColor: '#fef2f2', borderRadius: '3px', border: '1px solid #fecaca' }}>
-                <span style={{ color: '#dc2626', fontSize: '10px', fontWeight: 'bold' }}>
-                  🚨 {trip.delayReason}
-                </span>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  </div>
-);
-
-// Helper to create a more modern Marker (Dot style)
-const createCustomIcon = (color) => L.divIcon({
-  html: `<div style="
-    background-color: ${color};
-    width: 12px;
-    height: 12px;
-    border: 2px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 4px rgba(0,0,0,0.3);
-  "></div>`,
-  className: '',
-  iconSize: [12, 12],
-});
 
 export default AdminRegionalMap;

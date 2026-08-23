@@ -1,221 +1,210 @@
 import React, { useState } from 'react';
-import './home.css';
+import { Link } from 'react-router-dom';
+import { Button, Card, CardContent, Input, Select, Textarea, Badge, PageHeader, Alert } from '@/components/ui';
+import {
+  LuPhone,
+  LuMail,
+  LuMapPin,
+  LuClock,
+  LuSend,
+  LuCircleCheck,
+  LuCircleHelp,
+  LuSearch,
+} from 'react-icons/lu';
 
-const ContactPage = () => {
+export const ContactPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    type: 'general',
     subject: '',
     message: '',
-    type: 'general'
   });
   const [submitStatus, setSubmitStatus] = useState(null);
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Simulate form submission
     setSubmitStatus('loading');
     setTimeout(() => {
       setSubmitStatus('success');
       setFormData({
         name: '',
         email: '',
+        type: 'general',
         subject: '',
         message: '',
-        type: 'general'
       });
-    }, 2000);
+    }, 1200);
   };
 
   return (
-    <div className="home-container">
-      <div className="content-wrapper">
-        <h1 className="page-title">
-          Contact Us
-        </h1>
-        <p className="page-subtitle">
-          Get in touch with the LogiFlow team for support and inquiries.
-        </p>
-
-        <div className="contact-grid">
-          {/* Contact Form */}
-          <div>
-            <h2 className="section-subtitle">
-              Send us a Message
-            </h2>
-
-            <form onSubmit={handleSubmit} className="form-container">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  Inquiry Type
-                </label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="form-select"
-                >
-                  <option value="general">General Inquiry</option>
-                  <option value="support">Delivery Support</option>
-                  <option value="business">Business Partnership</option>
-                  <option value="driver">Driver Support</option>
-                  <option value="technical">Technical Support</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  Subject *
-                </label>
-                <input
-                  type="text"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  Message *
-                </label>
-                <textarea
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
-                  rows="5"
-                  className="form-textarea"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitStatus === 'loading'}
-                className={`btn btn-primary ${submitStatus === 'loading' ? 'status-loading' : ''}`}
-              >
-                {submitStatus === 'loading' ? 'Sending...' : 'Send Message'}
-              </button>
-
-              {submitStatus === 'success' && (
-                <div className="status-success">
-                  ✅ Thank you! We'll get back to you within 24 hours.
-                </div>
-              )}
-            </form>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h2 className="section-subtitle">
-              Get in Touch
-            </h2>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div>
-                <h3 className="section-subtitle">
-                  📞 Customer Support
-                </h3>
-                <p style={{ marginBottom: '0.5rem', color: '#666' }}>
-                  24/7 support for order tracking and delivery inquiries
-                </p>
-                <p style={{ fontWeight: '600', fontSize: '1.1rem' }}>
-                  +84 1900-1234
-                </p>
-              </div>
-
-              <div>
-                <h3 className="section-subtitle">
-                  💼 Business Development
-                </h3>
-                <p style={{ marginBottom: '0.5rem', color: '#666' }}>
-                  Partnership and enterprise solutions
-                </p>
-                <p style={{ fontWeight: '600', fontSize: '1.1rem' }}>
-                  business@logiflow.vn
-                </p>
-              </div>
-
-              <div>
-                <h3 className="section-subtitle">
-                  🏢 Headquarters
-                </h3>
-                <p style={{ color: '#666', lineHeight: '1.6' }}>
-                  123 Nguyen Trai Street<br/>
-                  District 1, Ho Chi Minh City<br/>
-                  Vietnam 70000
-                </p>
-              </div>
-
-              <div>
-                <h3 className="section-subtitle">
-                  🕒 Business Hours
-                </h3>
-                <div style={{ color: '#666' }}>
-                  <p>Monday - Friday: 8:00 AM - 6:00 PM</p>
-                  <p>Saturday: 9:00 AM - 5:00 PM</p>
-                  <p>Sunday: Emergency support only</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Support */}
-        <div className="support-box">
-          <h2 style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>Quick Support Options</h2>
-          <p style={{ color: '#666', marginBottom: '2rem' }}>
-            Check our resources for instant answers to common questions.
-          </p>
-
-          <div className="support-grid">
-            <a href="/faq" className="support-link">
-              📖 FAQ
-            </a>
-            <a href="/track" className="support-link">
-              🔍 Track Package
-            </a>
-          </div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
+      <div className="container">
+        <PageHeader
+          badge={<Badge variant="brand">Operational Support</Badge>}
+          title="Contact LogiFlow"
+          description="Have questions about our multi-modal freight services, corporate rates, or technical API integration? We are here to help."
+        />
       </div>
+
+      <section className="container">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px' }}>
+          {/* Inquiry Form */}
+          <Card style={{ padding: '32px' }}>
+            <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+              Send an Inquiry
+            </h3>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
+              Our operations and customer support team responds within 2 business hours.
+            </p>
+
+            {submitStatus === 'success' && (
+              <div style={{ marginBottom: '16px' }}>
+                <Alert variant="success" onClose={() => setSubmitStatus(null)}>
+                  Your message has been received! A logistics coordinator will contact you shortly.
+                </Alert>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <Input
+                  label="Full Name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. Nguyen Van An"
+                />
+                <Input
+                  label="Work Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="an.nguyen@company.vn"
+                />
+              </div>
+
+              <Select
+                label="Inquiry Category"
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                options={[
+                  { value: 'general', label: 'General Corporate Inquiry' },
+                  { value: 'business', label: 'Enterprise Contract & Quote' },
+                  { value: 'support', label: 'Active Shipment Support' },
+                  { value: 'driver', label: 'Driver Partner Operations' },
+                  { value: 'technical', label: 'API & Technical Integration' },
+                ]}
+              />
+
+              <Input
+                label="Subject"
+                name="subject"
+                value={formData.subject}
+                onChange={handleChange}
+                required
+                placeholder="e.g. FTL Linehaul Quote Request for HCMC - Da Nang"
+              />
+
+              <Textarea
+                label="Message Details"
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                required
+                rows={4}
+                placeholder="Describe your freight volume, origin/destination hubs, or specific questions..."
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                loading={submitStatus === 'loading'}
+                leftIcon={<LuSend size={16} />}
+                style={{ marginTop: '8px' }}
+              >
+                Submit Inquiry
+              </Button>
+            </form>
+          </Card>
+
+          {/* Contact Details & Direct Channels */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <Card style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <LuPhone size={20} color="var(--color-brand-600)" />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Command Center Hotline</h4>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>24/7 Dedicated Support</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-brand-700)' }}>
+                +84 1900-1234
+              </div>
+            </Card>
+
+            <Card style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <LuMail size={20} color="var(--color-brand-600)" />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Enterprise Sales Email</h4>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>B2B Quotes & Inquiries</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                business@logiflow.vn
+              </div>
+            </Card>
+
+            <Card style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <LuMapPin size={20} color="var(--color-brand-600)" />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Corporate Headquarters</h4>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Ho Chi Minh City</span>
+                </div>
+              </div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                123 Nguyen Trai Street, District 1, Ho Chi Minh City, Vietnam 70000
+              </p>
+            </Card>
+
+            <Card style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <LuClock size={20} color="var(--color-brand-600)" />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Business Desk Hours</h4>
+                </div>
+              </div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div>Monday – Friday: <strong>8:00 AM – 6:00 PM ICT</strong></div>
+                <div>Saturday: <strong>8:00 AM – 12:00 PM ICT</strong></div>
+                <div>Dispatch Emergency: <strong>24/7 Telemetry On-Call</strong></div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

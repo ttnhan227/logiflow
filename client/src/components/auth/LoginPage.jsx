@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-// JSX member tags are not recognized as variable usage by the current lint parser.
-// eslint-disable-next-line no-unused-vars
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, TextField, Button, Typography, Box, Alert, InputAdornment } from '@mui/material';
-import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
+import { useNavigate, Link } from 'react-router-dom';
+import { Button, Card, CardContent, Input, Alert, Badge } from '@/components/ui';
+import { LuUser, LuLock, LuArrowRight, LuShieldCheck } from 'react-icons/lu';
 import { authService } from '../../services';
-import './auth.css';
 
-const LoginPage = () => {
+export const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,12 +13,19 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both username and password.');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
     try {
       const response = await authService.login(username, password);
-      // Redirect based on user role
+      // Trigger user update event
+      window.dispatchEvent(new Event('userUpdated'));
+
       if (response.role === 'ADMIN') {
         navigate('/admin/dashboard');
       } else if (response.role === 'DISPATCHER') {
@@ -33,17 +36,12 @@ const LoginPage = () => {
         navigate('/');
       }
     } catch (err) {
-      // Check if it's a network/server error vs actual bad credentials
-      // Network errors don't have response property, authentication errors do
       if (!err.response) {
-        // No response means network/server error
-        setError('Service temporarily unavailable. Please try again later or contact support.');
+        setError('Network error. Unable to reach authentication server.');
       } else if (err.response?.status === 401 || err.response?.status === 400) {
-        // Authentication errors
-        setError('Invalid credentials. Please check your username and password.');
+        setError('Invalid username or password. Please verify your credentials.');
       } else {
-        // Other server errors
-        setError(err.message || 'Login failed. Please try again.');
+        setError(err.response?.data?.error || err.message || 'Authentication failed.');
       }
     } finally {
       setLoading(false);
@@ -51,184 +49,115 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="home-container" style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '2rem 1rem'
-    }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        style={{ maxWidth: '400px', width: '100%' }}
-      >
-        <Card
-          sx={{
-            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-            borderRadius: '16px',
-            border: '1px solid rgba(59, 130, 246, 0.1)',
-            overflow: 'hidden'
-          }}
-        >
-          <CardContent sx={{ p: 4 }}>
-            {/* Logo */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              style={{ textAlign: 'center', marginBottom: '2rem' }}
-            >
-              <img
-                src="/logiflow-smarter_logistics-seamless_flow.png"
-                alt="LogiFlow - Smarter Logistics. Seamless Flow."
+    <div
+      style={{
+        minHeight: 'calc(100vh - 72px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--bg-app)',
+        padding: '32px 16px',
+      }}
+    >
+      <div style={{ maxWidth: '440px', width: '100%' }}>
+        <Card style={{ padding: '36px 32px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-lg)' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <Link to="/" style={{ display: 'inline-block', marginBottom: '16px', textDecoration: 'none' }}>
+              <span
                 style={{
-                  width: '200px',
-                  height: 'auto',
-                  marginBottom: '1rem'
+                  fontSize: '26px',
+                  fontWeight: 800,
+                  color: 'var(--color-slate-900)',
+                  letterSpacing: '-0.6px',
+                  fontFamily: 'Inter, system-ui, sans-serif',
                 }}
-              />
-            </motion.div>
-
-            {/* Title */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              style={{ textAlign: 'center', marginBottom: '2rem' }}
-            >
-              <Typography variant="h4" component="h1" gutterBottom sx={{
-                color: 'text.primary',
-                fontWeight: '700'
-              }}>
-                Welcome Back
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Sign in to your LogiFlow account
-              </Typography>
-            </motion.div>
-
-            {/* Error Alert */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                style={{ marginBottom: '1.5rem' }}
               >
-                <Alert severity="error" sx={{ borderRadius: '8px' }}>
-                  {error}
-                </Alert>
-              </motion.div>
-            )}
+                Logi<span style={{ color: 'var(--color-brand-600)' }}>Flow</span>
+              </span>
+            </Link>
+            <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+              Sign in to LogiFlow
+            </h1>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
+              Access the unified freight management & dispatch portal
+            </p>
+          </div>
 
-            {/* Login Form */}
-            <motion.form
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              onSubmit={handleSubmit}
-              noValidate
+          {error && (
+            <div style={{ marginBottom: '20px' }}>
+              <Alert variant="danger" onClose={() => setError('')}>
+                {error}
+              </Alert>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <Input
+              label="Username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. admin or dispatcher_01"
+              leftIcon={<LuUser size={16} />}
+              required
+              autoFocus
+            />
+
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter account password"
+              leftIcon={<LuLock size={16} />}
+              required
+            />
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              rightIcon={<LuArrowRight size={16} />}
+              style={{ width: '100%', marginTop: '8px' }}
             >
-              <TextField
-                fullWidth
-                label="Username"
-                variant="outlined"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <UserOutlined style={{ color: '#6b7280' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  mb: 2,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  }
-                }}
-              />
+              Sign In to Control Tower
+            </Button>
+          </form>
 
-              <TextField
-                fullWidth
-                type="password"
-                label="Password"
-                variant="outlined"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockOutlined style={{ color: '#6b7280' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  mb: 3,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                  }
-                }}
-              />
-
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button
-                  type="submit"
-                  variant="contained"
-                  fullWidth
-                  disabled={loading}
-                  startIcon={loading ? null : <LoginOutlined />}
-                  sx={{
-                    py: 1.5,
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--primary-color)',
-                    '&:hover': {
-                      backgroundColor: '#1d4ed8',
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 8px 25px rgba(37, 99, 235, 0.3)',
-                    },
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    textTransform: 'none'
-                  }}
-                >
-                  {loading ? 'Signing In...' : 'Sign In to LogiFlow'}
+          {/* Registration Options */}
+          <div
+            style={{
+              marginTop: '28px',
+              paddingTop: '20px',
+              borderTop: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              Need an account?
+            </span>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/register/customer">
+                <Button variant="outline" size="sm">
+                  Register as Shipper / Customer
                 </Button>
-              </motion.div>
-            </motion.form>
-
-            {/* Footer Links */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              style={{
-                marginTop: '2rem',
-                paddingTop: '1.5rem',
-                borderTop: '1px solid #e5e7eb',
-                textAlign: 'center'
-              }}
-            >
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                New to LogiFlow?
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Contact your administrator or visit our public site for more information.
-              </Typography>
-            </motion.div>
-          </CardContent>
+              </Link>
+              <Link to="/register/driver">
+                <Button variant="outline" size="sm">
+                  Apply as Driver Partner
+                </Button>
+              </Link>
+            </div>
+          </div>
         </Card>
-      </motion.div>
+      </div>
     </div>
   );
 };
-
 
 export default LoginPage;

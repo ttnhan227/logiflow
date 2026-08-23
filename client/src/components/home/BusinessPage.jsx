@@ -1,406 +1,305 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Button, Card, CardContent, Badge, PageHeader } from '@/components/ui';
+import {
+  LuBuilding2,
+  LuWebhook,
+  LuChartColumn,
+  LuTruck,
+  LuZap,
+  LuShieldCheck,
+  LuCircleCheck,
+  LuArrowRight,
+  LuPhone,
+  LuMail,
+  LuFileText,
+} from 'react-icons/lu';
 
-const BusinessPage = () => {
+export const BusinessPage = () => {
+  const capabilities = [
+    {
+      title: 'Dedicated Key Account Dispatch Desk',
+      description: 'Single point of contact operational specialist assigned to manage daily loading schedules, spot rates, and high-priority lane surges.',
+      icon: <LuBuilding2 size={24} color="var(--color-brand-600)" />,
+    },
+    {
+      title: 'Enterprise REST API Integration',
+      description: 'Connect directly to your WMS, SAP ERP, or custom OMS. Automated order creation, barcode label generation, and webhook status pushes.',
+      icon: <LuWebhook size={24} color="var(--color-brand-600)" />,
+    },
+    {
+      title: 'Advanced Freight & Cost Telemetry',
+      description: 'Consolidated reporting across carrier on-time rates, freight cost per metric ton-km, route bottleneck heatmaps, and carbon impact.',
+      icon: <LuChartColumn size={24} color="var(--color-brand-600)" />,
+    },
+    {
+      title: 'Dedicated Contracted Fleets',
+      description: 'Lock in seasonal container chassis and multi-ton linehaul trucks reserved strictly for your manufacturing distribution loops.',
+      icon: <LuTruck size={24} color="var(--color-brand-600)" />,
+    },
+    {
+      title: 'Guaranteed SLA & Priority Transit',
+      description: 'Strict 99.8% on-time contractual delivery window commitments backstopped by automatic penalty rebate credits.',
+      icon: <LuZap size={24} color="var(--color-brand-600)" />,
+    },
+    {
+      title: 'Comprehensive Marine Cargo Policy',
+      description: 'Full replacement value coverage up to 10 Billion VND per transit with fast-track 48-hour claim resolution.',
+      icon: <LuShieldCheck size={24} color="var(--color-brand-600)" />,
+    },
+  ];
+
+  const tiers = [
+    {
+      name: 'Growth Shipper',
+      volume: '100 – 1,000 shipments / mo',
+      description: 'Designed for scaling e-commerce brands and regional manufacturers.',
+      features: [
+        'Web portal & CSV/Excel bulk import',
+        'Standard GPS tracking & digital e-POD',
+        'Next-day settlement cycle',
+        'Standard email & phone support',
+      ],
+      popular: false,
+    },
+    {
+      name: 'Corporate Fleet',
+      volume: '1,000 – 10,000 shipments / mo',
+      description: 'Full-service freight coordination for high-volume enterprise operations.',
+      features: [
+        'Full REST API & webhook integration',
+        'Dedicated dispatch operations manager',
+        'Volume-tiered freight discount brackets',
+        'Customized driver uniforms & branding options',
+        'Extended 30-day corporate credit terms',
+      ],
+      popular: true,
+    },
+    {
+      name: 'Strategic Enterprise',
+      volume: '10,000+ shipments / mo',
+      description: 'Custom multi-modal linehaul solutions and dedicated warehousing loops.',
+      features: [
+        'Tailored SLA contract with financial penalty terms',
+        'Dedicated on-site logistics coordination personnel',
+        'Custom ERP / SAP data pipeline connectors',
+        '24/7 dedicated control tower hotline',
+        'White-glove claims & cargo insurance priority',
+      ],
+      popular: false,
+    },
+  ];
+
   return (
-    <div className="home-container">
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '2rem 1rem'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '4rem'
-        }}>
-          <h1 style={{
-            fontSize: '3rem',
-            fontWeight: '700',
-            color: 'var(--text-color)',
-            marginBottom: '1rem',
-            background: 'linear-gradient(90deg, var(--primary-color), var(--accent))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            Enterprise Solutions
-          </h1>
-          <p style={{
-            fontSize: '1.25rem',
-            color: '#556',
-            maxWidth: '800px',
-            margin: '0 auto'
-          }}>
-            Powerful logistics management tools designed for businesses and organizations
-            that need reliable, scalable delivery solutions.
-          </p>
-        </div>
-
-        {/* Enterprise Features */}
-        <section style={{ marginBottom: '4rem' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '2rem'
-          }}>
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏢</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-                Dedicated Account Management
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Personalized service with dedicated account representatives and priority support
-                for your business needs. Tailored solutions for large operations.
-              </p>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔗</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-                API Integration
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Seamlessly connect with your existing systems. Integrate with WMS, ERP,
-                e-commerce platforms, and custom applications.
-              </p>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-                Advanced Analytics
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Comprehensive reporting and insights on delivery performance,
-                costs, and operational efficiency across your entire network.
-              </p>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚛</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-                Fleet Management
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Professional fleet coordination with dedicated drivers, vehicles,
-                and management tools for your transportation operations.
-              </p>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚡</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-                Express Services
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Priority delivery services with guaranteed timeframes for critical
-                business shipments and time-sensitive deliveries.
-              </p>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛡️</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-                Premium Insurance
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Extended coverage options and priority claims processing for
-                high-value shipments and sensitive cargo.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Industry Solutions */}
-        <section style={{ marginBottom: '4rem' }}>
-          <h2 style={{
-            textAlign: 'center',
-            fontSize: '2.5rem',
-            color: 'var(--text-color)',
-            marginBottom: '3rem'
-          }}>
-            Industry-Specific Solutions
-          </h2>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-            gap: '2rem'
-          }}>
-            <div style={{
-              padding: '2rem',
-              border: '2px solid #3b82f6',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🛒</div>
-              <h3 style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>
-                E-commerce Logistics
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Complete fulfillment solutions for online businesses. API integration with
-                popular e-commerce platforms, automated order processing, and real-time
-                inventory synchronization.
-              </p>
-              <div style={{ marginTop: '1rem', color: 'var(--primary-color)', fontWeight: '600' }}>
-                Perfect for online stores, marketplaces, and retailers
-              </div>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '2px solid #10b981',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02))'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏭</div>
-              <h3 style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>
-                Manufacturing & Distribution
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Streamlined logistics for manufacturers and distributors. Route optimization
-                for last-mile delivery, warehouse management integration, and specialized
-                handling for industrial goods.
-              </p>
-              <div style={{ marginTop: '1rem', color: 'var(--accent)', fontWeight: '600' }}>
-                Specialized for B2B and industrial supply chains
-              </div>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '2px solid #f59e0b',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02))'
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏪</div>
-              <h3 style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>
-                Food & Perishables
-              </h3>
-              <p style={{ color: '#666', lineHeight: '1.6' }}>
-                Temperature-controlled delivery services for restaurants, food delivery,
-                and perishable goods. Specialized vehicles with climate control and
-                priority routing for time-sensitive deliveries.
-              </p>
-              <div style={{ marginTop: '1rem', color: '#f59e0b', fontWeight: '600' }}>
-                Certified cold-chain and food-safe delivery
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SLA Commitments */}
-        <section style={{
-          background: 'var(--primary-color)',
-          color: 'white',
-          padding: '4rem 2rem',
-          borderRadius: '12px',
-          marginBottom: '4rem',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ marginBottom: '2rem', fontSize: '2.5rem' }}>
-            Enterprise SLA Commitments
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '2rem',
-            maxWidth: '800px',
-            margin: '0 auto'
-          }}>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>99.5%</div>
-              <div>On-Time Delivery Rate</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>15 min</div>
-              <div>Average Response Time</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>24/7</div>
-              <div>Dedicated Support</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>100%</div>
-              <div>Insurance Coverage</div>
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing */}
-        <section style={{ marginBottom: '4rem' }}>
-          <h2 style={{
-            textAlign: 'center',
-            fontSize: '2.5rem',
-            color: 'var(--text-color)',
-            marginBottom: '3rem'
-          }}>
-            Enterprise Pricing Tiers
-          </h2>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '2rem'
-          }}>
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <h3 style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>Starter</h3>
-              <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary-color)', marginBottom: '1rem' }}>
-                Contact Us
-              </div>
-              <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-                Up to 1,000 deliveries/month with basic enterprise features
-              </p>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                Volume discounts available
-              </div>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '2px solid var(--primary-color)',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))',
-              textAlign: 'center',
-              transform: 'scale(1.05)'
-            }}>
-              <div style={{ color: 'var(--primary-color)', marginBottom: '1rem', fontWeight: '600' }}>MOST POPULAR</div>
-              <h3 style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>Professional</h3>
-              <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary-color)', marginBottom: '1rem' }}>
-                Contact Us
-              </div>
-              <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-                1,001 - 10,000 deliveries/month with full enterprise suite
-              </p>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                API integration + analytics included
-              </div>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <h3 style={{ color: 'var(--text-color)', marginBottom: '1rem' }}>Enterprise</h3>
-              <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary-color)', marginBottom: '1rem' }}>
-                Contact Us
-              </div>
-              <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-                10,000+ deliveries/month with custom solutions
-              </p>
-              <div style={{ color: '#999', fontSize: '0.9rem' }}>
-                White-label & custom development
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--accent), var(--primary-color))',
-          color: 'white',
-          padding: '4rem 2rem',
-          borderRadius: '12px',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ marginBottom: '1rem' }}>Ready to Scale Your Logistics?</h2>
-          <p style={{
-            marginBottom: '2rem',
-            opacity: 0.9,
-            maxWidth: '600px',
-            margin: '0 auto 2rem'
-          }}>
-            Join Vietnam's leading businesses that trust LogiFlow for their enterprise logistics needs.
-            Contact our business development team to discuss your specific requirements.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/contact" style={{
-              padding: '1rem 2rem',
-              background: 'white',
-              color: 'var(--primary-color)',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontWeight: '600'
-            }}>
-              Contact Sales Team
-            </Link>
-            <a href="mailto:business@logiflow.vn" style={{
-              padding: '1rem 2rem',
-              background: 'transparent',
-              color: 'white',
-              border: '2px solid white',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontWeight: '600'
-            }}>
-              Email Business Team
-            </a>
-            <a href="tel:+8419001234" style={{
-              padding: '1rem 2rem',
-              background: 'var(--accent)',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontWeight: '600'
-            }}>
-              Call +84 1900-1234
-            </a>
-          </div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
+      <div className="container">
+        <PageHeader
+          badge={<Badge variant="brand">Enterprise Logistics</Badge>}
+          title="Frictionless Supply Chain Solutions for Large Shippers"
+          description="Scale your multi-province transport operations with automated dispatching, customized contracted capacity, and enterprise-grade REST APIs."
+        />
       </div>
+
+      {/* Enterprise Capabilities Grid */}
+      <section className="container">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {capabilities.map((cap) => (
+            <Card key={cap.title} style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: 'var(--radius-lg)',
+                  backgroundColor: 'var(--color-brand-50)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {cap.icon}
+              </div>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+                {cap.title}
+              </h3>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                {cap.description}
+              </p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Enterprise SLA Metrics */}
+      <section className="container">
+        <Card style={{ padding: '36px', backgroundColor: 'var(--color-slate-900)', color: 'var(--color-white)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+            <Badge variant="brand" size="sm" style={{ width: 'fit-content' }}>
+              Contract Commitments
+            </Badge>
+            <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: 0 }}>
+              Enterprise SLA Guarantee
+            </h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+            <div>
+              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
+                99.8%
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>On-Time Delivery SLA</div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
+                Strict multi-province fulfillment windows.
+              </p>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
+                &lt; 15 min
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Command Desk Response</div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
+                Direct priority line for key accounts.
+              </p>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
+                100%
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Cargo Insurance</div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
+                Marine policy up to 10 Billion VND.
+              </p>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
+                Net 30
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Corporate Terms</div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
+                Transparent monthly VAT consolidated invoicing.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* Volume Tiers */}
+      <section className="container">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
+            Enterprise Volume Plans
+          </h2>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
+            Choose a contracted tier matching your monthly supply chain freight velocity.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {tiers.map((tier) => (
+            <Card
+              key={tier.name}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                border: tier.popular ? '2px solid var(--color-brand-600)' : '1px solid var(--border-default)',
+                position: 'relative',
+              }}
+            >
+              {tier.popular && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-12px',
+                    right: '20px',
+                    backgroundColor: 'var(--color-brand-600)',
+                    color: 'var(--color-white)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Enterprise Choice
+                </div>
+              )}
+
+              <CardContent style={{ padding: '28px', display: 'flex', flexDirection: 'column', flex: 1, gap: '16px' }}>
+                <div>
+                  <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+                    {tier.name}
+                  </h3>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
+                    {tier.volume}
+                  </div>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.4 }}>
+                    {tier.description}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                  {tier.features.map((f, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                      <LuCircleCheck size={14} color="var(--color-success-600)" style={{ marginTop: '2px', flexShrink: 0 }} />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                  <Link to="/contact">
+                    <Button variant={tier.popular ? 'primary' : 'outline'} style={{ width: '100%' }}>
+                      Request Custom Rate Quote
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Direct Contact Bar */}
+      <section className="container">
+        <div
+          style={{
+            padding: '36px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-xl)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '20px',
+          }}
+        >
+          <div>
+            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+              Speak Directly with our B2B Logistics Desk
+            </h3>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
+              Available Monday through Saturday (8:00 AM – 6:00 PM ICT).
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <a href="tel:+8419001234">
+              <Button variant="primary" leftIcon={<LuPhone size={16} />}>
+                +84 1900-1234
+              </Button>
+            </a>
+            <a href="mailto:business@logiflow.vn">
+              <Button variant="outline" leftIcon={<LuMail size={16} />}>
+                business@logiflow.vn
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

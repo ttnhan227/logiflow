@@ -1,17 +1,41 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+} from 'recharts';
 import reportsService from '../../services/dispatch/reportsService';
-import './dispatch.css';
-
-const StatCard = ({ title, value, subtext }) => (
-  <div style={{ background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-    <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-      {title}
-    </div>
-    <div style={{ fontSize: 28, fontWeight: 800, color: '#111827', marginTop: 6 }}>{value}</div>
-    {subtext && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{subtext}</div>}
-  </div>
-);
+import {
+  Button,
+  Card,
+  StatCard,
+  Input,
+  Badge,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+} from '@/components/ui';
+import {
+  LuTrendingUp,
+  LuFileText,
+  LuCalendar,
+  LuCircleCheck,
+  LuClock,
+  LuTruck,
+  LuTriangleAlert,
+} from 'react-icons/lu';
 
 const fmtDate = (s) => {
   try {
@@ -21,7 +45,7 @@ const fmtDate = (s) => {
   }
 };
 
-const DispatchReportsPage = () => {
+export const DispatchReportsPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [rows, setRows] = useState([]);
@@ -39,10 +63,8 @@ const DispatchReportsPage = () => {
         const data = await reportsService.getDailyReport(dateRange.startDate, dateRange.endDate);
         setRows(Array.isArray(data) ? data : []);
       } catch (e) {
-        const errMsg = e?.error || e?.message || e?.response?.data?.error || 'Failed to load daily report';
-        setError(errMsg);
+        setError(e?.error || e?.message || e?.response?.data?.error || 'Failed to load daily report.');
         setRows([]);
-        console.error('Daily report error:', e);
       } finally {
         setLoading(false);
       }
@@ -74,8 +96,10 @@ const DispatchReportsPage = () => {
       t.totalDelayMinutes += r.totalDelayMinutes || 0;
     }
     const onTimeTrips = t.completedWithActualArrival - t.lateTrips;
-    const onTimeRate = t.completedWithActualArrival === 0 ? 0 : (onTimeTrips * 100) / t.completedWithActualArrival;
-    const avgDelay = t.completedWithActualArrival === 0 ? 0 : t.totalDelayMinutes / t.completedWithActualArrival;
+    const onTimeRate =
+      t.completedWithActualArrival === 0 ? 0 : (onTimeTrips * 100) / t.completedWithActualArrival;
+    const avgDelay =
+      t.completedWithActualArrival === 0 ? 0 : t.totalDelayMinutes / t.completedWithActualArrival;
 
     return {
       ...t,
@@ -86,164 +110,197 @@ const DispatchReportsPage = () => {
   }, [rows]);
 
   return (
-    <div style={{ padding: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#111827' }}>📈 Daily Stats / Delays</h1>
-          <div style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>
-            Status counts are bucketed by <strong>scheduled departure</strong>. Delay metrics are based on completed trips bucketed by <strong>actual arrival</strong>.
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div className="reports-date-input">
-            <input
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Dispatch Performance & Delay Analytics"
+        description="Monitor daily trip volume, SLA commitments, delay justifications, and fulfillment performance."
+        badge={<Badge variant="brand">Operational Analytics</Badge>}
+        actions={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Input
               type="date"
               value={dateRange.startDate}
               onChange={(e) => setDateRange((p) => ({ ...p, startDate: e.target.value }))}
             />
-          </div>
-          <span style={{ color: '#9ca3af' }}>→</span>
-          <div className="reports-date-input">
-            <input
+            <span style={{ color: 'var(--text-muted)' }}>→</span>
+            <Input
               type="date"
               value={dateRange.endDate}
               onChange={(e) => setDateRange((p) => ({ ...p, endDate: e.target.value }))}
             />
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => reportsService.downloadDailyReportPdf(dateRange.startDate, dateRange.endDate)}
+              leftIcon={<LuFileText size={16} />}
+              disabled={loading}
+            >
+              Export PDF
+            </Button>
           </div>
-          <button
-            onClick={() => reportsService.downloadDailyReportPdf(dateRange.startDate, dateRange.endDate)}
-            style={{
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: 6,
-              padding: '8px 16px',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
-            disabled={loading}
-          >
-            📄 Download PDF
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
-        <div style={{ marginTop: 16, padding: 12, background: '#fee2e2', color: '#991b1b', borderRadius: 10 }}>
+        <Alert variant="danger" onClose={() => setError(null)}>
           {error}
-        </div>
+        </Alert>
       )}
 
-      {/* KPI row */}
-      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <StatCard title="Total Trips" value={totals.totalTrips} subtext="(scheduledDeparture buckets)" />
-        <StatCard title="Completed Trips" value={totals.completedTrips} subtext="(status counts)" />
-        <StatCard title="On-time Rate" value={`${totals.onTimeRate}%`} subtext="Completed only" />
-        <StatCard title="Avg Delay" value={`${totals.avgDelay} min`} subtext="Completed only (SLA adjusted)" />
+      {/* KPI Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <StatCard
+          title="Total Scheduled Trips"
+          value={totals.totalTrips.toLocaleString()}
+          icon={<LuTruck size={20} />}
+          description="In selected reporting period"
+        />
+        <StatCard
+          title="Completed Linehaul"
+          value={totals.completedTrips.toLocaleString()}
+          icon={<LuCircleCheck size={20} />}
+          description={`${totals.cancelledTrips} cancellations recorded`}
+        />
+        <StatCard
+          title="On-Time Delivery SLA"
+          value={`${totals.onTimeRate}%`}
+          change="99.2% Target SLA"
+          changeType={totals.onTimeRate >= 95 ? 'positive' : 'negative'}
+          icon={<LuTrendingUp size={20} />}
+        />
+        <StatCard
+          title="Average Trip Latency"
+          value={`${totals.avgDelay} min`}
+          icon={<LuClock size={20} />}
+          description="Net of approved SLA extensions"
+        />
       </div>
 
-      {/* Charts */}
-      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-        <div style={{ background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <div style={{ fontWeight: 800, color: '#111827' }}>Trip volume vs cancellations</div>
-          <div style={{ height: 260, marginTop: 10 }}>
+      {/* Analytics Charts */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+            Daily Trip Volume vs Exceptions
+          </h3>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+            Total scheduled volume plotted against operational cancellation counts.
+          </p>
+
+          <div style={{ height: '260px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={rows}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="date" tickFormatter={fmtDate} />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="totalTrips" stroke="#3b82f6" fill="#93c5fd" name="Total Trips" />
-                <Area type="monotone" dataKey="cancelledTrips" stroke="#ef4444" fill="rgba(239,68,68,0.15)" name="Cancelled" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="date" tickFormatter={fmtDate} stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '12px',
+                  }}
+                />
+                <Area type="monotone" dataKey="totalTrips" stroke="#2563eb" fill="rgba(37,99,235,0.15)" strokeWidth={2} name="Total Trips" />
+                <Area type="monotone" dataKey="cancelledTrips" stroke="#ef4444" fill="rgba(239,68,68,0.15)" strokeWidth={2} name="Cancelled" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
 
-        <div style={{ background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <div style={{ fontWeight: 800, color: '#111827' }}>Avg delay (min)</div>
-          <div style={{ height: 260, marginTop: 10 }}>
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+            Average Delay Latency (Minutes)
+          </h3>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+            Daily delay minutes per completed trip.
+          </p>
+
+          <div style={{ height: '260px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={rows}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="date" tickFormatter={fmtDate} hide />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="avgDelayMinutes" fill="#f59e0b" name="Avg Delay" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="date" tickFormatter={fmtDate} stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '12px',
+                  }}
+                />
+                <Bar dataKey="avgDelayMinutes" fill="#d97706" name="Avg Delay (min)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Daily table */}
-      <div style={{ marginTop: 16, background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+      {/* Daily Breakdown Table */}
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontWeight: 800, color: '#111827' }}>Daily breakdown</div>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>
-              Delay minutes use: max(0, (actual - scheduled) - SLA extension).
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Daily Metric Log
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              Breakdown across scheduled, in-progress, completed, and delayed statuses
             </div>
           </div>
-          {loading && <div style={{ fontSize: 12, color: '#6b7280' }}>Loading…</div>}
+          {loading && <LoadingSpinner size="sm" />}
         </div>
 
-        <div style={{ overflowX: 'auto', marginTop: 12 }}>
-          <table className="admin-table" style={{ width: '100%' }}>
-            <thead>
-              <tr style={{ background: '#f9fafb', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>
-                <th style={{ padding: 12 }}>Date</th>
-                <th>Total</th>
-                <th>Scheduled</th>
-                <th>In Progress</th>
-                <th>Cancelled</th>
-                <th>Completed</th>
-                <th>On-time %</th>
-                <th>Avg Delay</th>
-                <th>Top Delay Reasons</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.date} style={{ borderTop: '1px solid #f3f4f6' }}>
-                  <td style={{ padding: 12, fontWeight: 700 }}>{r.date}</td>
-                  <td>{r.totalTrips}</td>
-                  <td>{r.scheduledTrips}</td>
-                  <td>{r.inProgressTrips}</td>
-                  <td>{r.cancelledTrips}</td>
-                  <td>{r.completedTrips}</td>
-                  <td>{r.onTimeRatePercent}%</td>
-                  <td>{r.avgDelayMinutes} min</td>
-                  <td style={{ maxWidth: 380 }}>
-                    {(r.topDelayReasons || []).length === 0
-                      ? <span style={{ color: '#9ca3af' }}>—</span>
-                      : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {r.topDelayReasons.map((x, idx) => (
-                            <div key={idx} style={{ fontSize: 12, color: '#374151' }}>
-                              • {x.reason} <span style={{ color: '#6b7280' }}>({x.count})</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                  </td>
-                </tr>
-              ))}
-
-              {(!loading && rows.length === 0) && (
-                <tr>
-                  <td colSpan={9} style={{ padding: 12, color: '#6b7280' }}>No data for selected range.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Total Trips</TableHead>
+              <TableHead>Scheduled</TableHead>
+              <TableHead>In Progress</TableHead>
+              <TableHead>Cancelled</TableHead>
+              <TableHead>Completed</TableHead>
+              <TableHead>On-Time %</TableHead>
+              <TableHead>Avg Delay</TableHead>
+              <TableHead>Primary Delay Exceptions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.date}>
+                <TableCell style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.date}</TableCell>
+                <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>{r.totalTrips}</TableCell>
+                <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>{r.scheduledTrips}</TableCell>
+                <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>{r.inProgressTrips}</TableCell>
+                <TableCell style={{ fontVariantNumeric: 'tabular-nums', color: r.cancelledTrips > 0 ? 'var(--color-danger-700)' : 'inherit' }}>
+                  {r.cancelledTrips}
+                </TableCell>
+                <TableCell style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--color-success-700)', fontWeight: 600 }}>
+                  {r.completedTrips}
+                </TableCell>
+                <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  <Badge variant={r.onTimeRatePercent >= 90 ? 'success' : 'warning'} size="sm">
+                    {r.onTimeRatePercent}%
+                  </Badge>
+                </TableCell>
+                <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>{r.avgDelayMinutes} min</TableCell>
+                <TableCell style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  {(r.topDelayReasons || []).length === 0 ? (
+                    <span style={{ color: 'var(--text-muted)' }}>—</span>
+                  ) : (
+                    r.topDelayReasons.map((x, idx) => (
+                      <span key={idx}>
+                        {x.reason} ({x.count}){idx < r.topDelayReasons.length - 1 ? ', ' : ''}
+                      </span>
+                    ))
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 };

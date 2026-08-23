@@ -1,589 +1,458 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import { divIcon, latLngBounds } from 'leaflet';
 import { dispatchRouteService } from '../../services';
 import { apiBaseUrl } from '../../config/env';
+import { Card, Badge, Alert } from '@/components/ui';
+import { LuMapPin, LuNavigation, LuCreditCard } from 'react-icons/lu';
 
-// Vietnam boundaries (approximate)
+// Vietnam boundaries
 const VIETNAM_BOUNDS = {
-    minLat: 8.5,
-    maxLat: 23.4,
-    minLng: 102.1,
-    maxLng: 109.5
+  minLat: 8.5,
+  maxLat: 23.4,
+  minLng: 102.1,
+  maxLng: 109.5,
 };
 
 const isInVietnam = (lat, lng) => {
-    const numLat = Number(lat);
-    const numLng = Number(lng);
-    return numLat >= VIETNAM_BOUNDS.minLat &&
-        numLat <= VIETNAM_BOUNDS.maxLat &&
-        numLng >= VIETNAM_BOUNDS.minLng &&
-        numLng <= VIETNAM_BOUNDS.maxLng;
+  const numLat = Number(lat);
+  const numLng = Number(lng);
+  return (
+    numLat >= VIETNAM_BOUNDS.minLat &&
+    numLat <= VIETNAM_BOUNDS.maxLat &&
+    numLng >= VIETNAM_BOUNDS.minLng &&
+    numLng <= VIETNAM_BOUNDS.maxLng
+  );
 };
 
-// Fix default Leaflet icons in bundlers
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-const originIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
-
-const destinationIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
+const createMapPin = (color, label) =>
+  divIcon({
+    className: 'custom-map-pin',
+    html: `
+      <div style="
+        background-color: ${color};
+        color: white;
+        border: 2px solid white;
+        border-radius: 9999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        font-family: Inter, sans-serif;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.25);
+        white-space: nowrap;
+      ">
+        ${label}
+      </div>
+    `,
+    iconSize: [60, 24],
+    iconAnchor: [30, 12],
+    popupAnchor: [0, -12],
+  });
 
 const haversineDistanceKm = (a, b) => {
-    const R = 6371;
-    const toRad = (deg) => (deg * Math.PI) / 180;
-    const dLat = toRad(b[0] - a[0]);
-    const dLng = toRad(b[1] - a[1]);
-    const lat1 = toRad(a[0]);
-    const lat2 = toRad(b[0]);
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  const R = 6371;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 };
 
 const calculatePathDistance = (path = []) => {
-    if (!Array.isArray(path) || path.length < 2) return 0;
-    let total = 0;
-    for (let i = 1; i < path.length; i += 1) {
-        total += haversineDistanceKm(path[i - 1], path[i]);
-    }
-    return total;
+  if (!Array.isArray(path) || path.length < 2) return 0;
+  let total = 0;
+  for (let i = 1; i < path.length; i += 1) {
+    total += haversineDistanceKm(path[i - 1], path[i]);
+  }
+  return total;
 };
 
-const buildServerDirectionsUrl = (coords, profile = 'truck') => {
-    const [a, b] = coords;
-    const params = new URLSearchParams({
-        originLat: String(a[0]),
-        originLng: String(a[1]),
-        destLat: String(b[0]),
-        destLng: String(b[1]),
-        includeGeometry: 'true',
-        profile,
-    });
-    return `${apiBaseUrl}/maps/directions?${params.toString()}`;
-};
-
-// Get OSRM route (same as admin page)
-const getOSRMRoute = async (originLng, originLat, destLng, destLat) => {
-    try {
-        // Add intermediate waypoints for long-distance routes
-        const waypoints = getVietnameseWaypoints(originLat, originLng, destLat, destLng);
-
-        // Build coordinates string with waypoints
-        const coordsString = waypoints.map(wp => `${wp.lng},${wp.lat}`).join(';');
-        const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
-
-        // Add timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        const data = await response.json();
-
-        if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-            const coordinates = data.routes[0].geometry.coordinates;
-            // Convert from [lng, lat] to [lat, lng] for Leaflet
-            return coordinates.map(coord => [coord[1], coord[0]]);
-        }
-        return null;
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            console.warn('OSRM request timed out');
-        } else {
-            console.error('OSRM routing error:', err);
-        }
-        return null;
-    }
-};
-
-// Helper to add waypoints for long routes
 const getVietnameseWaypoints = (originLat, originLng, destLat, destLng) => {
-    const waypoints = [{ lat: originLat, lng: originLng }];
+  const waypoints = [{ lat: originLat, lng: originLng }];
+  const distance = Math.sqrt(
+    Math.pow(destLat - originLat, 2) + Math.pow(destLng - originLng, 2)
+  );
 
-    // Calculate distance to determine if we need intermediate waypoints
-    const distance = Math.sqrt(
-        Math.pow(destLat - originLat, 2) + Math.pow(destLng - originLng, 2)
-    );
+  if (distance > 5) {
+    const vnWaypoints = [
+      { name: 'Thanh Hoa', lat: 19.8067, lng: 105.7851 },
+      { name: 'Vinh', lat: 18.6793, lng: 105.6811 },
+      { name: 'Dong Hoi', lat: 17.4833, lng: 106.6 },
+      { name: 'Hue', lat: 16.4637, lng: 107.5909 },
+      { name: 'Da Nang', lat: 16.0544, lng: 108.2022 },
+      { name: 'Quang Ngai', lat: 15.1214, lng: 108.8044 },
+      { name: 'Quy Nhon', lat: 13.7829, lng: 109.2196 },
+      { name: 'Nha Trang', lat: 12.2388, lng: 109.1967 },
+      { name: 'Phan Thiet', lat: 10.928, lng: 108.102 },
+    ];
 
-    // For long routes (> 5 degrees, roughly > 550km), add waypoints along Vietnam's coast
-    if (distance > 5) {
-        const vnWaypoints = [
-            { name: 'Thanh Hoa', lat: 19.8067, lng: 105.7851 },
-            { name: 'Vinh', lat: 18.6793, lng: 105.6811 },
-            { name: 'Dong Hoi', lat: 17.4833, lng: 106.6000 },
-            { name: 'Hue', lat: 16.4637, lng: 107.5909 },
-            { name: 'Da Nang', lat: 16.0544, lng: 108.2022 },
-            { name: 'Quang Ngai', lat: 15.1214, lng: 108.8044 },
-            { name: 'Quy Nhon', lat: 13.7829, lng: 109.2196 },
-            { name: 'Nha Trang', lat: 12.2388, lng: 109.1967 },
-            { name: 'Phan Thiet', lat: 10.9280, lng: 108.1020 },
-        ];
+    const minLat = Math.min(originLat, destLat);
+    const maxLat = Math.max(originLat, destLat);
 
-        // Add waypoints that are between origin and destination
-        const minLat = Math.min(originLat, destLat);
-        const maxLat = Math.max(originLat, destLat);
+    vnWaypoints.forEach((wp) => {
+      if (wp.lat > minLat && wp.lat < maxLat) {
+        waypoints.push({ lat: wp.lat, lng: wp.lng });
+      }
+    });
 
-        vnWaypoints.forEach(wp => {
-            if (wp.lat > minLat && wp.lat < maxLat) {
-                waypoints.push({ lat: wp.lat, lng: wp.lng });
-            }
+    waypoints.sort((a, b) => (originLat > destLat ? b.lat - a.lat : a.lat - b.lat));
+  }
+
+  waypoints.push({ lat: destLat, lng: destLng });
+  return waypoints;
+};
+
+const getOSRMRoute = async (originLng, originLat, destLng, destLat) => {
+  try {
+    const waypoints = getVietnameseWaypoints(originLat, originLng, destLat, destLng);
+    const coordsString = waypoints.map((wp) => `${wp.lng},${wp.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+      const coordinates = data.routes[0].geometry.coordinates;
+      return coordinates.map((coord) => [coord[1], coord[0]]);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const FitBounds = ({ path, route, points }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (points && points.length > 0) {
+      const bounds = latLngBounds(points.map((p) => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else if (path && path.length > 1) {
+      const bounds = latLngBounds(path);
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else if (route?.originLat && route?.destinationLat) {
+      const bounds = latLngBounds([
+        [Number(route.originLat), Number(route.originLng)],
+        [Number(route.destinationLat), Number(route.destinationLng)],
+      ]);
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [map, path, route, points]);
+
+  return null;
+};
+
+export const RouteMapCard = ({ routeId, orders, feePerKm = 12, onDistanceChange }) => {
+  const [route, setRoute] = useState(null);
+  const [path, setPath] = useState([]);
+  const [distanceKm, setDistanceKm] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [loadingPath, setLoadingPath] = useState(false);
+
+  const tripData = useMemo(() => {
+    if (!orders || orders.length === 0) return null;
+
+    const pickupPoints = [];
+    const deliveryPoints = [];
+    let totalDistance = 0;
+
+    orders.forEach((order) => {
+      if (order.pickupLat && order.pickupLng) {
+        pickupPoints.push({
+          id: `pickup-${order.orderId}`,
+          lat: Number(order.pickupLat),
+          lng: Number(order.pickupLng),
+          address: order.pickupAddress,
+          orderId: order.orderId,
+          customerName: order.customerName,
+          type: 'pickup',
         });
-
-        // Sort waypoints by latitude
-        waypoints.sort((a, b) => {
-            return originLat > destLat ? b.lat - a.lat : a.lat - b.lat;
+      }
+      if (order.deliveryLat && order.deliveryLng) {
+        deliveryPoints.push({
+          id: `delivery-${order.orderId}`,
+          lat: Number(order.deliveryLat),
+          lng: Number(order.deliveryLng),
+          address: order.deliveryAddress,
+          orderId: order.orderId,
+          customerName: order.customerName,
+          type: 'delivery',
         });
+      }
+      if (order.distanceKm) {
+        totalDistance += Number(order.distanceKm);
+      }
+    });
+
+    const routeSegments = [];
+    const sortedOrders = [...orders].sort((a, b) => a.orderId - b.orderId);
+
+    sortedOrders.forEach((order, index) => {
+      if (order.pickupLat && order.pickupLng && order.deliveryLat && order.deliveryLng) {
+        if (index === 0) {
+          routeSegments.push([
+            [Number(order.pickupLat), Number(order.pickupLng)],
+            [Number(order.deliveryLat), Number(order.deliveryLng)],
+          ]);
+        } else {
+          const prevOrder = sortedOrders[index - 1];
+          routeSegments.push([
+            [Number(prevOrder.deliveryLat), Number(prevOrder.deliveryLng)],
+            [Number(order.pickupLat), Number(order.pickupLng)],
+            [Number(order.deliveryLat), Number(order.deliveryLng)],
+          ]);
+        }
+      }
+    });
+
+    return {
+      points: [...pickupPoints, ...deliveryPoints],
+      routeSegments,
+      totalDistance,
+      orderCount: orders.length,
+    };
+  }, [orders]);
+
+  const mapCenter = useMemo(() => {
+    if (tripData?.points && tripData.points.length > 0) {
+      const lats = tripData.points.map((p) => p.lat);
+      const lngs = tripData.points.map((p) => p.lng);
+      return [lats.reduce((a, b) => a + b, 0) / lats.length, lngs.reduce((a, b) => a + b, 0) / lngs.length];
+    } else if (route?.originLat && route?.originLng) {
+      return [Number(route.originLat), Number(route.originLng)];
+    }
+    return [16.0471, 108.2068];
+  }, [route, tripData]);
+
+  const feeEstimate = useMemo(() => {
+    if (distanceKm == null) return null;
+    return Math.round(distanceKm * feePerKm);
+  }, [distanceKm, feePerKm]);
+
+  useEffect(() => {
+    if (onDistanceChange) {
+      onDistanceChange(distanceKm, feeEstimate);
+    }
+  }, [distanceKm, feeEstimate, onDistanceChange]);
+
+  const loadRoute = useCallback(async (id) => {
+    if (!id) {
+      setRoute(null);
+      setPath([]);
+      setDistanceKm(null);
+      setError(null);
+      return;
     }
 
-    waypoints.push({ lat: destLat, lng: destLng });
-    return waypoints;
-};
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dispatchRouteService.getRouteById(Number(id));
+      const originInVietnam = isInVietnam(data.originLat, data.originLng);
+      const destInVietnam = isInVietnam(data.destinationLat, data.destinationLng);
 
-// Component to auto-fit map bounds to show entire route
-const FitBounds = ({ path, route }) => {
-    const map = useMap();
+      if (!originInVietnam || !destInVietnam) {
+        setError('Route coordinates are outside supported domestic Vietnam corridors.');
+        setRoute(null);
+        setPath([]);
+        setDistanceKm(null);
+        return;
+      }
 
-    useEffect(() => {
-        if (path && path.length > 1) {
-            const bounds = L.latLngBounds(path);
-            map.fitBounds(bounds, { padding: [50, 50] });
-        } else if (route?.originLat && route?.destinationLat) {
-            const bounds = L.latLngBounds([
-                [Number(route.originLat), Number(route.originLng)],
-                [Number(route.destinationLat), Number(route.destinationLng)]
-            ]);
-            map.fitBounds(bounds, { padding: [50, 50] });
+      setRoute(data);
+    } catch {
+      setError('Unable to load route geometry.');
+      setRoute(null);
+      setPath([]);
+      setDistanceKm(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchPathFromRoute = useCallback(async (currentRoute) => {
+    if (!currentRoute?.originLat || !currentRoute?.destinationLat) {
+      setPath([]);
+      setDistanceKm(null);
+      return;
+    }
+
+    const coords = [
+      [Number(currentRoute.originLat), Number(currentRoute.originLng)],
+      [Number(currentRoute.destinationLat), Number(currentRoute.destinationLng)],
+    ];
+
+    if (coords.length < 2) return;
+    const straightLineDistance = calculatePathDistance(coords);
+
+    setLoadingPath(true);
+    try {
+      const osrm = await getOSRMRoute(
+        Number(currentRoute.originLng),
+        Number(currentRoute.originLat),
+        Number(currentRoute.destinationLng),
+        Number(currentRoute.destinationLat)
+      );
+
+      if (osrm && osrm.length > 1) {
+        const allInVn = osrm.every((pt) => isInVietnam(pt[0], pt[1]));
+        if (allInVn) {
+          const d = calculatePathDistance(osrm);
+          setPath(osrm);
+          setDistanceKm(Number(d.toFixed(2)));
+        } else {
+          setPath(coords);
+          setDistanceKm(Number(straightLineDistance.toFixed(2)));
         }
-    }, [map, path, route]);
+      } else {
+        setPath(coords);
+        setDistanceKm(Number(straightLineDistance.toFixed(2)));
+      }
+    } catch {
+      setPath(coords);
+      setDistanceKm(Number(straightLineDistance.toFixed(2)));
+    } finally {
+      setLoadingPath(false);
+    }
+  }, []);
 
-    return null;
-};
+  useEffect(() => {
+    loadRoute(routeId);
+  }, [loadRoute, routeId]);
 
-const RouteMapCard = ({ routeId, orders, feePerKm = 12, onDistanceChange }) => {
-    const [route, setRoute] = useState(null);
-    const [path, setPath] = useState([]);
-    const [distanceKm, setDistanceKm] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [loadingPath, setLoadingPath] = useState(false);
+  useEffect(() => {
+    if (route) {
+      fetchPathFromRoute(route);
+    }
+  }, [route, fetchPathFromRoute]);
 
-    const formatMoney = (amount) => {
-        if (amount == null) return '—';
-        try {
-            return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
-        } catch (_err) {
-            return `${amount} USD`;
-        }
-    };
-
-    // Handle multiple orders for trip visualization
-    const tripData = useMemo(() => {
-        if (!orders || orders.length === 0) return null;
-
-        const pickupPoints = [];
-        const deliveryPoints = [];
-        let totalDistance = 0;
-
-        // Collect all pickup and delivery points
-        orders.forEach((order) => {
-            if (order.pickupLat && order.pickupLng) {
-                pickupPoints.push({
-                    id: `pickup-${order.orderId}`,
-                    lat: Number(order.pickupLat),
-                    lng: Number(order.pickupLng),
-                    address: order.pickupAddress,
-                    orderId: order.orderId,
-                    customerName: order.customerName,
-                    type: 'pickup'
-                });
-            }
-            if (order.deliveryLat && order.deliveryLng) {
-                deliveryPoints.push({
-                    id: `delivery-${order.orderId}`,
-                    lat: Number(order.deliveryLat),
-                    lng: Number(order.deliveryLng),
-                    address: order.deliveryAddress,
-                    orderId: order.orderId,
-                    customerName: order.customerName,
-                    type: 'delivery'
-                });
-            }
-            // Add individual order distance
-            if (order.distanceKm) {
-                totalDistance += Number(order.distanceKm);
-            }
-        });
-
-        // Create connected route path: Order1 Pickup→Delivery → Order2 Pickup→Delivery → etc.
-        const routeSegments = [];
-        const sortedOrders = [...orders].sort((a, b) => a.orderId - b.orderId); // Sort by order ID
-
-        sortedOrders.forEach((order, index) => {
-            if (order.pickupLat && order.pickupLng && order.deliveryLat && order.deliveryLng) {
-                // First order: Pickup → Delivery
-                if (index === 0) {
-                    routeSegments.push([
-                        [Number(order.pickupLat), Number(order.pickupLng)],
-                        [Number(order.deliveryLat), Number(order.deliveryLng)]
-                    ]);
-                } else {
-                    // Subsequent orders: Previous Delivery → Current Pickup → Current Delivery
-                    const prevOrder = sortedOrders[index - 1];
-                    routeSegments.push([
-                        [Number(prevOrder.deliveryLat), Number(prevOrder.deliveryLng)], // Previous delivery
-                        [Number(order.pickupLat), Number(order.pickupLng)], // Current pickup
-                        [Number(order.deliveryLat), Number(order.deliveryLng)] // Current delivery
-                    ]);
-                }
-            }
-        });
-
-        return {
-            points: [...pickupPoints, ...deliveryPoints],
-            routeSegments,
-            totalDistance,
-            orderCount: orders.length
-        };
-    }, [orders]);
-
-    const mapCenter = useMemo(() => {
-        if (tripData?.points && tripData.points.length > 0) {
-            // Center on all points
-            const lats = tripData.points.map(p => p.lat);
-            const lngs = tripData.points.map(p => p.lng);
-            const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-            const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-            return [avgLat, avgLng];
-        } else if (route?.originLat && route?.originLng) {
-            return [Number(route.originLat), Number(route.originLng)];
-        }
-        // Center of Vietnam (around Da Nang)
-        return [16.0471, 108.2068];
-    }, [route, tripData]);
-
-    const feeEstimate = useMemo(() => {
-        if (distanceKm == null) return null;
-        return Math.round(distanceKm * feePerKm);
-    }, [distanceKm, feePerKm]);
-
-    useEffect(() => {
-        if (onDistanceChange) {
-            onDistanceChange(distanceKm, feeEstimate);
-        }
-    }, [distanceKm, feeEstimate, onDistanceChange]);
-
-    const loadRoute = useCallback(async (id) => {
-        if (!id) {
-            setRoute(null);
-            setPath([]);
-            setDistanceKm(null);
-            setError(null);
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await dispatchRouteService.getRouteById(Number(id));
-
-            // Validate that route is within Vietnam boundaries
-            const originInVietnam = isInVietnam(data.originLat, data.originLng);
-            const destInVietnam = isInVietnam(data.destinationLat, data.destinationLng);
-
-            if (!originInVietnam || !destInVietnam) {
-                const originName = !originInVietnam ? 'Điểm xuất phát' : '';
-                const destName = !destInVietnam ? 'Điểm đến' : '';
-                const both = !originInVietnam && !destInVietnam;
-
-                if (both) {
-                    setError('⚠️ Route này có cả điểm xuất phát và điểm đến nằm ngoài Việt Nam. Vui lòng chọn route khác trong nước.');
-                } else {
-                    setError(`⚠️ ${originName || destName} nằm ngoài lãnh thổ Việt Nam. Chỉ hỗ trợ giao hàng nội địa.`);
-                }
-                setRoute(null);
-                setPath([]);
-                setDistanceKm(null);
-                return;
-            }
-
-            setRoute(data);
-            setError(null); // Clear any previous errors
-        } catch (err) {
-            console.error('Failed to load route', err);
-            const status = err?.response?.status;
-            if (status === 403) {
-                setError('You dont have performance to select this route (403).');
-            } else if (status === 404) {
-                setError('Invalid route (404).');
-            } else {
-                setError('Không tải được route. Kiểm tra Route ID hoặc quyền truy cập.');
-            }
-            setRoute(null);
-            setPath([]);
-            setDistanceKm(null);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const fetchPathFromRoute = useCallback(async (currentRoute) => {
-        if (!currentRoute?.originLat || !currentRoute?.destinationLat) {
-            setPath([]);
-            setDistanceKm(null);
-            return;
-        }
-
-        const coords = [
-            [Number(currentRoute.originLat), Number(currentRoute.originLng)],
-            [Number(currentRoute.destinationLat), Number(currentRoute.destinationLng)],
-        ];
-
-        if (coords.length < 2) return;
-
-        // Calculate straight-line distance
-        const straightLineDistance = calculatePathDistance(coords);
-
-        // For long-distance routes in Vietnam (> 300km), use OSRM routing with waypoints
-        // This prevents routes from going through Laos/Cambodia
-        setLoadingPath(true);
-        try {
-            const path = await getOSRMRoute(
-                Number(currentRoute.originLng),
-                Number(currentRoute.originLat),
-                Number(currentRoute.destinationLng),
-                Number(currentRoute.destinationLat)
-            );
-
-            if (path && path.length > 1) {
-                // Validate that ALL points in the route geometry are within Vietnam
-                const allPointsInVietnam = path.every(point => isInVietnam(point[0], point[1]));
-
-                if (allPointsInVietnam) {
-                    // Route is entirely within Vietnam
-                    const distanceKm = calculatePathDistance(path);
-                    setPath(path);
-                    setDistanceKm(Number(distanceKm.toFixed(2)));
-                    setError(null);
-                } else {
-                    // Route goes outside Vietnam, use straight line instead
-                    console.warn('Route path goes outside Vietnam boundaries, using direct path');
-                    setPath(coords);
-                    setDistanceKm(Number(straightLineDistance.toFixed(2)));
-                }
-            } else {
-                // OSRM failed, use straight line
-                setPath(coords);
-                setDistanceKm(Number(straightLineDistance.toFixed(2)));
-            }
-        } catch (err) {
-            console.error('OSRM fetch failed', err);
-            // Fallback: try server directions endpoint
-            try {
-                const url = buildServerDirectionsUrl(coords, 'truck');
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
-                const res = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await res.json();
-
-                if (data?.distanceMeters != null && Array.isArray(data.geometry) && data.geometry.length > 1) {
-                    // Parse GeoJSON coordinates: [lng, lat] -> [lat, lng] for Leaflet
-                    const geo = data.geometry.map((c) => [c[1], c[0]]);
-
-                    // Validate that ALL points are within Vietnam
-                    const allPointsInVietnam = geo.every(point => isInVietnam(point[0], point[1]));
-
-                    if (allPointsInVietnam) {
-                        setPath(geo);
-                        const km = data.distanceMeters / 1000;
-                        setDistanceKm(Number(km.toFixed(2)));
-                    } else {
-                        setPath(coords);
-                        setDistanceKm(Number(straightLineDistance.toFixed(2)));
-                    }
-                    setError(null);
-                } else {
-                    setPath(coords);
-                    setDistanceKm(Number(straightLineDistance.toFixed(2)));
-                }
-            } catch (err2) {
-                console.error('Server directions endpoint also failed', err2);
-                setPath(coords);
-                setDistanceKm(Number(straightLineDistance.toFixed(2)));
-            }
-        } finally {
-            setLoadingPath(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadRoute(routeId);
-    }, [loadRoute, routeId]);
-
-    useEffect(() => {
-        if (route) {
-            fetchPathFromRoute(route);
-        }
-    }, [route, fetchPathFromRoute]);
-
-    return (
-        <div className="detail-card" style={{ marginTop: '1rem' }}>
-            <div className="card-header" style={{ alignItems: 'center' }}>
-                <div>
-                    <h2 className="card-title">🗺️ Route on Map</h2>
-                    <p className="page-subtitle" style={{ margin: 0 }}>Route visualization with actual road paths</p>
-                </div>
-                {distanceKm != null && (
-                    <div className="badge" style={{ backgroundColor: '#0ea5e9', fontSize: '14px', fontWeight: '600' }}>
-                        {distanceKm} km
-                    </div>
-                )}
+  return (
+    <Card style={{ overflow: 'hidden', border: '1px solid var(--border-default)' }}>
+      <div
+        style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          backgroundColor: 'var(--bg-surface-subtle)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <LuNavigation size={18} color="var(--color-brand-600)" />
+          <div>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Corridor Road Routing
             </div>
-
-            {error && <div className="error" style={{ marginBottom: '0.5rem' }}>{error}</div>}
-            {loading && <div style={{ padding: '12px', color: '#666' }}>⏳ Loading route...</div>}
-            {loadingPath && <div style={{ padding: '12px', color: '#666', fontSize: '13px' }}>🔄 Calculating route path...</div>}
-
-            <div style={{ height: '400px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                <MapContainer center={mapCenter} zoom={6} style={{ height: '100%', width: '100%' }}>
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    {/* Show markers for multiple orders */}
-                    {tripData?.points && tripData.points.map(point => (
-                        <Marker
-                            key={point.id}
-                            position={[point.lat, point.lng]}
-                            icon={point.type === 'pickup' ? originIcon : destinationIcon}
-                        >
-                            <Popup>
-                                <div style={{ minWidth: '200px' }}>
-                                    <strong style={{ fontSize: '14px', color: point.type === 'pickup' ? '#10b981' : '#ef4444' }}>
-                                        {point.type === 'pickup' ? '🟢' : '🔴'} Order #{point.orderId}
-                                    </strong><br />
-                                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                                        {point.type === 'pickup' ? 'Pickup' : 'Delivery'}
-                                    </span><br />
-                                    <span style={{ fontSize: '12px', color: '#666' }}>{point.customerName}</span><br />
-                                    <span style={{ fontSize: '12px', color: '#666' }}>{point.address || 'No address'}</span><br />
-                                    <span style={{ fontSize: '11px', color: '#999' }}>
-                                        Lat: {point.lat.toFixed(4)}, Lng: {point.lng.toFixed(4)}
-                                    </span>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    ))}
-
-                    {/* Show single route markers for backward compatibility */}
-                    {route && !tripData && (
-                        <>
-                            <Marker
-                                position={[Number(route.originLat), Number(route.originLng)]}
-                                icon={originIcon}
-                            >
-                                <Popup>
-                                    <div style={{ minWidth: '200px' }}>
-                                        <strong style={{ fontSize: '14px', color: '#10b981' }}>🟢 {route.routeName}</strong><br />
-                                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Origin</span><br />
-                                        <span style={{ fontSize: '12px', color: '#666' }}>{route.originAddress || 'No address'}</span><br />
-                                        <span style={{ fontSize: '11px', color: '#999' }}>
-                      Lat: {Number(route.originLat).toFixed(4)}, Lng: {Number(route.originLng).toFixed(4)}
-                    </span>
-                                    </div>
-                                </Popup>
-                            </Marker>
-                            <Marker
-                                position={[Number(route.destinationLat), Number(route.destinationLng)]}
-                                icon={destinationIcon}
-                            >
-                                <Popup>
-                                    <div style={{ minWidth: '200px' }}>
-                                        <strong style={{ fontSize: '14px', color: '#ef4444' }}>🔴 {route.routeName}</strong><br />
-                                        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Destination</span><br />
-                                        <span style={{ fontSize: '12px', color: '#666' }}>{route.destinationAddress || 'No address'}</span><br />
-                                        <span style={{ fontSize: '11px', color: '#999' }}>
-                      Lat: {Number(route.destinationLat).toFixed(4)}, Lng: {Number(route.destinationLng).toFixed(4)}
-                    </span>
-                                    </div>
-                                </Popup>
-                            </Marker>
-                        </>
-                    )}
-                    {/* Show route segments for multiple orders */}
-                    {tripData?.routeSegments && tripData.routeSegments.map((segment, index) => (
-                        <Polyline
-                            key={`segment-${index}`}
-                            positions={segment}
-                            color={index % 2 === 0 ? "#2563eb" : "#dc2626"} // Alternate colors
-                            weight={3}
-                            opacity={0.7}
-                            lineJoin="round"
-                            lineCap="round"
-                            dashArray="5, 5"
-                        />
-                    ))}
-
-                    {/* Show single route polyline for backward compatibility */}
-                    {path.length > 1 && !tripData && (
-                        <Polyline
-                            positions={path}
-                            color="#2563eb"
-                            weight={4}
-                            opacity={0.8}
-                            lineJoin="round"
-                            lineCap="round"
-                            dashArray="0"
-                        />
-                    )}
-                    <FitBounds path={path} route={route} />
-                </MapContainer>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              Live telemetry polyline visualization
             </div>
-
-            {distanceKm != null && (
-                <div style={{
-                    marginTop: '12px',
-                    padding: '12px 16px',
-                    backgroundColor: '#f0fdf4',
-                    borderRadius: '8px',
-                    border: '1px solid #86efac',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px'
-                }}>
-                    <span style={{ fontSize: '18px' }}>📍</span>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', color: '#166534', fontSize: '14px' }}>
-                            Route Distance
-                        </div>
-                        <div style={{ fontSize: '13px', color: '#15803d' }}>
-                            {distanceKm} km • Estimated fee: {formatMoney(feeEstimate)}
-                        </div>
-                    </div>
-                </div>
-            )}
+          </div>
         </div>
-    );
+
+        {distanceKm != null && (
+          <Badge variant="brand" size="md">
+            {distanceKm} km
+          </Badge>
+        )}
+      </div>
+
+      {error && (
+        <div style={{ padding: '12px 20px' }}>
+          <Alert variant="warning">{error}</Alert>
+        </div>
+      )}
+
+      <div style={{ height: '400px', width: '100%', position: 'relative' }}>
+        <MapContainer center={mapCenter} zoom={6} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {/* Multiple Orders */}
+          {tripData?.points &&
+            tripData.points.map((point) => (
+              <Marker
+                key={point.id}
+                position={[point.lat, point.lng]}
+                icon={createMapPin(point.type === 'pickup' ? '#2563eb' : '#059669', point.type === 'pickup' ? `P#${point.orderId}` : `D#${point.orderId}`)}
+              >
+                <Popup>
+                  <div style={{ padding: '4px' }}>
+                    <strong style={{ fontSize: '12px' }}>
+                      Order #{point.orderId} ({point.type.toUpperCase()})
+                    </strong>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      {point.customerName}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {point.address}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+          {/* Single Route for Backward Compatibility */}
+          {route && !tripData && (
+            <>
+              <Marker
+                position={[Number(route.originLat), Number(route.originLng)]}
+                icon={createMapPin('#2563eb', 'Origin')}
+              >
+                <Popup>
+                  <div style={{ padding: '4px' }}>
+                    <strong>{route.routeName} (Origin)</strong>
+                    <p style={{ fontSize: '11px', margin: '4px 0 0 0' }}>{route.originAddress}</p>
+                  </div>
+                </Popup>
+              </Marker>
+              <Marker
+                position={[Number(route.destinationLat), Number(route.destinationLng)]}
+                icon={createMapPin('#059669', 'Destination')}
+              >
+                <Popup>
+                  <div style={{ padding: '4px' }}>
+                    <strong>{route.routeName} (Destination)</strong>
+                    <p style={{ fontSize: '11px', margin: '4px 0 0 0' }}>{route.destinationAddress}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            </>
+          )}
+
+          {/* Polylines */}
+          {tripData?.routeSegments &&
+            tripData.routeSegments.map((segment, index) => (
+              <Polyline
+                key={`segment-${index}`}
+                positions={segment}
+                color={index % 2 === 0 ? '#2563eb' : '#059669'}
+                weight={3}
+                opacity={0.8}
+              />
+            ))}
+
+          {path.length > 1 && !tripData && (
+            <Polyline positions={path} color="#2563eb" weight={4} opacity={0.85} />
+          )}
+
+          <FitBounds path={path} route={route} points={tripData?.points} />
+        </MapContainer>
+      </div>
+    </Card>
+  );
 };
 
 export default RouteMapCard;

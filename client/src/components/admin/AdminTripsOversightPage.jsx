@@ -1,38 +1,37 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { tripsOversightService } from '../../services';
 import notificationService from '../../services/admin/notificationService';
-import './admin.css';
+import Pagination from '../common/Pagination';
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  Badge,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuTruck,
+  LuSearch,
+  LuRefreshCw,
+  LuTriangleAlert,
+  LuShieldAlert,
+  LuZap,
+  LuArrowRight,
+  LuCheck,
+} from 'react-icons/lu';
 
-const statusOptions = ['ALL', 'PENDING', 'ASSIGNED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
-const riskOptions = ['ALL', 'ON_TRACK', 'DUE_SOON', 'OVERDUE', 'COMPLETED', 'UNKNOWN'];
-
-const statusColor = {
-  PENDING: '#e0f2fe',
-  ASSIGNED: '#dbeafe',
-  IN_TRANSIT: '#fef9c3',
-  DELIVERED: '#dcfce7',
-  CANCELLED: '#fee2e2',
-};
-
-const riskTone = {
-  ON_TRACK: { bg: '#ecfdf3', color: '#166534' },
-  DUE_SOON: { bg: '#fef9c3', color: '#854d0e' },
-  OVERDUE: { bg: '#fee2e2', color: '#991b1b' },
-  COMPLETED: { bg: '#e5f5ff', color: '#003d7a' },
-  UNKNOWN: { bg: '#e5e7eb', color: '#111827' },
-};
-
-const RiskTag = ({ risk }) => {
-  const tone = riskTone[risk] || riskTone.UNKNOWN;
-  return (
-    <span className="order-risk-tag" style={{ backgroundColor: tone.bg, color: tone.color }}>
-      {risk || 'UNKNOWN'}
-    </span>
-  );
-};
-
-const AdminTripsOversightPage = () => {
+export const AdminTripsOversightPage = () => {
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [delayReports, setDelayReports] = useState([]);
@@ -44,32 +43,31 @@ const AdminTripsOversightPage = () => {
   const [search, setSearch] = useState('');
   const [actingId, setActingId] = useState(null);
   const [page, setPage] = useState(0);
-  const [unreadCount, setUnreadCount] = useState(0);
   const pageSize = 10;
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { items } = await tripsOversightService.getTripsOversight({ size: 1000 });
+      setTrips(items || []);
+    } catch {
+      setError('Failed to query nationwide trip oversight database.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const { items } = await tripsOversightService.getTripsOversight({ size: 1000 });
-        setTrips(items);
-      } catch (err) {
-        setError('Failed to load trips oversight data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    loadData();
   }, []);
 
-  // Load delay reports
   useEffect(() => {
     const loadDelayReports = async () => {
       try {
         setLoadingDelays(true);
         const reports = await tripsOversightService.getTripsWithDelayReports();
-        setDelayReports(reports);
+        setDelayReports(reports || []);
       } catch (err) {
         console.error('Failed to load delay reports:', err);
       } finally {
@@ -77,41 +75,51 @@ const AdminTripsOversightPage = () => {
       }
     };
     loadDelayReports();
-
-    // Refresh delay reports every 30 seconds
     const interval = setInterval(loadDelayReports, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Load unread notification count
-  useEffect(() => {
-    const loadUnreadCount = async () => {
-      try {
-        const { unreadCount } = await notificationService.getUnreadCount();
-        setUnreadCount(unreadCount);
-      } catch (err) {
-        console.error('Failed to load unread notification count:', err);
-      }
-    };
-    loadUnreadCount();
+  const getStatusBadge = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PENDING':
+        return <Badge variant="warning" size="sm" dot>Pending</Badge>;
+      case 'SCHEDULED':
+        return <Badge variant="brand" size="sm" dot>Scheduled</Badge>;
+      case 'ASSIGNED':
+        return <Badge variant="brand" size="sm" dot>Assigned</Badge>;
+      case 'IN_TRANSIT':
+      case 'IN_PROGRESS':
+        return <Badge variant="info" size="sm" dot>In Transit</Badge>;
+      case 'DELIVERED':
+      case 'COMPLETED':
+        return <Badge variant="success" size="sm" dot>Completed</Badge>;
+      case 'CANCELLED':
+        return <Badge variant="danger" size="sm" dot>Cancelled</Badge>;
+      default:
+        return <Badge variant="neutral" size="sm" dot>{status || 'Unknown'}</Badge>;
+    }
+  };
 
-    // Refresh count periodically every 30 seconds
-    const interval = setInterval(loadUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const getRiskBadge = (risk) => {
+    switch (risk?.toUpperCase()) {
+      case 'ON_TRACK':
+        return <Badge variant="success" size="sm">On Track</Badge>;
+      case 'DUE_SOON':
+        return <Badge variant="warning" size="sm">Due Soon</Badge>;
+      case 'OVERDUE':
+        return <Badge variant="danger" size="sm">Overdue</Badge>;
+      default:
+        return <Badge variant="neutral" size="sm">{risk || 'Normal'}</Badge>;
+    }
+  };
 
   const handleOverride = async (tripId, targetStatus = 'ASSIGNED') => {
-    if (!window.confirm(`Override and set trip ${tripId} to ${targetStatus}?`)) return;
+    if (!window.confirm(`Override and set trip #${tripId} status to ${targetStatus}?`)) return;
     setActingId(tripId);
     try {
       await tripsOversightService.updateTripOrderStatus(tripId, targetStatus);
-
-      // Refresh trips list from backend to get updated data
-      const { items } = await tripsOversightService.getTripsOversight({ size: 1000 });
-      setTrips(items);
-
-      alert(`Trip ${tripId} status updated to ${targetStatus}.`);
-    } catch (err) {
+      await loadData();
+    } catch {
       alert('Failed to override status.');
     } finally {
       setActingId(null);
@@ -124,13 +132,6 @@ const AdminTripsOversightPage = () => {
       if (!risk) return riskOrder.length;
       const idx = riskOrder.indexOf(String(risk).toUpperCase());
       return idx === -1 ? riskOrder.length : idx;
-    };
-
-    const statusOrder = ['in_progress', 'arrived', 'scheduled', 'assigned', 'completed', 'cancelled'];
-    const getStatusPriority = (status) => {
-      if (!status) return statusOrder.length;
-      const idx = statusOrder.indexOf(String(status).toLowerCase());
-      return idx === -1 ? statusOrder.length : idx;
     };
 
     return trips
@@ -148,405 +149,222 @@ const AdminTripsOversightPage = () => {
         );
       })
       .sort((a, b) => {
-        // Primary sort: Risk priority (OVERDUE first, COMPLETED last)
-        const riskPriorityDiff = getRiskPriority(a.risk) - getRiskPriority(b.risk);
-        if (riskPriorityDiff !== 0) return riskPriorityDiff;
-
-        // Secondary sort: Within same risk, by status activity (in_progress first)
-        const statusPriorityDiff = getStatusPriority(a.tripStatus) - getStatusPriority(b.tripStatus);
-        if (statusPriorityDiff !== 0) return statusPriorityDiff;
-
-        // Tertiary sort: Within same risk+status, by SLA due time (soonest first)
+        const riskDiff = getRiskPriority(a.risk) - getRiskPriority(b.risk);
+        if (riskDiff !== 0) return riskDiff;
         const aSla = Date.parse(a.slaDue || 0);
         const bSla = Date.parse(b.slaDue || 0);
         return aSla - bSla;
       });
   }, [trips, riskFilter, search, statusFilter]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(0);
-  }, [statusFilter, riskFilter, search]);
-
   const paginatedTrips = filtered.slice(page * pageSize, (page + 1) * pageSize);
   const totalPages = Math.ceil(filtered.length / pageSize);
 
-  if (loading) return <div className="card">Loading trips oversight data...</div>;
-  if (error) return <div className="card error">{error}</div>;
-
   return (
-    <div className="trips-oversight">
-      <div className="oversight-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <h1 style={{ margin: 0 }}>Trips Oversight</h1>
-          {unreadCount > 0 && (
-            <div style={{
-              backgroundColor: '#dc2626',
-              color: '#fff',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              fontWeight: 'bold'
-            }}>
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </div>
-          )}
-        </div>
-        <div>
-          <p className="muted" style={{ marginBottom: '8px' }}>Admin trip oversight and compliance monitoring. Orders are grouped by trips.</p>
-          <div className="oversight-filters" style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 2 }}>
-            <label style={{ marginBottom: '6px', fontWeight: 600, fontSize: '14px' }}>Search</label>
-            <input
-              type="text"
-              placeholder="Search trip ID, driver, city, vehicle"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ padding: '8px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '14px' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <label style={{ marginBottom: '6px', fontWeight: 600, fontSize: '14px' }}>Status</label>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '14px' }}>
-              {statusOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <label style={{ marginBottom: '6px', fontWeight: 600, fontSize: '14px' }}>Risk</label>
-            <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '14px' }}>
-              {riskOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-          </div>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Nationwide Trips Oversight"
+        description="Comprehensive compliance, SLA monitoring, live risk classification, and executive overrides for carrier trips."
+        badge={<Badge variant="brand">Fleet Command</Badge>}
+        actions={
+          <Button variant="outline" size="sm" onClick={loadData} loading={loading} leftIcon={<LuRefreshCw size={14} />}>
+            Refresh Telemetry
+          </Button>
+        }
+      />
 
-      {/* Delay Reports Section */}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Delay Exception Alert Banner */}
       {!loadingDelays && delayReports.length > 0 && (
-        <div className="card" style={{
-          marginBottom: '24px',
-          border: '2px solid #f59e0b',
-          backgroundColor: '#fefce8'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '16px'
-          }}>
+        <Card style={{ padding: '20px', border: '1px solid var(--color-warning-300)', backgroundColor: 'var(--color-warning-50)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>🚨</span>
-              <h3 style={{ margin: 0, color: '#92400e' }}>
-                Pending Delay Reports ({delayReports.length})
-              </h3>
+              <LuShieldAlert size={18} color="var(--color-warning-800)" />
+              <strong style={{ fontSize: 'var(--text-sm)', color: 'var(--color-warning-900)' }}>
+                {delayReports.length} Pending Delay Exception Report{delayReports.length > 1 ? 's' : ''} Require SLA Review
+              </strong>
             </div>
-            <button
-              className="btn btn-primary btn-small"
-              onClick={() => {
-                const reports = delayReports;
-                setDelayReports([]);
-                setTimeout(() => setDelayReports(reports), 100); // Force refresh
-              }}
-              style={{ fontSize: '12px' }}
-            >
-              Refresh
-            </button>
+            <Badge variant="warning" size="sm">
+              Action Required
+            </Badge>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '16px'
-          }}>
-            {delayReports.map((trip) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+            {delayReports.slice(0, 3).map((r) => (
               <div
-                key={trip.tripId}
+                key={r.tripId}
                 style={{
-                  border: '1px solid #f59e0b',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  backgroundColor: '#ffffff'
+                  padding: '12px',
+                  backgroundColor: 'var(--color-white)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-warning-200)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
                 }}
               >
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: '12px'
-                }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '16px', color: '#111827' }}>
-                      Trip #{trip.tripId}
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px' }}>
-                      {trip.originCity || 'N/A'} → {trip.destinationCity || 'N/A'}
-                    </div>
-                  </div>
-                  <span style={{
-                    backgroundColor: '#fef3c7',
-                    color: '#92400e',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    padding: '4px 8px',
-                    borderRadius: '12px'
-                  }}>
-                    PENDING REVIEW
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700 }}>Trip #{r.tripId}</span>
+                  <Link to={`/admin/trips-oversight/${r.tripId}`}>
+                    <Button variant="outline" size="sm">
+                      Review SLA
+                    </Button>
+                  </Link>
                 </div>
-
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#374151',
-                    fontWeight: 500,
-                    marginBottom: '4px'
-                  }}>
-                    Delay Reason:
-                  </div>
-                  <div style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    backgroundColor: '#f9fafb',
-                    padding: '8px',
-                    borderRadius: '4px'
-                  }}>
-                    {trip.delayReason}
-                  </div>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                    <div>Driver: {trip.driver?.name || 'Not assigned'}</div>
-                    <div>Orders: {(trip.orders || []).length}</div>
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                    <div>Status: {trip.tripStatus || 'Unknown'}</div>
-                    <div>Risk: <RiskTag risk={trip.risk} /></div>
-                  </div>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  gap: '8px',
-                  justifyContent: 'flex-end'
-                }}>
-                  <button
-                    className="btn btn-secondary btn-small"
-                    onClick={() => navigate(`/admin/trips-oversight/${trip.tripId}`)}
-                    style={{ fontSize: '12px' }}
-                  >
-                    View Details
-                  </button>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  Reason: <strong>{r.delayReason || 'Unspecified'}</strong>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
-      {filtered.length > 0 ? (
-        <>
-          <div className="admin-table-wrapper">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Trip ID</th>
-                  <th>Route</th>
-                  <th>Orders</th>
-                  <th>Status</th>
-                  <th>Risk</th>
-                  <th>Delay</th>
-                  <th>Driver</th>
-                  <th>Vehicle</th>
-                  <th>SLA Due</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedTrips.map((trip) => (
-                  <tr key={trip.tripId}>
-                    <td style={{ fontWeight: 600 }}>{trip.tripId}</td>
-                    <td>
-                      <div style={{ fontSize: '13px' }}>
-                        <div>{trip.originCity || 'N/A'} → {trip.destinationCity || 'N/A'}</div>
-                        <div className="muted small">{trip.totalDistanceKm ? `${trip.totalDistanceKm} km` : ''}</div>
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: '13px' }}>
-                        <div style={{ fontWeight: 600 }}>{(trip.orders || []).length} orders</div>
-                        <div className="muted small">{trip.totalWeightTon ? `${trip.totalWeightTon} tons` : ''}</div>
-                        {/* Show pickup types for orders */}
-                        {(trip.orders || []).some(order => order.pickupType && order.pickupType !== 'STANDARD') && (
-                          <div style={{ marginTop: '4px' }}>
-                            {(trip.orders || [])
-                              .filter(order => order.pickupType && order.pickupType !== 'STANDARD')
-                              .slice(0, 2) // Show max 2 pickup types
-                              .map((order, idx) => (
-                                <span key={idx} style={{
-                                  backgroundColor: '#e3f2fd',
-                                  color: '#1976d2',
-                                  fontSize: '9px',
-                                  padding: '1px 3px',
-                                  borderRadius: '2px',
-                                  marginRight: '2px',
-                                  display: 'inline-block'
-                                }}>
-                                  {order.pickupType === 'WAREHOUSE' ? '🏭' : '🚢'} {order.pickupType}
-                                </span>
-                              ))}
-                            {(trip.orders || []).filter(order => order.pickupType && order.pickupType !== 'STANDARD').length > 2 && (
-                              <span style={{
-                                fontSize: '9px',
-                                color: '#6b7280',
-                                fontStyle: 'italic'
-                              }}>
-                                +{(trip.orders || []).filter(order => order.pickupType && order.pickupType !== 'STANDARD').length - 2} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {trip.hasUrgentOrders && (
-                          <span style={{
-                            backgroundColor: '#fee2e2',
-                            color: '#991b1b',
-                            fontSize: '10px',
-                            padding: '2px 4px',
-                            borderRadius: '3px',
-                            fontWeight: 600,
-                            marginTop: '2px',
-                            display: 'inline-block'
-                          }}>
-                            URGENT
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        className="order-badge"
-                        style={{
-                          backgroundColor: statusColor[trip.tripStatus] || '#f3f4f6',
-                          color: '#111827',
-                        }}
-                      >
-                        {trip.tripStatus || 'UNKNOWN'}
-                      </span>
-                    </td>
-                    <td>
-                      <RiskTag risk={trip.risk} />
-                    </td>
-                    <td>
-                      {trip.delayReason ? (
-                        <span style={{
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          color: '#92400e'
-                        }}>
-                          🚨 Reported
-                        </span>
-                      ) : (
-                        <span className="muted" style={{ fontSize: '12px' }}>No delay</span>
-                      )}
-                    </td>
-                    <td>
-                      {trip.driver ? (
-                        <div style={{ fontSize: '13px' }}>
-                          <div style={{ fontWeight: 500 }}>{trip.driver.name}</div>
-                          <div className="muted small">{trip.assignmentStatus || 'Assigned'}</div>
-                        </div>
-                      ) : (
-                        <span className="muted">Not assigned</span>
-                      )}
-                    </td>
-                    <td>
-                      {trip.vehicle ? (
-                        <div style={{ fontSize: '12px' }}>
-                          <div style={{ fontWeight: 500 }}>{trip.vehicle.plate}</div>
-                          <div style={{ textTransform: 'uppercase' }}>{trip.vehicle.type}</div>
-                        </div>
-                      ) : (
-                        <span className="muted">Not assigned</span>
-                      )}
-                    </td>
-                    <td style={{ fontSize: '13px' }}>
-                      {trip.slaDue ? (
-                        <>
-                          <div>{new Date(trip.slaDue).toLocaleDateString()}</div>
-                          <div className="muted small">{new Date(trip.slaDue).toLocaleTimeString()}</div>
-                        </>
-                      ) : (
-                        <span className="muted">N/A</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="actions-cell">
-                        <button
-                          className="action-btn"
-                          title="View trip details"
-                          onClick={() => navigate(`/admin/trips-oversight/${trip.tripId}`)}
-                        >
-                          👁️
-                        </button>
-                        <button
-                          className="action-btn"
-                          title={`Override to ${trip.assignmentStatus === 'in_progress' ? 'DELIVERED' : 'ASSIGNED'}`}
-                          onClick={() => handleOverride(trip.tripId, trip.assignmentStatus === 'in_progress' ? 'completed' : 'assigned')}
-                          disabled={actingId === trip.tripId}
-                        >
-                          ⚡
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Filter toolbar */}
+      <Card style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '240px' }}>
+            <Input
+              placeholder="Search by trip ID, driver, vehicle plate, or corridor..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              leftIcon={<LuSearch size={16} />}
+            />
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <div className="pagination-info">
-                Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, filtered.length)} of{' '}
-                {filtered.length} trips
-              </div>
-              <div className="pagination-controls">
-                <button
-                  className="btn btn-secondary btn-small"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 0}
-                >
-                  ← Previous
-                </button>
-                <button
-                  className="btn btn-secondary btn-small"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page + 1 >= totalPages}
-                >
-                  Next →
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="card">No trips match the current filters.</div>
-      )}
+          <div style={{ width: '160px' }}>
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'PENDING', label: 'Pending' },
+                { value: 'ASSIGNED', label: 'Assigned' },
+                { value: 'IN_TRANSIT', label: 'In Transit' },
+                { value: 'DELIVERED', label: 'Delivered' },
+                { value: 'CANCELLED', label: 'Cancelled' },
+              ]}
+            />
+          </div>
 
+          <div style={{ width: '160px' }}>
+            <Select
+              value={riskFilter}
+              onChange={(e) => setRiskFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Risk Levels' },
+                { value: 'ON_TRACK', label: 'On Track' },
+                { value: 'DUE_SOON', label: 'Due Soon' },
+                { value: 'OVERDUE', label: 'Overdue' },
+              ]}
+            />
+          </div>
+
+          <div style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {filtered.length} trip{filtered.length !== 1 ? 's' : ''} monitored
+          </div>
+        </div>
+      </Card>
+
+      {/* Trips Table */}
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Scanning nationwide trips database..." />
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={<LuTruck size={36} color="var(--color-slate-400)" />}
+            title="No trips matched"
+            description="Adjust your search query or filter settings to view trips."
+          />
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead style={{ width: '80px' }}>Trip ID</TableHead>
+                  <TableHead>Corridor Route</TableHead>
+                  <TableHead>Consolidated Cargo</TableHead>
+                  <TableHead>Fulfillment State</TableHead>
+                  <TableHead>Risk Index</TableHead>
+                  <TableHead>Assigned Driver</TableHead>
+                  <TableHead>Vehicle Plate</TableHead>
+                  <TableHead>SLA Target</TableHead>
+                  <TableHead style={{ textAlign: 'right' }}>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedTrips.map((trip) => (
+                  <TableRow key={trip.tripId}>
+                    <TableCell style={{ fontWeight: 700, color: 'var(--color-brand-700)', fontVariantNumeric: 'tabular-nums' }}>
+                      #{trip.tripId}
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {trip.originCity || 'Origin'} → {trip.destinationCity || 'Dest'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {trip.totalDistanceKm ? `${trip.totalDistanceKm.toFixed(1)} km` : '—'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="neutral" size="sm">
+                        {(trip.orders || []).length} orders
+                      </Badge>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                        {trip.totalWeightTon ? `${trip.totalWeightTon.toFixed(1)} T` : ''}
+                      </span>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(trip.tripStatus)}</TableCell>
+                    <TableCell>{getRiskBadge(trip.risk)}</TableCell>
+                    <TableCell>
+                      {trip.driver ? (
+                        <div style={{ fontWeight: 600, fontSize: 'var(--text-xs)' }}>{trip.driver.name}</div>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>
+                      )}
+                    </TableCell>
+                    <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {trip.vehicle ? trip.vehicle.plate : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                    </TableCell>
+                    <TableCell style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {trip.slaDue
+                        ? new Date(trip.slaDue).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+                        : '—'}
+                    </TableCell>
+                    <TableCell style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                        <Link to={`/admin/trips-oversight/${trip.tripId}`}>
+                          <Button variant="outline" size="sm">
+                            Inspect
+                          </Button>
+                        </Link>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-default)' }}>
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                pageSize={pageSize}
+                disabled={loading}
+                onPageChange={(p) => setPage(p)}
+              />
+            </div>
+          </>
+        )}
+      </Card>
     </div>
   );
 };

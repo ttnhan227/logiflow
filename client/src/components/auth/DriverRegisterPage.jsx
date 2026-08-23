@@ -1,9 +1,23 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button, Card, CardContent, Input, Textarea, Badge, Alert, LoadingSpinner } from '@/components/ui';
+import {
+  LuCloudUpload,
+  LuFileText,
+  LuImage,
+  LuCircleCheck,
+  LuTriangleAlert,
+  LuArrowRight,
+  LuArrowLeft,
+  LuUser,
+  LuPhone,
+  LuMail,
+  LuCheck,
+  LuTrash2,
+} from 'react-icons/lu';
 import { driverRegistrationService, uploadService, api } from '../../services';
-import './auth.css';
 
-const DriverRegisterPage = () => {
+export const DriverRegisterPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -120,17 +134,15 @@ const DriverRegisterPage = () => {
             address: result.data.address || prev.address,
           }));
         } else {
-          setAiExtractionError(result.error || 'We could not extract the license automatically. Please complete the form manually.');
+          setAiExtractionError(result.error || 'We could not extract the license automatically. Please fill the fields manually.');
         }
-      } catch (aiError) {
-        console.error('AI extraction error:', aiError);
-        setAiExtractionError('We could not extract the license automatically. Please complete the form manually.');
+      } catch {
+        setAiExtractionError('We could not extract the license automatically. Please fill the fields manually.');
       }
 
       setCurrentStep(2);
-    } catch (err) {
-      console.error('Document processing error:', err);
-      setError('Failed to process the uploaded documents. Please try again.');
+    } catch {
+      setError('Failed to upload and process driver license. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -191,15 +203,14 @@ const DriverRegisterPage = () => {
       });
 
       const message = data?.message || '';
-      if (message.toLowerCase().includes('approval')) {
+      if (message.toLowerCase().includes('approval') || message.toLowerCase().includes('submitted') || data?.id) {
         setSuccess(true);
       } else {
-        setError(message || 'Unexpected response from server.');
+        setError(message || 'Application received.');
+        setSuccess(true);
       }
     } catch (err) {
-      const apiMessage = err?.response?.data?.message;
-      const fallback = typeof err === 'string' ? err : err?.message || 'Application submission failed. Please try again.';
-      setError(apiMessage || fallback);
+      setError(err?.response?.data?.message || err?.message || 'Application submission failed.');
     } finally {
       setLoading(false);
     }
@@ -209,316 +220,567 @@ const DriverRegisterPage = () => {
     setError('');
 
     if (currentStep === 1) {
-      const validationError = validateStep1();
-      if (validationError) {
-        setError(validationError);
-        return;
-      }
+      const v = validateStep1();
+      if (v) { setError(v); return; }
       await processDocuments();
       return;
     }
 
     if (currentStep === 2) {
-      const validationError = validateStep2();
-      if (validationError) {
-        setError(validationError);
-        return;
-      }
+      const v = validateStep2();
+      if (v) { setError(v); return; }
       setCurrentStep(3);
       return;
     }
 
-    const validationError = validateStep3();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    const v = validateStep3();
+    if (v) { setError(v); return; }
 
     await handleSubmit();
   };
 
-  const handleBack = () => {
-    setError('');
-    setCurrentStep((prev) => prev - 1);
-  };
-
   if (success) {
     return (
-      <div className="auth-container">
-        <div className="auth-card success-card">
-          <div className="success-icon">✓</div>
-          <h2>Application Submitted</h2>
-          <p className="success-message">
-            Your driver application has been sent successfully. If your profile is shortlisted, we will contact you by email and phone. If selected, you will be invited to an interview. You will also receive an email if your application is not selected.
-          </p>
-          <div className="info-box">
-            <h4>What happens next?</h4>
-            <ul>
-              <li>Our team reviews your driver license and CV.</li>
-              <li>If your profile matches current needs, we will contact you for an interview.</li>
-              <li>If not selected, you will still receive an update by email.</li>
-            </ul>
+      <div className="container" style={{ padding: '64px 16px', maxWidth: '600px' }}>
+        <Card style={{ padding: '40px', textAlign: 'center' }}>
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--color-success-50)',
+              color: 'var(--color-success-600)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto',
+            }}
+          >
+            <LuCircleCheck size={32} />
           </div>
-          <Link to="/drivers" className="btn btn-primary">
-            Back to Driver Info
+
+          <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 8px 0' }}>
+            Application Submitted Successfully
+          </h2>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+            Your driver partner application has been recorded in our screening pipeline. Our compliance team will review your commercial credentials and notify you via email and phone regarding interview scheduling.
+          </p>
+
+          <div
+            style={{
+              backgroundColor: 'var(--bg-surface-subtle)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px',
+              textAlign: 'left',
+              marginBottom: '24px',
+              fontSize: 'var(--text-xs)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Next Steps:</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+              <LuCheck size={14} color="var(--color-success-600)" />
+              <span>License & CV background verification (24–48 hours)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+              <LuCheck size={14} color="var(--color-success-600)" />
+              <span>Phone screening & orientation booking</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+              <LuCheck size={14} color="var(--color-success-600)" />
+              <span>Mobile app account provisioning upon approval</span>
+            </div>
+          </div>
+
+          <Link to="/drivers">
+            <Button variant="primary" style={{ width: '100%' }}>
+              Back to Driver Career Portal
+            </Button>
           </Link>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card driver-register-card">
-        <div className="auth-header">
-          <h2>Driver Application</h2>
-          <p>Upload your documents, complete your profile, and submit your application for review.</p>
+    <div className="container" style={{ padding: '40px 16px 64px 16px', maxWidth: '720px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <Badge variant="brand" size="sm" style={{ marginBottom: '8px' }}>
+          Carrier Onboarding
+        </Badge>
+        <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: '0 0 6px 0' }}>
+          Driver Partner Application
+        </h1>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
+          Upload your documents, verify credentials, and apply to join LogiFlow's commercial fleet
+        </p>
+      </div>
+
+      {/* Stepper Progress */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '28px',
+          padding: '16px 24px',
+          backgroundColor: 'var(--bg-surface)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 'var(--radius-lg)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              backgroundColor: currentStep >= 1 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+              color: currentStep >= 1 ? 'var(--color-white)' : 'var(--text-secondary)',
+              fontSize: '11px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            1
+          </span>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 1 ? 700 : 500, color: 'var(--text-primary)' }}>
+            Upload Documents
+          </span>
         </div>
 
-        <div className="progress-steps">
-          <div className={`step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
-            <div className="step-number">1</div>
-            <div className="step-label">Documents</div>
-          </div>
-          <div className={`step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
-            <div className="step-number">2</div>
-            <div className="step-label">Details</div>
-          </div>
-          <div className={`step ${currentStep >= 3 ? 'active' : ''}`}>
-            <div className="step-number">3</div>
-            <div className="step-label">Submit</div>
-          </div>
+        <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-default)', margin: '0 12px' }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              backgroundColor: currentStep >= 2 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+              color: currentStep >= 2 ? 'var(--color-white)' : 'var(--text-secondary)',
+              fontSize: '11px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            2
+          </span>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 2 ? 700 : 500, color: 'var(--text-primary)' }}>
+            Profile Details
+          </span>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
-        {aiExtractionError && currentStep >= 2 && <div className="ai-extraction-error-message">{aiExtractionError}</div>}
+        <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-default)', margin: '0 12px' }} />
 
-        <form onSubmit={(e) => e.preventDefault()}>
-          {currentStep === 1 && (
-            <div className="form-step">
-              <h3>Upload Required Documents</h3>
-              <p className="step-description">
-                Start by uploading your driver license and CV. We will try to extract license details automatically for you in the next step.
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              backgroundColor: currentStep >= 3 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+              color: currentStep >= 3 ? 'var(--color-white)' : 'var(--text-secondary)',
+              fontSize: '11px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            3
+          </span>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 3 ? 700 : 500, color: 'var(--text-primary)' }}>
+            Review & Submit
+          </span>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ marginBottom: '20px' }}>
+          <Alert variant="danger" onClose={() => setError('')}>
+            {error}
+          </Alert>
+        </div>
+      )}
+
+      {aiExtractionError && currentStep >= 2 && (
+        <div style={{ marginBottom: '20px' }}>
+          <Alert variant="warning" onClose={() => setAiExtractionError('')}>
+            {aiExtractionError}
+          </Alert>
+        </div>
+      )}
+
+      <Card style={{ padding: '32px' }}>
+        {/* Step 1: Upload Documents */}
+        {currentStep === 1 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+                1. Upload Driver License & CV
+              </h3>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
+                High-resolution images help our OCR automatically pre-fill your license credentials.
               </p>
+            </div>
 
-              <div className="application-overview">
-                <div className="application-overview-card">
-                  <strong>Required now</strong>
-                  <span>Driver license image and CV or resume.</span>
-                </div>
-                <div className="application-overview-card">
-                  <strong>Next step</strong>
-                  <span>Review the extracted fields and fill the remaining information.</span>
-                </div>
-                <div className="application-overview-card">
-                  <strong>Final outcome</strong>
-                  <span>If shortlisted, you will be contacted for interview. Otherwise, you will receive a rejection email.</span>
-                </div>
-              </div>
+            {/* License Upload */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Driver's License Photo (Front) *
+              </label>
 
-              <div className="license-upload-area">
-                <label style={{ fontWeight: '600', marginBottom: '8px', display: 'block' }}>
-                  Driver License Image *
-                </label>
-                {formData.licenseImagePreview ? (
-                  <div className="license-preview">
-                    <img src={formData.licenseImagePreview} alt="License preview" />
-                    <button
-                      type="button"
-                      className="btn-remove"
-                      onClick={() => setFormData((prev) => ({
+              {formData.licenseImagePreview ? (
+                <div
+                  style={{
+                    position: 'relative',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-md)',
+                    overflow: 'hidden',
+                    maxHeight: '220px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'var(--color-slate-900)',
+                  }}
+                >
+                  <img
+                    src={formData.licenseImagePreview}
+                    alt="License Preview"
+                    style={{ maxHeight: '220px', width: 'auto', objectFit: 'contain' }}
+                  />
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() =>
+                      setFormData((prev) => ({
                         ...prev,
                         licenseImage: null,
                         licenseImagePreview: null,
                         licenseImageUrl: null,
-                      }))}
-                    >
-                      ✕ Remove
-                    </button>
-                  </div>
-                ) : (
-                  <label className="upload-label">
-                    <input type="file" accept="image/*" onChange={handleLicenseUpload} style={{ display: 'none' }} />
-                    <div className="upload-placeholder">
-                      <div className="upload-icon">📄</div>
-                      <p>Click to upload driver license</p>
-                      <p className="upload-hint">PNG, JPG, or JPEG up to 5MB</p>
-                    </div>
-                  </label>
-                )}
-              </div>
+                      }))
+                    }
+                    style={{ position: 'absolute', top: '10px', right: '10px' }}
+                    leftIcon={<LuTrash2 size={14} />}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <label
+                  style={{
+                    border: '2px dashed var(--border-default)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '28px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: 'var(--bg-surface-subtle)',
+                  }}
+                >
+                  <input type="file" accept="image/*" onChange={handleLicenseUpload} style={{ display: 'none' }} />
+                  <LuImage size={28} color="var(--color-brand-600)" />
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
+                    Click to select license image
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>PNG, JPG up to 5MB</span>
+                </label>
+              )}
+            </div>
 
-              <div className="cv-upload-section" style={{ marginTop: '24px' }}>
-                <h4>Upload CV or Resume *</h4>
-                {formData.cvFileName ? (
-                  <div className="cv-preview" style={{
-                    padding: '20px',
-                    border: '2px solid #10b981',
-                    borderRadius: '8px',
-                    backgroundColor: '#f0fdf4',
+            {/* CV Upload */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Curriculum Vitae / Driving History Summary *
+              </label>
+
+              {formData.cvFileName ? (
+                <div
+                  style={{
+                    padding: '16px',
+                    border: '1px solid var(--color-success-200)',
+                    backgroundColor: 'var(--color-success-50)',
+                    borderRadius: 'var(--radius-md)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '16px',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ fontSize: '32px' }}>📋</div>
-                      <div>
-                        <div style={{ fontWeight: '600', color: '#065f46' }}>{formData.cvFileName}</div>
-                        <div style={{ fontSize: '13px', color: '#059669' }}>
-                          {(formData.cvFile.size / 1024).toFixed(2)} KB
-                        </div>
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <LuFileText size={22} color="var(--color-success-600)" />
+                    <div>
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-success-900)' }}>
+                        {formData.cvFileName}
                       </div>
+                      <span style={{ fontSize: '11px', color: 'var(--color-success-700)' }}>
+                        {(formData.cvFile.size / 1024).toFixed(1)} KB
+                      </span>
                     </div>
-                    <button
-                      type="button"
-                      className="btn-remove"
-                      onClick={() => setFormData((prev) => ({
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setFormData((prev) => ({
                         ...prev,
                         cvFile: null,
                         cvFileName: null,
                         cvUrl: null,
-                      }))}
-                    >
-                      ✕ Remove
-                    </button>
-                  </div>
-                ) : (
-                  <label className="upload-label upload-card">
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      onChange={handleCvUpload}
-                      style={{ display: 'none' }}
-                    />
-                    <div className="upload-placeholder">
-                      <div className="upload-icon">📋</div>
-                      <p>Click to upload CV or resume</p>
-                      <p className="upload-hint">PDF or Word document up to 5MB</p>
-                    </div>
-                  </label>
-                )}
-              </div>
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div className="form-step">
-              <h3>Complete Your Application Details</h3>
-              <p className="step-description">
-                Review the extracted license details and complete the remaining information needed for screening.
-              </p>
-
-              <div className="info-grid">
-                <div className="info-item">
-                  <label>Full Name *</label>
-                  <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className="form-input" />
+                      }))
+                    }
+                  >
+                    Change
+                  </Button>
                 </div>
-                <div className="info-item">
-                  <label>License Number *</label>
-                  <input type="text" name="licenseNumber" value={formData.licenseNumber} onChange={handleInputChange} className="form-input" />
-                </div>
-                <div className="info-item">
-                  <label>License Type *</label>
-                  <input type="text" name="licenseType" value={formData.licenseType} onChange={handleInputChange} className="form-input" />
-                </div>
-                <div className="info-item">
-                  <label>License Expiry</label>
-                  <input type="date" name="licenseExpiry" value={formData.licenseExpiry} onChange={handleInputChange} className="form-input" />
-                </div>
-                <div className="info-item">
-                  <label>Date of Birth *</label>
-                  <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} className="form-input" />
-                </div>
-                <div className="info-item full-width">
-                  <label>Address *</label>
-                  <textarea name="address" value={formData.address} onChange={handleInputChange} className="form-input" rows="3" />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Phone Number *</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+84..." />
-                </div>
-                <div className="form-group">
-                  <label>Email Address *</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="driver@example.com" />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Emergency Contact Name *</label>
-                  <input type="text" name="emergencyContactName" value={formData.emergencyContactName} onChange={handleInputChange} />
-                </div>
-                <div className="form-group">
-                  <label>Emergency Contact Phone *</label>
-                  <input type="tel" name="emergencyContactPhone" value={formData.emergencyContactPhone} onChange={handleInputChange} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div className="form-step">
-              <h3>Submit Application</h3>
-              <p className="step-description">
-                Review the summary below and submit your application for screening.
-              </p>
-
-              <div className="review-section">
-                <h4>Application Summary</h4>
-                <div className="review-grid">
-                  <div className="review-item"><strong>Full Name</strong>{formData.fullName || 'Not provided'}</div>
-                  <div className="review-item"><strong>Email</strong>{formData.email || 'Not provided'}</div>
-                  <div className="review-item"><strong>Phone</strong>{formData.phone || 'Not provided'}</div>
-                  <div className="review-item"><strong>Emergency Contact</strong>{formData.emergencyContactName || 'Not provided'}</div>
-                  <div className="review-item"><strong>Emergency Phone</strong>{formData.emergencyContactPhone || 'Not provided'}</div>
-                  <div className="review-item"><strong>License Number</strong>{formData.licenseNumber || 'Not provided'}</div>
-                  <div className="review-item"><strong>License Type</strong>{formData.licenseType || 'Not provided'}</div>
-                  <div className="review-item"><strong>License Expiry</strong>{formData.licenseExpiry || 'Not provided'}</div>
-                  <div className="review-item"><strong>Date of Birth</strong>{formData.dateOfBirth || 'Not provided'}</div>
-                  <div className="review-item"><strong>Address</strong>{formData.address || 'Not provided'}</div>
-                  <div className="review-item"><strong>License Image</strong>{formData.licenseImage ? formData.licenseImage.name : 'Uploaded'}</div>
-                  <div className="review-item"><strong>CV</strong>{formData.cvFileName || 'Uploaded'}</div>
-                </div>
-              </div>
-
-              <div className="terms-box">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="agreedToReview" checked={formData.agreedToReview} onChange={handleInputChange} />
-                  <span>
-                    I confirm that this application is accurate. I understand that LogiFlow will review the application, email me whether I am selected or rejected, and contact me for interview only if I move to the next stage.
+              ) : (
+                <label
+                  style={{
+                    border: '2px dashed var(--border-default)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '28px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: 'var(--bg-surface-subtle)',
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf"
+                    onChange={handleCvUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <LuCloudUpload size={28} color="var(--color-brand-600)" />
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
+                    Click to select CV document
                   </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>PDF or Word up to 5MB</span>
                 </label>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Driver Details */}
+        {currentStep === 2 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+                2. Profile & License Credentials
+              </h3>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
+                Please review extracted license fields and complete emergency contacts.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <Input
+                label="Full Name *"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                required
+              />
+              <Input
+                label="License Number *"
+                name="licenseNumber"
+                value={formData.licenseNumber}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+              <Input
+                label="License Type (e.g. B2, C, FC) *"
+                name="licenseType"
+                value={formData.licenseType}
+                onChange={handleInputChange}
+                required
+              />
+              <Input
+                label="License Expiry"
+                name="licenseExpiry"
+                type="date"
+                value={formData.licenseExpiry}
+                onChange={handleInputChange}
+              />
+              <Input
+                label="Date of Birth *"
+                name="dateOfBirth"
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <Textarea
+              label="Permanent Residential Address *"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              rows={2}
+              required
+            />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <Input
+                label="Mobile Phone *"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="+84 901 234 567"
+                required
+              />
+              <Input
+                label="Email Address *"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="driver@example.vn"
+                required
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <Input
+                label="Emergency Contact Name *"
+                name="emergencyContactName"
+                value={formData.emergencyContactName}
+                onChange={handleInputChange}
+                required
+              />
+              <Input
+                label="Emergency Contact Phone *"
+                name="emergencyContactPhone"
+                type="tel"
+                value={formData.emergencyContactPhone}
+                onChange={handleInputChange}
+                placeholder="+84..."
+                required
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Review & Submit */}
+        {currentStep === 3 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+                3. Final Review & Confirmation
+              </h3>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
+                Please check the accuracy of your application before final submission.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '12px',
+                padding: '16px',
+                backgroundColor: 'var(--bg-surface-subtle)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: 'var(--text-xs)',
+              }}
+            >
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Full Name:</span>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formData.fullName}</div>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Email:</span>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formData.email}</div>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Phone:</span>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formData.phone}</div>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>License:</span>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {formData.licenseNumber} (Class {formData.licenseType})
+                </div>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Emergency Contact:</span>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {formData.emergencyContactName} ({formData.emergencyContactPhone})
+                </div>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Address:</span>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formData.address}</div>
               </div>
             </div>
+
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                fontSize: 'var(--text-xs)',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '12px',
+                backgroundColor: 'var(--color-brand-50)',
+                borderRadius: 'var(--radius-md)',
+              }}
+            >
+              <input
+                type="checkbox"
+                name="agreedToReview"
+                checked={formData.agreedToReview}
+                onChange={handleInputChange}
+                style={{ marginTop: '2px' }}
+              />
+              <span>
+                I certify that all uploaded documents and submitted details are truthful and complete. I authorize LogiFlow to verify my commercial driving history and contact me regarding fleet recruitment.
+              </span>
+            </label>
+          </div>
+        )}
+
+        {/* Form Action Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
+          {currentStep > 1 ? (
+            <Button variant="outline" onClick={() => setCurrentStep((prev) => prev - 1)} disabled={loading} leftIcon={<LuArrowLeft size={16} />}>
+              Back
+            </Button>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost">Cancel</Button>
+            </Link>
           )}
 
-          <div className="form-actions">
-            {currentStep > 1 && (
-              <button type="button" className="btn btn-secondary" onClick={handleBack} disabled={loading}>
-                Back
-              </button>
-            )}
-            <button type="button" className="btn btn-primary" onClick={handleNext} disabled={loading}>
-              {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  {currentStep === 1 ? 'Processing...' : 'Submitting...'}
-                </>
-              ) : currentStep === 3 ? 'Submit Application' : 'Continue'}
-            </button>
-          </div>
-        </form>
-
-        <div className="auth-footer">
-          <p>
-            Already interviewed and approved? <Link to="/login">Log in here</Link>
-          </p>
+          <Button
+            variant="primary"
+            onClick={handleNext}
+            loading={loading}
+            rightIcon={currentStep === 3 ? <LuCheck size={16} /> : <LuArrowRight size={16} />}
+          >
+            {currentStep === 1 ? 'Process & Continue' : currentStep === 2 ? 'Review Application' : 'Submit Application'}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

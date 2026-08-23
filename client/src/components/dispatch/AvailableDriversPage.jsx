@@ -1,13 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { dispatchDriverService } from '../../services';
-import './dispatch.css';
-import './modern-dispatch.css';
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  Badge,
+  PageHeader,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuUser,
+  LuSearch,
+  LuRefreshCw,
+  LuArrowLeft,
+  LuPhone,
+  LuMail,
+  LuShieldCheck,
+} from 'react-icons/lu';
 
-const AvailableDriversPage = () => {
+export const AvailableDriversPage = () => {
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('all'); // all, available, assigned
+  const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchDrivers = async () => {
@@ -26,120 +49,140 @@ const AvailableDriversPage = () => {
     fetchDrivers();
   }, []);
 
-  const getStatusColor = (status) => {
-    switch(status?.toUpperCase()) {
-      case 'AVAILABLE': return '#10b981';
-      case 'ASSIGNED': return '#3b82f6';
-      case 'BUSY': return '#f59e0b';
-      case 'OFFLINE': return '#6b7280';
-      default: return '#6b7280';
+  const getStatusBadge = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'AVAILABLE':
+        return <Badge variant="success" dot>Available</Badge>;
+      case 'ASSIGNED':
+        return <Badge variant="brand" dot>Assigned</Badge>;
+      case 'BUSY':
+        return <Badge variant="warning" dot>Busy</Badge>;
+      case 'OFFLINE':
+        return <Badge variant="neutral" dot>Offline</Badge>;
+      default:
+        return <Badge variant="neutral" dot>{status || 'Unknown'}</Badge>;
     }
   };
 
-  const filteredDrivers = drivers.filter(d => {
-    const matchesFilter = 
+  const filteredDrivers = drivers.filter((d) => {
+    const matchesFilter =
       filter === 'all' ||
       (filter === 'available' && d.status?.toUpperCase() === 'AVAILABLE') ||
       (filter === 'assigned' && d.status?.toUpperCase() === 'ASSIGNED');
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       !searchTerm ||
       d.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.phone?.includes(searchTerm) ||
       d.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesFilter && matchesSearch;
   });
 
   return (
-    <div className="modern-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Available Drivers</h1>
-          <p className="page-subtitle">Manage and monitor driver availability</p>
-        </div>
-        <div className="header-actions">
-          <Link to="/dispatch/trips" className="btn-secondary">
-            ← Back to Trips
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Driver Fleet Roster"
+        description="Live status, license ratings, and assignment status for all registered commercial drivers."
+        badge={<Badge variant="brand">Driver Operations</Badge>}
+        actions={
+          <Link to="/dispatch/trips">
+            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
+              Back to Trips
+            </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="filters-bar">
-        <input 
-          type="text" 
-          placeholder="🔍 Search by name, phone, or email..." 
-          className="search-input"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select 
-          className="filter-select" 
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="all">All Drivers</option>
-          <option value="available">Available</option>
-          <option value="assigned">Assigned</option>
-        </select>
-        <button className="btn-refresh" onClick={fetchDrivers}>↻ Refresh</button>
-        <div className="results-count">
-          {filteredDrivers.length} driver{filteredDrivers.length !== 1 ? 's' : ''}
-        </div>
-      </div>
+      {/* Filter toolbar */}
+      <Card style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '240px' }}>
+            <Input
+              placeholder="Search driver by name, phone, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              leftIcon={<LuSearch size={16} />}
+            />
+          </div>
 
-      {loading && (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading drivers...</p>
-        </div>
-      )}
+          <div style={{ width: '180px' }}>
+            <Select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Driver States' },
+                { value: 'available', label: 'Available Only' },
+                { value: 'assigned', label: 'Assigned Only' },
+              ]}
+            />
+          </div>
 
-      {!loading && filteredDrivers.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">👤</div>
-          <h3>No drivers found</h3>
-          <p>Try adjusting your search or filters</p>
-        </div>
-      )}
+          <Button variant="outline" size="md" onClick={fetchDrivers} loading={loading} leftIcon={<LuRefreshCw size={14} />}>
+            Refresh
+          </Button>
 
-      {!loading && filteredDrivers.length > 0 && (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Driver ID</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>License Type</th>
-                <th>Total Trips</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDrivers.map(driver => (
-                <tr key={driver.driverId} className="table-row">
-                  <td className="cell-id">#{driver.driverId}</td>
-                  <td className="cell-text">{driver.fullName || 'N/A'}</td>
-                  <td className="cell-text">{driver.phone || 'N/A'}</td>
-                  <td className="cell-text" style={{ maxWidth: '200px' }}>{driver.email || 'N/A'}</td>
-                  <td className="cell-text">{driver.licenseType || 'N/A'}</td>
-                  <td className="cell-text">{driver.totalTrips || 0}</td>
-                  <td className="cell-status">
-                    <span 
-                      className="status-badge" 
-                      style={{ backgroundColor: getStatusColor(driver.status) }}
-                    >
-                      {driver.status?.toUpperCase() || 'UNKNOWN'}
-                    </span>
-                  </td>
-                </tr>
+          <div style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {filteredDrivers.length} driver{filteredDrivers.length !== 1 ? 's' : ''} listed
+          </div>
+        </div>
+      </Card>
+
+      {/* Table Card */}
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Querying live driver telemetry..." />
+          </div>
+        ) : filteredDrivers.length === 0 ? (
+          <EmptyState
+            icon={<LuUser size={36} color="var(--color-slate-400)" />}
+            title="No drivers found"
+            description="Adjust your search query or filter settings to view driver records."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead style={{ width: '80px' }}>ID</TableHead>
+                <TableHead>Driver Name</TableHead>
+                <TableHead>Contact Phone</TableHead>
+                <TableHead>Email Address</TableHead>
+                <TableHead>License Class</TableHead>
+                <TableHead>Lifetime Trips</TableHead>
+                <TableHead>Current Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredDrivers.map((driver) => (
+                <TableRow key={driver.driverId}>
+                  <TableCell style={{ fontWeight: 700, color: 'var(--color-brand-700)', fontVariantNumeric: 'tabular-nums' }}>
+                    #{driver.driverId}
+                  </TableCell>
+                  <TableCell style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {driver.fullName || '—'}
+                  </TableCell>
+                  <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {driver.phone || '—'}
+                  </TableCell>
+                  <TableCell style={{ color: 'var(--text-secondary)' }}>
+                    {driver.email || '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="neutral" size="sm">
+                      <LuShieldCheck size={11} /> {driver.licenseType || 'Class C'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                    {driver.totalTrips || 0}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(driver.status)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
     </div>
   );
 };

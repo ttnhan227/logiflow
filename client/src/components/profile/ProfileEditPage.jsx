@@ -1,58 +1,59 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { profileService, uploadService } from '../../services';
 import api from '../../services/api';
-import { useNavigate } from 'react-router-dom';
-import './profile.css';
+import { Button, Card, CardContent, Input, PageHeader, LoadingSpinner, Alert } from '@/components/ui';
+import { LuUser, LuCloudUpload, LuSave, LuArrowLeft, LuTrash2 } from 'react-icons/lu';
 
 const getBaseUrl = () => {
   const baseURL = api.defaults.baseURL;
   return baseURL.replace(/\/api\/?$/, '');
 };
 
-const ProfileEditPage = () => {
+export const ProfileEditPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ 
-    username: '', 
-    email: '', 
-    fullName: '', 
-    phone: '', 
-    profilePictureUrl: '' 
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    fullName: '',
+    phone: '',
+    profilePictureUrl: '',
   });
   const [previewUrl, setPreviewUrl] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const data = await profileService.getProfile();
-        setForm({
-          username: data.username || '',
-          email: data.email || '',
-          fullName: data.fullName || '',
-          phone: data.phone || '',
-          profilePictureUrl: data.profilePictureUrl || '',
-        });
-
-        if (data.profilePictureUrl) {
-          const url = data.profilePictureUrl.startsWith('http') 
-            ? data.profilePictureUrl 
-            : `${getBaseUrl()}${data.profilePictureUrl.startsWith('/') ? '' : '/'}${data.profilePictureUrl}`;
-          setPreviewUrl(url);
-        }
-      } catch (err) {
-        setError(typeof err === 'string' ? err : 'Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    loadProfile();
   }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const data = await profileService.getProfile();
+      setForm({
+        username: data.username || '',
+        email: data.email || '',
+        fullName: data.fullName || '',
+        phone: data.phone || '',
+        profilePictureUrl: data.profilePictureUrl || '',
+      });
+
+      if (data.profilePictureUrl) {
+        const url = data.profilePictureUrl.startsWith('http')
+          ? data.profilePictureUrl
+          : `${getBaseUrl()}${data.profilePictureUrl.startsWith('/') ? '' : '/'}${data.profilePictureUrl}`;
+        setPreviewUrl(url);
+      }
+    } catch (err) {
+      setError(typeof err === 'string' ? err : 'Failed to load profile.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInput = (e) => {
     const { name, value } = e.target;
@@ -68,30 +69,19 @@ const ProfileEditPage = () => {
 
     try {
       setUploading(true);
-      setUploadProgress(0);
-      const data = await uploadService.uploadProfilePicture(file, (progressEvent) => {
-        if (progressEvent.lengthComputable) {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
-      });
+      const data = await uploadService.uploadProfilePicture(file);
       if (data && data.path) {
         setForm((prev) => ({ ...prev, profilePictureUrl: data.path }));
-        const url = data.path.startsWith('http') 
-          ? data.path 
+        const url = data.path.startsWith('http')
+          ? data.path
           : `${getBaseUrl()}${data.path.startsWith('/') ? '' : '/'}${data.path}`;
         setPreviewUrl(url);
-        setSuccess('Image uploaded successfully');
-        setTimeout(() => setSuccess(null), 3000);
+        setSuccess('Profile avatar uploaded successfully.');
       }
     } catch (err) {
-      const errorMsg = typeof err === 'string' 
-        ? err 
-        : (err?.message || err?.msg || 'Upload failed');
-      setError(errorMsg);
+      setError(err?.message || 'Avatar upload failed.');
     } finally {
       setUploading(false);
-      setUploadProgress(0);
     }
   };
 
@@ -100,7 +90,7 @@ const ProfileEditPage = () => {
     setError(null);
     setSuccess(null);
     setSubmitting(true);
-    
+
     try {
       const payload = {
         fullName: form.fullName || null,
@@ -114,178 +104,186 @@ const ProfileEditPage = () => {
       const newUser = {
         ...stored,
         username: updated.username || stored.username,
-        profilePictureUrl: updated.profilePictureUrl 
-          ? (updated.profilePictureUrl.startsWith('http') 
-              ? updated.profilePictureUrl 
-              : `${getBaseUrl()}${updated.profilePictureUrl.startsWith('/') ? '' : '/'}${updated.profilePictureUrl}`) 
+        profilePictureUrl: updated.profilePictureUrl
+          ? updated.profilePictureUrl.startsWith('http')
+            ? updated.profilePictureUrl
+            : `${getBaseUrl()}${updated.profilePictureUrl.startsWith('/') ? '' : '/'}${updated.profilePictureUrl}`
           : stored.profilePictureUrl,
       };
       localStorage.setItem('user', JSON.stringify(newUser));
-      
+
       window.dispatchEvent(new CustomEvent('userUpdated', { detail: newUser }));
-      setSuccess('Profile updated successfully');
-      setTimeout(() => navigate('/profile'), 2000);
+      setSuccess('Profile updated successfully.');
+      setTimeout(() => navigate('/profile'), 1000);
     } catch (err) {
-      setError(typeof err === 'string' ? err : 'Failed to update profile');
+      setError(typeof err === 'string' ? err : 'Failed to update profile.');
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="profile-page-container">
-        <div className="profile-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading your profile...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner fullPage text="Loading profile editor..." />;
   }
 
   return (
-    <div className="profile-page-container">
-      <div className="profile-header">
-        <h1 className="profile-title">Edit Profile</h1>
-        <p className="profile-subtitle">Update your personal information and profile picture</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', padding: '36px 0 64px 0' }}>
+      <div className="container" style={{ maxWidth: '720px' }}>
+        <PageHeader
+          title="Edit Profile"
+          description="Update your contact information and profile avatar."
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<LuArrowLeft size={14} />}
+              onClick={() => navigate('/profile')}
+            >
+              Cancel
+            </Button>
+          }
+        />
       </div>
 
-      {error && <div className="profile-alert alert-error">{error}</div>}
-      {success && <div className="profile-alert alert-success">{success}</div>}
-
-      <form onSubmit={handleSubmit} className="profile-form">
-        {/* Profile Picture Section */}
-        <div className="profile-card">
-          <div className="card-header">
-            <h2>Profile Picture</h2>
+      <div className="container" style={{ maxWidth: '720px' }}>
+        {error && (
+          <div style={{ marginBottom: '16px' }}>
+            <Alert variant="danger" onClose={() => setError(null)}>
+              {error}
+            </Alert>
           </div>
-          <div className="card-content">
-            <div className="profile-picture-section">
-              <div className="picture-preview-container">
+        )}
+
+        {success && (
+          <div style={{ marginBottom: '16px' }}>
+            <Alert variant="success" onClose={() => setSuccess(null)}>
+              {success}
+            </Alert>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Avatar Upload Card */}
+          <Card style={{ padding: '28px' }}>
+            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+              Profile Photo
+            </h3>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: 'var(--radius-full)',
+                  backgroundColor: 'var(--color-slate-100)',
+                  border: '2px solid var(--border-default)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
                 {previewUrl ? (
-                  <img 
-                    src={previewUrl} 
-                    alt="profile preview" 
-                    className="picture-preview" 
-                  />
+                  <img src={previewUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <div className="picture-placeholder">
-                    <span className="placeholder-icon">👤</span>
-                    <p>No Image</p>
-                  </div>
+                  <LuUser size={36} color="var(--color-slate-400)" />
                 )}
               </div>
-              
-              <div className="picture-upload-section">
-                <div className="file-input-wrapper">
-                  <label htmlFor="profile-picture-input" className="file-input-label">
-                    Choose Image
-                  </label>
-                  <input 
-                    id="profile-picture-input"
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleFileChange}
-                    disabled={uploading}
-                    className="file-input"
-                  />
-                </div>
-                
-                {uploading && (
-                  <div className="upload-progress">
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
-                    </div>
-                    <p className="progress-text">{uploadProgress}%</p>
-                  </div>
-                )}
-                
-                <p className="file-hint">JPG, PNG, GIF or WebP • Max 5MB</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--color-white)',
+                    border: '1px solid var(--border-default)',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 600,
+                    cursor: uploading ? 'not-allowed' : 'pointer',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-xs)',
+                  }}
+                >
+                  <input type="file" accept="image/*" onChange={handleFileChange} disabled={uploading} style={{ display: 'none' }} />
+                  <LuCloudUpload size={16} />
+                  <span>{uploading ? 'Uploading...' : 'Upload New Photo'}</span>
+                </label>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Recommended: Square JPG or PNG, max 5MB
+                </span>
               </div>
             </div>
-          </div>
-        </div>
+          </Card>
 
-        {/* Personal Information Section */}
-        <div className="profile-card">
-          <div className="card-header">
-            <h2>Personal Information</h2>
-          </div>
-          <div className="card-content">
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="username-input">Username</label>
-                <input 
-                  id="username-input"
-                  type="text"
-                  name="username" 
-                  value={form.username} 
-                  readOnly 
-                  className="form-input form-input-readonly"
-                />
-              </div>
+          {/* Form Fields Card */}
+          <Card style={{ padding: '28px' }}>
+            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+              Personal & Contact Details
+            </h3>
 
-              <div className="form-group">
-                <label htmlFor="email-input">Email Address</label>
-                <input 
-                  id="email-input"
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <Input
+                label="Username"
+                name="username"
+                value={form.username}
+                disabled
+                hint="Username cannot be altered."
+              />
+
+              <Input
+                label="Full Name"
+                name="fullName"
+                value={form.fullName}
+                onChange={handleInput}
+                placeholder="Enter your full name"
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <Input
+                  label="Email Address"
+                  name="email"
                   type="email"
-                  name="email" 
-                  value={form.email} 
+                  value={form.email}
                   onChange={handleInput}
-                  className="form-input"
-                  placeholder="your.email@example.com"
+                  placeholder="name@example.com"
                 />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="fullname-input">Full Name</label>
-                <input 
-                  id="fullname-input"
-                  type="text"
-                  name="fullName" 
-                  value={form.fullName} 
-                  onChange={handleInput}
-                  className="form-input"
-                  placeholder="Your Full Name"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="phone-input">Phone Number</label>
-                <input 
-                  id="phone-input"
+                <Input
+                  label="Phone Number"
+                  name="phone"
                   type="tel"
-                  name="phone" 
-                  value={form.phone} 
+                  value={form.phone}
                   onChange={handleInput}
-                  className="form-input"
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="+84..."
                 />
               </div>
             </div>
-          </div>
-        </div>
+          </Card>
 
-        {/* Action Buttons */}
-        <div className="profile-actions">
-          <button 
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => navigate('/profile')}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={submitting || uploading}
-          >
-            {submitting ? 'Saving...' : uploading ? 'Uploading...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/profile')}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting || uploading}
+              leftIcon={<LuSave size={16} />}
+            >
+              Save Profile Changes
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

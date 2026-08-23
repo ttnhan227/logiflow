@@ -1,613 +1,269 @@
 import React, { useState, useEffect } from 'react';
 import paymentRequestService from '../../services/admin/paymentRequestService';
-import './admin.css';
+import {
+  Button,
+  Card,
+  StatCard,
+  Input,
+  Badge,
+  Modal,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuSearch,
+  LuCreditCard,
+  LuClock,
+  LuCircleCheck,
+  LuSend,
+  LuEye,
+} from 'react-icons/lu';
 
-const AdminPaymentRequestPage = () => {
-    const [customers, setCustomers] = useState([]);
-    const [filteredCustomers, setFilteredCustomers] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [statistics, setStatistics] = useState(null);
-    const [customerDialog, setCustomerDialog] = useState({ open: false, customer: null });
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-    const [filters, setFilters] = useState({
-        searchTerm: ''
-    });
+export const AdminPaymentRequestPage = () => {
+  const [customers, setCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [statistics, setStatistics] = useState(null);
+  const [customerDialog, setCustomerDialog] = useState({ open: false, customer: null });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [banner, setBanner] = useState(null);
 
-    // Load data
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const response = await paymentRequestService.getCustomersWithOrders();
-            setCustomers(response.data || []);
-        } catch (error) {
-            showSnackbar('Error loading data: ' + error.message, 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadStatistics = async () => {
-        try {
-            const response = await paymentRequestService.getPaymentStatistics();
-            setStatistics(response.data);
-        } catch (error) {
-            console.error('Error loading statistics:', error);
-        }
-    };
-
-    // Initial dashboard fetch; actions refresh the data explicitly after mutations.
-    useEffect(() => {
-        loadData();
-        loadStatistics();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- initial load only
-
-    // Filter customers based on search and filter criteria
-    useEffect(() => {
-        let filtered = customers;
-
-        // Filter by search term
-        if (filters.searchTerm.trim()) {
-            const search = filters.searchTerm.toLowerCase();
-            filtered = filtered.filter(customer =>
-                customer.customerName?.toLowerCase().includes(search) ||
-                customer.customerPhone?.toLowerCase().includes(search)
-            );
-        }
-
-
-
-        setFilteredCustomers(filtered);
-    }, [customers, filters]);
-
-    // Handle customer click
-    const handleCustomerClick = (customer) => {
-        setCustomerDialog({
-            open: true,
-            customer: customer
-        });
-    };
-
-    // Handle payment requests
-    const handleSendPaymentRequest = async (orderId) => {
-        if (!window.confirm('Are you sure you want to send the payment request for this order?')) {
-            return;
-        }
-
-        try {
-            await paymentRequestService.sendPaymentRequest(orderId);
-            showSnackbar('Payment request sent successfully', 'success');
-            // Reload data to update the customer's pending orders count
-            loadData();
-            loadStatistics();
-            // Close dialog and reopen to refresh data
-            setCustomerDialog({ open: false, customer: null });
-            setTimeout(() => {
-                const updatedCustomer = customers.find(c => c.customerName === customerDialog.customer.customerName);
-                if (updatedCustomer) {
-                    setCustomerDialog({ open: true, customer: updatedCustomer });
-                }
-            }, 100);
-        } catch (error) {
-            showSnackbar('Failed to send payment request: ' + error.message, 'error');
-        }
-    };
-
-    // Handle snackbar
-    const showSnackbar = (message, severity = 'success') => {
-        setSnackbar({ open: true, message, severity });
-    };
-
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, open: false });
-    };
-
-    const formatCurrency = (amount) => {
-        if (!amount) return '0 VND';
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(amount);
-    };
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'PAID': return '#dcfce7';
-            case 'PENDING': return '#fef9c3';
-            default: return '#f3f4f6';
-        }
-    };
-
-    const formatTime = (ts) => (ts ? new Date(ts).toLocaleString('vi-VN') : 'N/A');
-
-    if (loading) {
-        return (
-            <div className="admin-page-container">
-                <div className="admin-page-header">
-                    <h1>💰 Payment Request Management</h1>
-                </div>
-                <div className="loading-state">
-                    <span className="loading-spinner"></span> Loading payment requests...
-                </div>
-            </div>
-        );
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const response = await paymentRequestService.getCustomersWithOrders();
+      setCustomers(response.data || []);
+    } catch (err) {
+      setBanner({ text: 'Error loading payment requests: ' + err.message, variant: 'danger' });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <div className="admin-page-container">
-            {/* Header */}
-            <div className="admin-page-header">
-                <h1>💰 Payment Request Management</h1>
-                <p>Manage and send payment requests for delivered orders by customer</p>
-            </div>
+  const loadStatistics = async () => {
+    try {
+      const response = await paymentRequestService.getPaymentStatistics();
+      setStatistics(response.data);
+    } catch (err) {
+      console.error('Error loading statistics:', err);
+    }
+  };
 
-            {/* Statistics Cards */}
-            {statistics && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                    <div className="stat-card" style={{
-                        background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
-                        padding: '24px',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 12px rgba(34, 197, 94, 0.15)',
-                        border: '1px solid #bbf7d0',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}>
-                        <div style={{
-                            position: 'absolute',
-                            top: '16px',
-                            right: '16px',
-                            fontSize: '32px',
-                            opacity: 0.3
-                        }}>💰</div>
-                        <div style={{
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            color: '#166534',
-                            marginBottom: '8px'
-                        }}>
-                            Orders Paid
-                        </div>
-                        <div style={{
-                            fontSize: '32px',
-                            fontWeight: 800,
-                            color: '#166534',
-                            marginBottom: '4px',
-                            lineHeight: '1'
-                        }}>
-                            {statistics.paidOrders}
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#15803d',
-                            fontWeight: '500'
-                        }}>
-                            Successfully completed payments
-                        </div>
-                    </div>
+  useEffect(() => {
+    loadData();
+    loadStatistics();
+  }, []);
 
-                    <div className="stat-card" style={{
-                        background: 'linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)',
-                        padding: '24px',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)',
-                        border: '1px solid #fde68a',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}>
-                        <div style={{
-                            position: 'absolute',
-                            top: '16px',
-                            right: '16px',
-                            fontSize: '32px',
-                            opacity: 0.3
-                        }}>⏳</div>
-                        <div style={{
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            color: '#92400e',
-                            marginBottom: '8px'
-                        }}>
-                            Pending Payments
-                        </div>
-                        <div style={{
-                            fontSize: '32px',
-                            fontWeight: 800,
-                            color: '#92400e',
-                            marginBottom: '4px',
-                            lineHeight: '1'
-                        }}>
-                            {statistics.pendingOrders}
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#b45309',
-                            fontWeight: '500'
-                        }}>
-                            Awaiting customer payment
-                        </div>
-                    </div>
+  useEffect(() => {
+    let filtered = customers;
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.customerName?.toLowerCase().includes(search) ||
+          c.customerPhone?.toLowerCase().includes(search)
+      );
+    }
+    setFilteredCustomers(filtered);
+  }, [customers, searchTerm]);
 
-                    <div className="stat-card" style={{
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                        padding: '24px',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                        border: '1px solid #e2e8f0',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}>
-                        <div style={{
-                            position: 'absolute',
-                            top: '16px',
-                            right: '16px',
-                            fontSize: '32px',
-                            opacity: 0.3
-                        }}>📊</div>
-                        <div style={{
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            color: '#475569',
-                            marginBottom: '8px'
-                        }}>
-                            Total Revenue
-                        </div>
-                        <div style={{
-                            fontSize: '32px',
-                            fontWeight: 800,
-                            color: '#1e293b',
-                            marginBottom: '4px',
-                            lineHeight: '1'
-                        }}>
-                            {formatCurrency(statistics.totalAmount)}
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#64748b',
-                            fontWeight: '500'
-                        }}>
-                            From paid orders
-                        </div>
-                    </div>
+  const handleSendPaymentRequest = async (orderId) => {
+    if (!window.confirm(`Issue and dispatch freight tariff invoice for Order #${orderId}?`)) return;
+    try {
+      await paymentRequestService.sendPaymentRequest(orderId);
+      setBanner({ text: `Payment request dispatched successfully for Order #${orderId}.`, variant: 'success' });
+      await loadData();
+      await loadStatistics();
+      setCustomerDialog({ open: false, customer: null });
+    } catch (err) {
+      setBanner({ text: 'Failed to dispatch payment request: ' + err.message, variant: 'danger' });
+    }
+  };
 
-                    <div className="stat-card" style={{
-                        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                        padding: '24px',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)',
-                        border: '1px solid #fde68a',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}>
-                        <div style={{
-                            position: 'absolute',
-                            top: '16px',
-                            right: '16px',
-                            fontSize: '32px',
-                            opacity: 0.3
-                        }}>⏳</div>
-                        <div style={{
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            color: '#92400e',
-                            marginBottom: '8px'
-                        }}>
-                            Pending Amount
-                        </div>
-                        <div style={{
-                            fontSize: '32px',
-                            fontWeight: 800,
-                            color: '#92400e',
-                            marginBottom: '4px',
-                            lineHeight: '1'
-                        }}>
-                            {formatCurrency(statistics.pendingAmount)}
-                        </div>
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#b45309',
-                            fontWeight: '500'
-                        }}>
-                            From unpaid orders
-                        </div>
-                    </div>
-                </div>
-            )}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Freight Tariff Invoicing & Payment Requests"
+        description="Monitor delivered linehaul orders, review accounts receivable, and dispatch digital payment requests to shippers."
+        badge={<Badge variant="brand">Billing & Settlements</Badge>}
+      />
 
-            {/* Toolbar */}
-            <div className="admin-page-toolbar" style={{
-                display: 'flex',
-                gap: '16px',
-                alignItems: 'center',
-                marginBottom: '24px',
-                flexWrap: 'wrap'
-            }}>
-                <div style={{ flex: 1, minWidth: '250px' }}>
-                    <input
-                        type="text"
-                        placeholder="🔍 Search customers by name or phone..."
-                        value={filters.searchTerm}
-                        onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                        style={{
-                            width: '100%',
-                            padding: '10px 14px',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            backgroundColor: 'white'
-                        }}
-                    />
-                </div>
+      {banner && (
+        <Alert variant={banner.variant} onClose={() => setBanner(null)}>
+          {banner.text}
+        </Alert>
+      )}
 
-                <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>
-                    Showing {filteredCustomers.length} of {customers.length} customers
-                </div>
-            </div>
+      {/* Top 4 KPI Metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <StatCard
+          title="Settled Paid Orders"
+          value={statistics?.paidOrders || 0}
+          icon={<LuCircleCheck size={20} />}
+          description="Invoices collected"
+        />
+        <StatCard
+          title="Pending Receivables"
+          value={statistics?.pendingOrders || 0}
+          icon={<LuClock size={20} />}
+          description="Awaiting customer settlement"
+        />
+        <StatCard
+          title="Settled Turnover"
+          value={`${Number(statistics?.totalAmount || 0).toLocaleString()} VND`}
+          icon={<LuCreditCard size={20} />}
+          description="Gross tariff turnover"
+        />
+        <StatCard
+          title="Outstanding Balance"
+          value={`${Number(statistics?.pendingAmount || 0).toLocaleString()} VND`}
+          icon={<LuClock size={20} />}
+          description="Unsettled freight charges"
+        />
+      </div>
 
-            {/* Customers Table */}
-            {loading ? (
-                <div className="loading-state">
-                    <span className="loading-spinner"></span> Loading customers...
-                </div>
-            ) : customers.length === 0 ? (
-                <div className="empty-state">
-                    <div className="empty-state-icon">👥</div>
-                    <div className="empty-state-title">No customers found</div>
-                    <div className="empty-state-description">There are no customers with delivered orders at this time</div>
-                </div>
-            ) : (
-                <div className="admin-table-wrapper">
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Total Orders</th>
-                                <th>Pending Orders</th>
-                                <th>Total Amount</th>
-                                <th>Pending Amount</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredCustomers.map((customer) => (
-                                <tr key={customer.customerName} style={{ cursor: 'pointer' }} onClick={() => handleCustomerClick(customer)}>
-                                    <td>
-                                        <div className="user-row">
-                                            <div className="avatar">
-                                                {(customer.customerName || '?')
-                                                    .split(' ')
-                                                    .map((n) => n[0])
-                                                    .join('')
-                                                    .toUpperCase()
-                                                    .slice(0, 2)}
-                                            </div>
-                                            <div className="user-info">
-                                                <div className="user-name">{customer.customerName}</div>
-                                                <div className="user-id">{customer.customerPhone || 'No phone'}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                                            {customer.totalOrders}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ fontSize: '14px', fontWeight: 600, color: customer.pendingOrders > 0 ? '#f59e0b' : '#10b981' }}>
-                                            {customer.pendingOrders}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1f2937' }}>
-                                            {formatCurrency(customer.totalAmount)}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ fontSize: '14px', fontWeight: 600, color: customer.pendingAmount > 0 ? '#f59e0b' : '#10b981' }}>
-                                            {formatCurrency(customer.pendingAmount)}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="actions-cell">
-                                            <button
-                                                className="action-btn"
-                                                title="View customer orders"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleCustomerClick(customer);
-                                                }}
-                                            >
-                                                👁️
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            {/* Customer Orders Dialog */}
-            {customerDialog.open && customerDialog.customer && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '24px',
-                        maxWidth: '1000px',
-                        width: '90%',
-                        maxHeight: '90vh',
-                        overflow: 'auto',
-                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700' }}>
-                                    👥 {customerDialog.customer.customerName} - Orders & Payments
-                                </h2>
-                                <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
-                                    {customerDialog.customer.pendingOrders} pending orders • {formatCurrency(customerDialog.customer.pendingAmount)} pending amount
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setCustomerDialog({ open: false, customer: null })}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: '#f3f4f6',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '16px',
-                                    fontWeight: '600'
-                                }}
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        {customerDialog.customer.orders && customerDialog.customer.orders.length > 0 ? (
-                            <div className="admin-table-wrapper">
-                                <table className="admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Order ID</th>
-                                            <th>Address</th>
-                                            <th>Weight</th>
-                                            <th>Amount</th>
-                                            <th>Created At</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {customerDialog.customer.orders.map((order) => (
-                                            <tr key={order.orderId}>
-                                                <td>
-                                                    <div style={{ fontSize: '13px', fontWeight: 600 }}>
-                                                        #{order.orderId}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div style={{ fontSize: '13px' }}>
-                                                        {order.pickupAddress}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div style={{ fontSize: '13px' }}>
-                                                        {order.weightTons} tons
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937' }}>
-                                                        {formatCurrency(order.shippingFee)}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div style={{ fontSize: '13px' }}>
-                                                        {formatTime(order.createdAt)}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span
-                                                        className="order-badge"
-                                                        style={{
-                                                            backgroundColor: getStatusColor(order.paymentStatus),
-                                                            color: '#111827',
-                                                        }}
-                                                    >
-                                                        {order.paymentStatus || 'UNKNOWN'}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <div className="actions-cell">
-                                                        {order.paymentStatus === 'PENDING' && (
-                                                            <button
-                                                                title="Send payment request"
-                                                                onClick={() => handleSendPaymentRequest(order.orderId)}
-                                                                style={{
-                                                                    padding: '6px 12px',
-                                                                    backgroundColor: '#3b82f6',
-                                                                    color: 'white',
-                                                                    border: 'none',
-                                                                    borderRadius: '6px',
-                                                                    cursor: 'pointer',
-                                                                    fontSize: '12px',
-                                                                    fontWeight: '600'
-                                                                }}
-                                                            >
-                                                                💰 Send Request
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">📦</div>
-                                <div className="empty-state-title">No orders found</div>
-                                <div className="empty-state-description">This customer has no delivered orders</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Snackbar */}
-            {snackbar.open && (
-                <div style={{
-                    position: 'fixed',
-                    bottom: '20px',
-                    right: '20px',
-                    background: snackbar.severity === 'success' ? '#dcfce7' : '#fee2e2',
-                    color: snackbar.severity === 'success' ? '#166534' : '#991b1b',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    zIndex: 1000,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                }}>
-                    <span>{snackbar.message}</span>
-                    <button
-                        onClick={handleCloseSnackbar}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'inherit',
-                            cursor: 'pointer',
-                            fontSize: '16px'
-                        }}
-                    >
-                        ✕
-                    </button>
-                </div>
-            )}
+      {/* Toolbar */}
+      <Card style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ flex: 1, maxWidth: '400px' }}>
+            <Input
+              placeholder="Search customer name or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              leftIcon={<LuSearch size={16} />}
+            />
+          </div>
+          <div style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {filteredCustomers.length} corporate shipper{filteredCustomers.length !== 1 ? 's' : ''}
+          </div>
         </div>
-    );
+      </Card>
+
+      {/* Customer Roster Table */}
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Retrieving customer billing ledgers..." />
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <EmptyState
+            icon={<LuCreditCard size={36} color="var(--color-slate-400)" />}
+            title="No billing records found"
+            description="There are currently no delivered customer orders requiring billing settlement."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Shipper Entity</TableHead>
+                <TableHead>Total Orders</TableHead>
+                <TableHead>Pending Billing</TableHead>
+                <TableHead>Total Invoiced</TableHead>
+                <TableHead>Outstanding Balance</TableHead>
+                <TableHead style={{ textAlign: 'right' }}>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.map((c) => (
+                <TableRow
+                  key={c.customerName}
+                  onClick={() => setCustomerDialog({ open: true, customer: c })}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <TableCell>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.customerName}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{c.customerPhone || 'No phone'}</div>
+                  </TableCell>
+                  <TableCell style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{c.totalOrders}</TableCell>
+                  <TableCell>
+                    <Badge variant={c.pendingOrders > 0 ? 'warning' : 'success'} size="sm" dot>
+                      {c.pendingOrders} pending
+                    </Badge>
+                  </TableCell>
+                  <TableCell style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                    {Number(c.totalAmount || 0).toLocaleString()} VND
+                  </TableCell>
+                  <TableCell style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: c.pendingAmount > 0 ? 'var(--color-warning-700)' : 'var(--color-success-700)' }}>
+                    {Number(c.pendingAmount || 0).toLocaleString()} VND
+                  </TableCell>
+                  <TableCell style={{ textAlign: 'right' }}>
+                    <Button variant="outline" size="sm" leftIcon={<LuEye size={14} />}>
+                      View Invoices
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+
+      {/* Customer Invoices Modal */}
+      {customerDialog.open && customerDialog.customer && (
+        <Modal
+          isOpen={customerDialog.open}
+          onClose={() => setCustomerDialog({ open: false, customer: null })}
+          title={`Invoices • ${customerDialog.customer.customerName}`}
+          description={`${customerDialog.customer.pendingOrders} pending orders • ${Number(customerDialog.customer.pendingAmount || 0).toLocaleString()} VND outstanding`}
+          maxWidth="850px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order ID</TableHead>
+                  <TableHead>Pickup Route</TableHead>
+                  <TableHead>Weight</TableHead>
+                  <TableHead>Shipping Tariff</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead style={{ textAlign: 'right' }}>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(customerDialog.customer.orders || []).map((order) => (
+                  <TableRow key={order.orderId}>
+                    <TableCell style={{ fontWeight: 700, color: 'var(--color-brand-700)' }}>
+                      #{order.orderId}
+                    </TableCell>
+                    <TableCell style={{ fontSize: '11px' }}>{order.pickupAddress}</TableCell>
+                    <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>{order.weightTons} T</TableCell>
+                    <TableCell style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                      {Number(order.shippingFee || 0).toLocaleString()} VND
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={order.paymentStatus === 'PAID' ? 'success' : 'warning'} size="sm" dot>
+                        {order.paymentStatus || 'PENDING'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell style={{ textAlign: 'right' }}>
+                      {order.paymentStatus === 'PENDING' && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleSendPaymentRequest(order.orderId)}
+                          leftIcon={<LuSend size={14} />}
+                        >
+                          Send Invoice
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
 };
 
 export default AdminPaymentRequestPage;

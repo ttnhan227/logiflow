@@ -1,358 +1,271 @@
 import React from 'react';
-// JSX member tags are not recognized as variable usage by the current lint parser.
-// eslint-disable-next-line no-unused-vars
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, Typography, Box } from '@mui/material';
-import { Row, Col } from 'antd';
-import './home.css';
+import { Button, Card, CardContent, Badge, PageHeader } from '@/components/ui';
+import {
+  LuPackage,
+  LuZap,
+  LuTruck,
+  LuBuilding2,
+  LuChartLine,
+  LuShieldCheck,
+  LuClock,
+  LuMapPin,
+  LuCircleCheck,
+  LuArrowRight,
+  LuLayers,
+} from 'react-icons/lu';
 
-const ServicesPage = () => {
+export const ServicesPage = () => {
+  const individualServices = [
+    {
+      title: 'Standard Linehaul Freight',
+      description: 'Scheduled multi-province transport for cartons, pallets, and general dry goods across major economic corridors.',
+      price: 'From 25,000 VND / kg',
+      timeline: '1–3 business days',
+      icon: <LuPackage size={24} color="var(--color-brand-600)" />,
+      badge: 'Standard',
+      popular: false,
+    },
+    {
+      title: 'Express Priority Dispatch',
+      description: 'Expedited same-day / next-flight turnaround for time-critical documents, high-priority spare parts, and urgent inventory.',
+      price: 'From 50,000 VND / kg',
+      timeline: 'Same-day / < 24 hrs',
+      icon: <LuZap size={24} color="var(--color-brand-600)" />,
+      badge: 'Most Popular',
+      popular: true,
+    },
+    {
+      title: 'Inter-Provincial Full Truckload',
+      description: 'Dedicated 5T–30T truckload direct from manufacturer or dock to provincial receiver with exclusive sealed container handling.',
+      price: 'Dynamic volume rate',
+      timeline: 'Direct transit (1–2 days)',
+      icon: <LuTruck size={24} color="var(--color-brand-600)" />,
+      badge: 'Heavy Cargo',
+      popular: false,
+    },
+  ];
+
+  const enterpriseServices = [
+    {
+      title: 'E-commerce & Retail Distribution',
+      description: 'High-velocity sorting, multi-tier delivery routing, automated COD reconciliation, and seamless web checkout API integration.',
+      icon: <LuBuilding2 size={24} color="var(--color-brand-600)" />,
+      features: ['Automated COD settlement', 'Bulk barcode scanning', 'Reverse logistics & return handling'],
+    },
+    {
+      title: 'Supply Chain & Cost Analytics',
+      description: 'Enterprise operational dashboard displaying linehaul cost per ton-km, driver safety scores, delay heatmaps, and carbon footprints.',
+      icon: <LuChartLine size={24} color="var(--color-brand-600)" />,
+      features: ['Custom KPI exports', 'API webhook telemetry', 'Weighbridge audit reconciliation'],
+    },
+    {
+      title: 'Dedicated Fleet Outsourcing',
+      description: 'Contracted commercial truck fleets assigned exclusively to your business with customized driver uniforms and route management.',
+      icon: <LuTruck size={24} color="var(--color-brand-600)" />,
+      features: ['Guaranteed vehicle availability', 'Custom route sequencing', 'Tailored insurance coverage'],
+    },
+  ];
+
   return (
-    <div className="home-container">
-      <div className="content-wrapper">
-        <h1 className="page-title">
-          Our Services
-        </h1>
-        <p className="page-subtitle" style={{ maxWidth: '800px', margin: '0 auto 3rem' }}>
-          Comprehensive delivery and logistics solutions for individuals and businesses across Vietnam.
-        </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
+      {/* Header */}
+      <div className="container">
+        <PageHeader
+          badge={<Badge variant="brand">Logistics Portfolio</Badge>}
+          title="Engineered Freight & Delivery Services"
+          description="Tailored freight forwarding, express distribution, and dedicated supply chain solutions engineered for reliability across Vietnam."
+        />
+      </div>
 
-        {/* Individual Services with Material-UI Cards */}
-        <section style={{ marginBottom: '4rem' }}>
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            style={{
-              fontSize: '2.5rem',
-              color: 'var(--text-color)',
-              marginBottom: '2rem',
-              textAlign: 'center'
-            }}
-          >
-            For Individuals
-          </motion.h2>
-
-          <Row gutter={[24, 24]} justify="center">
-            <Col xs={24} sm={12} md={8}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                      transform: 'translateY(-5px)'
-                    }
-                  }}
-                >
-                  <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
-                    <Box sx={{ fontSize: '3rem', mb: 2 }}>📦</Box>
-                    <Typography variant="h5" component="h3" gutterBottom sx={{ color: 'text.primary' }}>
-                      Standard Delivery
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
-                      Affordable same-city delivery for documents and small packages.
-                      Perfect for everyday shipping needs.
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold', mb: 1 }}>
-                      From 25,000 VND
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      1-3 business days
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Col>
-
-            <Col xs={24} sm={12} md={8}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    position: 'relative',
-                    border: '2px solid',
-                    borderColor: 'warning.main',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      boxShadow: '0 8px 25px rgba(245, 158, 11, 0.3)',
-                      transform: 'translateY(-5px)'
-                    }
-                  }}
-                >
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 10,
-                      right: 10,
-                      backgroundColor: 'warning.main',
-                      color: 'white',
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 2,
-                      fontSize: '0.75rem',
-                      fontWeight: 'bold',
-                      zIndex: 1
-                    }}
-                  >
-                    MOST POPULAR
-                  </Box>
-                  <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
-                    <Box sx={{ fontSize: '3rem', mb: 2 }}>⚡</Box>
-                    <Typography variant="h5" component="h3" gutterBottom sx={{ color: 'text.primary' }}>
-                      Express Delivery
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
-                      Fast same-day delivery for urgent documents and packages.
-                      When speed matters most.
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold', mb: 1 }}>
-                      From 50,000 VND
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Same day delivery
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Col>
-
-            <Col xs={24} sm={12} md={8}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                      transform: 'translateY(-5px)'
-                    }
-                  }}
-                >
-                  <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
-                    <Box sx={{ fontSize: '3rem', mb: 2 }}>🛒</Box>
-                    <Typography variant="h5" component="h3" gutterBottom sx={{ color: 'text.primary' }}>
-                      Inter-Province
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
-                      Nationwide shipping between cities like Hanoi, Da Nang, and HCMC.
-                      Reliable transport across Vietnam.
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold', mb: 1 }}>
-                      From 100,000 VND
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      2-5 business days
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Col>
-          </Row>
-        </section>
-
-        {/* Business Services */}
-        <section style={{ marginBottom: '4rem' }}>
-          <h2 style={{
-            fontSize: '2.5rem',
-            color: 'var(--text-color)',
-            marginBottom: '2rem',
-            textAlign: 'center'
-          }}>
-            For Businesses
+      {/* Service Tiers for Shippers */}
+      <section className="container">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
+            Shipper Delivery Tiers
           </h2>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '2rem'
-          }}>
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏢</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>E-commerce Shipping</h3>
-              <p style={{ color: '#666', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-                Complete shipping solutions for online businesses with inventory
-                management and automated dispatch.
-              </p>
-              <Link to="/business" style={{
-                display: 'inline-block',
-                padding: '0.75rem 1.5rem',
-                background: 'var(--primary-color)',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '8px',
-                fontWeight: '600'
-              }}>
-                Learn More
-              </Link>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Logistics Analytics</h3>
-              <p style={{ color: '#666', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-                Advanced reporting and analytics for delivery performance,
-                cost optimization, and operations insight.
-              </p>
-              <Link to="/business" style={{
-                display: 'inline-block',
-                padding: '0.75rem 1.5rem',
-                background: 'var(--primary-color)',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '8px',
-                fontWeight: '600'
-              }}>
-                Learn More
-              </Link>
-            </div>
-
-            <div style={{
-              padding: '2rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              background: 'white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚛</div>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Fleet Management</h3>
-              <p style={{ color: '#666', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-                Professional fleet coordination and management for transportation
-                companies with driver oversight and vehicle tracking.
-              </p>
-              <Link to="/business" style={{
-                display: 'inline-block',
-                padding: '0.75rem 1.5rem',
-                background: 'var(--primary-color)',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '8px',
-                fontWeight: '600'
-              }}>
-                Learn More
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Service Features */}
-        <section style={{
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))',
-          padding: '4rem 1rem',
-          borderRadius: '12px',
-          marginBottom: '4rem'
-        }}>
-          <h2 style={{
-            fontSize: '2.5rem',
-            color: 'var(--text-color)',
-            marginBottom: '2rem',
-            textAlign: 'center'
-          }}>
-            Why Choose LogiFlow Services?
-          </h2>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '2rem',
-            maxWidth: '900px',
-            margin: '0 auto'
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📍</div>
-              <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>GPS Tracking</h4>
-              <p style={{ color: '#666' }}>Real-time location tracking for all deliveries</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛡️</div>
-              <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Secure Transport</h4>
-              <p style={{ color: '#666' }}>Fully insured and secure package handling</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📱</div>
-              <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Mobile Updates</h4>
-              <p style={{ color: '#666' }}>Delivery status notifications via app</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔄</div>
-              <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Flexible Options</h4>
-              <p style={{ color: '#666' }}>Customizable delivery preferences</p>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <div style={{
-          background: 'var(--primary-color)',
-          color: 'white',
-          padding: '3rem 1rem',
-          borderRadius: '12px',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ marginBottom: '1rem' }}>Ready to Ship with LogiFlow?</h2>
-          <p style={{ marginBottom: '2rem', opacity: 0.9 }}>
-            Download our mobile app or contact us to get started with reliable delivery services.
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
+            Predictable freight pricing with end-to-end GPS visibility and verified proof of delivery.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/track" style={{
-              padding: '1rem 2rem',
-              background: 'white',
-              color: 'var(--primary-color)',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontWeight: '600'
-            }}>
-              Track Delivery
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {individualServices.map((svc) => (
+            <Card
+              key={svc.title}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                border: svc.popular ? '2px solid var(--color-brand-600)' : '1px solid var(--border-default)',
+                position: 'relative',
+              }}
+            >
+              {svc.popular && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-12px',
+                    right: '20px',
+                    backgroundColor: 'var(--color-brand-600)',
+                    color: 'var(--color-white)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Most Popular
+                </div>
+              )}
+
+              <CardContent style={{ padding: '28px', display: 'flex', flexDirection: 'column', flex: 1, gap: '16px' }}>
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: 'var(--radius-lg)',
+                    backgroundColor: 'var(--color-brand-50)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {svc.icon}
+                </div>
+
+                <div>
+                  <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
+                    {svc.title}
+                  </h3>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                    {svc.description}
+                  </p>
+                </div>
+
+                <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-brand-700)', fontVariantNumeric: 'tabular-nums' }}>
+                    {svc.price}
+                  </div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <LuClock size={13} /> {svc.timeline}
+                  </div>
+                </div>
+
+                <Link to="/business" style={{ marginTop: '8px' }}>
+                  <Button variant={svc.popular ? 'primary' : 'outline'} style={{ width: '100%' }}>
+                    Select Plan
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Enterprise Solutions Grid */}
+      <section className="container">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+          <Badge variant="neutral" size="sm" style={{ width: 'fit-content' }}>
+            High Volume
+          </Badge>
+          <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
+            Enterprise Solutions & Fleet Logistics
+          </h2>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
+            Integrated warehousing, multi-stop linehaul dispatch, and automated billing for enterprise corporations.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {enterpriseServices.map((ent) => (
+            <Card key={ent.title} style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: 'var(--radius-lg)',
+                  backgroundColor: 'var(--color-slate-100)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {ent.icon}
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 6px 0' }}>
+                  {ent.title}
+                </h3>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                  {ent.description}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto', paddingTop: '12px' }}>
+                {ent.features.map((f, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                    <LuCircleCheck size={14} color="var(--color-success-600)" />
+                    <span>{f}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Link to="/business" style={{ marginTop: '12px' }}>
+                <Button variant="outline" size="sm" rightIcon={<LuArrowRight size={14} />}>
+                  Learn More
+                </Button>
+              </Link>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Box */}
+      <section className="container">
+        <div
+          style={{
+            padding: '40px',
+            backgroundColor: 'var(--color-slate-900)',
+            color: 'var(--color-white)',
+            borderRadius: 'var(--radius-xl)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '20px',
+          }}
+        >
+          <div>
+            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 6px 0' }}>
+              Need a Custom Multi-Modal Solution?
+            </h3>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
+              Our freight operations team can configure dedicated route schedules and contract rates.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Link to="/business">
+              <Button variant="primary">Talk with a Specialist</Button>
             </Link>
-            <Link to="/contact" style={{
-              padding: '1rem 2rem',
-              background: 'transparent',
-              color: 'white',
-              border: '2px solid white',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontWeight: '600'
-            }}>
-              Contact Sales
+            <Link to="/track">
+              <Button
+                variant="outline"
+                style={{
+                  backgroundColor: 'transparent',
+                  borderColor: 'var(--color-slate-700)',
+                  color: 'var(--color-white)',
+                }}
+              >
+                Track Live Order
+              </Button>
             </Link>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

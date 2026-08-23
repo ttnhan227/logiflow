@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import '../common/ChatPopup.css';
 import { chatService } from '../../services';
 import notificationClient from '../../services/notificationClient';
+import { Button, Input, Badge } from '@/components/ui';
+import {
+  LuMessageSquare,
+  LuSend,
+  LuMinimize2,
+  LuMaximize2,
+  LuX,
+  LuUser,
+} from 'react-icons/lu';
 
-const OrderChatPopup = ({ orderId, customerId, order }) => {
+export const OrderChatPopup = ({ orderId, customerId, order }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -24,7 +32,6 @@ const OrderChatPopup = ({ orderId, customerId, order }) => {
     }
   }, [messages, isOpen, isMinimized]);
 
-  // Load chat history
   useEffect(() => {
     if (!orderId || !isOpen) return;
 
@@ -45,15 +52,12 @@ const OrderChatPopup = ({ orderId, customerId, order }) => {
     loadHistory();
   }, [orderId, isOpen]);
 
-  // Subscribe to WebSocket order chat updates
   useEffect(() => {
     if (!orderId) return;
-
     let mounted = true;
 
     const handleOrderChatMessage = (notification) => {
       if (!mounted) return;
-      // Check if this is a chat message for our order
       const metaOrderId = Number(notification.metadata?.orderId);
       if (notification.type === 'ORDER_CHAT' && metaOrderId === Number(orderId)) {
         const loadUpdatedHistory = async () => {
@@ -61,10 +65,8 @@ const OrderChatPopup = ({ orderId, customerId, order }) => {
             const msgs = await chatService.getOrderMessages(Number(orderId));
             if (mounted) {
               setMessages(Array.isArray(msgs) ? msgs : []);
-
-              // Increment unread count when popup is not fully open
               if (!isOpen || isMinimized) {
-                setUnreadCount(c => c + 1);
+                setUnreadCount((c) => c + 1);
               }
             }
           } catch (e) {
@@ -92,7 +94,6 @@ const OrderChatPopup = ({ orderId, customerId, order }) => {
       await chatService.sendOrderMessage({ orderId: Number(orderId), content });
       setInputText('');
 
-      // Reload message history after sending
       const msgs = await chatService.getOrderMessages(Number(orderId));
       setMessages(Array.isArray(msgs) ? msgs : []);
     } catch (e) {
@@ -107,147 +108,214 @@ const OrderChatPopup = ({ orderId, customerId, order }) => {
     }
   };
 
-  const toggleOpen = () => {
-    if (!isOpen) {
-      setIsOpen(true);
-      setIsMinimized(false);
-      setUnreadCount(0);
-    } else {
-      setIsOpen(false);
-      setIsMinimized(false);
-    }
-  };
-
-  const toggleMinimize = () => {
-    setIsMinimized(!isMinimized);
-    if (!isMinimized) {
-      setUnreadCount(0);
-    }
-  };
-
   if (!order?.customerName || !customerId) {
     return null;
   }
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating launcher */}
       <button
-        className={`chat-float-button ${isOpen ? 'active' : ''}`}
-        onClick={toggleOpen}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setIsMinimized(false);
+          setUnreadCount(0);
+        }}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '88px',
+          width: '48px',
+          height: '48px',
+          borderRadius: 'var(--radius-full)',
+          backgroundColor: 'var(--color-brand-600)',
+          color: 'var(--color-white)',
+          border: 'none',
+          boxShadow: 'var(--shadow-lg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 'var(--z-fixed)',
+          transition: 'transform var(--transition-fast)',
+        }}
         title="Chat with Customer"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <LuMessageSquare size={22} />
         {unreadCount > 0 && (
-          <span className="chat-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+          <span
+            style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-4px',
+              backgroundColor: 'var(--color-danger-600)',
+              color: 'var(--color-white)',
+              fontSize: '10px',
+              fontWeight: 700,
+              padding: '2px 6px',
+              borderRadius: 'var(--radius-full)',
+            }}
+          >
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
         )}
       </button>
 
-      {/* Chat Popup Window */}
-      <div className={`chat-popup ${isOpen ? 'open' : ''} ${isMinimized ? 'minimized' : ''}`}>
-        <div className="chat-header">
-          <div className="chat-header-info">
-            <h3>Chat with Customer</h3>
-            <span className="chat-trip-id">Order #{orderId}</span>
-          </div>
-          <div className="chat-header-actions">
-            <button
-              className="chat-header-btn"
-              onClick={toggleMinimize}
-              title={isMinimized ? 'Maximize' : 'Minimize'}
-            >
-              {isMinimized ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="18 15 12 9 6 15" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              )}
-            </button>
-            <button
-              className="chat-header-btn"
-              onClick={() => setIsOpen(false)}
-              title="Close"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {!isMinimized && (
-          <>
-            <div className="chat-messages">
-              {loading && (
-                <div className="chat-loading">Loading messages...</div>
-              )}
-              {!loading && messages.length === 0 && (
-                <div className="chat-empty">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  <p>No messages yet</p>
-                  <span>Start chatting with the customer</span>
+      {/* Chat Window */}
+      {isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '84px',
+            right: '88px',
+            width: '360px',
+            height: isMinimized ? '48px' : '480px',
+            backgroundColor: 'var(--color-white)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-xl)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            zIndex: 'var(--z-modal)',
+            transition: 'height 180ms ease',
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '12px 16px',
+              backgroundColor: 'var(--color-slate-900)',
+              color: 'var(--color-white)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <LuMessageSquare size={16} color="var(--color-brand-500)" />
+              <div>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, lineHeight: 1.2 }}>
+                  Customer Chat
                 </div>
-              )}
-              {messages.map((msg) => {
-                const isCustomer = msg.senderRole?.toUpperCase() === 'CUSTOMER' || 
-                                msg.senderRole?.toUpperCase() === 'ROLE_CUSTOMER';
-                return (
-                  <div key={msg.messageId} className={`chat-message ${isCustomer ? 'driver' : 'dispatcher'}`}>
-                    <div className="message-bubble">
-                      <div className="message-content">{msg.content}</div>
-                      <div className="message-meta">
-                        <span className="message-sender">
-                          {isCustomer ? '👤 Customer' : '📋 Dispatcher'}
-                        </span>
-                        <span className="message-time">
-                          {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : ''}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
+                <div style={{ fontSize: '10px', color: 'var(--color-slate-400)' }}>
+                  Order #{orderId}
+                </div>
+              </div>
             </div>
 
-            {error && (
-              <div className="chat-error">{error}</div>
-            )}
-
-            <div className="chat-input-container">
-              <input
-                type="text"
-                className="chat-input"
-                placeholder="Type a message..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
-                className="chat-send-btn"
-                onClick={handleSend}
-                disabled={!inputText.trim()}
+                onClick={() => setIsMinimized(!isMinimized)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-400)', cursor: 'pointer' }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
+                {isMinimized ? <LuMaximize2 size={14} /> : <LuMinimize2 size={14} />}
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-400)', cursor: 'pointer' }}
+              >
+                <LuX size={16} />
               </button>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+
+          {!isMinimized && (
+            <>
+              {/* Message Feed */}
+              <div
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  backgroundColor: 'var(--bg-surface-subtle)',
+                }}
+              >
+                {loading && (
+                  <div style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    Loading conversation...
+                  </div>
+                )}
+
+                {!loading && messages.length === 0 && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', marginTop: '40px' }}>
+                    No messages yet. Send a direct message to the customer regarding this order.
+                  </div>
+                )}
+
+                {messages.map((msg) => {
+                  const isCustomer =
+                    msg.senderRole?.toUpperCase() === 'CUSTOMER' ||
+                    msg.senderRole?.toUpperCase() === 'ROLE_CUSTOMER';
+
+                  return (
+                    <div
+                      key={msg.messageId}
+                      style={{
+                        alignSelf: isCustomer ? 'flex-start' : 'flex-end',
+                        maxWidth: '82%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: 'var(--radius-lg)',
+                          backgroundColor: isCustomer ? 'var(--color-white)' : 'var(--color-brand-600)',
+                          color: isCustomer ? 'var(--text-primary)' : 'var(--color-white)',
+                          border: isCustomer ? '1px solid var(--border-default)' : 'none',
+                          fontSize: 'var(--text-xs)',
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          color: 'var(--text-muted)',
+                          alignSelf: isCustomer ? 'flex-start' : 'flex-end',
+                        }}
+                      >
+                        {isCustomer ? 'Customer' : 'Dispatcher'} •{' '}
+                        {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input row */}
+              <div style={{ padding: '12px', borderTop: '1px solid var(--border-default)', display: 'flex', gap: '8px', backgroundColor: 'var(--color-white)' }}>
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-default)',
+                    fontSize: 'var(--text-xs)',
+                    outline: 'none',
+                  }}
+                />
+                <Button variant="primary" size="sm" onClick={handleSend} disabled={!inputText.trim()}>
+                  <LuSend size={14} />
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 };

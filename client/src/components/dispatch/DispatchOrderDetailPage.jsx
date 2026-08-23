@@ -1,10 +1,38 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { orderService } from '../../services';
-import './dispatch.css';
-import './modern-dispatch.css';
+import OrderChatPopup from './OrderChatPopup';
+import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Select,
+  Textarea,
+  Badge,
+  PageHeader,
+  Alert,
+  LoadingSpinner,
+} from '@/components/ui';
+import {
+  LuMapPin,
+  LuTruck,
+  LuUser,
+  LuPhone,
+  LuCalendar,
+  LuClock,
+  LuCreditCard,
+  LuPencil,
+  LuSave,
+  LuArrowLeft,
+  LuArrowRight,
+  LuContainer,
+  LuWarehouse,
+  LuZap,
+  LuX,
+} from 'react-icons/lu';
 
-const DispatchOrderDetailPage = () => {
+export const DispatchOrderDetailPage = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +49,7 @@ const DispatchOrderDetailPage = () => {
       setOrder(o);
     } catch (ex) {
       console.error('Failed to load order', ex);
-      setError('Failed to load order details');
+      setError('Failed to load order details.');
     } finally {
       setLoading(false);
     }
@@ -31,35 +59,21 @@ const DispatchOrderDetailPage = () => {
     loadOrder();
   }, [loadOrder]);
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'PENDING': return '#f59e0b';
-      case 'ASSIGNED': return '#3b82f6';
-      case 'IN_TRANSIT': return '#8b5cf6';
-      case 'DELIVERED': return '#10b981';
-      case 'CANCELLED': return '#ef4444';
-      default: return '#6b7280';
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return <Badge variant="warning" dot>Pending</Badge>;
+      case 'ASSIGNED':
+        return <Badge variant="brand" dot>Assigned</Badge>;
+      case 'IN_TRANSIT':
+        return <Badge variant="info" dot>In Transit</Badge>;
+      case 'DELIVERED':
+        return <Badge variant="success" dot>Delivered</Badge>;
+      case 'CANCELLED':
+        return <Badge variant="danger" dot>Cancelled</Badge>;
+      default:
+        return <Badge variant="neutral" dot>{status || 'Unknown'}</Badge>;
     }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'URGENT': return '#ef4444';
-      case 'NORMAL': return '#6b7280';
-      default: return '#6b7280';
-    }
-  };
-
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    return date.toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const handleEdit = () => {
@@ -87,494 +101,282 @@ const DispatchOrderDetailPage = () => {
       const updatedOrder = await orderService.updateOrder(Number(orderId), formData);
       setOrder(updatedOrder);
       setEditMode(false);
-    } catch (ex) {
-      console.error('Failed to update order', ex);
-      setError('Failed to update order');
+    } catch {
+      setError('Failed to update order details.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    setEditMode(false);
-    setFormData({});
-  };
-
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   if (loading) {
-    return (
-      <div className="modern-container">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading order details...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner fullPage text="Loading order manifest..." />;
   }
 
   if (error || !order) {
     return (
-      <div className="modern-container">
-        <div className="empty-state">
-          <div className="empty-icon">❌</div>
-          <h3>{error || 'Order not found'}</h3>
-          <Link to="/dispatch/orders" className="btn-primary">Back to Orders</Link>
+      <div className="container" style={{ padding: '48px 16px', maxWidth: '600px' }}>
+        <Alert variant="danger">{error || 'Order record not found.'}</Alert>
+        <div style={{ marginTop: '16px' }}>
+          <Link to="/dispatch/orders">
+            <Button variant="outline" leftIcon={<LuArrowLeft size={14} />}>
+              Back to Orders
+            </Button>
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="modern-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Order #{order.orderId}</h1>
-          <p className="page-subtitle">{order.customerName}</p>
-        </div>
-        <div className="header-actions">
-          {editMode ? (
-            <>
-              <button
-                className="btn-success"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? '💾 Saving...' : '💾 Save Changes'}
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={handleCancel}
-                disabled={saving}
-              >
-                ❌ Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              {order.orderStatus === 'PENDING' && (
-                <Link to="/dispatch/trips/create" className="btn-primary">
-                  🚐 Assign to a trip
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title={`Order #${order.orderId}`}
+        description={`Customer: ${order.customerName} • Created ${new Date(order.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`}
+        badge={getStatusBadge(order.orderStatus)}
+        actions={
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {editMode ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setEditMode(false)} disabled={saving} leftIcon={<LuX size={14} />}>
+                  Cancel
+                </Button>
+                <Button variant="primary" size="sm" onClick={handleSave} loading={saving} leftIcon={<LuSave size={14} />}>
+                  Save Changes
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/dispatch/orders">
+                  <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
+                    Orders Queue
+                  </Button>
                 </Link>
-              )}
-              {order.orderStatus === 'PENDING' && (
-                <button
-                  className="btn-secondary"
-                  onClick={handleEdit}
-                >
-                  ✏️ Edit Order
-                </button>
-              )}
-              <Link to="/dispatch/orders" className="btn-secondary">
-                ← Back to Orders
-              </Link>
-            </>
+                {order.orderStatus === 'PENDING' && (
+                  <Button variant="outline" size="sm" onClick={handleEdit} leftIcon={<LuPencil size={14} />}>
+                    Edit Order
+                  </Button>
+                )}
+                {order.orderStatus === 'PENDING' && (
+                  <Link to={`/dispatch/trips/create?orderId=${order.orderId}`}>
+                    <Button variant="primary" size="sm" leftIcon={<LuTruck size={14} />}>
+                      Create / Assign Trip
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
+          </div>
+        }
+      />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        {/* Main Details Card */}
+        <Card style={{ padding: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+              Order Manifest Details
+            </h3>
+            {order.priorityLevel === 'URGENT' && (
+              <Badge variant="danger" size="sm">
+                <LuZap size={12} /> URGENT PRIORITY
+              </Badge>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Customer Contact */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <LuUser size={12} /> Customer Name
+                </span>
+                {editMode ? (
+                  <Input
+                    value={formData.customerName}
+                    onChange={(e) => handleInputChange('customerName', e.target.value)}
+                  />
+                ) : (
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                    {order.customerName}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <LuPhone size={12} /> Phone Number
+                </span>
+                {editMode ? (
+                  <Input
+                    value={formData.customerPhone}
+                    onChange={(e) => handleInputChange('customerPhone', e.target.value)}
+                  />
+                ) : (
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                    {order.customerPhone || '—'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Route */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', backgroundColor: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-lg)' }}>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--color-brand-600)', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <LuMapPin size={13} /> Origin Pickup Address
+                </span>
+                {editMode ? (
+                  <Textarea
+                    value={formData.pickupAddress}
+                    onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
+                    rows={2}
+                  />
+                ) : (
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-primary)', fontWeight: 600, marginTop: '4px' }}>
+                    {order.pickupAddress}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: 'var(--border-default)' }} />
+
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--color-success-600)', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <LuMapPin size={13} /> Destination Delivery Address
+                </span>
+                {editMode ? (
+                  <Textarea
+                    value={formData.deliveryAddress}
+                    onChange={(e) => handleInputChange('deliveryAddress', e.target.value)}
+                    rows={2}
+                  />
+                ) : (
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-primary)', fontWeight: 600, marginTop: '4px' }}>
+                    {order.deliveryAddress}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Cargo Specs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '14px' }}>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Weight</span>
+                {editMode ? (
+                  <Input
+                    type="number"
+                    value={formData.weightTons}
+                    onChange={(e) => handleInputChange('weightTons', e.target.value)}
+                  />
+                ) : (
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', marginTop: '4px' }}>
+                    {order.weightTons ? `${order.weightTons} T` : '—'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Distance</span>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', marginTop: '4px' }}>
+                  {order.distanceKm ? `${order.distanceKm.toFixed(1)} km` : '—'}
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Shipping Tariff</span>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-brand-700)', fontVariantNumeric: 'tabular-nums', marginTop: '4px' }}>
+                  {order.shippingFee ? `${Number(order.shippingFee).toLocaleString()} VND` : '—'}
+                </div>
+              </div>
+            </div>
+
+            {/* Pickup Specific Details */}
+            {order.pickupType && order.pickupType !== 'STANDARD' && (
+              <div style={{ padding: '14px', backgroundColor: 'var(--color-brand-50)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-brand-700)', textTransform: 'uppercase' }}>
+                  {order.pickupType === 'PORT_TERMINAL' ? 'Seaport Terminal Specs' : 'Warehouse Cross-dock Specs'}
+                </span>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                  {order.pickupType === 'PORT_TERMINAL' && (
+                    <>Container: <strong>{order.containerNumber || '—'}</strong> • Terminal: <strong>{order.terminalName || '—'}</strong></>
+                  )}
+                  {order.pickupType === 'WAREHOUSE' && (
+                    <>Warehouse: <strong>{order.warehouseName || '—'}</strong> • Dock: <strong>{order.dockNumber || '—'}</strong></>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Assigned Trip & Timeline Card */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <Card style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+              Trip Allocation
+            </h3>
+
+            {order.tripId ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-md)' }}>
+                <div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Assigned Linehaul Trip</span>
+                  <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--color-brand-700)' }}>
+                    Trip #{order.tripId}
+                  </div>
+                </div>
+                <Link to={`/dispatch/trips/${order.tripId}`}>
+                  <Button variant="outline" size="sm" rightIcon={<LuArrowRight size={14} />}>
+                    View Trip Details
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                This order is currently pending and has not been scheduled into a trip manifest.
+              </div>
+            )}
+          </Card>
+
+          {/* Timeline */}
+          {order.tripId && (
+            <Card style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+                Fulfillment Milestones
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: 'var(--text-xs)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Estimated Pickup:</span>
+                  <strong style={{ color: 'var(--text-primary)' }}>
+                    {order.estimatedPickupTime ? new Date(order.estimatedPickupTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Unscheduled'}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Estimated Delivery:</span>
+                  <strong style={{ color: 'var(--text-primary)' }}>
+                    {order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Unscheduled'}
+                  </strong>
+                </div>
+                {order.actualDeliveryTime && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-success-700)' }}>
+                    <span>Actual Delivered:</span>
+                    <strong>{new Date(order.actualDeliveryTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</strong>
+                  </div>
+                )}
+              </div>
+            </Card>
           )}
         </div>
       </div>
 
-      <div className="detail-grid">
-        <div className="detail-card main-card">
-          <div className="card-header">
-            <h2 className="card-title">Order Information</h2>
-            <div className="card-badges">
-              <span
-                className="badge"
-                style={{ backgroundColor: getStatusColor(order.orderStatus) }}
-              >
-                {order.orderStatus}
-              </span>
-              <span
-                className="badge badge-priority"
-                style={{ backgroundColor: getPriorityColor(order.priorityLevel) }}
-              >
-                {order.priorityLevel === 'URGENT' ? '⚡ URGENT' : '⏰ NORMAL'}
-              </span>
-            </div>
-          </div>
-
-          <div className="card-body">
-          <div className="detail-section">
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">👤</div>
-                  <div>
-                    <div className="detail-label">Customer</div>
-                    <div className="detail-value">
-                      {editMode ? (
-                        <input
-                          type="text"
-                          value={formData.customerName}
-                          onChange={(e) => handleInputChange('customerName', e.target.value)}
-                          className="edit-input"
-                          placeholder="Customer name"
-                        />
-                      ) : (
-                        <>
-                          <strong>{order.customerName}</strong>
-                          {order.customerPhone && (
-                            <div className="detail-subvalue">📞 {order.customerPhone}</div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-icon">📅</div>
-                  <div>
-                    <div className="detail-label">Created</div>
-                    <div className="detail-value">{formatDateTime(order.createdAt)}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-row route-section">
-                <div className="route-point">
-                  <div className="route-icon pickup">📍</div>
-                  <div>
-                    <div className="detail-label">Pickup Address</div>
-                    <div className="detail-value">
-                      {editMode ? (
-                        <textarea
-                          value={formData.pickupAddress}
-                          onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
-                          className="edit-textarea"
-                          placeholder="Pickup address"
-                        />
-                      ) : (
-                        order.pickupAddress
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="route-line"></div>
-                <div className="route-point">
-                  <div className="route-icon delivery">🎯</div>
-                  <div>
-                    <div className="detail-label">Delivery Address</div>
-                    <div className="detail-value">
-                      {editMode ? (
-                        <textarea
-                          value={formData.deliveryAddress}
-                          onChange={(e) => handleInputChange('deliveryAddress', e.target.value)}
-                          className="edit-textarea"
-                          placeholder="Delivery address"
-                        />
-                      ) : (
-                        order.deliveryAddress
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-        <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">📦</div>
-                  <div>
-                    <div className="detail-label">Package Details</div>
-                    <div className="detail-value">
-                      {editMode ? (
-                        <textarea
-                          value={formData.packageDetails}
-                          onChange={(e) => handleInputChange('packageDetails', e.target.value)}
-                          className="edit-textarea"
-                          placeholder="Package details"
-                        />
-                      ) : (
-                        order.packageDetails
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">⚖️</div>
-                  <div>
-                    <div className="detail-label">Weight</div>
-                    <div className="detail-value">
-                      {editMode ? (
-                        <input
-                          type="number"
-                          value={formData.weightTons}
-                          onChange={(e) => handleInputChange('weightTons', e.target.value)}
-                          className="edit-input"
-                          placeholder="Weight (tons)"
-                        />
-                      ) : (
-                        order.weightTons != null ? `${order.weightTons} t` : 'N/A'
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-icon">📏</div>
-                  <div>
-                    <div className="detail-label">Distance</div>
-                    <div className="detail-value">
-                      {order.distanceKm != null ? `${order.distanceKm} km` : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">💰</div>
-                  <div>
-                    <div className="detail-label">Package Value</div>
-                    <div className="detail-value">
-                      {editMode ? (
-                        <input
-                          type="number"
-                          value={formData.packageValue}
-                          onChange={(e) => handleInputChange('packageValue', e.target.value)}
-                          className="edit-input"
-                          placeholder="Package value (VND)"
-                        />
-                      ) : (
-                        order.packageValue != null ? `${order.packageValue.toLocaleString()} VND` : 'N/A'
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-icon">💵</div>
-                  <div>
-                    <div className="detail-label">Shipping Fee</div>
-                    <div className="detail-value">
-                      {order.shippingFee != null ? `${order.shippingFee.toLocaleString()} VND` : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">🚚</div>
-                  <div>
-                    <div className="detail-label">Pickup Type</div>
-                    <div className="detail-value">
-                      {editMode ? (
-                        <select
-                          value={formData.pickupType}
-                          onChange={(e) => handleInputChange('pickupType', e.target.value)}
-                          className="edit-select"
-                        >
-                          <option value="PORT_TERMINAL">PORT_TERMINAL</option>
-                          <option value="WAREHOUSE">WAREHOUSE</option>
-                          <option value="STANDARD">STANDARD</option>
-                        </select>
-                      ) : (
-                        order.pickupType ? (
-                          <span
-                            className="status-badge"
-                            style={{
-                              backgroundColor:
-                                order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
-                                order.pickupType === 'WAREHOUSE' ? '#dbeafe' :
-                                order.pickupType === 'STANDARD' ? '#f0fdf4' : '#f9fafb',
-                              color:
-                                order.pickupType === 'PORT_TERMINAL' ? '#92400e' :
-                                order.pickupType === 'WAREHOUSE' ? '#0c4a6e' :
-                                order.pickupType === 'STANDARD' ? '#166534' : '#6b7280',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '4px',
-                              fontSize: '0.875rem',
-                              fontWeight: '600'
-                            }}
-                          >
-                            {order.pickupType}
-                          </span>
-                        ) : 'N/A'
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* PORT_TERMINAL Fields */}
-              {((editMode && formData.pickupType === 'PORT_TERMINAL') || (!editMode && order.pickupType === 'PORT_TERMINAL')) && (
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">🧾</div>
-                    <div>
-                      <div className="detail-label">Container Number</div>
-                      <div className="detail-value">
-                        {editMode ? (
-                          <input
-                            type="text"
-                            value={formData.containerNumber}
-                            onChange={(e) => handleInputChange('containerNumber', e.target.value)}
-                            className="edit-input"
-                            placeholder="e.g., CONT-001"
-                          />
-                        ) : (
-                          order.containerNumber || 'N/A'
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="detail-item">
-                    <div className="detail-icon">⚓</div>
-                    <div>
-                      <div className="detail-label">Terminal Name</div>
-                      <div className="detail-value">
-                        {editMode ? (
-                          <input
-                            type="text"
-                            value={formData.terminalName}
-                            onChange={(e) => handleInputChange('terminalName', e.target.value)}
-                            className="edit-input"
-                            placeholder="e.g., Cat Lai Terminal"
-                          />
-                        ) : (
-                          order.terminalName || 'N/A'
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* WAREHOUSE Fields */}
-              {((editMode && formData.pickupType === 'WAREHOUSE') || (!editMode && order.pickupType === 'WAREHOUSE')) && (
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">🏭</div>
-                    <div>
-                      <div className="detail-label">Warehouse Name</div>
-                      <div className="detail-value">
-                        {editMode ? (
-                          <input
-                            type="text"
-                            value={formData.warehouseName}
-                            onChange={(e) => handleInputChange('warehouseName', e.target.value)}
-                            className="edit-input"
-                            placeholder="e.g., ABC Logistics Warehouse"
-                          />
-                        ) : (
-                          order.warehouseName || 'N/A'
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="detail-item">
-                    <div className="detail-icon">🚪</div>
-                    <div>
-                      <div className="detail-label">Dock Number</div>
-                      <div className="detail-value">
-                        {editMode ? (
-                          <input
-                            type="text"
-                            value={formData.dockNumber}
-                            onChange={(e) => handleInputChange('dockNumber', e.target.value)}
-                            className="edit-input"
-                            placeholder="e.g., Dock 3"
-                          />
-                        ) : (
-                          order.dockNumber || 'N/A'
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {editMode && (
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">⚡</div>
-                    <div>
-                      <div className="detail-label">Priority Level</div>
-                      <select
-                        value={formData.priorityLevel}
-                        onChange={(e) => handleInputChange('priorityLevel', e.target.value)}
-                        className="edit-select"
-                      >
-                        <option value="NORMAL">NORMAL</option>
-                        <option value="URGENT">URGENT</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {order.tripId && (
-          <div className="detail-card">
-            <div className="card-header">
-              <h2 className="card-title">Trip Assignment</h2>
-            </div>
-
-            <div className="card-body">
-              <div className="assignment-section">
-                <div className="assignment-item">
-                  <div className="assignment-icon">🚐</div>
-                  <div>
-                    <div className="detail-label">Trip ID</div>
-                    <div className="detail-value">
-                      <Link to={`/dispatch/trips/${order.tripId}`} className="link-primary">
-                        #{order.tripId}
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {order.tripId && (
-          <div className="detail-card">
-            <div className="card-header">
-              <h2 className="card-title">Delivery Timeline</h2>
-            </div>
-
-            <div className="card-body">
-              <div className="timeline">
-                <div className="timeline-item">
-                  <div className="timeline-marker" data-status={order.estimatedPickupTime ? 'upcoming' : 'pending'}></div>
-                  <div className="timeline-content">
-                    <div className="timeline-title">Pickup Time</div>
-                    <div className="timeline-value">
-                      {order.estimatedPickupTime ? formatDateTime(order.estimatedPickupTime) : 'Not scheduled'}
-                      {order.actualPickupTime && (
-                        <div className="timeline-actual">(Actual: {formatDateTime(order.actualPickupTime)})</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="timeline-item">
-                  <div className="timeline-marker" data-status={order.estimatedDeliveryTime ? 'upcoming' : 'pending'}></div>
-                  <div className="timeline-content">
-                    <div className="timeline-title">Delivery Time</div>
-                    <div className="timeline-value">
-                      {order.estimatedDeliveryTime ? formatDateTime(order.estimatedDeliveryTime) : 'Not scheduled'}
-                      {order.actualDeliveryTime && (
-                        <div className="timeline-actual">(Actual: {formatDateTime(order.actualDeliveryTime)})</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-
+      {/* Floating Order Customer Chat */}
+      {order.customerId && (
+        <OrderChatPopup orderId={order.orderId} customerId={order.customerId} order={order} />
+      )}
     </div>
   );
 };

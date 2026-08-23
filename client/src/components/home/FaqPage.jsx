@@ -1,166 +1,286 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button, Card, CardContent, Badge, PageHeader } from '@/components/ui';
+import {
+  LuChevronDown,
+  LuCircleHelp,
+  LuPhone,
+  LuMail,
+  LuArrowRight,
+  LuPackage,
+  LuTruck,
+  LuBuilding2,
+  LuFileText,
+} from 'react-icons/lu';
 
-const FaqPage = () => {
-  const [openItems, setOpenItems] = useState(new Set());
+export const FaqPage = () => {
+  const [openItems, setOpenItems] = useState(new Set(['0-0', '1-0']));
+  const [activeCategory, setActiveCategory] = useState('All');
 
-  const toggleItem = (index) => {
-    const newOpenItems = new Set(openItems);
-    if (newOpenItems.has(index)) {
-      newOpenItems.delete(index);
-    } else {
-      newOpenItems.add(index);
-    }
-    setOpenItems(newOpenItems);
+  const toggleItem = (key) => {
+    setOpenItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   };
 
-  const faqData = [
+  const faqCategories = [
     {
-      category: "General",
-      questions: [
+      name: 'General Logistics',
+      icon: <LuPackage size={16} />,
+      items: [
         {
-          question: "What is LogiFlow?",
-          answer: "LogiFlow is Vietnam's premier logistics and delivery platform connecting customers with reliable, licensed drivers for nationwide shipments. We provide end-to-end logistics solutions with real-time GPS tracking and professional delivery services."
+          question: 'What is LogiFlow and how does the platform operate?',
+          answer:
+            'LogiFlow is an enterprise freight and dispatch platform in Vietnam. We unify multi-modal linehaul transport, automated dispatch operations, and live telemetry across all 63 provinces for manufacturers, shippers, and commercial fleets.',
         },
         {
-          question: "What areas do you serve?",
-          answer: "We provide comprehensive coverage across all of Vietnam, including North (Hanoi, Hai Phong), Central (Da Nang, Hue, Nha Trang), and Southern regions (Ho Chi Minh City, Can Tho). We serve 63 provinces and major cities with our extensive network of professional drivers."
+          question: 'What provincial corridors and hub coverage does LogiFlow support?',
+          answer:
+            'We provide comprehensive nationwide coverage anchored by 3 primary sorting mega-terminals in Hanoi, Da Nang, and Ho Chi Minh City, connecting over 40 provincial cross-docking facilities.',
         },
         {
-          question: "How do I create an account?",
-          answer: "Customers can download our mobile app from the App Store or Google Play Store. For businesses interested in enterprise solutions, contact our business development team directly."
-        }
-      ]
+          question: 'How do enterprise shippers create an account?',
+          answer:
+            'Businesses can register online through our Corporate Registration portal or reach out directly to our Business Development team to discuss volume SLAs, custom rate cards, and billing terms.',
+        },
+      ],
     },
     {
-      category: "Shipping",
-      questions: [
+      name: 'Freight & Shipping',
+      icon: <LuTruck size={16} />,
+      items: [
         {
-          question: "What types of shipments do you handle?",
-          answer: "We handle packages up to 30t for standard deliveries, with specialized services for larger shipments. This includes documents, small parcels, electronics, clothing, perishables, and industrial goods. For oversized or heavy cargo, we recommend our business logistics solutions."
+          question: 'What cargo weight brackets and vehicle types are available?',
+          answer:
+            'We support everything from urban express parcels (up to 2 tons) to heavy linehaul full truckloads (5T, 10T, 15T, and 30T ISO container tractors). Specialized refrigerated units (-20°C to +15°C) are also available.',
         },
         {
-          question: "How long does delivery take?",
-          answer: "Same-city deliveries: 1-3 business days\nInter-province deliveries: 2-5 business days\nExpress services: Same-day delivery available in select cities\nDelivery times depend on origin, destination, and service tier selected."
+          question: 'How do GPS updates and digital proof of delivery (e-POD) work?',
+          answer:
+            'Vehicles stream real-time telemetry coordinates to our cloud control tower. Upon handover, the driver collects recipient signatures and photos directly in the mobile app, generating instant timestamped e-POD PDF manifests.',
         },
         {
-          question: "How much does shipping cost?",
-          answer: "Costs vary based on distance, weight, and service type:\n- Standard delivery: From 25,000 VND\n- Express same-day: From 50,000 VND\n- Inter-province: From 100,000 VND\n- Business accounts receive volume discounts and dedicated pricing."
+          question: 'What cargo insurance coverage is provided for transit?',
+          answer:
+            'All transported shipments are backstopped by comprehensive primary marine cargo risk policies up to 10 Billion VND, with dedicated 48-hour claims processing.',
         },
-        {
-          question: "How do I track my package?",
-          answer: "You can track your package in three ways:\n1. Use the tracking form on our website (/track)\n2. Check your delivery status in our mobile app\n3. Contact customer support at +84 1900-1234\nAll shipments include real-time GPS tracking updates."
-        },
-        {
-          question: "What if my package gets lost or damaged?",
-          answer: "All shipments are insured and protected. If an issue occurs, our experienced team investigates immediately. We process claims within 24 hours and provide compensation according to our insurance coverage. Contact support immediately if you suspect an issue."
-        }
-      ]
+      ],
     },
     {
-      category: "Drivers",
-      questions: [
+      name: 'Driver Partners',
+      icon: <LuFileText size={16} />,
+      items: [
         {
-          question: "How do I become a LogiFlow driver?",
-          answer: "To apply as a LogiFlow driver:\n1. Submit your driver application through our website\n2. Upload your valid Vietnamese driver's license and CV\n3. Complete the required contact and profile details\n4. Wait for our team to review your application\n5. If shortlisted, we will contact you for an interview and next steps\n\nRequirements include being 18+ years old, having a clean driving record, and meeting our document screening requirements."
+          question: 'What are the requirements to join as a driver partner?',
+          answer:
+            'Drivers must hold a valid commercial Vietnamese driving license (Class B2, C, D, or FC), maintain an active vehicle inspection certificate, pass background verification, and complete the LogiFlow onboarding safety briefing.',
         },
         {
-          question: "What vehicle types can I use?",
-          answer: "Drivers may apply with:\n- Motorcycles (under 175cc) for urban deliveries\n- Vans and trucks for larger shipments\n- Any vehicle used for work must be properly licensed, insured, and pass our safety inspection\n- Eco-friendly and newer vehicles are preferred"
+          question: 'How are driver payout requests and settlements processed?',
+          answer:
+            'Drivers request direct digital bank payouts via their mobile application upon completing assigned trip manifests. Administrative review and bank transfers are executed on expedited cycles.',
         },
-        {
-          question: "How much can I earn as a driver?",
-          answer: "Driver earnings vary based on location, hours worked, and vehicle type:\n- Motorcycle drivers: 150,000 - 400,000 VND/day\n- Van drivers: 250,000 - 600,000 VND/day\n- Truck drivers: 300,000 - 800,000 VND/day\n\nEarnings depend on delivery volume, distance, and customer tips."
-        },
-        {
-          question: "What support do you provide drivers?",
-          answer: "We provide:\n- Weekly payments directly to your bank account\n- 24/7 driver support hotline\n- Mobile app with maps and customer details\n- Training and certification programs\n- Insurance coverage for work-related incidents\n- Performance bonuses and incentives"
-        }
-      ]
+      ],
     },
     {
-      category: "Business Solutions",
-      questions: [
+      name: 'Enterprise & API',
+      icon: <LuBuilding2 size={16} />,
+      items: [
         {
-          question: "What business services do you offer?",
-          answer: "Our enterprise solutions include:\n- Dedicated account management\n- API integration for e-commerce platforms\n- Fleet management and analytics\n- White-label delivery services\n- Industrial and warehouse logistics\n- Specialized handling for pharmaceuticals, electronics, and perishables"
+          question: 'Does LogiFlow support direct REST API / Webhook integration?',
+          answer:
+            'Yes. Our modern REST API enables automated bulk order injection, real-time rate queries, tracking webhooks, and digital invoice extraction directly from your ERP, WMS, or SAP instance.',
         },
         {
-          question: "Do you offer API integration?",
-          answer: "Yes! Our enterprise API allows seamless integration with:\n- E-commerce platforms (Shopify, WooCommerce, etc.)\n- WMS and ERP systems\n- Point-of-sale systems\n- Custom applications\n\nAPI documentation is available for approved business partners."
+          question: 'What contractual Service Level Agreements (SLAs) do you offer?',
+          answer:
+            'Our corporate agreements guarantee 99.8% on-time transit windows, 15-minute key account priority dispatch response times, and automated contractual rebate credits for unexcused service disruptions.',
         },
-        {
-          question: "What are your SLA commitments?",
-          answer: "Our business SLAs include:\n- 99.5% on-time delivery rate\n- Real-time tracking and status updates\n- 24/7 dedicated account management\n- Priority customer support\n- Detailed analytics and reporting\n- Guaranteed compensation for service failures"
-        }
-      ]
-    }
+      ],
+    },
   ];
 
+  const filteredCategories =
+    activeCategory === 'All'
+      ? faqCategories
+      : faqCategories.filter((c) => c.name === activeCategory);
+
   return (
-    <div className="home-container">
-      <div className="content-wrapper">
-        <h1 className="page-title">
-          Frequently Asked Questions
-        </h1>
-        <p className="page-subtitle">
-          Find answers to common questions about LogiFlow's services and operations.
-        </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
+      <div className="container">
+        <PageHeader
+          badge={<Badge variant="brand">Knowledge Base</Badge>}
+          title="Frequently Asked Questions"
+          description="Everything you need to know about LogiFlow's nationwide freight network, carrier onboarding, pricing SLAs, and digital operations."
+        />
+      </div>
 
-        {faqData.map((category, categoryIndex) => (
-          <div key={categoryIndex} className="faq-category">
-            <h2 className="faq-category-title">
-              {category.category}
-            </h2>
+      {/* Category Filter Pills */}
+      <section className="container">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setActiveCategory('All')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: 'var(--text-xs)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: '1px solid var(--border-default)',
+              backgroundColor: activeCategory === 'All' ? 'var(--color-brand-600)' : 'var(--color-white)',
+              color: activeCategory === 'All' ? 'var(--color-white)' : 'var(--text-secondary)',
+              transition: 'all var(--transition-fast)',
+            }}
+          >
+            All Questions
+          </button>
+          {faqCategories.map((c) => (
+            <button
+              key={c.name}
+              onClick={() => setActiveCategory(c.name)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: 'var(--radius-full)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: '1px solid var(--border-default)',
+                backgroundColor: activeCategory === c.name ? 'var(--color-brand-600)' : 'var(--color-white)',
+                color: activeCategory === c.name ? 'var(--color-white)' : 'var(--text-secondary)',
+                transition: 'all var(--transition-fast)',
+              }}
+            >
+              {c.icon}
+              {c.name}
+            </button>
+          ))}
+        </div>
+      </section>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {category.questions.map((faq, questionIndex) => {
-                const itemIndex = `${categoryIndex}-${questionIndex}`;
-                const isOpen = openItems.has(itemIndex);
+      {/* FAQ Accordion List */}
+      <section className="container">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {filteredCategories.map((cat, catIdx) => (
+            <div key={cat.name} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+                {cat.name}
+              </h3>
 
-                return (
-                  <div key={questionIndex} className="faq-item">
-                    <button
-                      onClick={() => toggleItem(itemIndex)}
-                      className="faq-question"
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {cat.items.map((item, itemIdx) => {
+                  const key = `${catIdx}-${itemIdx}`;
+                  const isOpen = openItems.has(key);
+
+                  return (
+                    <Card
+                      key={item.question}
+                      style={{
+                        border: isOpen ? '1px solid var(--color-brand-200)' : '1px solid var(--border-default)',
+                        backgroundColor: 'var(--bg-surface)',
+                      }}
                     >
-                      <span>{faq.question}</span>
-                      <span className={`faq-arrow ${isOpen ? 'open' : ''}`}>
-                        ▼
-                      </span>
-                    </button>
+                      <button
+                        onClick={() => toggleItem(key)}
+                        style={{
+                          width: '100%',
+                          padding: '16px 20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '16px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                        }}
+                      >
+                        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {item.question}
+                        </span>
+                        <LuChevronDown
+                          size={18}
+                          style={{
+                            transform: isOpen ? 'rotate(180deg)' : 'none',
+                            transition: 'transform 180ms ease',
+                            color: isOpen ? 'var(--color-brand-600)' : 'var(--color-slate-400)',
+                            flexShrink: 0,
+                          }}
+                        />
+                      </button>
 
-                    <div className={`faq-answer ${isOpen ? 'open' : ''}`}>
-                      <div className="faq-answer-content">
-                        {faq.answer.split('\n').map((line, index) => (
-                          <p key={index} style={{ margin: '0.5rem 0' }}>
-                            {line}
+                      {isOpen && (
+                        <div
+                          style={{
+                            padding: '0 20px 16px 20px',
+                            borderTop: '1px solid var(--border-subtle)',
+                            paddingTop: '14px',
+                          }}
+                        >
+                          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                            {item.answer}
                           </p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </section>
 
-        {/* Contact CTA */}
-        <div className="cta-section">
-          <h2 className="cta-title">Still have questions?</h2>
-          <p className="cta-description">
-            Our support team is here to help you with any questions or concerns.
-          </p>
-          <div className="btn-group">
-            <a href="/contact" className="btn btn-outline">
-              Contact Support
-            </a>
-            <a href="tel:+8419001234" className="btn btn-ghost">
-              Call +84 1900-1234
+      {/* Still Have Questions CTA */}
+      <section className="container">
+        <div
+          style={{
+            padding: '36px',
+            backgroundColor: 'var(--color-slate-900)',
+            color: 'var(--color-white)',
+            borderRadius: 'var(--radius-xl)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '20px',
+          }}
+        >
+          <div>
+            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 4px 0' }}>
+              Still have specific questions?
+            </h3>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
+              Our operations dispatch desk is available 24/7 to assist with active cargo or enterprise setups.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Link to="/contact">
+              <Button variant="primary">Contact Operational Support</Button>
+            </Link>
+            <a href="tel:+8419001234">
+              <Button
+                variant="outline"
+                style={{
+                  backgroundColor: 'transparent',
+                  borderColor: 'var(--color-slate-700)',
+                  color: 'var(--color-white)',
+                }}
+              >
+                Call Hotline: +84 1900-1234
+              </Button>
             </a>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

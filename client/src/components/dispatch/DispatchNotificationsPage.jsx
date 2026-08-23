@@ -1,7 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { dispatchNotificationService } from '../../services/dispatch/dispatchNotificationService';
+import {
+  Button,
+  Card,
+  Badge,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuBell,
+  LuCheckCheck,
+  LuInfo,
+  LuTriangleAlert,
+  LuCircleAlert,
+  LuClock,
+} from 'react-icons/lu';
 
 const formatTimestamp = (timestamp) => {
+  if (!timestamp) return '—';
   const date = new Date(timestamp);
   const now = new Date();
   const diff = now - date;
@@ -13,10 +37,10 @@ const formatTimestamp = (timestamp) => {
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
-  return date.toLocaleString();
+  return date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 };
 
-const DispatchNotificationsPage = () => {
+export const DispatchNotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +53,7 @@ const DispatchNotificationsPage = () => {
       setNotifications(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error('Failed to load notifications', err);
-      setError('Failed to load notifications');
+      setError('Failed to load dispatch telemetry notifications.');
     } finally {
       setLoading(false);
     }
@@ -48,99 +72,101 @@ const DispatchNotificationsPage = () => {
     }
   };
 
-  const getSeverityLabel = (severity) => {
-    switch (severity) {
+  const getSeverityBadge = (severity) => {
+    switch (severity?.toUpperCase()) {
       case 'CRITICAL':
-        return '🔴';
+        return <Badge variant="danger" size="sm" dot>Critical</Badge>;
       case 'WARNING':
-        return '⚠️';
+        return <Badge variant="warning" size="sm" dot>Warning</Badge>;
       case 'INFO':
       default:
-        return 'ℹ️';
+        return <Badge variant="neutral" size="sm" dot>Info</Badge>;
     }
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div>
-          <h1 style={{ margin: 0 }}>🔔 Notifications</h1>
-          <p style={{ margin: '6px 0 0 0', color: '#6b7280' }}>View all dispatcher notifications</p>
-        </div>
-        <div>
-          {notifications.some((n) => !n.isRead) && (
-            <button
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Dispatch System Alerts"
+        description="Real-time operational alerts, exception notifications, and driver status telemetry feeds."
+        badge={<Badge variant="brand">Operational Alerts</Badge>}
+        actions={
+          notifications.some((n) => !n.isRead) ? (
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleMarkAllRead}
-              style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#2563eb',
-                color: 'white',
-                cursor: 'pointer',
-                fontWeight: 600,
-              }}
+              leftIcon={<LuCheckCheck size={16} />}
             >
-              Mark all as read
-            </button>
-          )}
-        </div>
-      </div>
+              Mark All Read
+            </Button>
+          ) : null
+        }
+      />
 
-      {loading && <div>Loading notifications...</div>}
       {error && (
-        <div style={{ padding: '10px 12px', background: '#fee2e2', color: '#991b1b', borderRadius: 8 }}>
+        <Alert variant="danger" onClose={() => setError(null)}>
           {error}
-        </div>
+        </Alert>
       )}
 
-      {!loading && !error && (
-        <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>
-            Recent Notifications
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Retrieving dispatch notification queue..." />
           </div>
-
-          {notifications.length === 0 ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔕</div>
-              <div>No notifications yet</div>
-            </div>
-          ) : (
-            <div style={{ maxHeight: 520, overflowY: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', background: '#f9fafb' }}>
-                    <th style={{ padding: '10px 12px', width: 80 }}>Status</th>
-                    <th style={{ padding: '10px 12px' }}>Title</th>
-                    <th style={{ padding: '10px 12px' }}>Message</th>
-                    <th style={{ padding: '10px 12px', width: 140 }}>Type</th>
-                    <th style={{ padding: '10px 12px', width: 140 }}>Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {notifications.map((n) => (
-                    <tr
-                      key={n.notificationId}
-                      style={{
-                        borderTop: '1px solid #e5e7eb',
-                        background: n.isRead ? 'white' : '#eff6ff',
-                      }}
-                    >
-                      <td style={{ padding: '10px 12px' }}>{n.isRead ? '✓' : '•'}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        {getSeverityLabel(n.severity)} {n.title}
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>{n.message}</td>
-                      <td style={{ padding: '10px 12px' }}>{n.notificationType}</td>
-                      <td style={{ padding: '10px 12px' }}>{formatTimestamp(n.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+        ) : notifications.length === 0 ? (
+          <EmptyState
+            icon={<LuBell size={36} color="var(--color-slate-400)" />}
+            title="All clear"
+            description="There are currently no active alerts or exception notifications requiring attention."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead style={{ width: '80px' }}>State</TableHead>
+                <TableHead style={{ width: '120px' }}>Severity</TableHead>
+                <TableHead style={{ width: '220px' }}>Notification Title</TableHead>
+                <TableHead>Message Description</TableHead>
+                <TableHead style={{ width: '160px' }}>Category</TableHead>
+                <TableHead style={{ width: '140px', textAlign: 'right' }}>Timestamp</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {notifications.map((n) => (
+                <TableRow
+                  key={n.notificationId}
+                  style={{
+                    backgroundColor: n.isRead ? undefined : 'var(--color-brand-50)',
+                  }}
+                >
+                  <TableCell>
+                    {n.isRead ? (
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Read</span>
+                    ) : (
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-brand-600)', display: 'inline-block' }} />
+                    )}
+                  </TableCell>
+                  <TableCell>{getSeverityBadge(n.severity)}</TableCell>
+                  <TableCell style={{ fontWeight: n.isRead ? 500 : 700, color: 'var(--text-primary)' }}>
+                    {n.title}
+                  </TableCell>
+                  <TableCell style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>
+                    {n.message}
+                  </TableCell>
+                  <TableCell>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{n.notificationType}</span>
+                  </TableCell>
+                  <TableCell style={{ textAlign: 'right', fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {formatTimestamp(n.createdAt)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
     </div>
   );
 };

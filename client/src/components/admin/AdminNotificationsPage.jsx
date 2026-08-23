@@ -1,23 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { notificationService } from '../../services/admin/notificationService';
-import './admin.css';
+import {
+  Button,
+  Card,
+  Badge,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuBell,
+  LuCheckCheck,
+  LuTriangleAlert,
+  LuInfo,
+} from 'react-icons/lu';
 
-const formatTimestamp = (timestamp) => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diff = now - date;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleString();
-};
-
-const AdminNotificationsPage = () => {
+export const AdminNotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,10 +32,9 @@ const AdminNotificationsPage = () => {
       setLoading(true);
       setError(null);
       const items = await notificationService.getAllNotifications(0, 50);
-      setNotifications(items);
-    } catch (err) {
-      console.error('Failed to load notifications', err);
-      setError('Failed to load notifications');
+      setNotifications(items || []);
+    } catch {
+      setError('Failed to query administrative alert notifications.');
     } finally {
       setLoading(false);
     }
@@ -49,89 +53,103 @@ const AdminNotificationsPage = () => {
     }
   };
 
-  const getSeverityClass = (severity) => {
+  const getSeverityBadge = (severity) => {
     switch (severity) {
       case 'CRITICAL':
-        return 'notif-critical';
+        return <Badge variant="danger" size="sm">CRITICAL</Badge>;
       case 'WARNING':
-        return 'notif-warning';
-      case 'INFO':
+        return <Badge variant="warning" size="sm">WARNING</Badge>;
       default:
-        return 'notif-info';
+        return <Badge variant="info" size="sm">INFO</Badge>;
     }
   };
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-page-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1>🔔 Notifications</h1>
-            <p>Review all system and delay-related notifications</p>
-          </div>
-          <div>
-            {notifications.some((n) => !n.isRead) && (
-              <button className="btn btn-primary" onClick={handleMarkAllRead}>
-                Mark all as read
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Administrative Notifications & Telemetry Feed"
+        description="Real-time operational alerts, exception signals, and dispatch escalations across the enterprise network."
+        badge={<Badge variant="brand">Notification Feed</Badge>}
+        actions={
+          notifications.some((n) => !n.isRead) && (
+            <Button variant="outline" size="sm" onClick={handleMarkAllRead} leftIcon={<LuCheckCheck size={16} />}>
+              Mark All as Read
+            </Button>
+          )
+        }
+      />
 
-      <div className="admin-page-content">
-        {loading && <div className="loading-state">Loading notifications...</div>}
-        {error && <div className="error-banner">{error}</div>}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-        {!loading && !error && (
-          <div className="details-card">
-            <div className="card-header">
-              <h2>Recent Notifications</h2>
-            </div>
-            <div className="card-content">
-              {notifications.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔕</div>
-                  <div>No notifications yet</div>
-                </div>
-              ) : (
-                <div className="admin-table-wrapper" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Status</th>
-                        <th>Title</th>
-                        <th>Message</th>
-                        <th>Type</th>
-                        <th>Created</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {notifications.map((n) => (
-                        <tr key={n.notificationId} className={n.isRead ? 'notification-read-row' : 'notification-unread-row'}>
-                          <td>
-                            <span className={`notification-status-dot ${n.isRead ? 'read' : 'unread'}`} />
-                          </td>
-                          <td>
-                            <span className={getSeverityClass(n.severity)}>{n.title}</span>
-                          </td>
-                          <td>{n.message}</td>
-                          <td>{n.notificationType}</td>
-                          <td>{formatTimestamp(n.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Retrieving notifications..." />
           </div>
+        ) : notifications.length === 0 ? (
+          <EmptyState
+            icon={<LuBell size={36} color="var(--color-slate-400)" />}
+            title="All notifications cleared"
+            description="You are caught up on all operational alerts."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead style={{ width: '40px' }}></TableHead>
+                <TableHead>Severity</TableHead>
+                <TableHead>Notification Subject</TableHead>
+                <TableHead>Telemetry Message</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead style={{ textAlign: 'right' }}>Timestamp</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {notifications.map((n) => (
+                <TableRow
+                  key={n.notificationId}
+                  style={{
+                    backgroundColor: n.isRead ? 'transparent' : 'var(--color-brand-50)',
+                  }}
+                >
+                  <TableCell>
+                    {!n.isRead && (
+                      <span
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--color-brand-600)',
+                          display: 'inline-block',
+                        }}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>{getSeverityBadge(n.severity)}</TableCell>
+                  <TableCell style={{ fontWeight: n.isRead ? 500 : 700, color: 'var(--text-primary)' }}>
+                    {n.title}
+                  </TableCell>
+                  <TableCell style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{n.message}</TableCell>
+                  <TableCell>
+                    <Badge variant="neutral" size="sm">
+                      {n.notificationType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell style={{ textAlign: 'right', fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
 
 export default AdminNotificationsPage;
-
-

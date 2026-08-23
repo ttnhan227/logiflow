@@ -5,64 +5,138 @@ import RouteMapCard from './RouteMapCard';
 import ChatPopup from '../common/ChatPopup';
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import './dispatch.css';
-import './modern-dispatch.css';
+import { divIcon } from 'leaflet';
+import {
+  Button,
+  Card,
+  Badge,
+  PageHeader,
+  Alert,
+  LoadingSpinner,
+} from '@/components/ui';
+import {
+  LuTruck,
+  LuUser,
+  LuCalendar,
+  LuClock,
+  LuMapPin,
+  LuArrowLeft,
+  LuCircleCheck,
+  LuCircleX,
+  LuTriangleAlert,
+  LuCreditCard,
+  LuNavigation,
+} from 'react-icons/lu';
 
-const formatMoney = (amount) => {
-  if (amount == null) return 'N/A';
-  try {
-    return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 });
-  } catch (e) {
-    return `${amount} VND`;
-  }
-};
+const createDriverMarker = () =>
+  divIcon({
+    className: 'custom-driver-marker',
+    html: `
+      <div style="
+        background-color: #7c3aed;
+        color: white;
+        border: 2px solid white;
+        border-radius: 9999px;
+        padding: 4px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      ">
+        🚐 Live Driver
+      </div>
+    `,
+    iconSize: [90, 26],
+    iconAnchor: [45, 13],
+  });
 
-// Fix default Leaflet icons in bundlers
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-const driverIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const TripDetailPage = () => {
+export const TripDetailPage = () => {
   const { tripId } = useParams();
   const location = useLocation();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [, setDistanceEstimate] = useState(null);
-  const [, setFeeEstimate] = useState(null);
 
   const [deliveryConfirmation, setDeliveryConfirmation] = useState(null);
   const [podLoading, setPodLoading] = useState(false);
   const [podError, setPodError] = useState(null);
 
-  const [liveLocation, setLiveLocation] = useState(null); // {latitude, longitude, driverId, tripId}
+  const [liveLocation, setLiveLocation] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [routeWaypoints, setRouteWaypoints] = useState([]);
   const [delayInfo, setDelayInfo] = useState(null);
-  const [, setDelayLoading] = useState(false);
 
-  // Reload when the selected trip or navigation refresh state changes.
+  const loadTrip = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const t = await tripService.getTripById(Number(tripId));
+      setTrip(t);
+
+      setDeliveryConfirmation(null);
+      setPodError(null);
+      if ((t?.status || '').toUpperCase() === 'COMPLETED') {
+        try {
+          setPodLoading(true);
+          const pod = await tripService.getDeliveryConfirmation(Number(tripId));
+          if (pod?.confirmationId) {
+            setDeliveryConfirmation(pod);
+          } else {
+            setPodError('No electronic delivery confirmation uploaded.');
+          }
+        } catch {
+          setPodError('Proof of Delivery record not found.');
+        } finally {
+          setPodLoading(false);
+        }
+      }
+
+      if (t?.currentLat != null && t?.currentLng != null) {
+        setLiveLocation({
+          latitude: t.currentLat,
+          longitude: t.currentLng,
+          driverId: t.driverId,
+          tripId: String(t.tripId),
+        });
+      }
+
+      if (t?.route?.waypoints && Array.isArray(t.route.waypoints)) {
+        setRouteWaypoints(t.route.waypoints);
+      } else {
+        setRouteWaypoints([]);
+      }
+
+      setDelayInfo(null);
+      if (t?.delayReason || t?.delayStatus) {
+        setDelayInfo({
+          delayReason: t.delayReason,
+          delayStatus: t.delayStatus,
+          slaExtensionMinutes: t.slaExtensionMinutes,
+        });
+      } else {
+        try {
+          const delayData = await tripService.getTripDelayInfo(Number(tripId));
+          if (delayData) setDelayInfo(delayData);
+        } catch {
+          // non-critical
+        }
+      }
+    } catch {
+      setError('Trip not found or insufficient access permissions.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadTrip();
-  }, [tripId, location.state]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tripId, location.state]);
 
-  // Connect + subscribe to trip-scoped live location topic
-  // Re-fetch only after a live progress event for this trip.
   useEffect(() => {
     let mounted = true;
     const run = async () => {
@@ -73,7 +147,7 @@ const TripDetailPage = () => {
           setLiveLocation(msg);
         });
       } catch (e) {
-        console.warn('Tracking WS not connected', e);
+        console.warn('Tracking WS connection idle', e);
       }
     };
 
@@ -83,572 +157,351 @@ const TripDetailPage = () => {
       mounted = false;
       try {
         trackingClient.unsubscribeTripLocation(tripId);
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
   }, [tripId]);
 
-  // Reload trip when returning from assign page
-  useEffect(() => {
-    const handleFocus = () => {
-      loadTrip();
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- focus refresh uses current route
-
-  const loadTrip = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const t = await tripService.getTripById(Number(tripId));
-      setTrip(t);
-
-      // Load POD for completed trips (dispatcher verification)
-      setDeliveryConfirmation(null);
-      setPodError(null);
-      if ((t?.status || '').toUpperCase() === 'COMPLETED') {
-        try {
-          setPodLoading(true);
-          const pod = await tripService.getDeliveryConfirmation(Number(tripId));
-          // If confirmationId is null/undefined, treat as no confirmation found
-          if (pod?.confirmationId) {
-            setDeliveryConfirmation(pod);
-          } else {
-            setPodError('No delivery confirmation found');
-          }
-        } catch (e) {
-          // If there is no POD record, keep page working and show a message
-          setPodError(e?.response?.data?.error || 'No delivery confirmation found');
-        } finally {
-          setPodLoading(false);
-        }
-      }
-      if (t?.currentLat != null && t?.currentLng != null) {
-        setLiveLocation({ latitude: t.currentLat, longitude: t.currentLng, driverId: t.driverId, tripId: String(t.tripId) });
-      }
-      
-      // Try to load route waypoints if route data is available
-      if (t?.route?.waypoints && Array.isArray(t.route.waypoints)) {
-        setRouteWaypoints(t.route.waypoints);
-      } else {
-        // If waypoints aren't available or not an array, set empty array
-        setRouteWaypoints([]);
-      }
-
-      // Load delay information if available
-      setDelayInfo(null);
-      if (t?.delayReason || t?.delayStatus) {
-        setDelayInfo({
-          delayReason: t.delayReason,
-          delayStatus: t.delayStatus,
-          slaExtensionMinutes: t.slaExtensionMinutes
-        });
-      } else {
-        // Try to fetch delay info separately if not in trip data
-        try {
-          setDelayLoading(true);
-          const delayData = await tripService.getTripDelayInfo(Number(tripId));
-          if (delayData) {
-            setDelayInfo(delayData);
-          }
-        } catch (e) {
-          // Delay info not available, continue without it
-          console.log('No delay information available for this trip');
-        } finally {
-          setDelayLoading(false);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load trip', err);
-      setError('Trip not found or you do not have permission to access it');
-    } finally {
-      setLoading(false);
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return <Badge variant="warning" dot>Pending</Badge>;
+      case 'SCHEDULED':
+        return <Badge variant="brand" dot>Scheduled</Badge>;
+      case 'ASSIGNED':
+        return <Badge variant="brand" dot>Assigned</Badge>;
+      case 'IN_PROGRESS':
+        return <Badge variant="info" dot>In Progress</Badge>;
+      case 'COMPLETED':
+        return <Badge variant="success" dot>Completed</Badge>;
+      case 'CANCELLED':
+        return <Badge variant="neutral" dot>Cancelled</Badge>;
+      default:
+        return <Badge variant="neutral" dot>{status || 'Unknown'}</Badge>;
     }
   };
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'PENDING': return '#f59e0b';
-      case 'SCHEDULED': return '#06b6d4';
-      case 'ASSIGNED': return '#3b82f6';
-      case 'IN_PROGRESS': return '#8b5cf6';
-      case 'COMPLETED': return '#10b981';
-      case 'CANCELLED': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    return date.toLocaleString('en-GB', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
-
-  const renderPOD = () => {
-    if ((trip?.status || '').toUpperCase() !== 'COMPLETED') return null;
-
-    return (
-      <div className="detail-card full-width" style={{ marginTop: '1rem' }}>
-        <div className="card-header">
-          <h2 className="card-title">Proof of Delivery (POD)</h2>
-        </div>
-        <div className="card-body">
-          {podLoading && <div className="page-subtitle">Loading delivery confirmation…</div>}
-
-          {!podLoading && podError && (
-            <div className="page-subtitle" style={{ color: '#b91c1c' }}>
-              {podError}
-            </div>
-          )}
-
-          {!podLoading && !podError && deliveryConfirmation && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-              <div>
-                <div className="detail-label">Type</div>
-                <div className="detail-value">{deliveryConfirmation.confirmationType}</div>
-
-                <div className="detail-label" style={{ marginTop: '0.75rem' }}>Recipient</div>
-                <div className="detail-value">{deliveryConfirmation.recipientName || 'N/A'}</div>
-
-                <div className="detail-label" style={{ marginTop: '0.75rem' }}>Confirmed at</div>
-                <div className="detail-value">{formatDateTime(deliveryConfirmation.confirmedAt)}</div>
-
-                <div className="detail-label" style={{ marginTop: '0.75rem' }}>Notes</div>
-                <div className="detail-value">{deliveryConfirmation.notes || '—'}</div>
-              </div>
-
-              <div>
-                {deliveryConfirmation.confirmationType === 'SIGNATURE' && deliveryConfirmation.signatureData && (
-                  <>
-                    <div className="detail-label">Signature</div>
-                    <img
-                      src={`data:image/png;base64,${deliveryConfirmation.signatureData}`}
-                      alt="Signature"
-                      style={{ width: '100%', maxWidth: 420, borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff' }}
-                    />
-                  </>
-                )}
-
-                {deliveryConfirmation.confirmationType === 'PHOTO' && deliveryConfirmation.photoData && (
-                  <>
-                    <div className="detail-label">Delivery photo</div>
-                    <img
-                      src={`data:image/jpeg;base64,${deliveryConfirmation.photoData}`}
-                      alt="Delivery photo"
-                      style={{ width: '100%', maxWidth: 420, borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff' }}
-                    />
-                  </>
-                )}
-
-                {deliveryConfirmation.confirmationType === 'OTP' && (
-                  <>
-                    <div className="detail-label">OTP Code</div>
-                    <div className="detail-value" style={{ fontFamily: 'monospace', fontSize: '1.1rem' }}>
-                      {deliveryConfirmation.otpCode || 'N/A'}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const timeline = useMemo(() => {
-    const events = trip?.progressEvents || [];
-    return [...events].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  }, [trip]);
-
-  const mapCenter = useMemo(() => {
-    if (liveLocation?.latitude && liveLocation?.longitude) return [Number(liveLocation.latitude), Number(liveLocation.longitude)];
-    return [16.0471, 108.2068];
-  }, [liveLocation]);
-
-  if (loading) {
-    return (
-      <div className="modern-container">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading trip details...</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleCancel = async () => {
     setActionError(null);
     if (!cancelReason.trim()) {
-      setActionError('Please enter a cancellation reason');
+      setActionError('Please provide an operational cancellation justification.');
       return;
     }
     setCancelling(true);
     try {
       await tripService.cancelTrip(Number(tripId), { reason: cancelReason });
       setCancelReason('');
+      setShowCancelModal(false);
       await loadTrip();
     } catch (e) {
-      setActionError(e?.response?.data?.error || 'Failed to cancel trip');
+      setActionError(e?.response?.data?.error || 'Failed to cancel trip manifest.');
     } finally {
       setCancelling(false);
     }
   };
 
+  const mapCenter = useMemo(() => {
+    if (liveLocation?.latitude && liveLocation?.longitude) {
+      return [Number(liveLocation.latitude), Number(liveLocation.longitude)];
+    }
+    return [16.0471, 108.2068];
+  }, [liveLocation]);
 
+  const timeline = useMemo(() => {
+    const events = trip?.progressEvents || [];
+    return [...events].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }, [trip]);
+
+  if (loading) {
+    return <LoadingSpinner fullPage text="Retrieving trip manifest details..." />;
+  }
 
   if (error || !trip) {
     return (
-      <div className="modern-container">
-        <div className="empty-state">
-          <div className="empty-icon">❌</div>
-          <h3>{error || 'Trip not found'}</h3>
-          <Link to="/dispatch/trips" className="btn-primary">Back to Trips</Link>
+      <div className="container" style={{ padding: '48px 16px', maxWidth: '600px' }}>
+        <Alert variant="danger">{error || 'Trip record not found.'}</Alert>
+        <div style={{ marginTop: '16px' }}>
+          <Link to="/dispatch/trips">
+            <Button variant="outline" leftIcon={<LuArrowLeft size={14} />}>
+              Back to Trips
+            </Button>
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="modern-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Trip #{trip.tripId}</h1>
-          <p className="page-subtitle">{trip.routeName}</p>
-        </div>
-        <div className="header-actions">
-          {trip.status?.toUpperCase() !== 'COMPLETED' && trip.status?.toUpperCase() !== 'CANCELLED' && trip.status?.toUpperCase() !== 'ARRIVED' && (
-            <button className="btn-secondary" onClick={handleCancel} disabled={cancelling}>
-              {cancelling ? 'Cancelling...' : '✖ Cancel'}
-            </button>
-          )}
-          <Link to="/dispatch/trips" className="btn-secondary">
-            ← Back to Trips
-          </Link>
-        </div>
-      </div>
-
-      {actionError && (
-        <div className="error" style={{ marginBottom: '1rem' }}>{actionError}</div>
-      )}
-
-
-
-      <div className="detail-grid">
-        {trip.orders && trip.orders.length > 0 && (
-          <>
-            <div className="detail-card full-width">
-              <div className="card-header">
-                <h2 className="card-title">Trip Orders ({trip.orders.length})</h2>
-              </div>
-
-              <div className="card-body">
-                <div className="info-pill" style={{ marginBottom: '1rem' }}>
-                  Trip Summary: {trip.orders.length} order{trip.orders.length > 1 ? 's' : ''} •
-                  Total Weight: {trip.orders.reduce((sum, o) => sum + (o.weightTons || 0), 0).toFixed(1)} tons •
-                  Total Distance: {trip.orders.reduce((sum, order) => sum + (order.distanceKm || 0), 0).toFixed(1)} km •
-                  Total Fee: {formatMoney(trip.orders.reduce((sum, order) => sum + (order.shippingFee || 0), 0))}
-                </div>
-
-                <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
-                  {trip.orders.map(order => (
-                    <div key={order.orderId} className="info-pill" style={{
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontSize: '13px',
-                      padding: '1rem'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <strong style={{ fontSize: '14px' }}>#{order.orderId}</strong>
-                          <span style={{
-                            backgroundColor: order.orderStatus === 'DELIVERED' ? '#dcfce7' :
-                                           order.orderStatus === 'IN_TRANSIT' ? '#dbeafe' :
-                                           order.orderStatus === 'ASSIGNED' ? '#fef3c7' : '#fee2e2',
-                            color: order.orderStatus === 'DELIVERED' ? '#166534' :
-                                   order.orderStatus === 'IN_TRANSIT' ? '#1e40af' :
-                                   order.orderStatus === 'ASSIGNED' ? '#92400e' : '#dc2626',
-                            padding: '0.15rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontWeight: '600',
-                            fontSize: '11px'
-                          }}>
-                            {order.orderStatus}
-                          </span>
-                        </div>
-                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{order.customerName}</div>
-                        <div style={{ color: '#64748b', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <div>📍 <strong>Pickup:</strong> {order.pickupAddress}</div>
-                          <div>🎯 <strong>Delivery:</strong> {order.deliveryAddress}</div>
-                          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
-                            <span>⚖️ {order.weightTons ? `${order.weightTons} t` : 'N/A'}</span>
-                            <span>📏 {order.distanceKm ? `${order.distanceKm} km` : 'N/A'}</span>
-                            <span>💰 {order.shippingFee ? formatMoney(order.shippingFee) : 'N/A'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Trip Route Map - similar to TripCreatePage */}
-            <div className="detail-card full-width" style={{ marginTop: '1rem' }}>
-              <div className="card-header">
-                <h2 className="card-title">Trip Route & Orders</h2>
-                <p className="page-subtitle" style={{ margin: 0 }}>Complete route with all order waypoints</p>
-              </div>
-              <RouteMapCard
-                orders={trip.orders}
-                onDistanceChange={(km, fee) => { setDistanceEstimate(km); setFeeEstimate(fee); }}
-              />
-            </div>
-          </>
-        )}
-
-        <div className="detail-card main-card">
-          <div className="card-header">
-            <h2 className="card-title">Trip Information</h2>
-            <span
-              className="badge"
-              style={{ backgroundColor: getStatusColor(trip.status) }}
-            >
-              {trip.status}
-            </span>
-          </div>
-
-          <div className="card-body">
-            <div className="detail-section">
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">🗺️</div>
-                  <div>
-                    <div className="detail-label">Route Name</div>
-                    <div className="detail-value">{trip.routeName}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">📅</div>
-                  <div>
-                    <div className="detail-label">Scheduled Departure</div>
-                    <div className="detail-value">{formatDateTime(trip.scheduledDeparture)}</div>
-                  </div>
-                </div>
-
-                {trip.actualDeparture && (
-                  <div className="detail-item">
-                    <div className="detail-icon">🕐</div>
-                    <div>
-                      <div className="detail-label">Actual Departure</div>
-                      <div className="detail-value">{formatDateTime(trip.actualDeparture)}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {trip.actualArrival && (
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <div className="detail-icon">✓</div>
-                    <div>
-                      <div className="detail-label">Actual Arrival</div>
-                      <div className="detail-value">{formatDateTime(trip.actualArrival)}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="detail-row">
-                <div className="detail-item">
-                  <div className="detail-icon">📏</div>
-                  <div>
-                    <div className="detail-label">Total Distance</div>
-                    <div className="detail-value">
-                      {trip.orders?.length > 0
-                        ? `${trip.orders.reduce((sum, order) => sum + (order.distanceKm || 0), 0).toFixed(2)} km`
-                        : (trip.route?.distanceKm ? `${trip.route.distanceKm.toFixed(2)} km` : 'N/A')
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-icon">💵</div>
-                  <div>
-                    <div className="detail-label">Total Fee</div>
-                    <div className="detail-value">
-                      {trip.orders?.length > 0
-                        ? formatMoney(trip.orders.reduce((sum, order) => sum + (order.shippingFee || 0), 0))
-                        : (trip.route?.totalFee ? formatMoney(trip.route.totalFee) : 'N/A')
-                      }
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="detail-card">
-          <div className="card-header">
-            <h2 className="card-title">Assignment</h2>
-          </div>
-
-          <div className="card-body">
-            <div className="assignment-section">
-              <div className="assignment-item">
-                <div className="assignment-icon driver-icon">👤</div>
-                <div>
-                  <div className="detail-label">Driver</div>
-                  <div className="detail-value">
-                    {trip.driverName || (
-                      <span className="not-assigned">Not assigned</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="assignment-item">
-                <div className="assignment-icon vehicle-icon">🚗</div>
-                <div>
-                  <div className="detail-label">Vehicle</div>
-                  <div className="detail-value">
-                    {trip.vehicleLicensePlate || (
-                      <span className="not-assigned">Not assigned</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {!trip.driverName && trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' && (
-                <Link
-                  to={`/dispatch/trips/${trip.tripId}/assign`}
-                  className="btn-action primary"
-                  style={{ marginTop: '1rem', width: '100%' }}
-                >
-                  👥 Assign Driver
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {trip.status?.toUpperCase() === 'IN_PROGRESS' && (
-          <div className="detail-card" style={{ marginTop: '1rem' }}>
-            <div className="card-header" style={{ alignItems: 'center' }}>
-              <div>
-                <h2 className="card-title">Live Location</h2>
-                <p className="page-subtitle" style={{ margin: 0 }}>Real-time driver marker with current route</p>
-              </div>
-              {liveLocation && (
-                <div className="badge" style={{ backgroundColor: '#8b5cf6' }}>
-                  {Number(liveLocation.latitude).toFixed(5)},{Number(liveLocation.longitude).toFixed(5)}
-                </div>
-              )}
-            </div>
-            <div style={{ height: '320px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-              <MapContainer center={mapCenter} zoom={12} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {routeWaypoints.length > 0 && (
-                  <Polyline
-                    positions={routeWaypoints.map(wp => [wp.latitude, wp.longitude])}
-                    color="#3b82f6"
-                    weight={3}
-                    opacity={0.7}
-                  />
-                )}
-                {liveLocation && (
-                  <Marker
-                    position={[Number(liveLocation.latitude), Number(liveLocation.longitude)]}
-                    icon={driverIcon}
-                  />
-                )}
-              </MapContainer>
-            </div>
-          </div>
-        )}
-
-
-
-        <div className="detail-card full-width">
-          <div className="card-header">
-            <h2 className="card-title">Progress Timeline</h2>
-          </div>
-          <div className="card-body">
-            {timeline.length === 0 ? (
-              <div className="page-subtitle">No events yet.</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {timeline.map((e) => (
-                  <div key={e.eventId || `${e.eventType}-${e.createdAt}`} className="order-item-compact">
-                    <div className="order-number">{e.eventType}</div>
-                    <div className="order-info">
-                      <div className="order-customer">{e.message || '—'}</div>
-                      <div className="order-route-compact">
-                        <span className="pickup-compact">🕒 {formatDateTime(e.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title={`Trip #${trip.tripId}`}
+        description={`${trip.routeName || 'Consolidated Route'} • Scheduled: ${
+          trip.scheduledDeparture
+            ? new Date(trip.scheduledDeparture).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+            : 'Unscheduled'
+        }`}
+        badge={getStatusBadge(trip.status)}
+        actions={
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Link to="/dispatch/trips">
+              <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
+                Trips Roster
+              </Button>
+            </Link>
+            {!trip.driverName && trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' && (
+              <Link to={`/dispatch/trips/${trip.tripId}/assign`}>
+                <Button variant="primary" size="sm" leftIcon={<LuUser size={14} />}>
+                  Assign Driver
+                </Button>
+              </Link>
+            )}
+            {trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' && (
+              <Button variant="danger" size="sm" onClick={() => setShowCancelModal(true)}>
+                Cancel Trip
+              </Button>
             )}
           </div>
-        </div>
+        }
+      />
 
-        {delayInfo && (
-          <div className="detail-card full-width" style={{ marginTop: '1rem' }}>
-            <div className="card-header">
-              <h2 className="card-title">Delay Information</h2>
-              <span
-                className="badge"
-                style={{
-                  backgroundColor: delayInfo.delayStatus === 'APPROVED' ? '#10b981' :
-                                   delayInfo.delayStatus === 'PENDING' ? '#f59e0b' : '#ef4444'
-                }}
-              >
-                {delayInfo.delayStatus}
+      {actionError && (
+        <Alert variant="danger" onClose={() => setActionError(null)}>
+          {actionError}
+        </Alert>
+      )}
+
+      {/* Cancellation Prompt Modal */}
+      {showCancelModal && (
+        <Card style={{ padding: '20px', border: '1px solid var(--color-danger-300)', backgroundColor: 'var(--color-danger-50)' }}>
+          <h4 style={{ margin: '0 0 8px 0', color: 'var(--color-danger-900)' }}>Cancel Trip #{trip.tripId}</h4>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-800)', margin: '0 0 12px 0' }}>
+            Cancelling will release assigned orders back to the pending queue and update carrier status.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              placeholder="Reason for cancellation (required)..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-default)',
+                fontSize: 'var(--text-xs)',
+              }}
+            />
+            <Button variant="danger" size="sm" onClick={handleCancel} loading={cancelling}>
+              Confirm Cancellation
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowCancelModal(false)}>
+              Dismiss
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Consolidated Orders Grid */}
+      {trip.orders && trip.orders.length > 0 && (
+        <Card style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+                Consolidated Cargo Orders ({trip.orders.length})
+              </h3>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                Total Payload: {trip.orders.reduce((sum, o) => sum + (o.weightTons || 0), 0).toFixed(1)} T • Total Revenue:{' '}
+                {trip.orders.reduce((sum, o) => sum + (o.shippingFee || 0), 0).toLocaleString()} VND
               </span>
             </div>
-            <div className="card-body">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                <div>
-                  <div className="detail-label">Delay Reason</div>
-                  <div className="detail-value">{delayInfo.delayReason}</div>
+            <Badge variant="brand" size="sm">
+              {trip.orders.reduce((sum, o) => sum + (o.distanceKm || 0), 0).toFixed(1)} km est.
+            </Badge>
+          </div>
 
-                  {delayInfo.slaExtensionMinutes && (
-                    <>
-                      <div className="detail-label" style={{ marginTop: '0.75rem' }}>SLA Extension</div>
-                      <div className="detail-value">{delayInfo.slaExtensionMinutes} minutes</div>
-                    </>
-                  )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '12px' }}>
+            {trip.orders.map((order) => (
+              <div
+                key={order.orderId}
+                style={{
+                  padding: '14px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-default)',
+                  backgroundColor: 'var(--bg-surface-subtle)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Link
+                    to={`/dispatch/orders/${order.orderId}`}
+                    style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-brand-700)' }}
+                  >
+                    Order #{order.orderId}
+                  </Link>
+                  <Badge variant="neutral" size="sm">
+                    {order.orderStatus}
+                  </Badge>
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {order.customerName}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  <div>📍 <strong>Pickup:</strong> {order.pickupAddress}</div>
+                  <div>🎯 <strong>Drop:</strong> {order.deliveryAddress}</div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  <span>{order.weightTons ? `${order.weightTons} T` : '—'}</span>
+                  <span>{order.shippingFee ? `${Number(order.shippingFee).toLocaleString()} VND` : '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Corridor Map */}
+      {trip.orders && trip.orders.length > 0 && <RouteMapCard orders={trip.orders} />}
+
+      {/* Assignment & Operational Specs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+        {/* Assignment details */}
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+            Resource Allocations
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LuUser size={18} />
+              </div>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Assigned Driver</span>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {trip.driverName || <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LuTruck size={18} />
+              </div>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Vehicle License</span>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {trip.vehicleLicensePlate || <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>}
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </Card>
 
-        {renderPOD()}
+        {/* Schedule & Telemetry */}
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+            Schedule Timetable
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: 'var(--text-xs)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Scheduled Departure:</span>
+              <strong>{trip.scheduledDeparture ? new Date(trip.scheduledDeparture).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Actual Departure:</span>
+              <strong>{trip.actualDeparture ? new Date(trip.actualDeparture).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Pending departure'}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Actual Arrival:</span>
+              <strong>{trip.actualArrival ? new Date(trip.actualArrival).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'In fulfillment'}</strong>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      {/* Floating Chat Popup */}
+      {/* Live In-Progress Map */}
+      {trip.status?.toUpperCase() === 'IN_PROGRESS' && (
+        <Card style={{ overflow: 'hidden', padding: 0 }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <LuNavigation size={18} color="var(--color-brand-600)" />
+              <strong style={{ fontSize: 'var(--text-sm)' }}>Active GPS Telemetry Beacon</strong>
+            </div>
+            {liveLocation && (
+              <Badge variant="brand" size="sm">
+                Lat {Number(liveLocation.latitude).toFixed(4)}, Lng {Number(liveLocation.longitude).toFixed(4)}
+              </Badge>
+            )}
+          </div>
+          <div style={{ height: '320px', width: '100%' }}>
+            <MapContainer center={mapCenter} zoom={12} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {routeWaypoints.length > 0 && (
+                <Polyline
+                  positions={routeWaypoints.map((wp) => [wp.latitude, wp.longitude])}
+                  color="#2563eb"
+                  weight={3}
+                />
+              )}
+              {liveLocation && (
+                <Marker position={[Number(liveLocation.latitude), Number(liveLocation.longitude)]} icon={createDriverMarker()} />
+              )}
+            </MapContainer>
+          </div>
+        </Card>
+      )}
+
+      {/* Proof of Delivery (POD) for completed trips */}
+      {trip.status?.toUpperCase() === 'COMPLETED' && (
+        <Card style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+            Proof of Delivery (POD) Verification
+          </h3>
+
+          {podLoading ? (
+            <LoadingSpinner text="Retrieving delivery receipt..." />
+          ) : podError ? (
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{podError}</div>
+          ) : deliveryConfirmation ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Confirmation Type</div>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '2px' }}>{deliveryConfirmation.confirmationType}</div>
+
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, marginTop: '12px' }}>Recipient Name</div>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '2px' }}>{deliveryConfirmation.recipientName || '—'}</div>
+
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, marginTop: '12px' }}>Confirmed At</div>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '2px' }}>
+                  {new Date(deliveryConfirmation.confirmedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                </div>
+              </div>
+
+              {deliveryConfirmation.signatureData && (
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
+                    Recipient Signature
+                  </div>
+                  <img
+                    src={`data:image/png;base64,${deliveryConfirmation.signatureData}`}
+                    alt="Signature"
+                    style={{ maxWidth: '320px', width: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : null}
+        </Card>
+      )}
+
+      {/* Floating Driver Dispatch Chat */}
       <ChatPopup tripId={tripId} driverId={trip?.driverId} trip={trip} />
     </div>
   );

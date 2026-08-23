@@ -2,19 +2,44 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { orderService } from '../../services';
 import Pagination from '../common/Pagination';
-import './dispatch.css';
-import './modern-dispatch.css';
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  Badge,
+  PageHeader,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableEmpty,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuSearch,
+  LuCloudUpload,
+  LuRefreshCw,
+  LuPackage,
+  LuArrowRight,
+  LuZap,
+  LuWarehouse,
+  LuContainer,
+} from 'react-icons/lu';
 
-const OrdersPage = () => {
+export const OrdersPage = () => {
   const [ordersResp, setOrdersResp] = useState(null);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
-  const [pickupTypeFilter, setPickupTypeFilter] = useState(''); // '', 'PORT_TERMINAL', 'WAREHOUSE'
+  const [pickupTypeFilter, setPickupTypeFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const size = 10;
 
-  const fetch = async () => {
+  const fetchOrders = async () => {
     setLoading(true);
     try {
       const data = await orderService.getOrders({
@@ -31,45 +56,71 @@ const OrdersPage = () => {
   };
 
   useEffect(() => {
-    // reset page when filter changes
     setPage(0);
-  }, [statusFilter, pickupTypeFilter]);
+  }, [statusFilter, pickupTypeFilter, searchTerm]);
 
   useEffect(() => {
-    fetch();
+    fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, page, size]);
 
-  useEffect(() => {
-    // reset page when searching
-    setPage(0);
-  }, [searchTerm]);
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'PENDING': return '#f59e0b';
-      case 'ASSIGNED': return '#3b82f6';
-      case 'IN_TRANSIT': return '#8b5cf6';
-      case 'DELIVERED': return '#10b981';
-      case 'CANCELLED': return '#ef4444';
-      default: return '#6b7280';
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return <Badge variant="warning" dot>Pending</Badge>;
+      case 'ASSIGNED':
+        return <Badge variant="brand" dot>Assigned</Badge>;
+      case 'IN_TRANSIT':
+        return <Badge variant="info" dot>In Transit</Badge>;
+      case 'DELIVERED':
+        return <Badge variant="success" dot>Delivered</Badge>;
+      case 'CANCELLED':
+        return <Badge variant="danger" dot>Cancelled</Badge>;
+      default:
+        return <Badge variant="neutral" dot>{status || 'Unknown'}</Badge>;
     }
   };
 
-  const getPriorityColor = (priority) => {
-    return priority === 'URGENT' ? '#ef4444' : '#6b7280';
+  const getPickupBadge = (order) => {
+    if (!order.pickupType || order.pickupType === 'STANDARD') {
+      return <Badge variant="neutral" size="sm">Standard</Badge>;
+    }
+    if (order.pickupType === 'PORT_TERMINAL') {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Badge variant="warning" size="sm">Port Terminal</Badge>
+          {order.containerNumber && (
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              ({order.containerNumber})
+            </span>
+          )}
+        </div>
+      );
+    }
+    if (order.pickupType === 'WAREHOUSE') {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Badge variant="brand" size="sm">Warehouse</Badge>
+          {order.dockInfo && (
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              (Dock {order.dockInfo})
+            </span>
+          )}
+        </div>
+      );
+    }
+    return <Badge variant="neutral" size="sm">{order.pickupType}</Badge>;
   };
 
   const filteredOrders = (ordersResp?.orders || [])
-    .filter(o => 
-      !searchTerm || 
-      o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.customerPhone?.includes(searchTerm) ||
-      o.orderId?.toString().includes(searchTerm)
+    .filter(
+      (o) =>
+        !searchTerm ||
+        o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.customerPhone?.includes(searchTerm) ||
+        o.orderId?.toString().includes(searchTerm)
     )
-    .filter(o => !pickupTypeFilter || o.pickupType === pickupTypeFilter)
-    // Backend now handles sorting: pending orders first, then newest first
-    // Client-side sorting kept as fallback for search/filtering
+    .filter((o) => !pickupTypeFilter || o.pickupType === pickupTypeFilter)
     .sort((a, b) => {
       const aPending = a.orderStatus === 'PENDING' ? 1 : 0;
       const bPending = b.orderStatus === 'PENDING' ? 1 : 0;
@@ -81,174 +132,173 @@ const OrdersPage = () => {
     });
 
   return (
-    <div className="modern-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Orders Management</h1>
-          <p className="page-subtitle">Manage and track all delivery orders</p>
-        </div>
-        <div className="header-actions">
-          <Link to="/dispatch/orders/import" className="btn-secondary">
-            <span>↑</span> Import
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Freight Orders"
+        description="Monitor, screen, and assign incoming customer shipping manifests."
+        badge={<Badge variant="brand">Dispatch Desk</Badge>}
+        actions={
+          <Link to="/dispatch/orders/import">
+            <Button variant="primary" size="sm" leftIcon={<LuCloudUpload size={16} />}>
+              Import Manifest (CSV / Excel)
+            </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="filters-bar">
-        <input 
-          type="text" 
-          placeholder="🔍 Search by customer, phone, or order ID..." 
-          className="search-input"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select 
-          className="filter-select" 
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="ASSIGNED">Assigned</option>
-          <option value="IN_TRANSIT">In Transit</option>
-          <option value="DELIVERED">Delivered</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
-        <select 
-          className="filter-select" 
-          value={pickupTypeFilter}
-          onChange={(e) => setPickupTypeFilter(e.target.value)}
-        >
-          <option value="">All Types</option>
-          <option value="PORT_TERMINAL">PORT_TERMINAL</option>
-          <option value="WAREHOUSE">WAREHOUSE</option>
-        </select>
-        <button className="btn-refresh" onClick={fetch}>↻ Refresh</button>
-        <div className="results-count">
-          {typeof ordersResp?.totalItems === 'number'
-            ? `${ordersResp.totalItems} order${ordersResp.totalItems !== 1 ? 's' : ''}`
-            : `${filteredOrders.length} order${filteredOrders.length !== 1 ? 's' : ''}`}
-        </div>
-      </div>
-
-      {loading && (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading orders...</p>
-        </div>
-      )}
-
-      {!loading && (ordersResp?.orders?.length ?? filteredOrders.length) === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">📦</div>
-          <h3>No orders found</h3>
-          <p>Import orders or adjust your filters</p>
-        </div>
-      )}
-
-      {!loading && filteredOrders.length > 0 && (
-        <>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Customer</th>
-                  <th>Phone</th>
-                  <th>Pickup</th>
-                  <th>Delivery</th>
-                  <th>Pickup Type</th>
-                  <th>Weight</th>
-                  <th>Distance</th>
-                  <th>Fee</th>
-                  <th>Status</th>
-                  <th>Priority</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map(order => (
-                  <tr key={order.orderId} className="table-row">
-                    <td className="cell-id">#{order.orderId}</td>
-                    <td className="cell-text">{order.customerName}</td>
-                    <td className="cell-text">{order.customerPhone}</td>
-                    <td className="cell-text cell-address">{order.pickupAddress}</td>
-                    <td className="cell-text cell-address">{order.deliveryAddress}</td>
-                    <td className="cell-text">
-                      {order.pickupType ? (
-                        <span
-                          className="status-badge"
-                          style={{
-                            backgroundColor:
-                              order.pickupType === 'PORT_TERMINAL' ? '#fef3c7' :
-                              order.pickupType === 'WAREHOUSE' ? '#dbeafe' :
-                              order.pickupType === 'STANDARD' ? '#f0fdf4' : '#f9fafb',
-                            color:
-                              order.pickupType === 'PORT_TERMINAL' ? '#92400e' :
-                              order.pickupType === 'WAREHOUSE' ? '#0c4a6e' :
-                              order.pickupType === 'STANDARD' ? '#166534' : '#6b7280'
-                          }}
-                        >
-                          {order.pickupType}
-                        </span>
-                      ) : '—'}
-                      {order.pickupType === 'PORT_TERMINAL' && order.containerNumber && (
-                        <span style={{ marginLeft: 6, fontSize: 12, color: '#334155' }}>🧾 {order.containerNumber}</span>
-                      )}
-                      {order.pickupType === 'WAREHOUSE' && order.dockInfo && (
-                        <span style={{ marginLeft: 6, fontSize: 12, color: '#334155' }}>🏭 {order.dockInfo}</span>
-                      )}
-                    </td>
-                    <td className="cell-text">
-                      {order.weightTons ? `${order.weightTons} t` : '—'}
-                    </td>
-                    <td className="cell-text">
-                      {order.distanceKm ? `${order.distanceKm} km` : '—'}
-                    </td>
-                    <td className="cell-price">
-                      {order.shippingFee ? `${order.shippingFee.toLocaleString()} VND` : 'TBD'}
-                    </td>
-                    <td className="cell-status">
-                      <span
-                        className="status-badge"
-                        style={{ backgroundColor: getStatusColor(order.orderStatus) }}
-                      >
-                        {order.orderStatus}
-                      </span>
-                    </td>
-                    <td className="cell-priority">
-                      {order.priorityLevel === 'URGENT' ? (
-                        <span
-                          className="priority-badge"
-                          style={{ backgroundColor: getPriorityColor(order.priorityLevel) }}
-                        >
-                          ⚡ URGENT
-                        </span>
-                      ) : (
-                        <span className="priority-normal">Normal</span>
-                      )}
-                    </td>
-                    <td className="cell-action">
-                      <Link to={`/dispatch/orders/${order.orderId}`} className="btn-view">
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Filter Bar */}
+      <Card style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '240px' }}>
+            <Input
+              placeholder="Search by customer, phone, or order ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              leftIcon={<LuSearch size={16} />}
+            />
           </div>
 
-          <Pagination
-            page={ordersResp?.currentPage ?? page}
-            totalPages={ordersResp?.totalPages ?? 0}
-            totalItems={ordersResp?.totalItems}
-            pageSize={ordersResp?.pageSize ?? size}
-            disabled={loading}
-            onPageChange={(p) => setPage(p)}
+          <div style={{ width: '160px' }}>
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'PENDING', label: 'Pending' },
+                { value: 'ASSIGNED', label: 'Assigned' },
+                { value: 'IN_TRANSIT', label: 'In Transit' },
+                { value: 'DELIVERED', label: 'Delivered' },
+                { value: 'CANCELLED', label: 'Cancelled' },
+              ]}
+            />
+          </div>
+
+          <div style={{ width: '160px' }}>
+            <Select
+              value={pickupTypeFilter}
+              onChange={(e) => setPickupTypeFilter(e.target.value)}
+              options={[
+                { value: '', label: 'All Pickup Types' },
+                { value: 'PORT_TERMINAL', label: 'Port Terminal' },
+                { value: 'WAREHOUSE', label: 'Warehouse Hub' },
+              ]}
+            />
+          </div>
+
+          <Button variant="outline" size="md" onClick={fetchOrders} loading={loading} leftIcon={<LuRefreshCw size={14} />}>
+            Refresh
+          </Button>
+
+          <div style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {typeof ordersResp?.totalItems === 'number'
+              ? `${ordersResp.totalItems} order${ordersResp.totalItems !== 1 ? 's' : ''}`
+              : `${filteredOrders.length} order${filteredOrders.length !== 1 ? 's' : ''}`}
+          </div>
+        </div>
+      </Card>
+
+      {/* Table Container */}
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Querying dispatch order database..." />
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <EmptyState
+            icon={<LuPackage size={36} color="var(--color-slate-400)" />}
+            title="No orders found"
+            description="Adjust your search filters or import new delivery orders to populate the dispatch queue."
+            action={
+              <Link to="/dispatch/orders/import">
+                <Button variant="outline" size="sm">
+                  Import Orders
+                </Button>
+              </Link>
+            }
           />
-        </>
-      )}
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead style={{ width: '90px' }}>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Route Origin / Destination</TableHead>
+                  <TableHead>Pickup Type</TableHead>
+                  <TableHead>Payload</TableHead>
+                  <TableHead>Distance</TableHead>
+                  <TableHead>Tariff Fee</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead style={{ textAlign: 'right' }}>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((order) => (
+                  <TableRow key={order.orderId}>
+                    <TableCell style={{ fontWeight: 700, color: 'var(--color-brand-700)', fontVariantNumeric: 'tabular-nums' }}>
+                      #{order.orderId}
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{order.customerName}</div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{order.customerPhone}</span>
+                    </TableCell>
+                    <TableCell style={{ maxWidth: '280px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {order.pickupAddress}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        <LuArrowRight size={11} />
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {order.deliveryAddress}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getPickupBadge(order)}</TableCell>
+                    <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {order.weightTons ? `${order.weightTons} T` : '—'}
+                    </TableCell>
+                    <TableCell style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {order.distanceKm ? `${order.distanceKm.toFixed(1)} km` : '—'}
+                    </TableCell>
+                    <TableCell style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {order.shippingFee ? `${Number(order.shippingFee).toLocaleString()} VND` : 'Quote Pending'}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(order.orderStatus)}</TableCell>
+                    <TableCell>
+                      {order.priorityLevel === 'URGENT' ? (
+                        <Badge variant="danger" size="sm">
+                          <LuZap size={11} /> URGENT
+                        </Badge>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Normal</span>
+                      )}
+                    </TableCell>
+                    <TableCell style={{ textAlign: 'right' }}>
+                      <Link to={`/dispatch/orders/${order.orderId}`}>
+                        <Button variant="outline" size="sm">
+                          View
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-default)' }}>
+              <Pagination
+                page={ordersResp?.currentPage ?? page}
+                totalPages={ordersResp?.totalPages ?? 0}
+                totalItems={ordersResp?.totalItems}
+                pageSize={ordersResp?.pageSize ?? size}
+                disabled={loading}
+                onPageChange={(p) => setPage(p)}
+              />
+            </div>
+          </>
+        )}
+      </Card>
     </div>
   );
 };

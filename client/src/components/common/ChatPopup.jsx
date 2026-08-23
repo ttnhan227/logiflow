@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './ChatPopup.css';
 import { chatService } from '../../services';
 import notificationClient from '../../services/notificationClient';
+import { LuMessageSquare, LuSend, LuMinus, LuMaximize2, LuX, LuTruck, LuUser, LuLoaderCircle } from 'react-icons/lu';
 
-const ChatPopup = ({ tripId, driverId }) => {
+export const ChatPopup = ({ tripId, driverId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -24,7 +24,6 @@ const ChatPopup = ({ tripId, driverId }) => {
     }
   }, [messages, isOpen, isMinimized]);
 
-  // Load chat history
   useEffect(() => {
     if (!tripId || !isOpen) return;
 
@@ -34,7 +33,6 @@ const ChatPopup = ({ tripId, driverId }) => {
       try {
         const msgs = await chatService.getTripMessages(Number(tripId));
         setMessages(Array.isArray(msgs) ? msgs : []);
-        // Clear unread when opening chat
         setUnreadCount(0);
       } catch (e) {
         setError(e?.response?.data?.error || e?.message || 'Failed to load messages');
@@ -46,26 +44,21 @@ const ChatPopup = ({ tripId, driverId }) => {
     loadHistory();
   }, [tripId, isOpen]);
 
-  // Subscribe to WebSocket chat updates
   useEffect(() => {
     if (!driverId) return;
 
     let mounted = true;
 
-    // Use notificationClient instead of chatClient (already connected)
     const handleDriverMessage = (notification) => {
       if (!mounted) return;
-      // Check if this is a chat message for our trip
       if (notification.type === 'TRIP_CHAT' && notification.metadata?.tripId === tripId) {
         const loadUpdatedHistory = async () => {
           try {
             const msgs = await chatService.getTripMessages(Number(tripId));
             if (mounted) {
               setMessages(Array.isArray(msgs) ? msgs : []);
-              
-              // Increment unread count locally when popup is not fully open
               if (!isOpen || isMinimized) {
-                setUnreadCount(c => c + 1);
+                setUnreadCount((c) => c + 1);
               }
             }
           } catch (e) {
@@ -76,7 +69,6 @@ const ChatPopup = ({ tripId, driverId }) => {
       }
     };
 
-    // Subscribe via notificationClient (already connected and working)
     notificationClient.addListener(handleDriverMessage);
 
     return () => {
@@ -93,8 +85,6 @@ const ChatPopup = ({ tripId, driverId }) => {
     try {
       await chatService.sendMessage({ tripId: Number(tripId), content });
       setInputText('');
-      
-      // Reload message history after sending to get accurate data
       const msgs = await chatService.getTripMessages(Number(tripId));
       setMessages(Array.isArray(msgs) ? msgs : []);
     } catch (e) {
@@ -113,7 +103,7 @@ const ChatPopup = ({ tripId, driverId }) => {
     if (!isOpen) {
       setIsOpen(true);
       setIsMinimized(false);
-      setUnreadCount(0); // Clear badge when opening
+      setUnreadCount(0);
     } else {
       setIsOpen(false);
       setIsMinimized(false);
@@ -123,134 +113,298 @@ const ChatPopup = ({ tripId, driverId }) => {
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
     if (!isMinimized) {
-      // When maximizing (un-minimizing), clear unread count
       setUnreadCount(0);
     }
   };
 
   if (!driverId) {
-    return null; // Don't show chat button if no driver assigned
+    return null;
   }
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Launcher */}
       <button
-        className={`chat-float-button ${isOpen ? 'active' : ''}`}
         onClick={toggleOpen}
-        title="Chat with Driver"
+        title="Chat with Assigned Driver"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          width: '48px',
+          height: '48px',
+          borderRadius: 'var(--radius-full)',
+          backgroundColor: 'var(--color-brand-600)',
+          color: 'var(--color-white)',
+          border: 'none',
+          boxShadow: 'var(--shadow-lg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 999,
+          transition: 'transform var(--transition-fast)',
+        }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <LuMessageSquare size={22} />
         {unreadCount > 0 && (
-          <span className="chat-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+          <span
+            style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-4px',
+              minWidth: '20px',
+              height: '20px',
+              padding: '0 4px',
+              borderRadius: 'var(--radius-full)',
+              backgroundColor: 'var(--color-danger-600)',
+              color: 'var(--color-white)',
+              fontSize: '11px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid var(--color-white)',
+            }}
+          >
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
         )}
       </button>
 
-      {/* Chat Popup Window */}
-      <div className={`chat-popup ${isOpen ? 'open' : ''} ${isMinimized ? 'minimized' : ''}`}>
-        <div className="chat-header">
-          <div className="chat-header-info">
-            <h3>Chat with Driver</h3>
-            <span className="chat-trip-id">Trip #{tripId}</span>
-          </div>
-          <div className="chat-header-actions">
-            <button
-              className="chat-header-btn"
-              onClick={toggleMinimize}
-              title={isMinimized ? 'Maximize' : 'Minimize'}
-            >
-              {isMinimized ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="18 15 12 9 6 15" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              )}
-            </button>
-            <button
-              className="chat-header-btn"
-              onClick={() => setIsOpen(false)}
-              title="Close"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {!isMinimized && (
-          <>
-            <div className="chat-messages">
-              {loading && (
-                <div className="chat-loading">Loading messages...</div>
-              )}
-              {!loading && messages.length === 0 && (
-                <div className="chat-empty">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  <p>No messages yet</p>
-                  <span>Start chatting with the driver</span>
+      {/* Floating Dialog Window */}
+      {isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '84px',
+            right: '24px',
+            width: '340px',
+            maxHeight: isMinimized ? '48px' : '480px',
+            height: isMinimized ? '48px' : '440px',
+            backgroundColor: 'var(--bg-surface)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-xl)',
+            display: 'flex',
+            flexDirection: 'column',
+            zIndex: 1000,
+            overflow: 'hidden',
+            transition: 'all var(--transition-base)',
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '10px 14px',
+              backgroundColor: 'var(--color-slate-900)',
+              color: 'var(--color-white)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: 'var(--radius-full)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <LuTruck size={14} />
+              </div>
+              <div>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, lineHeight: 1.2 }}>
+                  Driver Dispatch Comm
                 </div>
-              )}
-              {messages.map((msg) => {
-                const isDriver = msg.senderRole?.toUpperCase() === 'DRIVER' || 
-                                msg.senderUsername?.toLowerCase().includes('driver');
-                return (
-                  <div key={msg.messageId} className={`chat-message ${isDriver ? 'driver' : 'dispatcher'}`}>
-                    <div className="message-bubble">
-                      <div className="message-content">{msg.content}</div>
-                      <div className="message-meta">
-                        <span className="message-sender">
-                          {isDriver ? '🚛 Driver' : '📋 Dispatcher'}
-                        </span>
-                        <span className="message-time">
-                          {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : ''}
+                <div style={{ fontSize: '10px', color: 'var(--color-slate-300)' }}>
+                  Trip #{tripId}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <button
+                onClick={toggleMinimize}
+                title={isMinimized ? 'Maximize' : 'Minimize'}
+                style={{
+                  padding: '4px',
+                  color: 'var(--color-slate-300)',
+                  cursor: 'pointer',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                {isMinimized ? <LuMaximize2 size={13} /> : <LuMinus size={13} />}
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                title="Close chat"
+                style={{
+                  padding: '4px',
+                  color: 'var(--color-slate-300)',
+                  cursor: 'pointer',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <LuX size={14} />
+              </button>
+            </div>
+          </div>
+
+          {!isMinimized && (
+            <>
+              {/* Messages Body */}
+              <div
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  backgroundColor: 'var(--bg-app)',
+                }}
+              >
+                {loading && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '16px', color: 'var(--text-muted)' }}>
+                    <LuLoaderCircle size={18} className="animate-spin" />
+                  </div>
+                )}
+
+                {!loading && messages.length === 0 && (
+                  <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                    <p style={{ margin: 0 }}>No messages exchanged yet.</p>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '11px' }}>Type below to send an operational dispatch note.</p>
+                  </div>
+                )}
+
+                {messages.map((msg) => {
+                  const isDriver = msg.senderRole?.toUpperCase() === 'DRIVER' ||
+                                  msg.senderUsername?.toLowerCase().includes('driver');
+                  return (
+                    <div
+                      key={msg.messageId}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: isDriver ? 'flex-start' : 'flex-end',
+                        maxWidth: '85%',
+                        alignSelf: isDriver ? 'flex-start' : 'flex-end',
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: isDriver
+                            ? 'var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs)'
+                            : 'var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg)',
+                          backgroundColor: isDriver ? 'var(--color-white)' : 'var(--color-brand-600)',
+                          color: isDriver ? 'var(--text-primary)' : 'var(--color-white)',
+                          fontSize: 'var(--text-xs)',
+                          lineHeight: 1.4,
+                          boxShadow: 'var(--shadow-xs)',
+                          border: isDriver ? '1px solid var(--border-default)' : 'none',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          marginTop: '2px',
+                          fontSize: '10px',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        <span>{isDriver ? 'Driver' : 'Dispatch'}</span>
+                        <span>•</span>
+                        <span>
+                          {msg.createdAt
+                            ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : ''}
                         </span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
 
-            {error && (
-              <div className="chat-error">{error}</div>
-            )}
+              {error && (
+                <div
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '11px',
+                    color: 'var(--color-danger-700)',
+                    backgroundColor: 'var(--color-danger-50)',
+                    borderTop: '1px solid var(--color-danger-200)',
+                  }}
+                >
+                  {error}
+                </div>
+              )}
 
-            <div className="chat-input-container">
-              <input
-                type="text"
-                className="chat-input"
-                placeholder="Type a message..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-              <button
-                className="chat-send-btn"
-                onClick={handleSend}
-                disabled={!inputText.trim()}
+              {/* Input Footer */}
+              <div
+                style={{
+                  padding: '8px 10px',
+                  borderTop: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-surface)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+                <input
+                  type="text"
+                  placeholder="Type message..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  style={{
+                    flex: 1,
+                    height: '32px',
+                    padding: '0 10px',
+                    fontSize: 'var(--text-xs)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-default)',
+                    outline: 'none',
+                    backgroundColor: 'var(--color-white)',
+                  }}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!inputText.trim()}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--color-brand-600)',
+                    color: 'var(--color-white)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: inputText.trim() ? 'pointer' : 'not-allowed',
+                    opacity: inputText.trim() ? 1 : 0.5,
+                  }}
+                >
+                  <LuSend size={14} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 };

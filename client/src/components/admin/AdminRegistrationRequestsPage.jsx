@@ -1,82 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { api } from "../../services";
-import './admin.css';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { api } from '../../services';
+import Pagination from '../common/Pagination';
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  Badge,
+  PageHeader,
+  Alert,
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  LoadingSpinner,
+  EmptyState,
+} from '@/components/ui';
+import {
+  LuSearch,
+  LuFileCheck,
+  LuUserCheck,
+  LuBuilding2,
+  LuTruck,
+  LuEye,
+} from 'react-icons/lu';
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'Never';
-  const date = new Date(dateString);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  // Check if today
-  if (date.toDateString() === today.toDateString()) {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  }
-  // Check if yesterday
-  if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday';
-  }
-  // Otherwise show date
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
-};
-
-const StatusBadge = ({ status }) => {
-  const getStatusStyle = () => {
-    if (status === 'APPROVED') {
-      return { backgroundColor: '#dcfce7', color: '#166534' };
-    }
-    if (status === 'REJECTED') {
-      return { backgroundColor: '#fee2e2', color: '#991b1b' };
-    }
-    return { backgroundColor: '#fef3c7', color: '#854d0e' };
-  };
-
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: '600',
-        ...getStatusStyle(),
-      }}
-    >
-      {status || 'PENDING'}
-    </span>
-  );
-};
-
-const RoleBadge = ({ role }) => {
-  const getRoleStyle = () => {
-    if (role === 'DRIVER') {
-      return { backgroundColor: '#dbeafe', color: '#1e40af' };
-    }
-    if (role === 'CUSTOMER') {
-      return { backgroundColor: '#dcfce7', color: '#166534' };
-    }
-    return { backgroundColor: '#f3f4f6', color: '#6b7280' };
-  };
-
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: '600',
-        ...getRoleStyle(),
-      }}
-    >
-      {role === 'DRIVER' ? '🚗 Driver' : role === 'CUSTOMER' ? '🏢 Customer' : role || 'Unknown'}
-    </span>
-  );
-};
-
-const AdminRegistrationRequestsPage = () => {
+export const AdminRegistrationRequestsPage = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
@@ -85,19 +37,18 @@ const AdminRegistrationRequestsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [page, setPage] = useState(0);
-  const [size] = useState(10);
+  const size = 10;
 
   const loadRequests = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/admin/registration-requests");
+      const res = await api.get('/admin/registration-requests');
       const data = Array.isArray(res.data) ? res.data : [];
       setRequests(data);
       setFilteredRequests(data);
-    } catch (err) {
-      console.error("Error fetching requests:", err);
-      setError("Failed to load requests");
+    } catch {
+      setError('Failed to query registration applications queue.');
       setRequests([]);
       setFilteredRequests([]);
     } finally {
@@ -111,11 +62,9 @@ const AdminRegistrationRequestsPage = () => {
 
   useEffect(() => {
     let result = requests;
-    // Filter by role
     if (roleFilter !== 'ALL') {
       result = result.filter((r) => r.role?.roleName === roleFilter);
     }
-    // Filter by search
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -130,175 +79,138 @@ const AdminRegistrationRequestsPage = () => {
     setPage(0);
   }, [searchTerm, roleFilter, requests]);
 
-  const handleViewDetails = (request) => {
-    navigate(`/admin/registration-requests/${request.requestId}`);
-  };
-
   const paginatedRequests = filteredRequests.slice(page * size, (page + 1) * size);
   const totalPages = Math.ceil(filteredRequests.length / size);
 
-  if (loading) {
-    return (
-      <div className="admin-page-container">
-        <div className="admin-page-header">
-          <h1>📋 Registration Requests</h1>
-        </div>
-        <div className="loading-state">
-          <span className="loading-spinner"></span> Loading registration requests...
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="admin-page-container">
-        <div className="admin-page-header">
-          <h1>📋 Registration Requests</h1>
-        </div>
-        <div className="error-banner">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="admin-page-container">
-      {/* Header */}
-      <div className="admin-page-header">
-        <h1>📋 Registration Requests</h1>
-        <p>Review driver applications and customer registration requests</p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <PageHeader
+        title="Carrier & Shipper Onboarding Applications"
+        description="Verify submitted driving licenses, commercial business registrations, CVs, and issue corporate credentials."
+        badge={<Badge variant="brand">Onboarding Review</Badge>}
+      />
 
-      {/* Error banner */}
-      {error && <div className="error-banner">{error}</div>}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Toolbar */}
-      <div className="admin-page-toolbar">
-        <input
-          type="text"
-          placeholder="🔍 Search by name, company, email, or phone..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            fontSize: '14px',
-            backgroundColor: 'white'
-          }}
-        >
-          <option value="ALL">All Roles</option>
-          <option value="DRIVER">Drivers</option>
-          <option value="CUSTOMER">Customers</option>
-        </select>
-      </div>
+      <Card style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '260px' }}>
+            <Input
+              placeholder="Search applicants by name, company, email, or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              leftIcon={<LuSearch size={16} />}
+            />
+          </div>
 
-      {/* Table or Empty State */}
-      {loading ? (
-        <div className="loading-state">
-          <span className="loading-spinner"></span> Loading registration requests...
-        </div>
-      ) : filteredRequests.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
-          <div className="empty-state-title">No requests found</div>
-          <div className="empty-state-description">
-            {searchTerm ? 'Try adjusting your search' : 'There are no registration requests at this time'}
+          <div style={{ width: '180px' }}>
+            <Select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Applicant Roles' },
+                { value: 'DRIVER', label: 'Carrier Drivers' },
+                { value: 'CUSTOMER', label: 'Shipper Customers' },
+              ]}
+            />
+          </div>
+
+          <div style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {filteredRequests.length} onboarding application{filteredRequests.length !== 1 ? 's' : ''}
           </div>
         </div>
-      ) : (
-        <>
-          <div className="admin-table-wrapper">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Applicant</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Type</th>
-                  <th>Requested</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+      </Card>
+
+      {/* Table */}
+      <Card style={{ overflow: 'hidden', padding: 0 }}>
+        {loading ? (
+          <div style={{ padding: '48px 0' }}>
+            <LoadingSpinner text="Querying pending onboarding requests..." />
+          </div>
+        ) : filteredRequests.length === 0 ? (
+          <EmptyState
+            icon={<LuFileCheck size={36} color="var(--color-slate-400)" />}
+            title="No registration requests"
+            description="All onboarding applications have been reviewed and processed."
+          />
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Applicant Name</TableHead>
+                  <TableHead>Email Contact</TableHead>
+                  <TableHead>Phone Number</TableHead>
+                  <TableHead>Account Category</TableHead>
+                  <TableHead>Submitted On</TableHead>
+                  <TableHead>Review State</TableHead>
+                  <TableHead style={{ textAlign: 'right' }}>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {paginatedRequests.map((req) => (
-                  <tr key={req.requestId}>
-                    <td>
-                      <div className="user-row">
-                        <div className="avatar">
-                          {(req.fullName || req.email || '?')
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </div>
-                        <div className="user-info">
-                          <div className="user-name">{req.fullName || 'Unknown'}</div>
-                          <div className="user-id">{req.email}</div>
-                        </div>
+                  <TableRow key={req.requestId}>
+                    <TableCell>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {req.fullName || req.companyName || 'Applicant'}
                       </div>
-                    </td>
-                    <td>{req.email}</td>
-                    <td>{req.phone || '—'}</td>
-                    <td>
-                      <RoleBadge role={req.role?.roleName} />
-                    </td>
-                    <td>
-                      <span className="table-date">{formatDate(req.createdAt)}</span>
-                    </td>
-                    <td>
-                      <StatusBadge status={req.status} />
-                    </td>
-                    <td>
-                      <div className="actions-cell">
-                        <button
-                          className="action-btn"
-                          title="View details"
-                          onClick={() => handleViewDetails(req)}
-                        >
-                          👁️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ID: #{req.requestId}</div>
+                    </TableCell>
+                    <TableCell>{req.email}</TableCell>
+                    <TableCell>{req.phone || <span style={{ color: 'var(--text-muted)' }}>—</span>}</TableCell>
+                    <TableCell>
+                      <Badge variant={req.role?.roleName === 'DRIVER' ? 'brand' : 'info'} size="sm">
+                        {req.role?.roleName === 'DRIVER' ? 'Carrier Driver' : 'Enterprise Shipper'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          req.status === 'APPROVED'
+                            ? 'success'
+                            : req.status === 'REJECTED'
+                            ? 'danger'
+                            : 'warning'
+                        }
+                        size="sm"
+                        dot
+                      >
+                        {req.status || 'PENDING'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell style={{ textAlign: 'right' }}>
+                      <Link to={`/admin/registration-requests/${req.requestId}`}>
+                        <Button variant="outline" size="sm" leftIcon={<LuEye size={14} />}>
+                          Review Application
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <div className="pagination-info">
-                Showing {page * size + 1} to {Math.min((page + 1) * size, filteredRequests.length)} of{' '}
-                {filteredRequests.length} requests
-              </div>
-              <div className="pagination-controls">
-                <button
-                  className="btn btn-secondary btn-small"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 0}
-                >
-                  ← Previous
-                </button>
-                <button
-                  className="btn btn-secondary btn-small"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page + 1 >= totalPages}
-                >
-                  Next →
-                </button>
-              </div>
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-default)' }}>
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={filteredRequests.length}
+                pageSize={size}
+                disabled={loading}
+                onPageChange={(p) => setPage(p)}
+              />
             </div>
-          )}
-        </>
-      )}
+          </>
+        )}
+      </Card>
     </div>
   );
 };

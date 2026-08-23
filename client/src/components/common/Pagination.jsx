@@ -1,23 +1,15 @@
 import React from 'react';
+import { LuChevronLeft, LuChevronRight, LuChevronsLeft, LuChevronsRight } from 'react-icons/lu';
 
-/**
- * Reusable pagination UI.
- *
- * Props:
- * - page: number (0-based)
- * - totalPages: number
- * - totalItems?: number
- * - pageSize?: number
- * - onPageChange: (nextPage: number) => void
- * - disabled?: boolean
- */
-const Pagination = ({
+export const Pagination = ({
   page,
   totalPages,
   totalItems,
   pageSize,
   onPageChange,
   disabled = false,
+  className = '',
+  style = {},
 }) => {
   if (!totalPages || totalPages <= 1) return null;
 
@@ -30,7 +22,6 @@ const Pagination = ({
     onPageChange(next);
   };
 
-  // Keep it compact: show first, last, current +- 1 with ellipsis
   const getPageItems = () => {
     const items = [];
     const last = totalPages - 1;
@@ -53,7 +44,6 @@ const Pagination = ({
 
     pushPage(last);
 
-    // handle totalPages=2 => [0, last] duplicates
     const seen = new Set();
     return items.filter((it) => {
       if (it.type !== 'page') return true;
@@ -70,39 +60,82 @@ const Pagination = ({
     ? Math.min((clampedPage + 1) * pageSize, totalItems)
     : null;
 
+  const buttonStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '32px',
+    minWidth: '32px',
+    padding: '0 6px',
+    fontSize: 'var(--text-xs)',
+    fontWeight: 500,
+    borderRadius: 'var(--radius-md)',
+    border: '1px solid var(--border-default)',
+    backgroundColor: 'var(--color-white)',
+    color: 'var(--text-secondary)',
+    transition: 'all var(--transition-fast)',
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   return (
-    <div className="pagination-bar">
-      <div className="pagination-left">
+    <div
+      className={`ui-pagination ${className}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+        padding: '12px 16px',
+        borderTop: '1px solid var(--border-subtle)',
+        backgroundColor: 'var(--bg-surface)',
+        ...style,
+      }}
+    >
+      <div>
         {typeof totalItems === 'number' && typeof pageSize === 'number' && (
-          <span className="pagination-summary">
-            Showing <strong>{from}</strong>-<strong>{to}</strong> of <strong>{totalItems}</strong>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+            Showing <strong style={{ color: 'var(--text-primary)' }}>{from}</strong>–<strong style={{ color: 'var(--text-primary)' }}>{to}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalItems}</strong> entries
           </span>
         )}
       </div>
 
-      <div className="pagination-right">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         <button
-          className="pagination-btn"
+          style={buttonStyle}
           onClick={() => goto(0)}
           disabled={disabled || clampedPage === 0}
           aria-label="First page"
+          title="First page"
         >
-          «
+          <LuChevronsLeft size={14} />
         </button>
         <button
-          className="pagination-btn"
+          style={buttonStyle}
           onClick={() => goto(clampedPage - 1)}
           disabled={disabled || clampedPage === 0}
           aria-label="Previous page"
+          title="Previous page"
         >
-          ‹
+          <LuChevronLeft size={14} />
         </button>
 
-        <div className="pagination-pages">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '0 4px' }}>
           {getPageItems().map((it) => {
             if (it.type === 'ellipsis') {
               return (
-                <span className="pagination-ellipsis" key={it.key}>
+                <span
+                  key={it.key}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '28px',
+                    color: 'var(--text-muted)',
+                    fontSize: 'var(--text-xs)',
+                  }}
+                >
                   …
                 </span>
               );
@@ -112,9 +145,15 @@ const Pagination = ({
             return (
               <button
                 key={it.key}
-                className={`pagination-page ${active ? 'active' : ''}`}
                 onClick={() => goto(it.page)}
                 disabled={disabled}
+                style={{
+                  ...buttonStyle,
+                  fontWeight: active ? 700 : 500,
+                  backgroundColor: active ? 'var(--color-brand-600)' : 'var(--color-white)',
+                  color: active ? 'var(--color-white)' : 'var(--text-secondary)',
+                  borderColor: active ? 'var(--color-brand-600)' : 'var(--border-default)',
+                }}
               >
                 {it.page + 1}
               </button>
@@ -123,20 +162,22 @@ const Pagination = ({
         </div>
 
         <button
-          className="pagination-btn"
+          style={buttonStyle}
           onClick={() => goto(clampedPage + 1)}
           disabled={disabled || clampedPage >= totalPages - 1}
           aria-label="Next page"
+          title="Next page"
         >
-          ›
+          <LuChevronRight size={14} />
         </button>
         <button
-          className="pagination-btn"
+          style={buttonStyle}
           onClick={() => goto(totalPages - 1)}
           disabled={disabled || clampedPage >= totalPages - 1}
           aria-label="Last page"
+          title="Last page"
         >
-          »
+          <LuChevronsRight size={14} />
         </button>
       </div>
     </div>
