@@ -29,7 +29,7 @@ public class EmailServiceImpl implements EmailService {
         this.templateEngine = templateEngine;
     }
 
-    @Value("${spring.mail.username}")
+    @Value("${app.mail.from:${spring.mail.username:onboarding@resend.dev}}")
     private String fromEmail;
 
     /**

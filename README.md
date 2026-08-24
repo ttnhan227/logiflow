@@ -167,20 +167,30 @@ flutter run              # Run on connected device/emulator
 
 ## Environment Variables
 
-Key environment variables configured in `.env` or `server/src/main/resources/application.properties`:
+Key environment variables configured in root `.env` or during deployment:
 
 | Variable | Description | Default / Example |
 |---|---|---|
-| `SPRING_DATASOURCE_URL` | PostgreSQL JDBC connection URL | `jdbc:postgresql://localhost:5432/logiflow_db` |
-| `SPRING_DATASOURCE_USERNAME` | Database username | `postgres` |
-| `SPRING_DATASOURCE_PASSWORD` | Database password | `postgres` |
-| `JWT_SECRET` | 256-bit secret key for JWT signing | *(Base64 encoded string)* |
-| `JWT_EXPIRATION_MS` | JWT expiration duration in ms | `86400000` (24 hours) |
+| `DATABASE_URL` | PostgreSQL JDBC connection URL | `jdbc:postgresql://localhost:5432/logiflow` |
+| `DATABASE_USERNAME` | Database username | `logiflow` / `postgres` |
+| `DATABASE_PASSWORD` | Database password | `logiflow-local-password` |
+| `JWT_SECRET` | 256/512-bit secret key for JWT signing | `local-development-jwt-secret...` |
+| `JWT_EXPIRATION_MS` | JWT expiration duration in ms | `36000000` (10 hours) |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed frontend origins | `http://localhost:5173,http://localhost:8085` |
+| `MISTRAL_AI_API_KEY` | Mistral AI API key for OCR license extraction | `QMxy...` *(or `disabled`)* |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary account cloud name | *(Optional for cloud media uploads)* |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | *(Optional for cloud media uploads)* |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | *(Optional for cloud media uploads)* |
+| `MAIL_HOST` | Transactional email SMTP host | `smtp.resend.com` |
+| `MAIL_PORT` | SMTP port | `587` |
+| `MAIL_USERNAME` | SMTP username | `resend` |
+| `MAIL_PASSWORD` | Resend API Key / SMTP password | `re_...` |
+| `MAIL_FROM` | Sender address | `onboarding@resend.dev` |
 | `PAYPAL_CLIENT_ID` | PayPal REST API client ID | *(Sandbox credential)* |
 | `PAYPAL_CLIENT_SECRET` | PayPal REST API client secret | *(Sandbox credential)* |
-| `PAYPAL_MODE` | PayPal operating mode | `sandbox` or `live` |
-| `MISTRAL_API_KEY` | Mistral AI API key for license OCR | *(Optional for OCR extraction)* |
-| `CLOUDINARY_URL` | Cloudinary storage URL | *(Optional for remote uploads)* |
+| `PAYPAL_RETURN_URL` | PayPal approval return URL | `http://localhost:8080/api/payment/return` |
+| `PAYPAL_CANCEL_URL` | PayPal cancellation URL | `http://localhost:8080/api/payment/cancel` |
+| `VITE_API_BASE_URL` | Frontend API gateway endpoint | `http://localhost:8080/api` |
 
 ---
 
