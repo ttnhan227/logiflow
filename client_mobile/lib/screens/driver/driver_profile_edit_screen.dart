@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import '../../services/driver/driver_service.dart';
 import '../../services/upload/upload_service.dart';
@@ -29,6 +29,7 @@ class _DriverProfileEditScreenState extends State<DriverProfileEditScreen> {
   bool _isChangingPassword = false;
 
   XFile? _selectedImage;
+  Uint8List? _imageBytes;
   bool _isUploading = false;
 
   String _getImageUrl(String? imagePath) {
@@ -63,15 +64,17 @@ class _DriverProfileEditScreenState extends State<DriverProfileEditScreen> {
 
     if (pickedFile == null) return;
 
+    final bytes = await pickedFile.readAsBytes();
+
     setState(() {
       _selectedImage = pickedFile;
+      _imageBytes = bytes;
       _isUploading = true;
       _error = null;
     });
 
     try {
-      final file = File(_selectedImage!.path);
-      final uploadResponse = await uploadService.uploadProfilePicture(file);
+      final uploadResponse = await uploadService.uploadProfilePicture(pickedFile);
 
       if (uploadResponse.path.isNotEmpty) {
         final request = UpdateDriverProfileRequest(
@@ -277,10 +280,10 @@ class _DriverProfileEditScreenState extends State<DriverProfileEditScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _selectedImage != null
+            _imageBytes != null
                 ? CircleAvatar(
                     radius: 50,
-                    backgroundImage: FileImage(File(_selectedImage!.path)),
+                    backgroundImage: MemoryImage(_imageBytes!),
                   )
                 : CircleAvatar(
                     radius: 50,

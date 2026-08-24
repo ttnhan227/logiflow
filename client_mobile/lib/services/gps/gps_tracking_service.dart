@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
@@ -53,7 +53,7 @@ class GpsTrackingService {
     _isTracking = true;
 
     // Start foreground service for Android (required for background GPS)
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       await _startForegroundService();
     }
 
@@ -89,7 +89,7 @@ class GpsTrackingService {
     }
 
     // Request background location permission for Android (required for background tracking)
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       if (permission == LocationPermission.whileInUse) {
         print('Requesting background location permission...');
         LocationPermission bgPermission = await Geolocator.requestPermission();
@@ -267,7 +267,7 @@ class GpsTrackingService {
     _isTracking = false;
 
     // Stop foreground service for Android
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       _stopForegroundService();
     }
 

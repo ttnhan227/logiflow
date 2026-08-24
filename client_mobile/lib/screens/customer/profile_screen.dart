@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../services/customer/customer_service.dart';
 import '../../services/upload/upload_service.dart';

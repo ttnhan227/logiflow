@@ -27,7 +27,7 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-logiflow-local-password}
       JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-before-deployment}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-36000000}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:8085}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
@@ -58,6 +58,16 @@ services:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080/api}
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mobile:
+    build:
+      context: ./client_mobile
+    ports:
+      - "${MOBILE_PORT:-8085}:8085"
     depends_on:
       backend:
         condition: service_healthy

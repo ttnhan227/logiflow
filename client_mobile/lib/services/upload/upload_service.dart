@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import '../api_client.dart';
 
 // Model for upload response
@@ -16,7 +16,7 @@ class UploadResponse {
 }
 
 class UploadService {
-  Future<UploadResponse> uploadProfilePicture(File file) async {
+  Future<UploadResponse> uploadProfilePicture(dynamic file) async {
     final uri = Uri.parse('${ApiClient.baseUrl}/uploads/profile-picture');
 
     // Get headers (add auth if needed)
@@ -31,8 +31,23 @@ class UploadService {
     });
     request.headers['Content-Type'] = 'multipart/form-data';
 
-    // Add file with correct MIME type
-    String extension = file.path.split('.').last.toLowerCase();
+    // Extract filename and bytes safely across Web and Mobile
+    String fileName = 'image.jpg';
+    List<int> bytes = [];
+
+    if (file is XFile) {
+      fileName = file.name;
+      bytes = await file.readAsBytes();
+    } else if (file != null) {
+      try {
+        fileName = file.path.toString().split('/').last.split('\\').last;
+        bytes = await file.readAsBytes();
+      } catch (_) {
+        fileName = 'upload.jpg';
+      }
+    }
+
+    String extension = fileName.split('.').last.toLowerCase();
     MediaType mediaType;
     if (extension == 'jpg' || extension == 'jpeg') {
       mediaType = MediaType('image', 'jpeg');
@@ -44,9 +59,10 @@ class UploadService {
       mediaType = MediaType('application', 'octet-stream');
     }
 
-    request.files.add(await http.MultipartFile.fromPath(
+    request.files.add(http.MultipartFile.fromBytes(
       'file',
-      file.path,
+      bytes,
+      filename: fileName,
       contentType: mediaType,
     ));
 
@@ -65,7 +81,7 @@ class UploadService {
     }
   }
 
-  Future<UploadResponse> uploadLicenseImage(File file) async {
+  Future<UploadResponse> uploadLicenseImage(dynamic file) async {
     final uri = Uri.parse('${ApiClient.baseUrl}/uploads/license-image');
 
     final headers = await apiClient.getHeaders()..remove('Content-Type');
@@ -75,8 +91,22 @@ class UploadService {
     });
     request.headers['Content-Type'] = 'multipart/form-data';
 
-    // Add file with correct MIME type
-    String extension = file.path.split('.').last.toLowerCase();
+    String fileName = 'license.jpg';
+    List<int> bytes = [];
+
+    if (file is XFile) {
+      fileName = file.name;
+      bytes = await file.readAsBytes();
+    } else if (file != null) {
+      try {
+        fileName = file.path.toString().split('/').last.split('\\').last;
+        bytes = await file.readAsBytes();
+      } catch (_) {
+        fileName = 'license.jpg';
+      }
+    }
+
+    String extension = fileName.split('.').last.toLowerCase();
     MediaType mediaType;
     if (extension == 'jpg' || extension == 'jpeg') {
       mediaType = MediaType('image', 'jpeg');
@@ -88,9 +118,10 @@ class UploadService {
       mediaType = MediaType('application', 'octet-stream');
     }
 
-    request.files.add(await http.MultipartFile.fromPath(
+    request.files.add(http.MultipartFile.fromBytes(
       'file',
-      file.path,
+      bytes,
+      filename: fileName,
       contentType: mediaType,
     ));
 
@@ -109,7 +140,7 @@ class UploadService {
     }
   }
 
-  Future<UploadResponse> uploadCV(File file) async {
+  Future<UploadResponse> uploadCV(dynamic file) async {
     final uri = Uri.parse('${ApiClient.baseUrl}/uploads/cv');
 
     final headers = await apiClient.getHeaders()..remove('Content-Type');
@@ -119,9 +150,25 @@ class UploadService {
     });
     request.headers['Content-Type'] = 'multipart/form-data';
 
-    request.files.add(await http.MultipartFile.fromPath(
+    String fileName = 'document.pdf';
+    List<int> bytes = [];
+
+    if (file is XFile) {
+      fileName = file.name;
+      bytes = await file.readAsBytes();
+    } else if (file != null) {
+      try {
+        fileName = file.path.toString().split('/').last.split('\\').last;
+        bytes = await file.readAsBytes();
+      } catch (_) {
+        fileName = 'document.pdf';
+      }
+    }
+
+    request.files.add(http.MultipartFile.fromBytes(
       'file',
-      file.path,
+      bytes,
+      filename: fileName,
       contentType: MediaType('application', 'pdf'),
     ));
 

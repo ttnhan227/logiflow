@@ -92,7 +92,7 @@ LogiFlow is a production-oriented, full-stack logistics and freight management p
 
 ### Option A: Run with Docker Compose (Recommended)
 
-Docker Desktop is the only requirement to run the full database, backend API, and web frontend.
+Docker Desktop is the only requirement to run the full database, backend API, web frontend, and mobile web client.
 
 ```bash
 # 1. Clone repository
@@ -105,13 +105,32 @@ Copy-Item .env.docker.example .env
 # On Linux / macOS / Bash:
 cp .env.docker.example .env
 
-# 3. Build and launch containers
+# 3. Build and launch all 4 containers
 docker compose up -d --build
 ```
 
-- **Web Frontend**: [http://localhost:5173](http://localhost:5173)
-- **Backend REST API**: [http://localhost:8080](http://localhost:8080)
-- **PostgreSQL Database**: `localhost:5432` (Database: `logiflow_db`, User: `postgres`)
+#### Service Endpoints
+
+| Service | Technology | URL / Port |
+| :--- | :--- | :--- |
+| 🌐 **Web Dashboard** | React 19 + Vite | [http://localhost:5173](http://localhost:5173) |
+| 📱 **Mobile Web Client** | Flutter 3.24 + Nginx | [http://localhost:8085](http://localhost:8085) |
+| ⚙️ **Backend REST & WS** | Spring Boot 3.5 | [http://localhost:8080](http://localhost:8080) |
+| 🗄️ **PostgreSQL Database** | PostgreSQL 15 + PostGIS | `localhost:5432` (`logiflow`, `postgres`) |
+
+---
+
+### Demo Seeded Accounts
+
+The database automatically seeds realistic operational demo accounts on initial launch (all passwords are **`123`**):
+
+| Role | Username | Email | Password | Access Port |
+| :--- | :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | `admin@logiflow.com` | `123` | `:5173` |
+| **Dispatcher** | `john.dispatcher` | `john.d@logiflow.com` | `123` | `:5173` |
+| **Driver** | `sarah.driver` | `sarah.d@logiflow.com` | `123` | `:5173` & `:8085` |
+| **Driver** | `mike.driver` | `mike.d@logiflow.com` | `123` | `:5173` & `:8085` |
+| **Customer** | `nguyen.mai` | `nguyen.mai@gmail.com` | `123` | `:5173` & `:8085` |
 
 ---
 
@@ -121,6 +140,7 @@ docker compose up -d --build
 - Java 21 JDK (e.g., Eclipse Temurin 21)
 - Node.js 20+ and npm 10+
 - PostgreSQL 15+ running locally with PostGIS extension
+- Flutter SDK 3.24+ (for mobile development)
 
 #### Backend Setup
 ```bash
@@ -128,18 +148,19 @@ cd server
 mvn spring-boot:run
 ```
 
-#### Frontend Setup
+#### Web Frontend Setup
 ```bash
 cd client
 npm install
 npm run dev
 ```
 
-#### Mobile Setup (Optional)
+#### Mobile Client Setup (Native or Chrome Web)
 ```bash
 cd client_mobile
 flutter pub get
-flutter run
+flutter run -d chrome    # Run as web app
+flutter run              # Run on connected device/emulator
 ```
 
 ---

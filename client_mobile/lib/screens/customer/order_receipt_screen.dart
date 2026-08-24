@@ -1,8 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
-import 'dart:io';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/customer/customer_service.dart';
 import '../../services/api_client.dart';
 import '../../models/customer/order.dart';
@@ -653,90 +652,31 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
     }
   }
 
-  Future<void> _downloadReceipt() async {
+   Future<void> _downloadReceipt() async {
     if (_order == null) return;
 
     try {
-      // Show loading indicator
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Downloading invoice...')),
-      );
-
-      // Make request to download invoice using the API client
-      final headers = await apiClient.getHeaders();
       final url = '${ApiClient.baseUrl.replaceAll('/api', '')}/api/orders/${_order!.orderId}/invoice/download';
-      final response = await http.get(Uri.parse(url), headers: headers);
+      final uri = Uri.parse(url);
 
-      if (response.statusCode == 200) {
-        // Get directory to save file
-        Directory? output;
-        try {
-          output = await getApplicationDocumentsDirectory();
-        } catch (e) {
-          // Fallback to external storage if available
-          try {
-            output = await getExternalStorageDirectory();
-            if (output != null) {
-              output = Directory('${output.path}/Documents');
-              if (!await output.exists()) {
-                await output.create(recursive: true);
-              }
-            }
-          } catch (e2) {
-            // Last resort - use temporary directory
-            output = await getTemporaryDirectory();
-          }
-        }
-
-        if (output == null) {
-          throw Exception('Unable to access storage directory');
-        }
-
-        // Save PDF to device
-        final file = File('${output.path}/invoice_order_${_order!.orderId}.pdf');
-        await file.writeAsBytes(response.bodyBytes);
-
-        // Show success message and open file
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Invoice downloaded successfully!'),
-              action: SnackBarAction(
-                label: 'Open',
-                onPressed: () {
-                  OpenFile.open(file.path);
-                },
-              ),
-            ),
-          );
-        }
-      } else if (response.statusCode == 403) {
-        // Forbidden - not authorized to access this invoice
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You do not have permission to download this invoice')),
-          );
-        }
-      } else if (response.statusCode == 400) {
-        // Bad request - invoice not available (e.g., not paid)
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invoice not available for this order')),
+            const SnackBar(content: Text('Opening invoice download...')),
           );
         }
       } else {
-        // Other error
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to download invoice: ${response.statusCode}')),
+            const SnackBar(content: Text('Unable to open invoice download link')),
           );
         }
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to download invoice: $e')),
+          SnackBar(content: Text('Error downloading invoice: $e')),
         );
       }
     }

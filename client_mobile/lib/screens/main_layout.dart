@@ -21,7 +21,7 @@ import 'customer/profile_screen.dart';
 import 'home/home_screen.dart';
 import '../theme/app_theme.dart';
 
-// Custom Scrolling Text Widget - FIXED VERSION
+// Custom Scrolling Text Widget
 class ScrollingTextWidget extends StatefulWidget {
   final String text;
   final double speed;
@@ -65,15 +65,12 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
       child: ClipRect(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final screenWidth = constraints.maxWidth;
-
-            // Measure the text width
             final textSpan = TextSpan(
               text: widget.text,
               style: const TextStyle(
                 color: AppTheme.success,
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             );
             final textPainter = TextPainter(
@@ -86,7 +83,6 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
             return AnimatedBuilder(
               animation: _animation,
               builder: (context, child) {
-                // The text moves one full cycle (textWidth + gap)
                 const gap = 50.0;
                 final cycleDistance = textWidth + gap;
                 final offset = -(_animation.value * cycleDistance);
@@ -104,7 +100,7 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
                           style: const TextStyle(
                             color: AppTheme.success,
                             fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(width: gap),
@@ -113,7 +109,7 @@ class _ScrollingTextWidgetState extends State<ScrollingTextWidget>
                           style: const TextStyle(
                             color: AppTheme.success,
                             fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -173,7 +169,6 @@ class _MainLayoutState extends State<MainLayout> {
 
   Future<void> _connectNotifications(String userId, String userRole) async {
     _notificationService.onNotificationReceived = (notification) {
-      // Show notification as SnackBar
       if (mounted) {
         final type = (notification['type'] ?? 'INFO').toString().toUpperCase();
         final message = notification['message'] ?? 'New notification';
@@ -188,11 +183,10 @@ class _MainLayoutState extends State<MainLayout> {
               label: isChat ? 'Open Chat' : 'View',
               textColor: Colors.white,
               onPressed: () {
-                // Navigate to appropriate screen based on user role
                 if (userRole == 'DRIVER') {
-                  setState(() => _currentIndex = 1); // Trips screen
+                  setState(() => _currentIndex = 1);
                 } else if (userRole == 'CUSTOMER') {
-                  setState(() => _currentIndex = 2); // Track Orders screen
+                  setState(() => _currentIndex = 2);
                 }
                 _pageController.jumpToPage(_currentIndex);
               },
@@ -202,31 +196,27 @@ class _MainLayoutState extends State<MainLayout> {
       }
     };
 
-    // Connect based on user role
     if (userRole == 'DRIVER') {
       await _notificationService.connectAsDriver(userId);
     } else if (userRole == 'CUSTOMER') {
       await _notificationService.connectAsCustomer(userId);
     }
-
-    // Note: Real notifications will come from the admin backend via WebSocket
-    // Test notifications disabled to improve performance
   }
 
   Color _getNotificationColor(String type) {
     switch (type) {
       case 'TRIP_ASSIGNED':
-        return Colors.blue;
+        return AppTheme.primary;
       case 'TRIP_CANCELLED':
       case 'TRIP_CANCELLED_BY_DISPATCHER':
-        return Colors.red;
+        return AppTheme.danger;
       case 'TRIP_REROUTED':
       case 'TRIP_UPDATED':
-        return Colors.orange;
+        return AppTheme.warning;
       case 'TRIP_STATUS_UPDATE':
-        return Colors.green;
+        return AppTheme.success;
       default:
-        return Colors.grey;
+        return AppTheme.navy;
     }
   }
 
@@ -239,13 +229,11 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildGlobalGpsBanner() {
-    // Only show for drivers with active GPS tracking
     if (_currentUser?.role?.toUpperCase() != 'DRIVER' ||
         !gpsTrackingService.isTracking) {
       return const SizedBox.shrink();
     }
 
-    // Build detailed scrolling text
     final currentTime = DateTime.now();
     final formattedTime =
         '${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
@@ -256,37 +244,21 @@ class _MainLayoutState extends State<MainLayout> {
       constraints: const BoxConstraints(minHeight: 42),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
-        color: Color(0xFFF0FDF4),
+        color: AppTheme.successBg,
         border: Border(top: BorderSide(color: Color(0xFFBBF7D0))),
       ),
       child: Row(
         children: [
-          // GPS Icon
-          const Icon(Icons.gps_fixed, color: AppTheme.success, size: 18),
+          const Icon(Icons.gps_fixed_rounded, color: AppTheme.success, size: 18),
           const SizedBox(width: 8),
-
-          // Scrolling Text - takes up most space
           Expanded(child: ScrollingTextWidget(text: scrollingText)),
         ],
       ),
     );
   }
 
-  void _handleNavigation(int tabIndex, {Map<String, dynamic>? params}) {
-    setState(() => _currentIndex = tabIndex);
-    _pageController.jumpToPage(tabIndex);
-
-    // If navigation includes trip parameters, we could pass them to the trips screen
-    // This would require the DriverTripsScreen to accept parameters
-    if (params != null && params.containsKey('tripId')) {
-      print('Navigating to trips screen with tripId: ${params['tripId']}');
-      // In the future, you could add logic to highlight or scroll to the specific trip
-    }
-  }
-
   Future<void> _navigateToTripDetail({String? tripId}) async {
     if (tripId != null) {
-      // Check token validity before navigation
       try {
         final token = await authService.getToken();
         if (token == null || token.isEmpty) {
@@ -297,7 +269,6 @@ class _MainLayoutState extends State<MainLayout> {
               ),
             ),
           );
-          // Navigate to login
           authService.logout();
           return;
         }
@@ -325,20 +296,11 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
-  String _getInitials(User? user) {
-    if (user == null) return '';
-    final name = user.username;
-    return name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '';
-  }
-
   String _getImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return '';
-
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
-
-    // Base URL without /api (same as web client logic)
     return '${ApiClient.baseImageUrl}${imagePath.startsWith('/') ? '' : '/'}$imagePath';
   }
 
@@ -349,60 +311,25 @@ class _MainLayoutState extends State<MainLayout> {
 
     switch (role) {
       case 'DRIVER':
-        return [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.local_shipping),
-            label: 'My Trips',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'Messages',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.verified_user),
-            label: 'Compliance',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+        return const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_shipping_rounded), label: 'My Trips'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'Messages'),
+          BottomNavigationBarItem(icon: Icon(Icons.verified_user_rounded), label: 'Compliance'),
+          BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: 'History'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
         ];
       case 'CUSTOMER':
-        return [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.add_shopping_cart),
-            label: 'Create Order',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.track_changes),
-            label: 'Track Orders',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ];
-      case 'ADMIN':
-        return [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.admin_panel_settings),
-            label: 'Admin',
-          ),
+        return const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline_rounded), label: 'Create Order'),
+          BottomNavigationBarItem(icon: Icon(Icons.track_changes_rounded), label: 'Track Orders'),
+          BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: 'History'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
         ];
       default:
-        return [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        return const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
         ];
     }
   }
@@ -414,26 +341,24 @@ class _MainLayoutState extends State<MainLayout> {
 
     switch (role) {
       case 'DRIVER':
-        return [
-          const HomeScreen(),
-          const DriverTripsScreen(),
-          const DriverChatListScreen(),
-          const DriverComplianceScreen(),
-          const DriverTripHistoryScreen(),
-          const DriverProfileScreen(),
+        return const [
+          HomeScreen(),
+          DriverTripsScreen(),
+          DriverChatListScreen(),
+          DriverComplianceScreen(),
+          DriverTripHistoryScreen(),
+          DriverProfileScreen(),
         ];
       case 'CUSTOMER':
-        return [
-          const HomeScreen(),
-          const CreateOrderScreen(),
-          const TrackOrdersScreen(),
-          const OrderHistoryScreen(),
-          const CustomerProfileScreen(),
+        return const [
+          HomeScreen(),
+          CreateOrderScreen(),
+          TrackOrdersScreen(),
+          OrderHistoryScreen(),
+          CustomerProfileScreen(),
         ];
-      case 'ADMIN':
-        return [const HomeScreen(), AdminDashboardScreen()];
       default:
-        return [const HomeScreen()];
+        return const [HomeScreen()];
     }
   }
 
@@ -444,14 +369,44 @@ class _MainLayoutState extends State<MainLayout> {
         appBar: AppBar(
           title: Row(
             children: [
-              Image.asset(
-                'assets/logiflow-smarter_logistics-seamless_flow.png',
-                height: 40,
-                width: 40,
-                fit: BoxFit.contain,
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.local_shipping_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: 8),
-              const Text('LogiFlow'),
+              RichText(
+                text: const TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Logi',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.navy,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Flow',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -459,7 +414,6 @@ class _MainLayoutState extends State<MainLayout> {
       );
     }
 
-    // If user is null, show loading or redirect to login
     if (_currentUser == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -471,20 +425,50 @@ class _MainLayoutState extends State<MainLayout> {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              'assets/logiflow-smarter_logistics-seamless_flow.png',
-              height: 40,
-              width: 40,
-              fit: BoxFit.contain,
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: AppTheme.primary,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.local_shipping_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 8),
-            const Text('LogiFlow'),
+            RichText(
+              text: const TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Logi',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.navy,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'Flow',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primary,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
-          // Show notification bell for both drivers and customers
           if (_currentUser != null &&
-              (_currentUser!.role.toUpperCase() == 'DRIVER' || _currentUser!.role.toUpperCase() == 'CUSTOMER'))
+              (_currentUser!.role.toUpperCase() == 'DRIVER' ||
+                  _currentUser!.role.toUpperCase() == 'CUSTOMER'))
             NotificationBell(
               notificationService: _notificationService,
               onNavigateToTripDetail: _navigateToTripDetail,
@@ -502,7 +486,7 @@ class _MainLayoutState extends State<MainLayout> {
                     : null,
                 backgroundColor: _currentUser!.profilePictureUrl != null
                     ? null
-                    : Theme.of(context).primaryColor,
+                    : AppTheme.primary,
                 child: _currentUser!.profilePictureUrl != null
                     ? null
                     : Text(
@@ -536,7 +520,7 @@ class _MainLayoutState extends State<MainLayout> {
                             : null,
                         backgroundColor: _currentUser!.profilePictureUrl != null
                             ? null
-                            : Theme.of(context).primaryColor,
+                            : AppTheme.primary,
                         child: _currentUser!.profilePictureUrl != null
                             ? null
                             : Text(
@@ -563,9 +547,9 @@ class _MainLayoutState extends State<MainLayout> {
                           ),
                           Text(
                             _currentUser!.role,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppTheme.textMuted,
                             ),
                           ),
                         ],
@@ -595,7 +579,6 @@ class _MainLayoutState extends State<MainLayout> {
       ),
       body: Stack(
         children: [
-          // Main content
           Column(
             children: [
               Expanded(
@@ -607,8 +590,6 @@ class _MainLayoutState extends State<MainLayout> {
                   children: pages,
                 ),
               ),
-
-              // GPS banner positioned just above navigation
               _buildGlobalGpsBanner(),
             ],
           ),
@@ -622,36 +603,9 @@ class _MainLayoutState extends State<MainLayout> {
         },
         type: BottomNavigationBarType.fixed,
         items: bottomNavItems,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        selectedItemColor: AppTheme.primary,
+        unselectedItemColor: AppTheme.textMuted,
         showUnselectedLabels: true,
-      ),
-    );
-  }
-}
-
-// Temporary placeholder for Admin Dashboard
-class AdminDashboardScreen extends StatelessWidget {
-  const AdminDashboardScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.admin_panel_settings, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Admin Dashboard',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Admin features coming soon',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
       ),
     );
   }
