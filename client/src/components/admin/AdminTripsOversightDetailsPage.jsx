@@ -326,6 +326,10 @@ export const AdminTripsOversightDetailsPage = () => {
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              subdomains={['a', 'b', 'c']}
+              maxZoom={19}
+              keepBuffer={8}
+              crossOrigin="anonymous"
             />
             {allMapPoints.map((p) => (
               <Marker

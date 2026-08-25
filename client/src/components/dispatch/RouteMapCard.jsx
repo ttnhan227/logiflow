@@ -133,18 +133,19 @@ const FitBounds = ({ path, route, points }) => {
   const map = useMap();
 
   useEffect(() => {
+    map.invalidateSize();
     if (points && points.length > 0) {
       const bounds = latLngBounds(points.map((p) => [p.lat, p.lng]));
-      map.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50], animate: false });
     } else if (path && path.length > 1) {
       const bounds = latLngBounds(path);
-      map.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50], animate: false });
     } else if (route?.originLat && route?.destinationLat) {
       const bounds = latLngBounds([
         [Number(route.originLat), Number(route.originLng)],
         [Number(route.destinationLat), Number(route.destinationLng)],
       ]);
-      map.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50], animate: false });
     }
   }, [map, path, route, points]);
 
@@ -378,6 +379,24 @@ export const RouteMapCard = ({ routeId, orders, feePerKm = 12, onDistanceChange 
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            subdomains={['a', 'b', 'c']}
+            maxZoom={19}
+            minZoom={4}
+            keepBuffer={8}
+            updateWhenZooming={true}
+            updateWhenIdle={false}
+            crossOrigin="anonymous"
+            eventHandlers={{
+              tileerror: (error) => {
+                if (error.tile && !error.tile._retried) {
+                  error.tile._retried = true;
+                  const currentSrc = error.tile.src;
+                  setTimeout(() => {
+                    error.tile.src = currentSrc;
+                  }, 600);
+                }
+              }
+            }}
           />
 
           {/* Multiple Orders */}

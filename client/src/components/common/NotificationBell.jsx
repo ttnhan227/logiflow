@@ -39,7 +39,11 @@ const NotificationBell = () => {
         service.getUnreadCount()
       ]);
 
-      setDbNotifications(allNotifications.map(n => ({
+      const notifList = Array.isArray(allNotifications)
+        ? allNotifications
+        : (Array.isArray(allNotifications?.content) ? allNotifications.content : []);
+
+      setDbNotifications(notifList.map(n => ({
         ...n,
         id: `db-${n.notificationId}`,
         timestamp: n.createdAt,
@@ -47,7 +51,7 @@ const NotificationBell = () => {
         source: 'database'
       })));
 
-      return count.unreadCount;
+      return count?.unreadCount ?? 0;
     } catch (error) {
       console.error('Failed to load database notifications:', error);
       return 0;
