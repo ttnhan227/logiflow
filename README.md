@@ -4,7 +4,17 @@ LogiFlow is a production-oriented, full-stack logistics and freight management p
 
 ---
 
-## System Architecture
+## Platform Visual Preview
+
+| Landing & Control Tower | Real-Time Fleet Radar & Corridor Routing |
+|:---:|:---:|
+| ![Enterprise Freight Landing](docs/screenshots/logiflow-home-hero.png) | ![Live GPS Fleet Radar](docs/screenshots/logiflow-map.png) |
+| **Operations Management Dashboard** | **Public Shipment Tracking & Telemetry** |
+| ![Dispatcher Operations Console](docs/screenshots/logiflow-dashboard.png) | ![Public Milestone Tracking](docs/screenshots/logiflow-track.png) |
+| **SLA & Delay Analytics** | **Global Logistics News & Intelligence** |
+| ![Performance & Delay Reports](docs/screenshots/logiflow-reports.png) | ![Maritime Freight Intelligence](docs/screenshots/logiflow-news.png) |
+
+---
 
 ```text
 +-----------------------------------------------------------------------------------+
