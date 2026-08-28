@@ -124,6 +124,60 @@ export const LoginPage = () => {
             >
               Sign In to Control Tower
             </Button>
+
+            {/* Quick Demo Fill for Recruiters & Visitors */}
+            <div style={{ marginTop: '6px', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                Quick Demo Access:
+              </div>
+              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => { setUsername('admin'); setPassword('123'); }}
+                  style={{
+                    fontSize: '11px',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-default)',
+                    background: 'var(--bg-subtle, #f1f5f9)',
+                    cursor: 'pointer',
+                    color: 'var(--text-secondary, #475569)',
+                  }}
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUsername('john.dispatcher'); setPassword('123'); }}
+                  style={{
+                    fontSize: '11px',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-default)',
+                    background: 'var(--bg-subtle, #f1f5f9)',
+                    cursor: 'pointer',
+                    color: 'var(--text-secondary, #475569)',
+                  }}
+                >
+                  Dispatcher
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUsername('nguyen.mai'); setPassword('123'); }}
+                  style={{
+                    fontSize: '11px',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-default)',
+                    background: 'var(--bg-subtle, #f1f5f9)',
+                    cursor: 'pointer',
+                    color: 'var(--text-secondary, #475569)',
+                  }}
+                >
+                  Customer
+                </button>
+              </div>
+            </div>
           </form>
 
           {/* Registration Options */}
