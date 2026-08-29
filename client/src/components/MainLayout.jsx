@@ -164,17 +164,7 @@ export const MainLayout = () => {
               flexShrink: 0,
             }}
           >
-            <span
-              style={{
-                fontSize: '22px',
-                fontWeight: 800,
-                color: 'var(--color-slate-900)',
-                letterSpacing: '-0.6px',
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}
-            >
-              Logi<span style={{ color: 'var(--color-brand-600)' }}>Flow</span>
-            </span>
+            <img src="/logo.png" alt="LogiFlow" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
           </Link>
 
           {/* Desktop Navigation */}

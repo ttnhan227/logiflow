@@ -119,7 +119,7 @@ const NotificationBell = () => {
       if (Notification.permission === 'granted') {
         new Notification(notification.title, {
           body: notification.message,
-          icon: '/logiflow-smarter_logistics-seamless_flow.png',
+          icon: '/logo.png',
           tag: notification.id
         });
       }
