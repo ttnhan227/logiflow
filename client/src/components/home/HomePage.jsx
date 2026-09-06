@@ -406,8 +406,8 @@ export const HomePage = () => {
                     attributionControl={false}
                   >
                     <TileLayer
-                      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                      subdomains="abcd"
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       maxZoom={19}
                     />
 
@@ -1013,8 +1013,8 @@ export const HomePage = () => {
               attributionControl={false}
             >
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                subdomains="abcd"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 maxZoom={19}
               />
               <Polyline positions={tradeLanes.northSouthTrunk} color="#2563eb" weight={4} opacity={0.8} dashArray="6, 6" />

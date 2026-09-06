@@ -164,7 +164,7 @@ export const MainLayout = () => {
               flexShrink: 0,
             }}
           >
-            <img src="/logo.png" alt="LogiFlow" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+            <img src="/logo.png" alt="LogiFlow" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
           </Link>
 
           {/* Desktop Navigation */}
