@@ -38,8 +38,12 @@ public interface DriverRepository extends JpaRepository<Driver, Integer> {
     /**
      * Count drivers with licenses expiring within next 30 days
      */
-    @Query(value = "SELECT COUNT(*) FROM drivers WHERE license_expiry > CURRENT_DATE AND license_expiry <= CURRENT_DATE + INTERVAL '30 days'", nativeQuery = true)
-    long countDriversWithExpiringLicenses();
+    @Query("SELECT COUNT(d) FROM Driver d WHERE d.licenseExpiryDate > CURRENT_DATE AND d.licenseExpiryDate <= :cutoffDate")
+    long countDriversWithExpiringLicenses(@Param("cutoffDate") java.time.LocalDate cutoffDate);
+
+    default long countDriversWithExpiringLicenses() {
+        return countDriversWithExpiringLicenses(java.time.LocalDate.now().plusDays(30));
+    }
 
     /**
      * Count drivers with compliance issues (based on health status and license validity)

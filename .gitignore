@@ -5,9 +5,6 @@ out/
 
 # ---- Maven / Spring Boot ----
 server/target/
-server/.mvn/
-server/mvnw
-server/mvnw.cmd
 server/logs/
 server/.env
 .env

@@ -117,7 +117,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
      */
     @Query("""
         SELECT
-            function('date', t.scheduledDeparture) AS date,
+            cast(t.scheduledDeparture as LocalDate) AS date,
             COUNT(t) AS totalTrips,
             SUM(CASE WHEN lower(t.status) = 'scheduled'   THEN 1 ELSE 0 END) AS scheduledTrips,
             SUM(CASE WHEN lower(t.status) = 'in_progress' THEN 1 ELSE 0 END) AS inProgressTrips,
@@ -127,8 +127,8 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
         FROM Trip t
                                 WHERE t.scheduledDeparture >= :from
                                         AND t.scheduledDeparture <  :to
-        GROUP BY function('date', t.scheduledDeparture)
-        ORDER BY function('date', t.scheduledDeparture)
+        GROUP BY cast(t.scheduledDeparture as LocalDate)
+        ORDER BY cast(t.scheduledDeparture as LocalDate)
         """)
     List<DailyTripStatusCounts> findDailyTripStatusCounts(
             @Param("from") LocalDateTime from,
@@ -141,15 +141,15 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
      */
     @Query("""
         SELECT
-            function('date', t.actualArrival) AS date,
+            cast(t.actualArrival as LocalDate) AS date,
             COUNT(t) AS completedTripsWithActualArrival
         FROM Trip t
                                 WHERE lower(t.status) = 'completed'
                                         AND t.actualArrival IS NOT NULL
                                         AND t.actualArrival >= :from
                                         AND t.actualArrival <  :to
-        GROUP BY function('date', t.actualArrival)
-        ORDER BY function('date', t.actualArrival)
+        GROUP BY cast(t.actualArrival as LocalDate)
+        ORDER BY cast(t.actualArrival as LocalDate)
         """)
     List<DailyCompletedDelayAgg> findDailyCompletedTripsByActualArrival(
             @Param("from") LocalDateTime from,

@@ -89,4 +89,78 @@ test.describe("LogiFlow Full-Stack Freight Telemetry E2E Journey", () => {
     await page.goto("/admin/trips-oversight");
     await expect(page.getByText(/Trip Oversight|Trips Oversight|Trips/i).first()).toBeVisible({ timeout: 10_000 });
   });
+
+  test("5. Invalid credentials rejection & error feedback", async ({ page }) => {
+    await page.goto("/login");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    await page.reload();
+
+    // Submit wrong password
+    await page.locator("input[type='text']").first().fill("admin");
+    await page.locator("input[type='password']").fill("wrongpassword");
+    await page.getByRole("button", { name: /Sign In|Sign in/i }).click();
+
+    // Error alert must appear
+    await expect(page.getByText(/Invalid username or password|Authentication failed/i)).toBeVisible({ timeout: 8000 });
+    // URL remains on /login
+    await expect(page).toHaveURL(/.*login/);
+  });
+
+  test("6. Route protection redirects unauthenticated visitor to login", async ({ page }) => {
+    await page.goto("/login");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    // Attempt direct navigation to protected admin dashboard
+    await page.goto("/admin/dashboard");
+    await expect(page).toHaveURL(/.*login/);
+
+    // Attempt direct navigation to protected dispatch trips
+    await page.goto("/dispatch/trips");
+    await expect(page).toHaveURL(/.*login/);
+  });
+
+  test("7. Dispatcher orders workspace & CSV import page", async ({ page }) => {
+    await page.goto("/login");
+    await page.locator("input[type='text']").first().fill("john.dispatcher");
+    await page.locator("input[type='password']").fill("123");
+    await page.getByRole("button", { name: /Sign In|Sign in/i }).click();
+    await expect(page).toHaveURL(/.*dispatch/);
+
+    // Navigate to Orders
+    await page.goto("/dispatch/orders");
+    await expect(page.getByText(/Orders|Order Management|Dispatch Orders/i).first()).toBeVisible({ timeout: 10_000 });
+
+    // Navigate to Order Import
+    await page.goto("/dispatch/orders/import");
+    await expect(page.getByText(/Import Orders|Batch Upload|Upload/i).first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("8. Admin payment requests ledger & audit log oversight", async ({ page }) => {
+    await page.goto("/login");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    await page.reload();
+
+    // Log in as Admin
+    await page.locator("input[type='text']").first().fill("admin");
+    await page.locator("input[type='password']").fill("123");
+    await page.getByRole("button", { name: /Sign In|Sign in/i }).click();
+    await expect(page).toHaveURL(/.*admin\/dashboard/);
+
+    // Navigate to Payment Requests
+    await page.goto("/admin/payment-requests");
+    await expect(page.getByText(/Payment Requests|Pending Payments|Batch Processing/i).first()).toBeVisible({ timeout: 10_000 });
+
+    // Navigate to Audit Logs
+    await page.goto("/admin/audit-logs");
+    await expect(page.getByText(/Audit Logs|System Activity|User Activities/i).first()).toBeVisible({ timeout: 10_000 });
+  });
 });

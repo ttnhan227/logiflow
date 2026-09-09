@@ -14,7 +14,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.HttpMethod;
 
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
@@ -42,9 +41,12 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         (authorize) -> authorize
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                .requestMatchers("/error").permitAll()
+                                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/api/registration/**").permitAll()
                                 .requestMatchers("/api/maps/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/orders/*/invoice/download").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()
                                 .requestMatchers("/ws/notifications-native", "/ws/notifications-native/**").permitAll()
@@ -66,6 +68,4 @@ public class SecurityConfiguration {
 
         return http.build();
     }
-
-
 }

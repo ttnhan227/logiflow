@@ -30,6 +30,7 @@ public class SystemSettingCreationDto {
     private String value;
 
     @NotNull(message = "Encryption flag is required")
+    @Builder.Default
     private Boolean isEncrypted = false;
 
     @Size(max = 255, message = "Description must be at most 255 characters")
