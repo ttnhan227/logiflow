@@ -19,27 +19,27 @@ export const ServicesPage = () => {
   const individualServices = [
     {
       title: 'Standard Linehaul Freight',
-      description: 'Scheduled multi-province transport for cartons, pallets, and general dry goods across major economic corridors.',
-      price: 'From 25,000 VND / kg',
-      timeline: '1–3 business days',
+      description: 'A sample order scenario used to demonstrate order entry, trip planning, and shipment status.',
+      price: 'Sample scenario',
+      timeline: 'No service commitment',
       icon: <LuPackage size={24} color="var(--color-brand-600)" />,
       badge: 'Standard',
       popular: false,
     },
     {
       title: 'Express Priority Dispatch',
-      description: 'Expedited same-day / next-flight turnaround for time-critical documents, high-priority spare parts, and urgent inventory.',
-      price: 'From 50,000 VND / kg',
-      timeline: 'Same-day / < 24 hrs',
+      description: 'A sample priority label for exercising the order and assignment interfaces.',
+      price: 'Sample scenario',
+      timeline: 'No service commitment',
       icon: <LuZap size={24} color="var(--color-brand-600)" />,
       badge: 'Most Popular',
       popular: true,
     },
     {
       title: 'Inter-Provincial Full Truckload',
-      description: 'Dedicated 5T–30T truckload direct from manufacturer or dock to provincial receiver with exclusive sealed container handling.',
-      price: 'Dynamic volume rate',
-      timeline: 'Direct transit (1–2 days)',
+      description: 'A capacity-focused scenario for matching sample trucks and compatible drivers.',
+      price: 'Sample scenario',
+      timeline: 'No service commitment',
       icon: <LuTruck size={24} color="var(--color-brand-600)" />,
       badge: 'Heavy Cargo',
       popular: false,
@@ -48,22 +48,22 @@ export const ServicesPage = () => {
 
   const enterpriseServices = [
     {
-      title: 'E-commerce & Retail Distribution',
-      description: 'High-velocity sorting, multi-tier delivery routing, automated COD reconciliation, and seamless web checkout API integration.',
+      title: 'Customer Workflow',
+      description: 'Create and review orders, track assigned trips, confirm delivery, and review invoices.',
       icon: <LuBuilding2 size={24} color="var(--color-brand-600)" />,
-      features: ['Automated COD settlement', 'Bulk barcode scanning', 'Reverse logistics & return handling'],
+      features: ['Order records', 'Shipment status', 'PayPal sandbox checkout'],
     },
     {
-      title: 'Supply Chain & Cost Analytics',
-      description: 'Enterprise operational dashboard displaying linehaul cost per ton-km, driver safety scores, delay heatmaps, and carbon footprints.',
+      title: 'Operations Workflow',
+      description: 'Manage users, drivers, vehicles, orders, trips, assignments, and billing records.',
       icon: <LuChartLine size={24} color="var(--color-brand-600)" />,
-      features: ['Custom KPI exports', 'API webhook telemetry', 'Weighbridge audit reconciliation'],
+      features: ['Role-based views', 'Driver recommendations', 'Invoice PDF generation'],
     },
     {
-      title: 'Dedicated Fleet Outsourcing',
-      description: 'Contracted commercial truck fleets assigned exclusively to your business with customized driver uniforms and route management.',
+      title: 'Driver Workflow',
+      description: 'Use the Flutter client to review assignments, send location updates, and capture delivery evidence.',
       icon: <LuTruck size={24} color="var(--color-brand-600)" />,
-      features: ['Guaranteed vehicle availability', 'Custom route sequencing', 'Tailored insurance coverage'],
+      features: ['Assigned trips', 'WebSocket location updates', 'Recipient signature capture'],
     },
   ];
 
@@ -72,9 +72,9 @@ export const ServicesPage = () => {
       {/* Header */}
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Logistics Portfolio</Badge>}
-          title="Engineered Freight & Delivery Services"
-          description="Tailored freight forwarding, express distribution, and dedicated supply chain solutions engineered for reliability across Vietnam."
+          badge={<Badge variant="brand">Demonstration Scenarios</Badge>}
+          title="Freight Workflows Represented in the Project"
+          description="These cards illustrate software scenarios, not services, prices, transit times, or commercial availability."
         />
       </div>
 
@@ -82,10 +82,10 @@ export const ServicesPage = () => {
       <section className="container">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
-            Shipper Delivery Tiers
+            Sample Order Types
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Predictable freight pricing with end-to-end GPS visibility and verified proof of delivery.
+            Representative records used to exercise the customer and operations interfaces.
           </p>
         </div>
 
@@ -116,7 +116,7 @@ export const ServicesPage = () => {
                     textTransform: 'uppercase',
                   }}
                 >
-                  Most Popular
+                  Main Demo
                 </div>
               )}
 
@@ -155,7 +155,7 @@ export const ServicesPage = () => {
 
                 <Link to="/business" style={{ marginTop: '8px' }}>
                   <Button variant={svc.popular ? 'primary' : 'outline'} style={{ width: '100%' }}>
-                    Select Plan
+                    View Workflow
                   </Button>
                 </Link>
               </CardContent>
@@ -168,13 +168,13 @@ export const ServicesPage = () => {
       <section className="container">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
           <Badge variant="neutral" size="sm" style={{ width: 'fit-content' }}>
-            High Volume
+            Role-Based
           </Badge>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
-            Enterprise Solutions & Fleet Logistics
+            Implemented Application Flows
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Integrated warehousing, multi-stop linehaul dispatch, and automated billing for enterprise corporations.
+            The core workflows supported by the React, Flutter, and Spring Boot applications.
           </p>
         </div>
 
@@ -240,16 +240,16 @@ export const ServicesPage = () => {
         >
           <div>
             <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 6px 0' }}>
-              Need a Custom Multi-Modal Solution?
+              Want to Explore the Demonstration?
             </h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
-              Our freight operations team can configure dedicated route schedules and contract rates.
+              Review the implemented workflows or open the tracking interface with sample data.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
             <Link to="/business">
-              <Button variant="primary">Talk with a Specialist</Button>
+              <Button variant="primary">View Project Workflows</Button>
             </Link>
             <Link to="/track">
               <Button
@@ -260,7 +260,7 @@ export const ServicesPage = () => {
                   color: 'var(--color-white)',
                 }}
               >
-                Track Live Order
+                Open Tracking Demo
               </Button>
             </Link>
           </div>

@@ -57,9 +57,9 @@ export const FleetPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Fleet & Telemetry</Badge>}
-          title="Pan-Vietnam Transport Fleet Infrastructure"
-          description="Modern, GPS-equipped commercial fleet certified for linehaul freight, container drayage, and temperature-controlled cold chains across 63 provinces."
+          badge={<Badge variant="brand">Sample Vehicle Data</Badge>}
+          title="Vehicle Classes Used by the Demonstration"
+          description="Representative capacity records exercise vehicle and driver matching; they do not describe a LogiFlow-owned fleet."
         />
       </div>
 
@@ -136,10 +136,10 @@ export const FleetPage = () => {
       <section className="container">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
-            Fleet Safety & Engineering Standards
+            Implemented Fleet-Related Features
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Continuous monitoring and rigorous preventive maintenance ensure 99.8% on-road reliability.
+            The project stores vehicle records and uses selected fields in trip-assignment workflows.
           </p>
         </div>
 
@@ -147,40 +147,40 @@ export const FleetPage = () => {
           <Card style={{ padding: '20px' }}>
             <LuCpu size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
             <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
-              Connected IoT Sensors
+              Trip Location Updates
             </h4>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-              Live door sensors, real-time cabin temperature gauges, and instant geo-fence alerts.
+              Driver coordinates can be shared for an authorized active trip.
             </p>
           </Card>
 
           <Card style={{ padding: '20px' }}>
             <LuWrench size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
             <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
-              Digital Maintenance Logs
+              Vehicle Records
             </h4>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-              Mandatory pre-trip vehicle safety audits and scheduled dealer-certified servicing every 10,000 km.
+              Store vehicle identifiers, type, capacity, and availability data used by operations screens.
             </p>
           </Card>
 
           <Card style={{ padding: '20px' }}>
             <LuShieldCheck size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
             <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
-              Full Cargo Insurance
+              Assignment Constraints
             </h4>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-              All transported goods are fully covered under primary marine cargo risk policies.
+              Rule-based recommendations compare vehicle capacity and driver-license compatibility.
             </p>
           </Card>
 
           <Card style={{ padding: '20px' }}>
             <LuLeaf size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
             <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
-              Eco Routing & Emissions
+              Demonstration Boundaries
             </h4>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-              AI route clustering reduces empty linehaul miles and lowers total carbon footprint by 18%.
+              No IoT sensor network, insurance product, emissions calculation, or owned fleet is claimed.
             </p>
           </Card>
         </div>
@@ -203,15 +203,15 @@ export const FleetPage = () => {
         >
           <div>
             <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
-              Have Specific Vehicle Capacity Requirements?
+              Review the Assignment Workflow
             </h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-              Speak with our fleet dispatch manager to reserve dedicated container trailers or refrigerated units.
+              See how sample vehicle capacity and driver records are used in the project.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <Link to="/business">
-              <Button variant="primary">Book Fleet Capacity</Button>
+              <Button variant="primary">View Project Workflows</Button>
             </Link>
           </div>
         </div>

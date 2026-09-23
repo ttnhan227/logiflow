@@ -16,23 +16,23 @@ import {
 export const DriversPage = () => {
   const driverBenefits = [
     {
-      title: 'Reliable Daily Earning',
-      description: 'Competitive per-trip freight tariffs with transparent fuel surcharges and expedited weekly digital bank transfers.',
+      title: 'Trip Assignment Workflow',
+      description: 'View assigned trips, delivery stops, and status updates from the driver client.',
       icon: <LuTruck size={24} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Flexible Dispatch Shifts',
-      description: 'Choose assigned linehauls or regional hub loops that match your preferred working schedule and route preferences.',
+      title: 'Driver Schedule View',
+      description: 'Review assigned work and route details in one place.',
       icon: <LuCalendar size={24} color="var(--color-brand-600)" />,
     },
     {
       title: 'Digital Navigation App',
-      description: 'Turn-by-turn routing with optimized multi-stop sequences, weighbridge alerts, and automated proof of delivery collection.',
+      description: 'Share trip-scoped GPS updates and capture a proof-of-delivery signature.',
       icon: <LuSmartphone size={24} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Comprehensive Carrier Insurance',
-      description: 'Full personal accident protection, vehicle assistance support, and priority emergency dispatch response.',
+      title: 'Driver Records',
+      description: 'Store license, vehicle, and profile information for administrative review.',
       icon: <LuShieldCheck size={24} color="var(--color-brand-600)" />,
     },
   ];
@@ -45,18 +45,18 @@ export const DriversPage = () => {
     },
     {
       num: '02',
-      title: 'Document Verification',
-      desc: 'Our compliance desk validates your commercial license, vehicle inspection, and background credentials.',
+      title: 'License Data Review',
+      desc: 'Mistral OCR can prefill license fields before an administrator reviews the submission.',
     },
     {
       num: '03',
-      title: 'Orientation & Safety Test',
-      desc: 'Brief mobile onboarding video covering cargo handling protocols and the driver application.',
+      title: 'Application Review',
+      desc: 'An administrator can review the submitted profile and assign the driver role.',
     },
     {
       num: '04',
-      title: 'Receive Trips & Earn',
-      desc: 'Start receiving verified linehaul and delivery trip assignments with instant dispatch notifications.',
+      title: 'Receive Demo Trips',
+      desc: 'Use the mobile client to view trip assignments, status changes, and notifications.',
     },
   ];
 
@@ -64,9 +64,9 @@ export const DriversPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Driver Carrier Network</Badge>}
-          title="Drive with LogiFlow"
-          description="Join Vietnam's trusted network of verified commercial drivers. Earn consistent income with guaranteed freight manifests, automated payouts, and intelligent route navigation."
+          badge={<Badge variant="brand">Driver Workflow Demo</Badge>}
+          title="Explore the Driver Workflow"
+          description="This academic project demonstrates driver registration, assigned trips, GPS updates, and proof-of-delivery capture."
         />
       </div>
 
@@ -99,14 +99,14 @@ export const DriversPage = () => {
         </div>
       </section>
 
-      {/* Vehicle Category Earning Matrix */}
+      {/* Sample vehicle categories */}
       <section className="container">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
             Fleet Vehicle Categories
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Opportunity tiers across standard commercial vehicle classifications.
+            Sample vehicle records used to demonstrate matching by license class and capacity.
           </p>
         </div>
 
@@ -123,9 +123,9 @@ export const DriversPage = () => {
               Ideal for inner-city distribution, same-day retail replenishment, and express inter-district transfers.
             </p>
             <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Estimated Daily Earnings:</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Sample capacity:</span>
               <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--color-brand-700)', marginTop: '2px' }}>
-                400,000 – 750,000 VND / day
+                0.5 – 2 tonnes
               </div>
             </div>
           </Card>
@@ -142,9 +142,9 @@ export const DriversPage = () => {
               Connecting industrial parks with sea ports and central sorting facilities on scheduled corridor schedules.
             </p>
             <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Estimated Daily Earnings:</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Sample capacity:</span>
               <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--color-brand-700)', marginTop: '2px' }}>
-                800,000 – 1,500,000 VND / day
+                5 – 15 tonnes
               </div>
             </div>
           </Card>
@@ -161,9 +161,9 @@ export const DriversPage = () => {
               Heavy drayage operations between major container ports (Cat Lai, Hai Phong, Cai Mep) and inland logistics depots.
             </p>
             <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Estimated Daily Earnings:</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Sample equipment:</span>
               <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--color-brand-700)', marginTop: '2px' }}>
-                1,200,000 – 2,200,000 VND / day
+                20 ft / 40 ft container
               </div>
             </div>
           </Card>
@@ -177,7 +177,7 @@ export const DriversPage = () => {
             How Onboarding Works
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Four straightforward steps to become an authorized carrier on the platform.
+            Four steps represented in the demonstration workflow.
           </p>
         </div>
 
@@ -215,17 +215,17 @@ export const DriversPage = () => {
         >
           <div>
             <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 4px 0' }}>
-              Ready to Join Vietnam's Premier Freight Network?
+              Want to Test the Driver Flow?
             </h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
-              Submit your driver application today. Our review desk processes submissions within 24 hours.
+              Create a sample driver profile and continue through the application screens.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
             <Link to="/register/driver">
               <Button variant="primary" size="lg">
-                Apply as Driver Partner
+                Open Driver Registration
               </Button>
             </Link>
           </div>

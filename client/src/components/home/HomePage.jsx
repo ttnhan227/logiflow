@@ -152,14 +152,14 @@ export const HomePage = () => {
     setLeadSubmitted(true);
   };
 
-  // Client Trust Partner Logos
+  // Technologies used by the project
   const clientPartners = [
-    { name: 'VINFAST GLOBAL', sector: 'Automotive & Assembly' },
-    { name: 'SAMSUNG ELECTRONICS', sector: 'High-Tech Manufacturing' },
-    { name: 'MASAN GROUP', sector: 'National FMCG Distribution' },
-    { name: 'UNILEVER VIETNAM', sector: 'Consumer Goods Supply Chain' },
-    { name: 'TH TRUE MILK', sector: 'Cold-Chain Dairy & Agri' },
-    { name: 'PANASONIC VIETNAM', sector: 'Electronics & Appliances' },
+    { name: 'SPRING BOOT', sector: 'REST API' },
+    { name: 'POSTGRESQL', sector: 'Persistence' },
+    { name: 'REACT', sector: 'Web Client' },
+    { name: 'FLUTTER', sector: 'Mobile Client' },
+    { name: 'WEBSOCKET', sector: 'Location Updates' },
+    { name: 'DOCKER', sector: 'Local Deployment' },
   ];
 
   // News & Market Insights Articles
@@ -239,7 +239,7 @@ export const HomePage = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Badge variant="brand" size="md">
-                  Unified Logistics & Dispatch Operating System
+                  Academic Full-Stack Project
                 </Badge>
               </div>
 
@@ -254,7 +254,7 @@ export const HomePage = () => {
                   margin: 0,
                 }}
               >
-                Pan-Vietnam Freight Forwarding & Real-Time Shipment Intelligence
+                Freight Dispatch, Driver Tracking, and Proof of Delivery
               </h1>
 
               <p
@@ -267,7 +267,7 @@ export const HomePage = () => {
                   maxWidth: '620px',
                 }}
               >
-                Book domestic freight, automate dispatcher assignments, track GPS shipments live across 63 provinces, and capture verified electronic proof of delivery on one connected platform.
+                Explore order creation, rule-based driver assignment, WebSocket location updates, delivery signatures, and sandbox billing in one demonstration application.
               </p>
 
               {/* Quick Freight Track Console */}
@@ -308,7 +308,7 @@ export const HomePage = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
                 <Link to="/register/customer">
                   <Button variant="primary" size="lg" leftIcon={<LuUserPlus size={16} />} rightIcon={<LuArrowRight size={16} />}>
-                    Open Shipper Account
+                    Try Customer Registration
                   </Button>
                 </Link>
                 <Link to="/register/driver">
@@ -322,7 +322,7 @@ export const HomePage = () => {
                     }}
                     leftIcon={<LuTruck size={16} />}
                   >
-                    Join as Driver Partner
+                    Try Driver Registration
                   </Button>
                 </Link>
                 <Link to="/login">
@@ -336,7 +336,7 @@ export const HomePage = () => {
                     }}
                     leftIcon={<LuLogIn size={16} />}
                   >
-                    Sign in to Portal
+                    Sign in to Demo
                   </Button>
                 </Link>
               </div>
@@ -344,13 +344,13 @@ export const HomePage = () => {
               {/* Trust Indicators */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', color: 'var(--color-slate-400)', fontSize: 'var(--text-xs)', paddingTop: '8px', flexWrap: 'wrap' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" /> 63 Provinces Connected
+                  <LuCheck size={16} color="var(--color-success-400)" /> React and Flutter Clients
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" /> 99.8% On-Time SLA
+                  <LuCheck size={16} color="var(--color-success-400)" /> Spring Boot and PostgreSQL
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" /> Instant Digital e-POD
+                  <LuCheck size={16} color="var(--color-success-400)" /> Signature-Based e-POD
                 </span>
               </div>
             </div>
@@ -472,12 +472,12 @@ export const HomePage = () => {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Active Linehauls</div>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#ffffff' }}>148 Units</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Display</div>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#ffffff' }}>Sample Data</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>On-Time Rate</div>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#34d399' }}>99.8%</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Channel</div>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#34d399' }}>WebSocket</div>
                   </div>
                   <div>
                     <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Exceptions</div>
@@ -490,14 +490,14 @@ export const HomePage = () => {
         </div>
       </section>
 
-      {/* 2. CLIENT TRUST & COST SAVINGS INTRO */}
+      {/* 2. IMPLEMENTATION OVERVIEW */}
       <section className="container">
         <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 32px auto' }}>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
-            Our technology platform drives hard cost savings for leading manufacturing and retail enterprises.
+            A full-stack demonstration of freight workflows across web and mobile clients.
           </h2>
           <Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-            Explore Enterprise Shipper Solutions →
+            Explore the Implemented Workflows →
           </Link>
         </div>
 
@@ -533,19 +533,19 @@ export const HomePage = () => {
         </div>
       </section>
 
-      {/* 3. SHIPPER SPOTLIGHT */}
+      {/* 3. PROJECT SCOPE */}
       <section className="container">
         <Card style={{ padding: '40px', backgroundColor: 'var(--bg-surface-subtle)', border: '1px solid var(--border-default)' }}>
           <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <Badge variant="brand" size="sm" style={{ alignSelf: 'center' }}>
-              Enterprise Operations Spotlight
+               Project Scope
             </Badge>
             <blockquote style={{ margin: 0, fontSize: 'var(--text-lg)', fontStyle: 'italic', color: 'var(--text-primary)', lineHeight: 1.6, fontWeight: 500 }}>
-              “LogiFlow transformed our inter-provincial distribution. We eliminated paper manifests and phone check-ins across our 18 factory distribution loops. Our dispatchers assign trips in seconds and delivery confirmations are instant with digital e-POD.”
+              “LogiFlow is an academic project. Company names, operating statistics, locations, routes, and contacts shown in the interface are sample data rather than customer or service claims.”
             </blockquote>
             <div style={{ marginTop: '8px' }}>
-              <strong style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', display: 'block' }}>Tran Hoang Nam</strong>
-              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Head of Supply Chain & Distribution Logistics</span>
+              <strong style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', display: 'block' }}>Demonstration Boundary</strong>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>No live carrier network or commercial service</span>
             </div>
           </div>
         </Card>
@@ -993,13 +993,13 @@ export const HomePage = () => {
       <section className="container">
         <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 36px auto' }}>
           <Badge variant="neutral" size="sm" style={{ marginBottom: '8px' }}>
-            National Hub Network
+              Sample Map Data
           </Badge>
           <h2 style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
-            National reach, local on-the-ground expertise
+            Representative Vietnamese logistics routes
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Pan-Vietnam command hubs connecting all 63 provinces with verified linehaul routes and local cross-docks.
+            The map demonstrates markers and route polylines; it does not represent LogiFlow-owned hubs or active coverage.
           </p>
         </div>
 
@@ -1019,13 +1019,13 @@ export const HomePage = () => {
               />
               <Polyline positions={tradeLanes.northSouthTrunk} color="#2563eb" weight={4} opacity={0.8} dashArray="6, 6" />
               <Marker position={[21.0278, 105.8342]} icon={createHubPin('Hanoi Office & Hub')}>
-                <Popup><strong>LogiFlow Northern Command Center</strong><br />Hanoi Mega-Hub</Popup>
+                <Popup><strong>Sample Northern Hub</strong><br />Hanoi</Popup>
               </Marker>
               <Marker position={[16.0544, 108.2022]} icon={createHubPin('Da Nang Office')}>
-                <Popup><strong>LogiFlow Central Cross-Dock</strong><br />Da Nang Gateway</Popup>
+                <Popup><strong>Sample Central Hub</strong><br />Da Nang</Popup>
               </Marker>
               <Marker position={[10.8231, 106.6297]} icon={createHubPin('HCMC HQ')}>
-                <Popup><strong>LogiFlow Global Headquarters</strong><br />HCMC Command Center</Popup>
+                <Popup><strong>Sample Southern Hub</strong><br />Ho Chi Minh City</Popup>
               </Marker>
             </MapContainer>
           </div>
@@ -1033,15 +1033,15 @@ export const HomePage = () => {
             <div style={{ display: 'flex', gap: '20px', fontSize: 'var(--text-xs)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '10px', height: '10px', backgroundColor: '#2563eb', borderRadius: '2px' }} />
-                LogiFlow Command Hubs
+                 Sample Hub Markers
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '10px', height: '4px', backgroundColor: '#2563eb' }} />
-                Scheduled Linehaul Corridors
+                 Sample Route Polylines
               </span>
             </div>
             <Link to="/coverage" style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
-              View Full Provincial Coverage Map →
+               View Sample Coverage Map →
             </Link>
           </div>
         </Card>
@@ -1061,15 +1061,15 @@ export const HomePage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px', alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 12px 0' }}>
-                Ready to Modernize Your Freight Operations?
+                 Ready to Explore the Demo?
               </h2>
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', lineHeight: 1.6, margin: '0 0 24px 0' }}>
-                Open a shipper account to start booking freight and tracking consignments, or join our network of certified linehaul drivers across Vietnam.
+                 Create a sample customer or driver account to walk through the implemented role-based flows.
               </p>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <Link to="/register/customer">
                   <Button variant="primary" size="lg" leftIcon={<LuUserPlus size={16} />}>
-                    Open Shipper Account
+                     Try Customer Flow
                   </Button>
                 </Link>
                 <Link to="/register/driver">
@@ -1083,7 +1083,7 @@ export const HomePage = () => {
                     }}
                     leftIcon={<LuTruck size={16} />}
                   >
-                    Join as Driver
+                     Try Driver Flow
                   </Button>
                 </Link>
               </div>
@@ -1103,9 +1103,9 @@ export const HomePage = () => {
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--color-success-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
                     <LuCheck size={24} />
                   </div>
-                  <h3 style={{ color: '#fff', fontSize: 'var(--text-lg)', margin: '0 0 6px 0' }}>Inquiry Received</h3>
+                  <h3 style={{ color: '#fff', fontSize: 'var(--text-lg)', margin: '0 0 6px 0' }}>Demo Form Submitted</h3>
                   <p style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-xs)', margin: 0 }}>
-                    Our freight operations team will contact you within 2 business hours.
+                    No information was transmitted to a sales or operations team.
                   </p>
                 </div>
               ) : (
@@ -1149,7 +1149,7 @@ export const HomePage = () => {
                     />
                   </div>
                   <Button variant="primary" size="lg" type="submit" style={{ marginTop: '8px' }}>
-                    Submit Freight Inquiry
+                    Simulate Form Submission
                   </Button>
                 </form>
               )}

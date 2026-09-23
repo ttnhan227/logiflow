@@ -31,23 +31,23 @@ export const FaqPage = () => {
 
   const faqCategories = [
     {
-      name: 'General Logistics',
+      name: 'Project Scope',
       icon: <LuPackage size={16} />,
       items: [
         {
-          question: 'What is LogiFlow and how does the platform operate?',
+          question: 'What is LogiFlow?',
           answer:
-            'LogiFlow is an enterprise freight and dispatch platform in Vietnam. We unify multi-modal linehaul transport, automated dispatch operations, and live telemetry across all 63 provinces for manufacturers, shippers, and commercial fleets.',
+            'LogiFlow is an academic full-stack project that demonstrates freight orders, trip assignment, driver location updates, proof of delivery, and billing. It is not a live carrier or commercial logistics service.',
         },
         {
-          question: 'What provincial corridors and hub coverage does LogiFlow support?',
+          question: 'Are the hubs, routes, and contacts real?',
           answer:
-            'We provide comprehensive nationwide coverage anchored by 3 primary sorting mega-terminals in Hanoi, Da Nang, and Ho Chi Minh City, connecting over 40 provincial cross-docking facilities.',
+            'No. Public maps and route examples use sample Vietnamese locations to demonstrate the interface; they do not represent an operating network.',
         },
         {
-          question: 'How do enterprise shippers create an account?',
+          question: 'Can I create a demonstration account?',
           answer:
-            'Businesses can register online through our Corporate Registration portal or reach out directly to our Business Development team to discuss volume SLAs, custom rate cards, and billing terms.',
+            'The registration screens support the project roles used by the customer, driver, and administrator workflows. Do not enter sensitive production data.',
         },
       ],
     },
@@ -56,19 +56,19 @@ export const FaqPage = () => {
       icon: <LuTruck size={16} />,
       items: [
         {
-          question: 'What cargo weight brackets and vehicle types are available?',
+          question: 'What vehicle data does the project model?',
           answer:
-            'We support everything from urban express parcels (up to 2 tons) to heavy linehaul full truckloads (5T, 10T, 15T, and 30T ISO container tractors). Specialized refrigerated units (-20°C to +15°C) are also available.',
+            'The sample data includes several vehicle classes and capacities so the assignment logic can compare driver licenses, vehicle capacity, availability, and distance.',
         },
         {
           question: 'How do GPS updates and digital proof of delivery (e-POD) work?',
           answer:
-            'Vehicles stream real-time telemetry coordinates to our cloud control tower. Upon handover, the driver collects recipient signatures and photos directly in the mobile app, generating instant timestamped e-POD PDF manifests.',
+            'The driver client sends trip-scoped coordinates over the backend, and authorized web clients receive location updates through WebSockets. The mobile workflow also captures a recipient signature at delivery.',
         },
         {
-          question: 'What cargo insurance coverage is provided for transit?',
+          question: 'Does the project provide transport or cargo insurance?',
           answer:
-            'All transported shipments are backstopped by comprehensive primary marine cargo risk policies up to 10 Billion VND, with dedicated 48-hour claims processing.',
+            'No. LogiFlow does not transport cargo, sell insurance, or process claims.',
         },
       ],
     },
@@ -77,30 +77,30 @@ export const FaqPage = () => {
       icon: <LuFileText size={16} />,
       items: [
         {
-          question: 'What are the requirements to join as a driver partner?',
+          question: 'How does driver onboarding work in the demo?',
           answer:
-            'Drivers must hold a valid commercial Vietnamese driving license (Class B2, C, D, or FC), maintain an active vehicle inspection certificate, pass background verification, and complete the LogiFlow onboarding safety briefing.',
+            'A user submits driver and vehicle details. Mistral OCR can extract fields from a license image, but an administrator still reviews the submitted data; the project does not authenticate a government document or run a background check.',
         },
         {
-          question: 'How are driver payout requests and settlements processed?',
+          question: 'Does the mobile app pay drivers?',
           answer:
-            'Drivers request direct digital bank payouts via their mobile application upon completing assigned trip manifests. Administrative review and bank transfers are executed on expedited cycles.',
+            'No. There is no real driver payout or bank-transfer integration.',
         },
       ],
     },
     {
-      name: 'Enterprise & API',
+      name: 'API & Billing',
       icon: <LuBuilding2 size={16} />,
       items: [
         {
-          question: 'Does LogiFlow support direct REST API / Webhook integration?',
+          question: 'What API does the application use?',
           answer:
-            'Yes. Our modern REST API enables automated bulk order injection, real-time rate queries, tracking webhooks, and digital invoice extraction directly from your ERP, WMS, or SAP instance.',
+            'The React and Flutter clients call a Spring Boot REST API. The repository does not claim a production ERP, WMS, SAP, or public webhook integration.',
         },
         {
-          question: 'What contractual Service Level Agreements (SLAs) do you offer?',
+          question: 'How does billing work?',
           answer:
-            'Our corporate agreements guarantee 99.8% on-time transit windows, 15-minute key account priority dispatch response times, and automated contractual rebate credits for unexcused service disruptions.',
+            'The application can generate invoice PDFs and open a PayPal sandbox checkout. It does not collect live freight payments or offer commercial service-level agreements.',
         },
       ],
     },
@@ -115,9 +115,9 @@ export const FaqPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Knowledge Base</Badge>}
+          badge={<Badge variant="brand">Project FAQ</Badge>}
           title="Frequently Asked Questions"
-          description="Everything you need to know about LogiFlow's nationwide freight network, carrier onboarding, pricing SLAs, and digital operations."
+          description="Clear boundaries between the implemented demonstration and services the project does not provide."
         />
       </div>
 
@@ -258,15 +258,15 @@ export const FaqPage = () => {
               Still have specific questions?
             </h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
-              Our operations dispatch desk is available 24/7 to assist with active cargo or enterprise setups.
+              LogiFlow has no live dispatch desk. Use the repository issue tracker for project questions.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
             <Link to="/contact">
-              <Button variant="primary">Contact Operational Support</Button>
+              <Button variant="primary">View Form Demo</Button>
             </Link>
-            <a href="tel:+8419001234">
+            <Link to="/about">
               <Button
                 variant="outline"
                 style={{
@@ -275,9 +275,9 @@ export const FaqPage = () => {
                   color: 'var(--color-white)',
                 }}
               >
-                Call Hotline: +84 1900-1234
+                About the Project
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </section>

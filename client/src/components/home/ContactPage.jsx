@@ -48,9 +48,9 @@ export const ContactPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Operational Support</Badge>}
-          title="Contact LogiFlow"
-          description="Have questions about our multi-modal freight services, corporate rates, or technical API integration? We are here to help."
+          badge={<Badge variant="brand">Interface Demo</Badge>}
+          title="Contact Form Demonstration"
+          description="This page demonstrates form controls and validation. It does not send messages to a live support team."
         />
       </div>
 
@@ -59,16 +59,16 @@ export const ContactPage = () => {
           {/* Inquiry Form */}
           <Card style={{ padding: '32px' }}>
             <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
-              Send an Inquiry
+              Try the Form
             </h3>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
-              Our operations and customer support team responds within 2 business hours.
+              Submitted values are cleared locally after the simulated response.
             </p>
 
             {submitStatus === 'success' && (
               <div style={{ marginBottom: '16px' }}>
                 <Alert variant="success" onClose={() => setSubmitStatus(null)}>
-                  Your message has been received! A logistics coordinator will contact you shortly.
+                  Demo submitted locally. No message was transmitted.
                 </Alert>
               </div>
             )}
@@ -101,10 +101,10 @@ export const ContactPage = () => {
                 onChange={handleChange}
                 options={[
                   { value: 'general', label: 'General Corporate Inquiry' },
-                  { value: 'business', label: 'Enterprise Contract & Quote' },
-                  { value: 'support', label: 'Active Shipment Support' },
-                  { value: 'driver', label: 'Driver Partner Operations' },
-                  { value: 'technical', label: 'API & Technical Integration' },
+                  { value: 'business', label: 'Customer Workflow' },
+                  { value: 'support', label: 'Shipment Workflow' },
+                  { value: 'driver', label: 'Driver Workflow' },
+                  { value: 'technical', label: 'Technical Question' },
                 ]}
               />
 
@@ -114,7 +114,7 @@ export const ContactPage = () => {
                 value={formData.subject}
                 onChange={handleChange}
                 required
-                placeholder="e.g. FTL Linehaul Quote Request for HCMC - Da Nang"
+                placeholder="e.g. Question about the tracking workflow"
               />
 
               <Textarea
@@ -124,7 +124,7 @@ export const ContactPage = () => {
                 onChange={handleChange}
                 required
                 rows={4}
-                placeholder="Describe your freight volume, origin/destination hubs, or specific questions..."
+                placeholder="Enter sample form content..."
               />
 
               <Button
@@ -135,7 +135,7 @@ export const ContactPage = () => {
                 leftIcon={<LuSend size={16} />}
                 style={{ marginTop: '8px' }}
               >
-                Submit Inquiry
+                Simulate Submission
               </Button>
             </form>
           </Card>
@@ -148,12 +148,12 @@ export const ContactPage = () => {
                   <LuPhone size={20} color="var(--color-brand-600)" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Command Center Hotline</h4>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>24/7 Dedicated Support</span>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Project Type</h4>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Academic team project</span>
                 </div>
               </div>
               <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-brand-700)' }}>
-                +84 1900-1234
+                Demonstration only
               </div>
             </Card>
 
@@ -163,12 +163,12 @@ export const ContactPage = () => {
                   <LuMail size={20} color="var(--color-brand-600)" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Enterprise Sales Email</h4>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>B2B Quotes & Inquiries</span>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Integrations</h4>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Development and sandbox services</span>
                 </div>
               </div>
               <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                business@logiflow.vn
+                PayPal sandbox and Mistral OCR
               </div>
             </Card>
 
@@ -178,12 +178,12 @@ export const ContactPage = () => {
                   <LuMapPin size={20} color="var(--color-brand-600)" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Corporate Headquarters</h4>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Ho Chi Minh City</span>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Sample Geography</h4>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Vietnamese logistics scenarios</span>
                 </div>
               </div>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                123 Nguyen Trai Street, District 1, Ho Chi Minh City, Vietnam 70000
+                Map markers, addresses, routes, and contacts in the public interface are sample data.
               </p>
             </Card>
 
@@ -193,13 +193,12 @@ export const ContactPage = () => {
                   <LuClock size={20} color="var(--color-brand-600)" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Business Desk Hours</h4>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Availability</h4>
                 </div>
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div>Monday – Friday: <strong>8:00 AM – 6:00 PM ICT</strong></div>
-                <div>Saturday: <strong>8:00 AM – 12:00 PM ICT</strong></div>
-                <div>Dispatch Emergency: <strong>24/7 Telemetry On-Call</strong></div>
+                <div>No live dispatch or customer support service is provided.</div>
+                <div>Use the repository issue tracker for project feedback.</div>
               </div>
             </Card>
           </div>

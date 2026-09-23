@@ -18,73 +18,73 @@ import {
 export const BusinessPage = () => {
   const capabilities = [
     {
-      title: 'Dedicated Key Account Dispatch Desk',
-      description: 'Single point of contact operational specialist assigned to manage daily loading schedules, spot rates, and high-priority lane surges.',
+      title: 'Administrator Workflow',
+      description: 'Manage users, vehicles, orders, trips, and assignment records through role-restricted screens.',
       icon: <LuBuilding2 size={24} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Enterprise REST API Integration',
-      description: 'Connect directly to your WMS, SAP ERP, or custom OMS. Automated order creation, barcode label generation, and webhook status pushes.',
+      title: 'Spring Boot REST API',
+      description: 'Expose authenticated endpoints used by the React and Flutter clients.',
       icon: <LuWebhook size={24} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Advanced Freight & Cost Telemetry',
-      description: 'Consolidated reporting across carrier on-time rates, freight cost per metric ton-km, route bottleneck heatmaps, and carbon impact.',
+      title: 'Operational Dashboards',
+      description: 'Present order, trip, vehicle, and invoice data from PostgreSQL in role-specific views.',
       icon: <LuChartColumn size={24} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Dedicated Contracted Fleets',
-      description: 'Lock in seasonal container chassis and multi-ton linehaul trucks reserved strictly for your manufacturing distribution loops.',
+      title: 'Driver Recommendations',
+      description: 'Rank available drivers using license compatibility, vehicle capacity, availability, and distance rules.',
       icon: <LuTruck size={24} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Guaranteed SLA & Priority Transit',
-      description: 'Strict 99.8% on-time contractual delivery window commitments backstopped by automatic penalty rebate credits.',
+      title: 'WebSocket Tracking',
+      description: 'Broadcast authorized, trip-scoped driver coordinates to customer and operations maps.',
       icon: <LuZap size={24} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Comprehensive Marine Cargo Policy',
-      description: 'Full replacement value coverage up to 10 Billion VND per transit with fast-track 48-hour claim resolution.',
+      title: 'Billing Demonstration',
+      description: 'Generate invoice PDFs and exercise checkout through PayPal sandbox mode.',
       icon: <LuShieldCheck size={24} color="var(--color-brand-600)" />,
     },
   ];
 
   const tiers = [
     {
-      name: 'Growth Shipper',
-      volume: '100 – 1,000 shipments / mo',
-      description: 'Designed for scaling e-commerce brands and regional manufacturers.',
+      name: 'Customer Flow',
+      volume: 'Web and mobile',
+      description: 'Demonstrates order entry, shipment views, tracking, delivery confirmation, and billing.',
       features: [
-        'Web portal & CSV/Excel bulk import',
-        'Standard GPS tracking & digital e-POD',
-        'Next-day settlement cycle',
-        'Standard email & phone support',
+        'Authenticated customer account',
+        'Order and shipment records',
+        'Trip tracking and proof of delivery',
+        'Invoice PDF and PayPal sandbox checkout',
       ],
       popular: false,
     },
     {
-      name: 'Corporate Fleet',
-      volume: '1,000 – 10,000 shipments / mo',
-      description: 'Full-service freight coordination for high-volume enterprise operations.',
+      name: 'Operations Flow',
+      volume: 'React web client',
+      description: 'Demonstrates administrative and dispatch tasks for the sample data model.',
       features: [
-        'Full REST API & webhook integration',
-        'Dedicated dispatch operations manager',
-        'Volume-tiered freight discount brackets',
-        'Customized driver uniforms & branding options',
-        'Extended 30-day corporate credit terms',
+        'Role-based administration',
+        'Driver and vehicle records',
+        'Trip planning and assignment',
+        'Rule-based driver recommendations',
+        'Operational status views',
       ],
       popular: true,
     },
     {
-      name: 'Strategic Enterprise',
-      volume: '10,000+ shipments / mo',
-      description: 'Custom multi-modal linehaul solutions and dedicated warehousing loops.',
+      name: 'Driver Flow',
+      volume: 'Flutter mobile client',
+      description: "Demonstrates the driver's portion of an assigned delivery.",
       features: [
-        'Tailored SLA contract with financial penalty terms',
-        'Dedicated on-site logistics coordination personnel',
-        'Custom ERP / SAP data pipeline connectors',
-        '24/7 dedicated control tower hotline',
-        'White-glove claims & cargo insurance priority',
+        'Driver registration and profile',
+        'Assigned trip details',
+        'Trip-scoped GPS updates',
+        'Delivery status changes',
+        'Recipient signature capture',
       ],
       popular: false,
     },
@@ -94,9 +94,9 @@ export const BusinessPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Enterprise Logistics</Badge>}
-          title="Frictionless Supply Chain Solutions for Large Shippers"
-          description="Scale your multi-province transport operations with automated dispatching, customized contracted capacity, and enterprise-grade REST APIs."
+          badge={<Badge variant="brand">Project Workflows</Badge>}
+          title="Customer, Operations, and Driver Demonstrations"
+          description="These are implemented portfolio workflows, not commercial plans or service commitments."
         />
       </div>
 
@@ -129,56 +129,56 @@ export const BusinessPage = () => {
         </div>
       </section>
 
-      {/* Enterprise SLA Metrics */}
+      {/* Implementation summary */}
       <section className="container">
         <Card style={{ padding: '36px', backgroundColor: 'var(--color-slate-900)', color: 'var(--color-white)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
             <Badge variant="brand" size="sm" style={{ width: 'fit-content' }}>
-              Contract Commitments
+              Implementation Summary
             </Badge>
             <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: 0 }}>
-              Enterprise SLA Guarantee
+              Technical Building Blocks
             </h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
             <div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
-                99.8%
+                3
               </div>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>On-Time Delivery SLA</div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Application Roles</div>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
-                Strict multi-province fulfillment windows.
+                Customer, driver, and administrator flows.
               </p>
             </div>
 
             <div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
-                &lt; 15 min
+                REST
               </div>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Command Desk Response</div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Backend API</div>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
-                Direct priority line for key accounts.
+                Spring Boot endpoints backed by PostgreSQL.
               </p>
             </div>
 
             <div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
-                100%
+                WS
               </div>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Cargo Insurance</div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Location Channel</div>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
-                Marine policy up to 10 Billion VND.
+                WebSocket updates for active trips.
               </p>
             </div>
 
             <div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, color: 'var(--color-brand-500)', fontVariantNumeric: 'tabular-nums' }}>
-                Net 30
+                Test
               </div>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Corporate Terms</div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '4px' }}>Checkout Mode</div>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-slate-400)', margin: '4px 0 0 0' }}>
-                Transparent monthly VAT consolidated invoicing.
+                PayPal integration uses sandbox credentials.
               </p>
             </div>
           </div>
@@ -189,10 +189,10 @@ export const BusinessPage = () => {
       <section className="container">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', margin: 0 }}>
-            Enterprise Volume Plans
+            Demonstration Areas
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Choose a contracted tier matching your monthly supply chain freight velocity.
+            Explore the implemented flows without implied pricing or commercial availability.
           </p>
         </div>
 
@@ -223,7 +223,7 @@ export const BusinessPage = () => {
                     textTransform: 'uppercase',
                   }}
                 >
-                  Enterprise Choice
+                  Main Demo
                 </div>
               )}
 
@@ -252,7 +252,7 @@ export const BusinessPage = () => {
                 <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
                   <Link to="/contact">
                     <Button variant={tier.popular ? 'primary' : 'outline'} style={{ width: '100%' }}>
-                      Request Custom Rate Quote
+                      View Project Information
                     </Button>
                   </Link>
                 </div>
@@ -279,24 +279,24 @@ export const BusinessPage = () => {
         >
           <div>
             <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
-              Speak Directly with our B2B Logistics Desk
+              LogiFlow Is a Portfolio Project
             </h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-              Available Monday through Saturday (8:00 AM – 6:00 PM ICT).
+              It does not operate a carrier network, support desk, or commercial service.
             </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <a href="tel:+8419001234">
+            <Link to="/about">
               <Button variant="primary" leftIcon={<LuPhone size={16} />}>
-                +84 1900-1234
+                About the Project
               </Button>
-            </a>
-            <a href="mailto:business@logiflow.vn">
+            </Link>
+            <Link to="/faq">
               <Button variant="outline" leftIcon={<LuMail size={16} />}>
-                business@logiflow.vn
+                Read the Demo FAQ
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </section>

@@ -17,33 +17,33 @@ import {
 export const MobileAppPage = () => {
   const appFeatures = [
     {
-      title: 'Live Sub-Minute GPS Tracking',
-      description: 'Follow shipments turn-by-turn on high-precision vector maps with estimated arrival calculation.',
+      title: 'Driver Location Updates',
+      description: 'Send trip-scoped coordinates to the backend while a delivery is in progress.',
       icon: <LuNavigation size={22} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Instant Push Alerts',
-      description: 'Receive real-time push notifications when orders are dispatched, in-transit, arrived, or delivered.',
+      title: 'Trip Status Updates',
+      description: 'Review assigned trips and update supported delivery states from the mobile workflow.',
       icon: <LuBell size={22} color="var(--color-brand-600)" />,
     },
     {
-      title: 'In-App Dispatch Chat',
-      description: 'Direct end-to-end encrypted messaging channel connecting consignee, driver, and operations desk.',
+      title: 'Assignment Details',
+      description: 'View route, customer, vehicle, and delivery information for an assigned trip.',
       icon: <LuMessageSquare size={22} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Digital e-POD Proof of Handover',
-      description: 'Capture recipient digital signatures and timestamped photo proof of delivery on mobile.',
+      title: 'Proof of Delivery',
+      description: 'Capture a recipient signature and delivery details from the driver client.',
       icon: <LuShieldCheck size={22} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Secure Payouts & Invoicing',
-      description: 'Instant driver payout withdrawals to linked Vietnamese bank accounts and mobile invoice access.',
+      title: 'Role-Based Sign-In',
+      description: 'Use authenticated customer and driver flows backed by the Spring Boot API.',
       icon: <LuCreditCard size={22} color="var(--color-brand-600)" />,
     },
     {
-      title: 'Fleet & Driver Verification',
-      description: 'Review licensed driver credentials, vehicle inspection compliance ratings, and safety scores.',
+      title: 'Driver Profile',
+      description: 'Review stored profile, license, and vehicle information used by the demo workflow.',
       icon: <LuTruck size={22} color="var(--color-brand-600)" />,
     },
   ];
@@ -52,9 +52,9 @@ export const MobileAppPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Native Mobile Apps</Badge>}
-          title="LogiFlow on iOS & Android"
-          description="Empower your field drivers, dispatch coordinators, and receiving clients with native mobile applications."
+          badge={<Badge variant="brand">Flutter Client</Badge>}
+          title="LogiFlow Mobile Workflows"
+          description="A Flutter client for the project's customer and driver flows."
         />
       </div>
 
@@ -64,13 +64,13 @@ export const MobileAppPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '36px', alignItems: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <Badge variant="brand" size="md" style={{ width: 'fit-content' }}>
-                Field Operational Suite
+                Academic Demo Build
               </Badge>
               <h2 style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: 0 }}>
-                Real-Time Freight Telemetry in the Palm of Your Hand
+                Assigned Trips, Location Updates, and Delivery Capture
               </h2>
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', lineHeight: 1.6, margin: 0 }}>
-                Designed specifically for Vietnamese logistics corridors. Works seamlessly offline in low-connectivity rural zones, synchronizing manifests once connected.
+                The mobile client connects to the LogiFlow API to demonstrate authenticated trip and delivery workflows.
               </p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffd700', fontSize: 'var(--text-xs)' }}>
@@ -80,13 +80,13 @@ export const MobileAppPage = () => {
                   ))}
                 </div>
                 <span style={{ color: 'var(--color-slate-300)', fontWeight: 600 }}>
-                  4.8 Rating Across 10,000+ Active Drivers
+                  Portfolio build; no production user or rating claim
                 </span>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
                 <Button variant="primary" size="lg" leftIcon={<LuDownload size={16} />}>
-                  Download Android APK
+                  Android Build
                 </Button>
                 <Link to="/track">
                   <Button
@@ -117,24 +117,24 @@ export const MobileAppPage = () => {
               }}
             >
               <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-brand-500)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Driver & Consignee Features
+                Implemented Mobile Flows
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: 'var(--text-xs)', color: 'var(--color-slate-300)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LuCircleCheck size={15} color="var(--color-success-600)" />
-                  <span>Integrated turn-by-turn map with weighbridge notifications</span>
+                  <span>Assigned trip and route details</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LuCircleCheck size={15} color="var(--color-success-600)" />
-                  <span>Direct Bluetooth printer support for physical receipt receipts</span>
+                  <span>Trip-scoped GPS location updates</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LuCircleCheck size={15} color="var(--color-success-600)" />
-                  <span>Instant camera scan for multi-barcode parcel consolidation</span>
+                  <span>Delivery status and signature capture</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LuCircleCheck size={15} color="var(--color-success-600)" />
-                  <span>Emergency 1-tap SOS dispatcher alert hotline</span>
+                  <span>Authenticated customer and driver views</span>
                 </div>
               </div>
             </div>
@@ -149,7 +149,7 @@ export const MobileAppPage = () => {
             Core Mobile Capabilities
           </h2>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-            Built for rugged on-the-road execution and transparent delivery handoffs.
+            Implemented for the project's driver and customer demonstration flows.
           </p>
         </div>
 
@@ -200,15 +200,15 @@ export const MobileAppPage = () => {
               Want to Access the Driver App?
             </h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-              Complete our driver onboarding verification to receive your mobile login credentials.
+              Create a sample driver profile and continue through the demo onboarding flow.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <Link to="/register/driver">
-              <Button variant="primary">Apply as Driver Partner</Button>
+              <Button variant="primary">Open Driver Registration</Button>
             </Link>
             <Link to="/contact">
-              <Button variant="outline">Technical Support</Button>
+              <Button variant="outline">Project Information</Button>
             </Link>
           </div>
         </div>

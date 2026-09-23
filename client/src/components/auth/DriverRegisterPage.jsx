@@ -282,15 +282,15 @@ export const DriverRegisterPage = () => {
             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Next Steps:</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
               <LuCheck size={14} color="var(--color-success-600)" />
-              <span>License & CV background verification (24–48 hours)</span>
+              <span>Administrator review of submitted license fields</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
               <LuCheck size={14} color="var(--color-success-600)" />
-              <span>Phone screening & orientation booking</span>
+              <span>Demo role approval in the administrator workflow</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
               <LuCheck size={14} color="var(--color-success-600)" />
-              <span>Mobile app account provisioning upon approval</span>
+              <span>Mobile sign-in after the account is approved</span>
             </div>
           </div>
 

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>An enterprise logistics and freight dispatch platform with real-time GPS telemetry, STOMP WebSockets, interactive Leaflet GIS routing, and multi-role operations management.</strong>
+  <strong>An academic freight-management application with multi-role workflows, WebSocket driver-location updates, React/Leaflet maps, and a Flutter driver client.</strong>
 </p>
 
 <p align="center">
@@ -19,15 +19,17 @@
 
 ---
 
+> **Project scope:** LogiFlow is a portfolio and academic project, not a live freight carrier. PayPal runs in sandbox mode, license OCR extracts fields for human review, and sample coverage, contacts, and operational data are demonstrations rather than commercial commitments.
+
 ## Platform Visual Preview
 
-| Landing & Control Tower | Real-Time Fleet Radar & Corridor Routing |
+| Landing Page & Operations Dashboard | Driver Locations & Route Map |
 |:---:|:---:|
-| ![Enterprise Freight Landing](docs/screenshots/logiflow-home-hero.png) | ![Live GPS Fleet Radar](docs/screenshots/logiflow-map.png) |
+| ![LogiFlow landing page](docs/screenshots/logiflow-home-hero.png) | ![Driver location map](docs/screenshots/logiflow-map.png) |
 | **Operations Management Dashboard** | **Public Shipment Tracking & Telemetry** |
 | ![Dispatcher Operations Console](docs/screenshots/logiflow-dashboard.png) | ![Public Milestone Tracking](docs/screenshots/logiflow-track.png) |
-| **SLA & Delay Analytics** | **Global Logistics News & Intelligence** |
-| ![Performance & Delay Reports](docs/screenshots/logiflow-reports.png) | ![Maritime Freight Intelligence](docs/screenshots/logiflow-news.png) |
+| **Performance & Delay Reports** | **Sample Logistics News Feed** |
+| ![Performance and delay reports](docs/screenshots/logiflow-reports.png) | ![Sample logistics news](docs/screenshots/logiflow-news.png) |
 
 ---
 
@@ -49,11 +51,11 @@ React 19 Web App (Admin / Dispatcher)        Flutter Mobile App (Driver GPS)
 |  ├─ Dispatch Engine       ──► Trip State Machine & Driver Assignment        |
 |  ├─ Real-Time Telemetry   ──► STOMP WebSockets & Live GPS Streaming         |
 |  ├─ Proof of Delivery     ──► Digital Signature Capture & Photo Upload      |
-|  └─ Billing & Settlement  ──► PayPal Checkout & Dynamic PDF Invoices        |
+|  └─ Billing Demo          ──► PayPal Sandbox & PDF Invoices                 |
 +─────────────────────────────────────────────────────────────────────────────+
                  │                                           │
                  ▼                                           ▼
-PostgreSQL 15 + PostGIS (Spatial routing)       External APIs (PayPal, Cloudinary)
+PostgreSQL 15                                   External APIs (PayPal, Cloudinary)
 ```
 
 ### Services
@@ -63,27 +65,28 @@ PostgreSQL 15 + PostGIS (Spatial routing)       External APIs (PayPal, Cloudinar
 | Backend API | Spring Boot 3 + Java 17/21 | RESTful endpoints, WebSocket broker, security, business logic |
 | Web Client | React 19 + Ant Design | Dispatcher command console, tracking portal, analytics |
 | Mobile Client | Flutter (Dart) | Driver turn-by-turn tracking, signature capture, status updates |
-| Spatial Database | PostgreSQL 15 + PostGIS | Relational storage, spatial geometry queries, corridor routing |
-| Telemetry Broker | Spring STOMP / WebSockets | Low-latency bi-directional GPS coordinate streaming |
+| Database | PostgreSQL 15 | Relational storage for users, orders, trips, and telemetry |
+| Telemetry Broker | Spring STOMP / WebSockets | Trip-scoped driver-location updates |
 | Containerization | Docker + Docker Compose | Multi-service orchestration (`compose.yaml`) |
 
-### Key Infrastructure Decisions
+### Implementation Notes
 
-- **Spatial Geometries & Routing with PostGIS** — Native spatial indexing for vehicle proximity, depot geo-fencing, and route calculation.
-- **Bi-Directional STOMP Telemetry** — Real-time push updates over WebSockets eliminates polling overhead for live map tracking.
-- **Role-Based State Machine** — Strict status transition validation (Created ──► Dispatched ──► In-Transit ──► Delivered) enforced in Spring Security.
-- **Automated Invoicing & Payments** — Dynamic PDF generation paired with PayPal API sandbox integration for instant freight settlements.
+- **Map-based Routing** — Geocoding and routing data are displayed in Leaflet/OpenStreetMap views.
+- **STOMP Location Updates** — Drivers publish location updates over WebSockets and web clients subscribe by trip.
+- **Role-Based Workflows** — Spring Security restricts endpoints by role while service code handles trip-state transitions.
+- **Invoices and Sandbox Payments** — Thymeleaf/iText generates PDFs and the PayPal sandbox demonstrates checkout and capture flows.
 
 ---
 
 ## Features
 
-- **Real-Time Fleet Telemetry**: Live vehicle location tracking over interactive Leaflet GIS maps via WebSockets.
+- **Driver Location Updates**: Trip-scoped coordinates are sent over WebSockets and displayed on Leaflet maps.
 - **Multi-Role Coordination**: Tailored portals for Admins (fleet config), Dispatchers (trip routing), Drivers (POD execution), and Customers (public tracking).
 - **Proof of Delivery (POD)**: On-glass digital signature capture and delivery photo uploads.
-- **Constraint-Based Driver Matching**: Recommends drivers based on license category, current location, and vehicle capacity.
-- **Automated Billing**: Generates formatted PDF freight manifests and handles online payment settlements.
-- **SLA & Delay Analytics**: Performance dashboards tracking transit times, on-time delivery rates, and bottleneck alerts.
+- **Rule-Based Driver Recommendations**: Scores drivers using availability, license category, current location, and vehicle capacity.
+- **License Data Extraction**: Uses Mistral OCR to prefill fields from a driver-license image for human review.
+- **Invoices and Sandbox Checkout**: Generates PDF invoices and integrates PayPal sandbox checkout.
+- **Delivery-Target & Delay Analytics**: Demonstration dashboards for transit times, on-time rates, and delay alerts.
 
 ---
 

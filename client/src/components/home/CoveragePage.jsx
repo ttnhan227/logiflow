@@ -42,30 +42,30 @@ const createPinIcon = (color, label) =>
     popupAnchor: [0, -12],
   });
 
-const hqIcon = createPinIcon('#dc2626', 'HQ HCMC');
-const northIcon = createPinIcon('#2563eb', 'North Hub');
-const centralIcon = createPinIcon('#059669', 'Central Hub');
-const southIcon = createPinIcon('#d97706', 'South Hub');
+const hqIcon = createPinIcon('#dc2626', 'HCMC Sample');
+const northIcon = createPinIcon('#2563eb', 'North Sample');
+const centralIcon = createPinIcon('#059669', 'Central Sample');
+const southIcon = createPinIcon('#d97706', 'South Sample');
 
 export const CoveragePage = () => {
   const cities = [
-    { name: 'Hanoi Terminal', coords: [21.0278, 105.8342], region: 'north', label: 'Hanoi Hub', drivers: '60+' },
-    { name: 'Hai Phong Port Hub', coords: [20.846, 106.6881], region: 'north', label: 'Hai Phong', drivers: '40+' },
-    { name: 'Quang Ninh Hub', coords: [20.9718, 107.0417], region: 'north', label: 'Quang Ninh', drivers: '25+' },
-    { name: 'Da Nang Central Crossdock', coords: [16.0544, 108.2022], region: 'central', label: 'Da Nang Hub', drivers: '45+' },
-    { name: 'Hue Distribution', coords: [16.4619, 107.595], region: 'central', label: 'Hue Hub', drivers: '20+' },
-    { name: 'Nha Trang Marine Hub', coords: [12.2388, 109.1967], region: 'central', label: 'Nha Trang', drivers: '30+' },
-    { name: 'HCMC Primary Gateway', coords: [10.8231, 106.6297], region: 'south', label: 'HCMC Gateway', drivers: '120+' },
-    { name: 'Can Tho Mekong Hub', coords: [10.0458, 105.7469], region: 'south', label: 'Can Tho', drivers: '35+' },
-    { name: 'Vung Tau Port Depot', coords: [10.4044, 107.1369], region: 'south', label: 'Vung Tau', drivers: '30+' },
+    { name: 'Hanoi Sample Marker', coords: [21.0278, 105.8342], region: 'north', label: 'Hanoi', drivers: 'Sample data' },
+    { name: 'Hai Phong Sample Marker', coords: [20.846, 106.6881], region: 'north', label: 'Hai Phong', drivers: 'Sample data' },
+    { name: 'Quang Ninh Sample Marker', coords: [20.9718, 107.0417], region: 'north', label: 'Quang Ninh', drivers: 'Sample data' },
+    { name: 'Da Nang Sample Marker', coords: [16.0544, 108.2022], region: 'central', label: 'Da Nang', drivers: 'Sample data' },
+    { name: 'Hue Sample Marker', coords: [16.4619, 107.595], region: 'central', label: 'Hue', drivers: 'Sample data' },
+    { name: 'Nha Trang Sample Marker', coords: [12.2388, 109.1967], region: 'central', label: 'Nha Trang', drivers: 'Sample data' },
+    { name: 'HCMC Sample Marker', coords: [10.8231, 106.6297], region: 'south', label: 'HCMC', drivers: 'Sample data' },
+    { name: 'Can Tho Sample Marker', coords: [10.0458, 105.7469], region: 'south', label: 'Can Tho', drivers: 'Sample data' },
+    { name: 'Vung Tau Sample Marker', coords: [10.4044, 107.1369], region: 'south', label: 'Vung Tau', drivers: 'Sample data' },
   ];
 
   const headquarters = {
-    name: 'LogiFlow Headquarters & Command Center',
-    address: '123 Nguyen Trai Street, District 1',
+    name: 'Sample Ho Chi Minh City Marker',
+    address: 'Demonstration location',
     city: 'Ho Chi Minh City',
-    phone: '+84 1900-1234',
-    email: 'operations@logiflow.vn',
+    phone: 'No live phone',
+    email: 'No live email',
     coords: [10.7757, 106.7009],
   };
 
@@ -73,9 +73,9 @@ export const CoveragePage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', padding: '36px 0 64px 0' }}>
       <div className="container">
         <PageHeader
-          badge={<Badge variant="brand">Pan-Vietnam Logistics Network</Badge>}
-          title="Distribution Hubs & Provincial Coverage"
-          description="Direct linehaul services, cross-docking facilities, and last-mile dispatch coverage spanning all 63 provinces across Vietnam."
+          badge={<Badge variant="brand">Sample Map</Badge>}
+          title="Representative Routes and Locations"
+          description="These markers demonstrate the mapping interface and do not represent owned facilities, active drivers, or service coverage."
         />
       </div>
 
@@ -97,26 +97,26 @@ export const CoveragePage = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <LuMapPin size={18} color="var(--color-brand-600)" />
               <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Active Freight Terminals & Hub Routing
+                Demonstration Locations
               </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 'var(--text-xs)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#dc2626' }} />
-                <span>Headquarters</span>
+                <span>Sample primary marker</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2563eb' }} />
-                <span>North Terminals</span>
+                <span>North samples</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#059669' }} />
-                <span>Central Terminals</span>
+                <span>Central samples</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#d97706' }} />
-                <span>South Terminals</span>
+                <span>South samples</span>
               </div>
             </div>
           </div>
@@ -167,13 +167,13 @@ export const CoveragePage = () => {
                     <div style={{ padding: '4px' }}>
                       <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{city.name}</strong>
                       <div style={{ fontSize: '11px', color: 'var(--color-brand-600)', fontWeight: 600, marginTop: '2px' }}>
-                        {city.region.toUpperCase()} OPERATIONAL HUB
+                        {city.region.toUpperCase()} SAMPLE MARKER
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        Active Drivers: <strong>{city.drivers}</strong>
+                        Driver count: <strong>{city.drivers}</strong>
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--color-success-600)', marginTop: '2px' }}>
-                        ✓ FTL & Express Linehaul Ready
+                        Representative logistics location
                       </div>
                     </div>
                   </Popup>
@@ -206,7 +206,7 @@ export const CoveragePage = () => {
               ))}
             </div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-              Transit: <strong>Same-day / 24h Next-Flight</strong>
+              Scenario: <strong>sample northern route</strong>
             </div>
           </Card>
 
@@ -229,7 +229,7 @@ export const CoveragePage = () => {
               ))}
             </div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-              Transit: <strong>1–2 Business Days</strong>
+              Scenario: <strong>sample central route</strong>
             </div>
           </Card>
 
@@ -252,7 +252,7 @@ export const CoveragePage = () => {
               ))}
             </div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-              Transit: <strong>Same-day / Scheduled Multi-stop</strong>
+              Scenario: <strong>sample southern route</strong>
             </div>
           </Card>
         </div>
@@ -263,18 +263,18 @@ export const CoveragePage = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', padding: '32px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' }}>
           <div>
             <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
-              Ship to Any Province with Verified SLAs
+              Explore the Tracking Demonstration
             </h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-              Request quote schedules or review our dedicated linehaul frequency tables.
+              Use sample records to review the map and shipment status interfaces.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <Link to="/track">
-              <Button variant="primary">Track Existing Cargo</Button>
+              <Button variant="primary">Open Tracking Demo</Button>
             </Link>
             <Link to="/business">
-              <Button variant="outline">Enterprise Rate Sheet</Button>
+              <Button variant="outline">View Project Workflows</Button>
             </Link>
           </div>
         </div>
