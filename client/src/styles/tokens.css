@@ -6,28 +6,34 @@
 :root {
   /* Color Palette - Neutrals / Grayscale */
   --color-white: #ffffff;
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-150: #e9eff6;
-  --color-slate-200: #e2e8f0;
+  --color-slate-50: #f3f6f8;
+  --color-slate-100: #eaf0f4;
+  --color-slate-150: #e0e9ef;
+  --color-slate-200: #d4e0e8;
   --color-slate-300: #cbd5e1;
   --color-slate-400: #94a3b8;
   --color-slate-500: #64748b;
   --color-slate-600: #475467;
   --color-slate-700: #334155;
   --color-slate-800: #1e293b;
-  --color-slate-900: #0f172a;
-  --color-slate-950: #090d16;
+  --color-slate-900: #071a2e;
+  --color-slate-950: #03111f;
 
   /* Primary Brand / Accent (Cobalt & Enterprise Navy) */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  --color-brand-50: #eaf5fb;
+  --color-brand-100: #d6edf8;
+  --color-brand-200: #addcf1;
+  --color-brand-500: #258dc8;
+  --color-brand-600: #176fae;
+  --color-brand-700: #12598e;
+  --color-brand-800: #104a75;
+  --color-brand-900: #0a3153;
+
+  /* Route language from the brand poster */
+  --color-route-orange: #ff6714;
+  --color-route-orange-dark: #d94f08;
+  --color-route-cyan: #44c5e1;
+  --color-asphalt: #071a2e;
 
   /* Semantic Status: Success */
   --color-success-50: #f0fdf4;
@@ -68,9 +74,9 @@
   --bg-surface-hover: var(--color-slate-100);
   --bg-surface-active: var(--color-slate-200);
   
-  --bg-sidebar: var(--color-slate-900);
-  --bg-sidebar-hover: #1e293b;
-  --bg-sidebar-active: #27354f;
+  --bg-sidebar: var(--color-asphalt);
+  --bg-sidebar-hover: #0d2946;
+  --bg-sidebar-active: #123b61;
 
   --text-primary: var(--color-slate-900);
   --text-secondary: var(--color-slate-600);
@@ -81,7 +87,7 @@
   --border-subtle: #eaecf0;
   --border-default: var(--color-slate-200);
   --border-strong: var(--color-slate-300);
-  --border-focus: var(--color-brand-600);
+  --border-focus: var(--color-route-cyan);
 
   /* Typography */
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -149,8 +155,8 @@
   --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
 
   /* Focus Ring */
-  --focus-ring: 0 0 0 2px rgba(37, 99, 235, 0.2);
-  --focus-ring-offset: 0 0 0 2px var(--color-white), 0 0 0 4px rgba(37, 99, 235, 0.35);
+  --focus-ring: 0 0 0 2px rgba(68, 197, 225, 0.25);
+  --focus-ring-offset: 0 0 0 2px var(--color-white), 0 0 0 4px rgba(68, 197, 225, 0.4);
 
   /* Transitions */
   --transition-fast: 120ms cubic-bezier(0.16, 1, 0.3, 1);

@@ -121,8 +121,8 @@ export const MainLayout = () => {
       padding: '8px 12px',
       fontSize: 'var(--text-sm)',
       fontWeight: isActive ? 600 : 500,
-      color: isActive ? 'var(--color-brand-700)' : 'var(--color-slate-700)',
-      backgroundColor: isActive ? 'var(--color-brand-50)' : 'transparent',
+      color: isActive ? 'var(--color-route-orange)' : '#d7e7f3',
+      backgroundColor: isActive ? 'rgba(255, 103, 20, 0.12)' : 'transparent',
       borderRadius: 'var(--radius-md)',
       transition: 'all var(--transition-fast)',
       cursor: 'pointer',
@@ -137,10 +137,10 @@ export const MainLayout = () => {
           position: 'sticky',
           top: 0,
           zIndex: 900,
-          backgroundColor: 'rgba(255, 255, 255, 0.96)',
+          backgroundColor: 'rgba(7, 26, 46, 0.97)',
           backdropFilter: 'blur(8px)',
-          borderBottom: `1px solid ${isScrolled ? 'var(--border-strong)' : 'var(--border-default)'}`,
-          boxShadow: isScrolled ? 'var(--shadow-sm)' : 'none',
+          borderBottom: `1px solid ${isScrolled ? 'rgba(68, 197, 225, 0.45)' : 'rgba(68, 197, 225, 0.2)'}`,
+          boxShadow: isScrolled ? '0 12px 28px -20px rgba(3, 17, 31, 0.9)' : 'none',
           transition: 'all var(--transition-base)',
         }}
       >
@@ -164,7 +164,25 @@ export const MainLayout = () => {
               flexShrink: 0,
             }}
           >
-            <img src="/logo.png" alt="LogiFlow" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
+            <span
+              aria-hidden="true"
+              style={{
+                width: '36px',
+                height: '36px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--color-route-orange)',
+                border: '1px solid rgba(68, 197, 225, 0.35)',
+                borderRadius: '9px',
+                backgroundColor: 'rgba(68, 197, 225, 0.08)',
+              }}
+            >
+              <LuTruck size={21} />
+            </span>
+            <span style={{ marginLeft: '9px', color: 'var(--color-white)', fontSize: '20px', fontWeight: 750, letterSpacing: '-0.04em' }}>
+              Logi<span style={{ color: 'var(--color-route-cyan)' }}>Flow</span>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -186,8 +204,8 @@ export const MainLayout = () => {
                 onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
                 style={{
                   ...navLinkStyle('/services'),
-                  color: servicesDropdownOpen ? 'var(--color-brand-700)' : 'var(--color-slate-700)',
-                  backgroundColor: servicesDropdownOpen ? 'var(--color-brand-50)' : 'transparent',
+                  color: servicesDropdownOpen ? 'var(--color-route-orange)' : '#d7e7f3',
+                  backgroundColor: servicesDropdownOpen ? 'rgba(255, 103, 20, 0.12)' : 'transparent',
                 }}
               >
                 Services <LuChevronDown size={14} style={{ transform: servicesDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
@@ -453,7 +471,7 @@ export const MainLayout = () => {
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {/* Join Us Dropdown */}
-                <div style={{ position: 'relative' }} ref={joinRef}>
+                <div className="join-menu" style={{ position: 'relative' }} ref={joinRef}>
                   <button
                     onClick={() => setJoinDropdownOpen(!joinDropdownOpen)}
                     style={{
@@ -570,7 +588,7 @@ export const MainLayout = () => {
             style={{
               padding: '16px',
               borderTop: '1px solid var(--border-default)',
-              backgroundColor: 'var(--color-white)',
+              backgroundColor: 'var(--bg-sidebar)',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
@@ -659,6 +677,7 @@ export const MainLayout = () => {
         @media (max-width: 899px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: inline-flex !important; }
+          .join-menu { display: none !important; }
         }
       `}</style>
     </div>

@@ -133,7 +133,7 @@ const activeLiveFleet = [
 
 export const HomePage = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
-  const [selectedLane, setSelectedLane] = useState('northSouthTrunk');
+  const [selectedLane] = useState('northSouthTrunk');
   const [leadForm, setLeadForm] = useState({ company: '', email: '', mode: 'FTL', monthlyVolume: '10-50_TRIPS' });
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const navigate = useNavigate();
@@ -198,15 +198,17 @@ export const HomePage = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '80px', paddingBottom: '80px' }}>
-      {/* 1. HERO SECTION (Brightened Photo Overlay + Live Telemetry Map) */}
+      {/* 1. HERO SECTION — unified Vietnam route poster */}
       <section
+        className="logiflow-route-hero"
         style={{
           position: 'relative',
-          backgroundColor: '#0a0f1d',
+          backgroundColor: 'var(--color-asphalt)',
           color: 'var(--color-white)',
-          padding: '88px 0 104px 0',
+          padding: '92px 0 112px 0',
+          minHeight: '680px',
           overflow: 'hidden',
-          borderBottom: '1px solid #1e293b',
+          borderBottom: '4px solid var(--color-route-orange)',
         }}
       >
         {/* Background Image Layer */}
@@ -214,11 +216,11 @@ export const HomePage = () => {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url(/hero-bg.jpg)',
+            backgroundImage: 'url(/brand-route-art.png)',
             backgroundSize: 'cover',
-            backgroundPosition: 'center 40%',
+            backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            opacity: 0.82,
+            opacity: 1,
           }}
         />
 
@@ -228,24 +230,22 @@ export const HomePage = () => {
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(90deg, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.6) 48%, rgba(15, 23, 42, 0.2) 100%), linear-gradient(180deg, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 0.1) 60%, rgba(15, 23, 42, 0.85) 100%)',
+              'linear-gradient(90deg, rgba(3, 17, 31, 0.93) 0%, rgba(3, 17, 31, 0.78) 38%, rgba(3, 17, 31, 0.18) 72%), linear-gradient(180deg, rgba(3, 17, 31, 0.18) 0%, rgba(3, 17, 31, 0.05) 58%, rgba(3, 17, 31, 0.82) 100%)',
             pointerEvents: 'none',
           }}
         />
 
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '52px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 650px)', alignItems: 'center' }}>
             {/* Left Hero Column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Badge variant="brand" size="md">
-                  Academic Full-Stack Project
-                </Badge>
+                <Badge variant="brand" size="md">Pan-Vietnam Freight Operations</Badge>
               </div>
 
               <h1
                 style={{
-                  fontSize: 'clamp(34px, 4.8vw, 50px)',
+                  fontSize: 'clamp(44px, 6vw, 72px)',
                   fontWeight: 'var(--font-bold)',
                   color: 'var(--color-white)',
                   lineHeight: 1.12,
@@ -254,7 +254,7 @@ export const HomePage = () => {
                   margin: 0,
                 }}
               >
-                Freight Dispatch, Driver Tracking, and Proof of Delivery
+                Move freight.<br />See everything.
               </h1>
 
               <p
@@ -267,20 +267,21 @@ export const HomePage = () => {
                   maxWidth: '620px',
                 }}
               >
-                Explore order creation, rule-based driver assignment, WebSocket location updates, delivery signatures, and sandbox billing in one demonstration application.
+                Dispatch orders, follow live GPS movement, coordinate drivers, and
+                capture proof of delivery in one continuous operational flow.
               </p>
 
               {/* Quick Freight Track Console */}
               <div
                 style={{
                   padding: '8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  backgroundColor: 'rgba(3, 17, 31, 0.72)',
                   borderRadius: 'var(--radius-xl)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  border: '1px solid rgba(68, 197, 225, 0.38)',
                   backdropFilter: 'blur(12px)',
                 }}
               >
-                <form onSubmit={handleTrackSubmit} style={{ display: 'flex', gap: '8px' }}>
+                <form className="logiflow-track-form" onSubmit={handleTrackSubmit} style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
                     placeholder="Enter Tracking Code (e.g. TRK-882194)..."
@@ -356,7 +357,7 @@ export const HomePage = () => {
             </div>
 
             {/* Right Hero Column: Interactive Floating Live Radar Preview */}
-            <div>
+            <div style={{ display: 'none' }} aria-hidden="true">
               <Card
                 style={{
                   backgroundColor: 'rgba(15, 23, 42, 0.9)',

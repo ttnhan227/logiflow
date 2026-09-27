@@ -21,8 +21,43 @@ html {
 body {
   min-height: 100vh;
   background-color: var(--bg-app);
+  background-image:
+    linear-gradient(rgba(7, 26, 46, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(7, 26, 46, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
   color: var(--text-primary);
   overflow-x: hidden;
+}
+
+::selection {
+  color: var(--color-white);
+  background: var(--color-route-orange);
+}
+
+.logiflow-route-hero .ui-btn-primary {
+  background: var(--color-route-orange) !important;
+  border-color: var(--color-route-orange) !important;
+  box-shadow: 0 12px 28px -12px rgba(255, 103, 20, 0.75) !important;
+}
+
+.logiflow-route-hero .ui-btn-primary:hover {
+  background: var(--color-route-orange-dark) !important;
+  border-color: var(--color-route-orange-dark) !important;
+}
+
+@media (max-width: 640px) {
+  .logiflow-route-hero .logiflow-track-form {
+    flex-direction: column !important;
+  }
+
+  .logiflow-route-hero .logiflow-track-form input,
+  .logiflow-route-hero .logiflow-track-form .ui-btn {
+    width: 100% !important;
+  }
+}
+
+.ui-card {
+  box-shadow: 0 10px 30px -26px rgba(7, 26, 46, 0.55) !important;
 }
 
 /* Typography Base */
