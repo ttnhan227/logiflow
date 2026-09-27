@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button, Card, CardContent, Input, Alert, Badge } from '@/components/ui';
 import { LuUser, LuLock, LuArrowRight, LuShieldCheck } from 'react-icons/lu';
 import { authService } from '../../services';
@@ -10,6 +10,7 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +27,10 @@ export const LoginPage = () => {
       // Trigger user update event
       window.dispatchEvent(new Event('userUpdated'));
 
-      if (response.role === 'ADMIN') {
+      const requestedPath = location.state?.from?.pathname;
+      if (requestedPath) {
+        navigate(requestedPath, { replace: true });
+      } else if (response.role === 'ADMIN') {
         navigate('/admin/dashboard');
       } else if (response.role === 'DISPATCHER') {
         navigate('/dispatch/orders');

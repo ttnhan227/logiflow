@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @EnableWebSecurity
@@ -38,15 +39,16 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {})
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         (authorize) -> authorize
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers("/error").permitAll()
+                                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/api/registration/**").permitAll()
                                 .requestMatchers("/api/maps/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/orders/*/invoice/download").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()
                                 .requestMatchers("/ws/notifications-native", "/ws/notifications-native/**").permitAll()

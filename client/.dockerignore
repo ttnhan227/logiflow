@@ -1,5 +1,8 @@
 node_modules
 dist
-.env
+playwright-report
+test-results
+.env*
+*.log
 .git
-npm-debug.log*
+.idea

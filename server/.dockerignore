@@ -1,5 +1,9 @@
 target
-.idea
-.env
+.mvn
+mvnw
+mvnw.cmd
 uploads
-*.iml
+*.log
+.env*
+.git
+.idea

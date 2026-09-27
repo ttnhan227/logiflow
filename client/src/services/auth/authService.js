@@ -56,12 +56,20 @@ const authService = {
 
   getCurrentUser: () => {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    if (!user) return null;
+
+    try {
+      return JSON.parse(user);
+    } catch {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      return null;
+    }
   },
 
   getAuthHeader: () => {
     const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token ? { Authorization: `Bearer ${token.replace(/^"|"$/g, '')}` } : {};
   },
 
   getBaseUrl,

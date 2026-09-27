@@ -12,9 +12,15 @@ export const Input = React.forwardRef(({
   type = 'text',
   disabled = false,
   required = false,
+  'aria-invalid': ariaInvalidProp,
+  'aria-describedby': ariaDescribedByProp,
   ...props
 }, ref) => {
   const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const errorId = error && inputId ? `${inputId}-error` : undefined;
+  const hintId = hint && !error && inputId ? `${inputId}-hint` : undefined;
+  const describedBy = [ariaDescribedByProp, errorId, hintId].filter(Boolean).join(' ') || undefined;
+  const isInvalid = ariaInvalidProp != null ? ariaInvalidProp : !!error;
 
   return (
     <div className={`ui-input-group ${className}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
@@ -31,7 +37,7 @@ export const Input = React.forwardRef(({
           }}
         >
           {label}
-          {required && <span style={{ color: 'var(--color-danger-600)' }}>*</span>}
+          {required && <span style={{ color: 'var(--color-danger-600)' }} aria-hidden="true">*</span>}
         </label>
       )}
 
@@ -41,7 +47,7 @@ export const Input = React.forwardRef(({
             style={{
               position: 'absolute',
               left: '12px',
-              color: 'var(--color-slate-400)',
+              color: error ? 'var(--color-danger-600)' : 'var(--color-slate-400)',
               display: 'inline-flex',
               alignItems: 'center',
               pointerEvents: 'none',
@@ -58,6 +64,8 @@ export const Input = React.forwardRef(({
           type={type}
           disabled={disabled}
           required={required}
+          aria-invalid={isInvalid || undefined}
+          aria-describedby={describedBy}
           className={`ui-input ${error ? 'has-error' : ''}`}
           style={{
             width: '100%',
@@ -65,7 +73,7 @@ export const Input = React.forwardRef(({
             padding: `8px ${rightIcon ? '36px' : '12px'} 8px ${leftIcon ? '36px' : '12px'}`,
             fontSize: 'var(--text-sm)',
             color: 'var(--text-primary)',
-            backgroundColor: disabled ? 'var(--color-slate-100)' : 'var(--color-white)',
+            backgroundColor: disabled ? 'var(--color-slate-100)' : error ? 'var(--color-danger-50)' : 'var(--color-white)',
             border: `1px solid ${error ? 'var(--color-danger-600)' : 'var(--border-strong)'}`,
             borderRadius: 'var(--radius-md)',
             boxShadow: 'var(--shadow-xs)',
@@ -81,7 +89,7 @@ export const Input = React.forwardRef(({
             style={{
               position: 'absolute',
               right: '12px',
-              color: 'var(--color-slate-400)',
+              color: error ? 'var(--color-danger-600)' : 'var(--color-slate-400)',
               display: 'inline-flex',
               alignItems: 'center',
               zIndex: 1,
@@ -93,13 +101,13 @@ export const Input = React.forwardRef(({
       </div>
 
       {hint && !error && (
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+        <span id={hintId} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
           {hint}
         </span>
       )}
 
       {error && (
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-600)', fontWeight: 500 }}>
+        <span id={errorId} role="alert" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-600)', fontWeight: 500 }}>
           {error}
         </span>
       )}

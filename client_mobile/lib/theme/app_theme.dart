@@ -132,7 +132,7 @@ abstract final class AppTheme {
               : FontWeight.w500,
         )),
       ),
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         color: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -229,7 +229,7 @@ abstract final class AppTheme {
         labelStyle: const TextStyle(color: Color(0xFF334155), fontSize: 12, fontWeight: FontWeight.w600),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       ),
-      dialogTheme: const DialogTheme(
+      dialogTheme: const DialogThemeData(
         elevation: 6,
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,

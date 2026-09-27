@@ -12,9 +12,15 @@ export const Select = React.forwardRef(({
   id,
   disabled = false,
   required = false,
+  'aria-invalid': ariaInvalidProp,
+  'aria-describedby': ariaDescribedByProp,
   ...props
 }, ref) => {
   const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const errorId = error && selectId ? `${selectId}-error` : undefined;
+  const hintId = hint && !error && selectId ? `${selectId}-hint` : undefined;
+  const describedBy = [ariaDescribedByProp, errorId, hintId].filter(Boolean).join(' ') || undefined;
+  const isInvalid = ariaInvalidProp != null ? ariaInvalidProp : !!error;
 
   return (
     <div className={`ui-select-group ${className}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
@@ -31,7 +37,7 @@ export const Select = React.forwardRef(({
           }}
         >
           {label}
-          {required && <span style={{ color: 'var(--color-danger-600)' }}>*</span>}
+          {required && <span style={{ color: 'var(--color-danger-600)' }} aria-hidden="true">*</span>}
         </label>
       )}
 
@@ -41,6 +47,8 @@ export const Select = React.forwardRef(({
           id={selectId}
           disabled={disabled}
           required={required}
+          aria-invalid={isInvalid || undefined}
+          aria-describedby={describedBy}
           className={`ui-select ${error ? 'has-error' : ''}`}
           style={{
             width: '100%',
@@ -48,7 +56,7 @@ export const Select = React.forwardRef(({
             padding: '8px 36px 8px 12px',
             fontSize: 'var(--text-sm)',
             color: 'var(--text-primary)',
-            backgroundColor: disabled ? 'var(--color-slate-100)' : 'var(--color-white)',
+            backgroundColor: disabled ? 'var(--color-slate-100)' : error ? 'var(--color-danger-50)' : 'var(--color-white)',
             border: `1px solid ${error ? 'var(--color-danger-600)' : 'var(--border-strong)'}`,
             borderRadius: 'var(--radius-md)',
             boxShadow: 'var(--shadow-xs)',
@@ -74,7 +82,7 @@ export const Select = React.forwardRef(({
           style={{
             position: 'absolute',
             right: '12px',
-            color: 'var(--color-slate-400)',
+            color: error ? 'var(--color-danger-600)' : 'var(--color-slate-400)',
             pointerEvents: 'none',
             display: 'inline-flex',
             alignItems: 'center',
@@ -85,13 +93,13 @@ export const Select = React.forwardRef(({
       </div>
 
       {hint && !error && (
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+        <span id={hintId} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
           {hint}
         </span>
       )}
 
       {error && (
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-600)', fontWeight: 500 }}>
+        <span id={errorId} role="alert" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-600)', fontWeight: 500 }}>
           {error}
         </span>
       )}

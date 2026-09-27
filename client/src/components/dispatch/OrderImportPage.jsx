@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { orderService } from '../../services';
-import * as XLSX from 'xlsx';
 import {
   Button,
   Card,
@@ -61,23 +60,9 @@ export const OrderImportPage = () => {
       };
       reader.readAsText(f, 'UTF-8');
     } else if (ext === 'xlsx' || ext === 'xls') {
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        try {
-          const data = new Uint8Array(evt.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          if (!json || json.length === 0) return setError('Excel worksheet is empty.');
-          const headers = json[0].map((h) => (h === undefined || h === null ? '' : String(h).trim()));
-          const dataRows = json.slice(1, 6);
-          setPreview({ headers, rows: dataRows });
-        } catch {
-          setError('Failed to parse Excel file for live preview.');
-        }
-      };
-      reader.readAsArrayBuffer(f);
+      // Excel files are parsed and validated by the backend with Apache POI.
+      // Avoid parsing untrusted workbooks in the browser.
+      setPreview(null);
     } else {
       setError('Unsupported file type for preview. CSV or Excel (XLSX) required.');
     }

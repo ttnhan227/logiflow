@@ -49,6 +49,7 @@ const TripDetailPage = lazy(() => import('./components/dispatch/TripDetailPage')
 const TripAssignPage = lazy(() => import('./components/dispatch/TripAssignPage'));
 const DispatchNotificationsPage = lazy(() => import('./components/dispatch/DispatchNotificationsPage'));
 const DispatchReportsPage = lazy(() => import('./components/dispatch/DispatchReportsPage'));
+const InvoiceDownloadPage = lazy(() => import('./components/customer/InvoiceDownloadPage'));
 import DispatchLayout from "./components/dispatch/DispatchLayout";
 
 
@@ -117,6 +118,11 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          <Route path="/orders/:orderId/invoice" element={
+            <ProtectedRoute>
+              <InvoiceDownloadPage />
+            </ProtectedRoute>
+          } />
         </Route>
 
 

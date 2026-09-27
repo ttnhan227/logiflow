@@ -22,7 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByUsernameWithRole(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         // Check if user account is disabled

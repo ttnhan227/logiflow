@@ -32,6 +32,9 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.mail.from:${spring.mail.username:onboarding@resend.dev}}")
     private String fromEmail;
 
+    @Value("${app.web.base-url:http://localhost:5173}")
+    private String webBaseUrl;
+
     /**
      * Send simple text email
      */
@@ -175,8 +178,8 @@ public class EmailServiceImpl implements EmailService {
                 "<h3 style='margin: 0 0 10px 0; color: #27ae60;'>Thank you for your payment!</h3>" +
                 "<p style='margin: 0 0 15px 0; color: #2c3e50;'>Your order is now being processed and will be delivered according to the scheduled timeline. You will receive updates on your order status.</p>" +
                 "<div style='text-align: center; margin-top: 20px;'>" +
-                "<a href='http://localhost:5173/track' style='display: inline-block; padding: 12px 24px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 10px;'>Track Your Order</a>" +
-                "<a href='http://localhost:8080/api/orders/" + orderId + "/invoice/download' style='display: inline-block; padding: 12px 24px; background-color: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>Download Invoice</a>" +
+                "<a href='" + webUrl("/track") + "' style='display: inline-block; padding: 12px 24px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 10px;'>Track Your Order</a>" +
+                "<a href='" + webUrl("/orders/" + orderId + "/invoice") + "' style='display: inline-block; padding: 12px 24px; background-color: #3498db; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>Download Invoice</a>" +
                 "</div>" +
                 "</div>" +
 
@@ -188,6 +191,10 @@ public class EmailServiceImpl implements EmailService {
                 "</div>" +
                 "</body>" +
                 "</html>";
+    }
+
+    private String webUrl(String path) {
+        return webBaseUrl.replaceAll("/+$", "") + path;
     }
 
     private String buildPaymentRequestEmail(String customerName, Integer orderId,

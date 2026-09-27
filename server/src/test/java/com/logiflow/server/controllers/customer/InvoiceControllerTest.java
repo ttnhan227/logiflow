@@ -1,9 +1,7 @@
 package com.logiflow.server.controllers.customer;
 
 import com.logiflow.server.exceptions.GlobalExceptionHandler;
-import com.logiflow.server.models.Order;
-import com.logiflow.server.repositories.order.OrderRepository;
-import com.logiflow.server.services.payment.InvoicePdfService;
+import com.logiflow.server.services.payment.InvoiceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,9 +13,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Optional;
-
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -27,10 +25,7 @@ class InvoiceControllerTest {
     private MockMvc mockMvc;
 
     @Mock
-    private OrderRepository orderRepository;
-
-    @Mock
-    private InvoicePdfService invoicePdfService;
+    private InvoiceService invoiceService;
 
     @InjectMocks
     private InvoiceController invoiceController;
@@ -44,13 +39,9 @@ class InvoiceControllerTest {
 
     @Test
     void downloadInvoice_whenOrderExists_returnsPdfBytesAndHeaders() throws Exception {
-        Order order = new Order();
-        order.setOrderId(1);
-
         byte[] fakePdf = "%PDF-1.4 test invoice content".getBytes();
 
-        when(orderRepository.findByIdWithRelations(1)).thenReturn(Optional.of(order));
-        when(invoicePdfService.generateInvoice(order)).thenReturn(fakePdf);
+        when(invoiceService.generateInvoice(eq(1), any())).thenReturn(fakePdf);
 
         mockMvc.perform(get("/api/orders/1/invoice/download"))
                 .andExpect(status().isOk())
@@ -61,7 +52,9 @@ class InvoiceControllerTest {
 
     @Test
     void downloadInvoice_whenOrderNotFound_returnsStructured404() throws Exception {
-        when(orderRepository.findByIdWithRelations(999999)).thenReturn(Optional.empty());
+        when(invoiceService.generateInvoice(eq(999999), any()))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found"));
 
         mockMvc.perform(get("/api/orders/999999/invoice/download"))
                 .andExpect(status().isNotFound())

@@ -4,7 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static String get baseUrl => kIsWeb ? 'http://localhost:8080/api' : 'http://10.0.2.2:8080/api';
+  static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static const Duration _requestTimeout = Duration(seconds: 30);
+  static String get baseUrl => _configuredBaseUrl.isNotEmpty
+      ? _configuredBaseUrl
+      : (kIsWeb ? '/api' : 'http://10.0.2.2:8080/api');
   static String get baseImageUrl => baseUrl.replaceFirst('/api', '');
   final http.Client _client = http.Client();
 
@@ -25,7 +29,9 @@ class ApiClient {
     final url = Uri.parse('$baseUrl$endpoint');
     final headers = await getHeaders();
 
-    final response = await _client.get(url, headers: headers);
+    final response = await _client
+        .get(url, headers: headers)
+        .timeout(_requestTimeout);
     await _handleResponse(response);
     return response;
   }
@@ -37,11 +43,13 @@ class ApiClient {
     final url = Uri.parse('$baseUrl$endpoint');
     final headers = await getHeaders();
 
-    final response = await _client.post(
-      url,
-      headers: headers,
-      body: body != null ? jsonEncode(body) : null,
-    );
+    final response = await _client
+        .post(
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        )
+        .timeout(_requestTimeout);
     await _handleResponse(response);
     return response;
   }
@@ -57,11 +65,13 @@ class ApiClient {
     }
     final headers = await getHeaders();
 
-    final response = await _client.put(
-      url,
-      headers: headers,
-      body: body != null ? jsonEncode(body) : null,
-    );
+    final response = await _client
+        .put(
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        )
+        .timeout(_requestTimeout);
     await _handleResponse(response);
     return response;
   }
@@ -70,13 +80,15 @@ class ApiClient {
     final url = Uri.parse('$baseUrl$endpoint');
     final headers = await getHeaders();
 
-    final response = await _client.delete(url, headers: headers);
+    final response = await _client
+        .delete(url, headers: headers)
+        .timeout(_requestTimeout);
     await _handleResponse(response);
     return response;
   }
 
   Future<void> _handleResponse(http.Response response) async {
-    if (response.statusCode == 401 || response.statusCode == 403) {
+    if (response.statusCode == 401) {
       // Clear stored auth data
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('token');

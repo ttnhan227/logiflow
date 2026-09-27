@@ -20,6 +20,7 @@ import com.logiflow.server.repositories.delivery.DeliveryConfirmationRepository;
 // import com.logiflow.server.repositories.trip.TripProgressEventRepository; // Commented out - repository needs to be created
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DatabaseSeeder implements CommandLineRunner {
 
     private static final String PLACEHOLDER_PROFILE_IMAGE_URL = "https://res.cloudinary.com/dpp97gxhf/image/upload/v1765183836/logiflow/profile-pictures/75af113f-26e7-40aa-856a-017e28495325.jpg";

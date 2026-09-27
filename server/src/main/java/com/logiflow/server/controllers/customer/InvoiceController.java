@@ -1,41 +1,33 @@
 package com.logiflow.server.controllers.customer;
 
-import com.logiflow.server.models.Order;
-import com.logiflow.server.repositories.order.OrderRepository;
-import com.logiflow.server.services.payment.InvoicePdfService;
+import com.logiflow.server.services.payment.InvoiceService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/orders")
 public class InvoiceController {
 
-    private final OrderRepository orderRepository;
-    private final InvoicePdfService invoicePdfService;
+    private final InvoiceService invoiceService;
 
-    public InvoiceController(OrderRepository orderRepository,
-                             InvoicePdfService invoicePdfService) {
-        this.orderRepository = orderRepository;
-        this.invoicePdfService = invoicePdfService;
+    public InvoiceController(InvoiceService invoiceService) {
+        this.invoiceService = invoiceService;
     }
 
 
 
     /**
      * Download order invoice as PDF
-     * This endpoint is publicly accessible for easy email link access
+     * Customers may download their own invoices. Operations staff may download
+     * any invoice for support and dispatch workflows.
      */
     @GetMapping("/{orderId}/invoice/download")
-    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Integer orderId) {
-
-        Order order = orderRepository.findByIdWithRelations(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
-
-        byte[] pdf = invoicePdfService.generateInvoice(order);
+    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Integer orderId,
+                                                   Authentication authentication) {
+        byte[] pdf = invoiceService.generateInvoice(orderId, authentication);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,

@@ -3,6 +3,7 @@ import { apiBaseUrl } from '../config/env';
 
 const api = axios.create({
   baseURL: apiBaseUrl,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   }
@@ -11,7 +12,7 @@ const api = axios.create({
 // Add token to requests
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
-  if (token && !config.url.includes('/auth/')) {
+  if (token && !config.url?.includes('/auth/')) {
     config.headers.Authorization = `Bearer ${token.replace(/^"|"$/g, '')}`;
   }
   return config;

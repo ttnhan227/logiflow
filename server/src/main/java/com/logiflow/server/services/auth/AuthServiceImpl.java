@@ -20,12 +20,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
 @Service
+@Transactional
 public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -65,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        User user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow();
+        User user = userRepository.findByUsernameWithRole(loginRequest.getUsername()).orElseThrow();
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
 
