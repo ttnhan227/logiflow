@@ -491,7 +491,30 @@ export const HomePage = () => {
         </div>
       </section>
 
-      {/* 2. IMPLEMENTATION OVERVIEW */}
+      {/* 2. PRODUCT SCREENSHOTS */}
+      <section className="container">
+        <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 32px auto' }}>
+          <Badge variant="brand" size="sm">Product Screens</Badge>
+          <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '12px 0 8px 0' }}>
+            The dispatcher workspace and live route map.
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+            Review orders and fleet activity in the operations dashboard, then follow a trip on the map. Screens show demonstration data.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          <figure style={{ margin: 0, overflow: 'hidden', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
+            <img src="/logiflow-dashboard.png" alt="LogiFlow dispatcher operations dashboard" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />
+            <figcaption style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Operations dashboard</figcaption>
+          </figure>
+          <figure style={{ margin: 0, overflow: 'hidden', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
+            <img src="/logiflow-map.png" alt="LogiFlow live driver location map" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />
+            <figcaption style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Driver location and route map</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      {/* 3. IMPLEMENTATION OVERVIEW */}
       <section className="container">
         <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 32px auto' }}>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
