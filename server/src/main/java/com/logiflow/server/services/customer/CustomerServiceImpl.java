@@ -10,6 +10,7 @@ import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.websocket.NotificationService;
 import jakarta.transaction.Transactional;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -62,9 +63,32 @@ public class CustomerServiceImpl implements CustomerService {
         return userOpt.orElseThrow(() -> new RuntimeException("Customer not found"));
     }
 
+    private void validateCoordinate(BigDecimal lat, BigDecimal lng, String locationType) {
+        if (lat == null && lng == null) {
+            return;
+        }
+        if (lat == null || lng == null) {
+            throw new IllegalArgumentException(locationType + " coordinates must provide both latitude and longitude");
+        }
+        double latVal = lat.doubleValue();
+        double lngVal = lng.doubleValue();
+        if (Double.isNaN(latVal) || Double.isInfinite(latVal) || Double.isNaN(lngVal) || Double.isInfinite(lngVal)) {
+            throw new IllegalArgumentException(locationType + " coordinates contain non-finite numbers");
+        }
+        if (latVal < -90.0 || latVal > 90.0) {
+            throw new IllegalArgumentException(locationType + " latitude must be between -90 and 90 degrees");
+        }
+        if (lngVal < -180.0 || lngVal > 180.0) {
+            throw new IllegalArgumentException(locationType + " longitude must be between -180 and 180 degrees");
+        }
+    }
+
     @Override
     public OrderDto createOrder(String customerUsername, CreateOrderRequest request) {
         User customer = getCurrentCustomer(customerUsername);
+
+        validateCoordinate(request.getPickupLat(), request.getPickupLng(), "Pickup");
+        validateCoordinate(request.getDeliveryLat(), request.getDeliveryLng(), "Delivery");
 
         Order order = new Order();
         order.setCustomerName(request.getCustomerName());
@@ -128,7 +152,7 @@ public class CustomerServiceImpl implements CustomerService {
     public OrderDto getOrderById(String customerUsername, Integer orderId) {
         User customer = getCurrentCustomer(customerUsername);
         Order order = orderRepository.findByCustomerIdAndOrderId(customer.getUserId(), orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found or doesn't belong to you"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found or doesn't belong to you"));
 
         return mapToOrderDto(order);
     }

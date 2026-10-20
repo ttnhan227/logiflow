@@ -21,6 +21,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.logiflow.server.exceptions.BusinessRuleException;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -88,20 +91,20 @@ public class TripServiceImpl implements TripService {
     @Transactional
     public TripDto createTrip(TripCreateRequest request) {
         Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
-                .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + request.getVehicleId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with id: " + request.getVehicleId()));
 
         Route route = routeRepository.findById(request.getRouteId())
-                .orElseThrow(() -> new RuntimeException("Route not found with id: " + request.getRouteId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with id: " + request.getRouteId()));
 
         List<Order> orders = orderRepository.findByIdsWithRelations(request.getOrderIds());
         
         if (orders.size() != request.getOrderIds().size()) {
-            throw new RuntimeException("Some orders not found. Expected " + request.getOrderIds().size() + " orders, found " + orders.size());
+            throw new BusinessRuleException("Some orders not found. Expected " + request.getOrderIds().size() + " orders, found " + orders.size());
         }
 
         for (Order order : orders) {
             if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
-                throw new RuntimeException("Order with id " + order.getOrderId() + " has status " + order.getOrderStatus() + ". Only PENDING orders can be assigned to a trip.");
+                throw new BusinessRuleException("Order with id " + order.getOrderId() + " has status " + order.getOrderStatus() + ". Only PENDING orders can be assigned to a trip.");
             }
         }
 
@@ -131,7 +134,7 @@ public class TripServiceImpl implements TripService {
         tripProgressEventRepository.flush();
 
         Trip tripWithOrders = tripRepository.findByIdWithRelations(savedTrip.getTripId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve created trip"));
+                .orElseThrow(() -> new ResourceNotFoundException("Failed to retrieve created trip with id: " + savedTrip.getTripId()));
 
         List<Order> tripOrders = orderRepository.findByIdsWithRelations(request.getOrderIds());
         
@@ -237,7 +240,7 @@ public class TripServiceImpl implements TripService {
     @Transactional(readOnly = true)
     public TripDto getTripById(Integer tripId) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
         List<Order> orders = orderRepository.findByTripIdsWithRelations(java.util.List.of(tripId));
         trip.setOrders(orders != null ? orders : new java.util.ArrayList<>());
         return TripDto.fromTrip(trip);
@@ -247,17 +250,20 @@ public class TripServiceImpl implements TripService {
     @Transactional
     public TripDto assignTrip(Integer tripId, TripAssignRequest request) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
+
+        // Validate state transition to ASSIGNED
+        TripStatus.validateTransition(trip.getStatus(), TripStatus.ASSIGNED);
 
         Vehicle vehicle = trip.getVehicle();
         if (request.getVehicleId() != null) {
             vehicle = vehicleRepository.findById(request.getVehicleId())
-                    .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + request.getVehicleId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with id: " + request.getVehicleId()));
             trip.setVehicle(vehicle);
         }
 
         Driver driver = driverRepository.findById(request.getDriverId())
-                .orElseThrow(() -> new RuntimeException("Driver not found with id: " + request.getDriverId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + request.getDriverId()));
 
         // Centralized intelligent validation (availability, active assignment, rest/compliance, license, capacity)
         tripAssignmentMatchingService.validateAssignment(tripId, request.getDriverId(), vehicle != null ? vehicle.getVehicleId() : null);
@@ -315,7 +321,7 @@ public class TripServiceImpl implements TripService {
         );
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(saved.getTripId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+                .orElseThrow(() -> new ResourceNotFoundException("Failed to retrieve updated trip with id: " + saved.getTripId()));
 
         return TripDto.fromTrip(tripWithRelations);
     }
@@ -324,18 +330,17 @@ public class TripServiceImpl implements TripService {
     @Transactional
     public TripDto updateTripStatus(Integer tripId, TripStatusUpdateRequest request) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
         String newStatus = normalizeStatus(request.getStatus());
-        String currentStatus = trip.getStatus();
+        String currentStatus = TripStatus.normalize(trip.getStatus());
+
+        // Validate state machine transition
+        TripStatus.validateTransition(currentStatus, newStatus);
+
         if (currentStatus != null && currentStatus.equalsIgnoreCase(newStatus)) {
             return TripDto.fromTrip(trip);
         }
-
-        if (!isValidStatus(newStatus)) {
-            throw new RuntimeException("Invalid status: " + request.getStatus() + ". Valid statuses: assigned, in_progress, delayed, completed, cancelled");
-        }
-
 
         trip.setStatus(newStatus);
         addProgressEvent(trip, TripProgressEvent.EventType.STATUS_CHANGED,
@@ -426,7 +431,7 @@ public class TripServiceImpl implements TripService {
         tripProgressEventRepository.flush();
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+                .orElseThrow(() -> new ResourceNotFoundException("Failed to retrieve updated trip with id: " + savedTrip.getTripId()));
 
         return TripDto.fromTrip(tripWithRelations);
     }
@@ -435,17 +440,17 @@ public class TripServiceImpl implements TripService {
     @Transactional
     public TripDto rerouteTrip(Integer tripId, TripRerouteRequest request) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
         if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.COMPLETED)) {
-            throw new RuntimeException("Cannot reroute a completed trip");
+            throw new BusinessRuleException("Cannot reroute a completed trip");
         }
         if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.CANCELLED)) {
-            throw new RuntimeException("Cannot reroute a cancelled trip");
+            throw new BusinessRuleException("Cannot reroute a cancelled trip");
         }
 
         Route newRoute = routeRepository.findById(request.getRouteId())
-                .orElseThrow(() -> new RuntimeException("Route not found with id: " + request.getRouteId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with id: " + request.getRouteId()));
 
         Integer oldRouteId = trip.getRoute() != null ? trip.getRoute().getRouteId() : null;
         trip.setRoute(newRoute);
@@ -459,7 +464,7 @@ public class TripServiceImpl implements TripService {
         tripProgressEventRepository.flush();
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(saved.getTripId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+                .orElseThrow(() -> new ResourceNotFoundException("Failed to retrieve updated trip with id: " + saved.getTripId()));
 
         return TripDto.fromTrip(tripWithRelations);
     }
@@ -468,14 +473,14 @@ public class TripServiceImpl implements TripService {
     @Transactional
     public TripDto cancelTrip(Integer tripId, TripCancelRequest request) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
-        if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.COMPLETED)) {
-            throw new RuntimeException("Cannot cancel a completed trip");
-        }
         if (trip.getStatus() != null && trip.getStatus().equalsIgnoreCase(TripStatus.CANCELLED)) {
             return TripDto.fromTrip(trip);
         }
+
+        // Validate state machine transition to CANCELLED
+        TripStatus.validateTransition(trip.getStatus(), TripStatus.CANCELLED);
 
         trip.setStatus(TripStatus.CANCELLED);
 
@@ -523,7 +528,7 @@ public class TripServiceImpl implements TripService {
         tripProgressEventRepository.flush();
 
         Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+                .orElseThrow(() -> new ResourceNotFoundException("Failed to retrieve updated trip with id: " + savedTrip.getTripId()));
 
         return TripDto.fromTrip(tripWithRelations);
     }
@@ -562,7 +567,7 @@ public class TripServiceImpl implements TripService {
     public com.logiflow.server.dtos.dispatch.DeliveryConfirmationResponseDto getDeliveryConfirmation(Integer tripId) {
         // Ensure trip exists (consistent error handling)
         tripRepository.findById(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
         // If no confirmation exists, return an empty/null DTO instead of throwing an error
         var confirmationOpt = deliveryConfirmationRepository.findByTripTripId(tripId);

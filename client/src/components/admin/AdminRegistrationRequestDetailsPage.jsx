@@ -29,6 +29,7 @@ export const AdminRegistrationRequestDetailsPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState(null);
   const [request, setRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -94,8 +95,8 @@ export const AdminRegistrationRequestDetailsPage = () => {
       } else {
         await loadRequestDetails();
       }
-    } catch {
-      alert('Failed to authorize application.');
+    } catch (err) {
+      setActionError(err?.response?.data?.message || err?.message || 'Failed to authorize application.');
     } finally {
       setActionLoading(false);
     }
@@ -104,11 +105,12 @@ export const AdminRegistrationRequestDetailsPage = () => {
   const handleRejectClick = async () => {
     if (!window.confirm('Reject this onboarding registration request?')) return;
     setActionLoading(true);
+    setActionError(null);
     try {
       await api.post(`/admin/registration-requests/${requestId}/reject`);
       await loadRequestDetails();
-    } catch {
-      alert('Failed to reject registration request.');
+    } catch (err) {
+      setActionError(err?.response?.data?.message || err?.message || 'Failed to reject registration request.');
     } finally {
       setActionLoading(false);
     }
@@ -116,13 +118,14 @@ export const AdminRegistrationRequestDetailsPage = () => {
 
   const handleSaveChanges = async () => {
     setActionLoading(true);
+    setActionError(null);
     try {
       await api.patch(`/admin/registration-requests/${requestId}`, editedData);
       await loadRequestDetails();
       setEditMode(false);
       setEditedData({});
-    } catch {
-      alert('Failed to update registration request details.');
+    } catch (err) {
+      setActionError(err?.response?.data?.message || err?.message || 'Failed to update registration request details.');
     } finally {
       setActionLoading(false);
     }
@@ -269,6 +272,12 @@ export const AdminRegistrationRequestDetailsPage = () => {
           </div>
         }
       />
+
+      {actionError && (
+        <Alert variant="danger" onClose={() => setActionError(null)}>
+          {actionError}
+        </Alert>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         {/* Core Applicant Profile */}

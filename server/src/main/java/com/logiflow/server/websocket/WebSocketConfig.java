@@ -34,6 +34,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Admin notifications endpoint - Enable SockJS for web clients
         registry.addEndpoint("/ws/notifications")
                 .setAllowedOriginPatterns("*")
+                .addInterceptors(jwtHandshakeInterceptor)
                 .withSockJS();
 
         // Native WebSocket endpoint for mobile clients (non-SockJS)

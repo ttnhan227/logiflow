@@ -58,6 +58,7 @@ export const AdminTripsOversightDetailsPage = () => {
   const [showApprovalInput, setShowApprovalInput] = useState(false);
   const [showUpdateSlaInput, setShowUpdateSlaInput] = useState(false);
   const [customSlaExtension, setCustomSlaExtension] = useState(30);
+  const [actionError, setActionError] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -90,8 +91,8 @@ export const AdminTripsOversightDetailsPage = () => {
       await loadTrip();
       setShowApprovalInput(false);
       setShowUpdateSlaInput(false);
-    } catch {
-      alert('Failed to submit SLA decision.');
+    } catch (err) {
+      setActionError(err?.response?.data?.message || err?.message || 'Failed to submit SLA decision.');
     } finally {
       setActingId(null);
     }
@@ -170,6 +171,12 @@ export const AdminTripsOversightDetailsPage = () => {
           </div>
         }
       />
+
+      {actionError && (
+        <Alert variant="danger" onClose={() => setActionError(null)}>
+          {actionError}
+        </Alert>
+      )}
 
       {/* Delay Exception Review Banner */}
       {trip.delayReason && (

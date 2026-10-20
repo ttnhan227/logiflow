@@ -16,6 +16,10 @@ import org.springframework.stereotype.Service;
 import com.logiflow.server.services.maps.MapsService;
 import com.logiflow.server.services.admin.SystemSettingsService;
 import com.logiflow.server.services.payment.PaymentService;
+import com.logiflow.server.services.dispatch.TripService;
+import com.logiflow.server.constants.TripStatus;
+import com.logiflow.server.exceptions.BusinessRuleException;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
 
 import java.math.BigDecimal;
 import org.slf4j.Logger;
@@ -43,6 +47,7 @@ public class DriverServiceImpl implements DriverService {
     private final DeliveryConfirmationRepository deliveryConfirmationRepository;
     private final SystemSettingsService systemSettingsService;
     private final PaymentService paymentService;
+    private final TripService tripService;
 
     public DriverServiceImpl(UserRepository userRepository,
                          DriverRepository driverRepository,
@@ -54,7 +59,8 @@ public class DriverServiceImpl implements DriverService {
                          NotificationService notificationService,
                          DeliveryConfirmationRepository deliveryConfirmationRepository,
                          SystemSettingsService systemSettingsService,
-                         PaymentService paymentService) {
+                         PaymentService paymentService,
+                         TripService tripService) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.tripRepository = tripRepository;
@@ -66,6 +72,7 @@ public class DriverServiceImpl implements DriverService {
         this.deliveryConfirmationRepository = deliveryConfirmationRepository;
         this.systemSettingsService = systemSettingsService;
         this.paymentService = paymentService;
+        this.tripService = tripService;
     }
 
     private String resolveDriverUsername(Integer driverId) {
@@ -170,46 +177,22 @@ public class DriverServiceImpl implements DriverService {
     @Override
     public void updateTripStatus(Integer driverId, Integer tripId, String status) {
         Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
-        
-        // Validate status transitions
-        String currentStatus = trip.getStatus();
-        boolean validTransition = false;
-        
-        switch (status) {
-            case "in_progress":
-                validTransition = currentStatus.equals("scheduled") || currentStatus.equals("assigned");
-                if (validTransition) {
-                    trip.setActualDeparture(LocalDateTime.now());
-                }
-                break;
-            case "arrived":
-                validTransition = currentStatus.equals("in_progress");
-                break;
-            case "completed":
-                validTransition = currentStatus.equals("arrived") || currentStatus.equals("in_progress");
-                if (validTransition) {
-                    trip.setActualArrival(LocalDateTime.now());
-                }
-                break;
-            default:
-                throw new RuntimeException("Invalid status: " + status);
-        }
-        
-        if (!validTransition) {
-            throw new RuntimeException("Invalid status transition from " + currentStatus + " to " + status);
-        }
-        
-        trip.setStatus(status);
-        tripRepository.save(trip);
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found or not assigned to you"));
+
+        String normalized = TripStatus.normalize(status);
+        TripStatus.validateTransition(trip.getStatus(), normalized);
+
+        com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest request = new com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest();
+        request.setStatus(normalized);
+        tripService.updateTripStatus(tripId, request);
+
         // Send notification to driver about status change
-        String notificationMessage = "Trip #" + tripId + " status updated to " + status;
+        String notificationMessage = "Trip #" + tripId + " status updated to " + normalized;
         String username = resolveDriverUsername(driverId);
         if (username != null && !username.isBlank()) {
-            notificationService.sendTripNotificationByUsername(username, tripId, "TRIP_STATUS_UPDATE", notificationMessage, status);
+            notificationService.sendTripNotificationByUsername(username, tripId, "TRIP_STATUS_UPDATE", notificationMessage, normalized);
         } else {
-            notificationService.sendTripNotification(driverId, tripId, "TRIP_STATUS_UPDATE", notificationMessage, status);
+            notificationService.sendTripNotification(driverId, tripId, "TRIP_STATUS_UPDATE", notificationMessage, normalized);
         }
     }
 
@@ -437,43 +420,42 @@ public class DriverServiceImpl implements DriverService {
     public void confirmDelivery(Integer driverId, Integer tripId, DeliveryConfirmationDto confirmationDto) {
         // Verify the trip belongs to this driver
         Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found or not assigned to you"));
 
         // Verify the trip is in a state that can be confirmed (arrived or in_progress)
-        if (!trip.getStatus().equals("arrived") && !trip.getStatus().equals("in_progress")) {
-            throw new RuntimeException("Trip must be in 'arrived' or 'in_progress' state to confirm delivery");
+        String currentStatus = trip.getStatus() != null ? trip.getStatus().toLowerCase() : "";
+        if (!currentStatus.equals("arrived") && !currentStatus.equals("in_progress")) {
+            throw new BusinessRuleException("Trip must be in 'arrived' or 'in_progress' state to confirm delivery");
         }
 
         if (confirmationDto == null) {
-            throw new RuntimeException("Confirmation payload is required");
+            throw new IllegalArgumentException("Confirmation payload is required");
         }
 
         String type = confirmationDto.getConfirmationType();
         if (type == null || type.isBlank()) {
-            throw new RuntimeException("confirmationType is required (SIGNATURE, PHOTO, OTP)");
+            throw new IllegalArgumentException("confirmationType is required (SIGNATURE, PHOTO, OTP)");
         }
         type = type.trim().toUpperCase();
-
-
 
         // Validate payload by confirmation type
         switch (type) {
             case "SIGNATURE" -> {
                 if (confirmationDto.getSignatureData() == null || confirmationDto.getSignatureData().isBlank()) {
-                    throw new RuntimeException("signatureData is required for SIGNATURE confirmation");
+                    throw new IllegalArgumentException("signatureData is required for SIGNATURE confirmation");
                 }
             }
             case "PHOTO" -> {
                 if (confirmationDto.getPhotoData() == null || confirmationDto.getPhotoData().isBlank()) {
-                    throw new RuntimeException("photoData is required for PHOTO confirmation");
+                    throw new IllegalArgumentException("photoData is required for PHOTO confirmation");
                 }
             }
             case "OTP" -> {
                 if (confirmationDto.getOtpCode() == null || confirmationDto.getOtpCode().isBlank()) {
-                    throw new RuntimeException("otpCode is required for OTP confirmation");
+                    throw new IllegalArgumentException("otpCode is required for OTP confirmation");
                 }
             }
-            default -> throw new RuntimeException("Invalid confirmationType: " + type + " (expected SIGNATURE, PHOTO, OTP)");
+            default -> throw new IllegalArgumentException("Invalid confirmationType: " + type + " (expected SIGNATURE, PHOTO, OTP)");
         }
 
         // Create delivery confirmation record
@@ -488,6 +470,17 @@ public class DriverServiceImpl implements DriverService {
         confirmation.setConfirmedBy(driverId);
 
         deliveryConfirmationRepository.save(confirmation);
+
+        // Mark assigned and in-transit orders as delivered upon confirmation
+        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+            for (Order order : trip.getOrders()) {
+                if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED ||
+                    order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
+                    order.setOrderStatus(Order.OrderStatus.DELIVERED);
+                }
+            }
+            orderRepository.saveAll(trip.getOrders());
+        }
 
         // Check if all orders are delivered before completing the trip
         boolean allOrdersDelivered = true;
@@ -530,6 +523,12 @@ public class DriverServiceImpl implements DriverService {
 
             // Update assignment status to completed
             tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "completed");
+
+            // Reset driver status to available
+            driverRepository.findById(driverId).ifPresent(d -> {
+                d.setStatus("available");
+                driverRepository.save(d);
+            });
 
             // Send notification
             notificationService.sendTripNotification(

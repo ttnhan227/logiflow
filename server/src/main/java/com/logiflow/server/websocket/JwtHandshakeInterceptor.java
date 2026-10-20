@@ -34,11 +34,13 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         }
         if (token != null && !token.isEmpty()) {
             try {
+                token = java.net.URLDecoder.decode(token, java.nio.charset.StandardCharsets.UTF_8);
                 String userId = jwtUtils.extractUsername(token);
                 String role = jwtUtils.extractRole(token);
-                // Allow both DRIVER and CUSTOMER roles for WebSocket connections
+                // Allow authenticated DRIVER, CUSTOMER, ADMIN, and DISPATCHER roles for WebSocket connections
                 if (userId != null && role != null &&
-                    (role.equalsIgnoreCase("DRIVER") || role.equalsIgnoreCase("CUSTOMER"))) {
+                    (role.equalsIgnoreCase("DRIVER") || role.equalsIgnoreCase("CUSTOMER") ||
+                     role.equalsIgnoreCase("ADMIN") || role.equalsIgnoreCase("DISPATCHER"))) {
                     attributes.put("userId", userId);
                     attributes.put("userRole", role);
                     return true;

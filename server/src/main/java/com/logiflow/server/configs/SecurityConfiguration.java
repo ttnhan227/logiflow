@@ -48,6 +48,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/api/registration/**").permitAll()
+                                .requestMatchers("/api/maps/gps/**").authenticated()
                                 .requestMatchers("/api/maps/**").permitAll()
                                 .requestMatchers("/ws/tracking", "/ws/tracking/**").permitAll()
                                 .requestMatchers("/ws/notifications", "/ws/notifications/**").permitAll()

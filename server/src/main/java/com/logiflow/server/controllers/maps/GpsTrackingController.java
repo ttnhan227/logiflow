@@ -38,10 +38,44 @@ public class GpsTrackingController {
         this.messagingTemplate = messagingTemplate;
         this.driverService = driverService;
     }
+    public static final int MAX_HISTORY_PER_TRIP = 100;
+
     // In-memory storage for latest driver/trip locations: driverId_tripId -> LocationMessage
     private static final Map<String, LocationMessage> latestLocations = new ConcurrentHashMap<>();
     // In-memory storage for location history: driverId_tripId -> List<LocationMessage>
     private static final Map<String, java.util.List<LocationMessage>> locationHistory = new ConcurrentHashMap<>();
+
+    public static boolean isValidCoordinate(double latitude, double longitude) {
+        if (Double.isNaN(latitude) || Double.isInfinite(latitude) ||
+            Double.isNaN(longitude) || Double.isInfinite(longitude)) {
+            return false;
+        }
+        return latitude >= -90.0 && latitude <= 90.0 && longitude >= -180.0 && longitude <= 180.0;
+    }
+
+    public static boolean isValidTripId(String tripId) {
+        return tripId != null && !tripId.isBlank() && tripId.matches("^[a-zA-Z0-9_-]{1,64}$");
+    }
+
+    public static void appendLocationHistory(String key, LocationMessage message) {
+        locationHistory.compute(key, (k, list) -> {
+            if (list == null) {
+                list = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+            }
+            synchronized (list) {
+                if (list.size() >= MAX_HISTORY_PER_TRIP) {
+                    list.remove(0);
+                }
+                list.add(message);
+            }
+            return list;
+        });
+    }
+
+    public static void clearHistoryForTest() {
+        latestLocations.clear();
+        locationHistory.clear();
+    }
 
     @MessageMapping("/tracking") // Client sends to /app/tracking
     @SendTo("/topic/locations")  // Broadcast to /topic/locations
@@ -49,10 +83,18 @@ public class GpsTrackingController {
         log.debug("GPS WebSocket message received: {}", message);
 
         // Get authenticated driverId from session attributes (set by JwtHandshakeInterceptor as "userId")
-        String driverId = (String) headerAccessor.getSessionAttributes().get("userId");
+        String driverId = headerAccessor != null && headerAccessor.getSessionAttributes() != null
+                ? (String) headerAccessor.getSessionAttributes().get("userId")
+                : null;
         log.debug("Authenticated driverId from session: {}", driverId);
 
-        if (driverId != null && message != null && message.getTripId() != null) {
+        if (driverId != null && message != null && isValidTripId(message.getTripId())) {
+            if (!isValidCoordinate(message.getLatitude(), message.getLongitude())) {
+                log.warn("Invalid GPS coordinates received - driver: {}, lat: {}, lng: {}",
+                    driverId, message.getLatitude(), message.getLongitude());
+                return null;
+            }
+
             log.debug("Processing GPS update - driver: {}, trip: {}, lat: {}, lng: {}",
                 driverId, message.getTripId(), message.getLatitude(), message.getLongitude());
 
@@ -62,8 +104,8 @@ public class GpsTrackingController {
             // Use a composite key: driverId_tripId
             String key = driverId + "_" + message.getTripId();
             latestLocations.put(key, serverMessage);
-            // Add to location history
-            locationHistory.computeIfAbsent(key, k -> new java.util.ArrayList<>()).add(serverMessage);
+            // Add to bounded location history
+            appendLocationHistory(key, serverMessage);
 
             // Update database for consistency (don't let DB errors break WebSocket)
             try {
@@ -72,15 +114,14 @@ public class GpsTrackingController {
                 com.logiflow.server.models.Driver driver = driverService.getCurrentDriver(driverId);
                 if (driver != null) {
                     Integer driverIntId = driver.getDriverId();
-                    String driverUsername = driver.getUser().getUsername();
-                    log.debug("Found driver - ID: {}, Username: {}", driverIntId, driverUsername);
+                    log.debug("Found driver - ID: {}, Username: {}", driverIntId, driverId);
 
                     driverService.updateMyLocation(
                         driverIntId,  // Use integer driver ID
                         BigDecimal.valueOf(message.getLatitude()),
                         BigDecimal.valueOf(message.getLongitude())
                     );
-                    log.debug("Database updated successfully for driver: {}", driverUsername);
+                    log.debug("Database updated successfully for driver: {}", driverId);
                 } else {
                     log.warn("Driver lookup returned null for username: {}", driverId);
                 }
@@ -105,7 +146,13 @@ public class GpsTrackingController {
     // Get location history for a driver/trip
     public static java.util.List<LocationMessage> getLocationHistory(String driverId, String tripId) {
         String key = driverId + "_" + tripId;
-        return locationHistory.getOrDefault(key, java.util.Collections.emptyList());
+        java.util.List<LocationMessage> history = locationHistory.get(key);
+        if (history == null) {
+            return java.util.Collections.emptyList();
+        }
+        synchronized (history) {
+            return new java.util.ArrayList<>(history);
+        }
     }
 
     // Optionally, add a method to get the latest location for a driver/trip

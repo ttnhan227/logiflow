@@ -100,6 +100,30 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 
 ---
 
+## Individual Contributions & Engineering Decisions
+
+LogiFlow was developed as a collaborative team project. To provide complete clarity on individual ownership versus shared team delivery, here are the core backend, architectural, and infrastructure systems I personally owned and implemented:
+
+### 1. Delivery Lifecycle Finite State Machine (FSM)
+* **Problem**: Unvalidated status updates allowed completed trips to be cancelled or modified, causing inconsistent state across driver and dispatcher views.
+* **My Implementation**: Enforced a formal deterministic state machine in `TripStatus.java` (`SCHEDULED` -> `ASSIGNED` -> `IN_PROGRESS` -> `ARRIVED` -> `COMPLETED`). Defined immutable terminal states and idempotent self-transitions, throwing explicit `BusinessRuleException` on invalid transitions.
+* **Verification**: Added automated JUnit regression suites (`TripStatusTest`) covering legal and illegal state transitions.
+
+### 2. High-Frequency GPS Telemetry & WebSocket Hardening
+* **Problem**: Continuous streaming of raw location coordinates from driver devices risked memory leaks, coordinate corruption (out-of-bounds or `NaN`/`Infinity` coordinates), and WebSocket crashes on transient DB write errors.
+* **My Implementation**: Hardened `GpsTrackingController.java` with coordinate validation (bounded latitude [-90, 90] and longitude [-180, 180]), thread-safe bounded in-memory circular buffers (`MAX_HISTORY_PER_TRIP = 500`), and decoupled STOMP broadcasting from relational persistence.
+* **Verification**: Wrote controller validation tests (`GpsTrackingControllerValidationTest`) ensuring corrupted frames are discarded without dropping active WebSocket channels.
+
+### 3. Payment Processing & Callback Idempotency
+* **Problem**: Webhook retries and network duplicates in the PayPal sandbox flow could re-trigger payment capture and corrupt order statuses.
+* **My Implementation**: Implemented defensive idempotency checks in `PaymentServiceImpl.java`, ensuring repeat callbacks for `PAID` orders return the existing payment confirmation safely without duplicate processing or duplicate audit records.
+* **Verification**: Added `PaymentServiceIdempotencyTest` simulating parallel webhook replays.
+
+### 4. Containerization, Testing & CI/CD Pipelines
+* **My Implementation**: Authored the unified `compose.yaml` orchestrating PostgreSQL 15, Spring Boot 3 backend, React 19 web app, and Flutter mobile web. Configured GitHub Actions workflows (`.github/workflows/ci.yml` and `cd.yml`) executing hermetic unit tests, container builds, and GHCR image publishing.
+
+---
+
 ## Getting Started
 
 ### 1. Clone repository & configure environment

@@ -22,18 +22,8 @@ public class TripOversightController {
 
     @GetMapping("/{tripId}")
     public ResponseEntity<TripOversightDto> getTripOversight(@PathVariable Integer tripId) {
-        try {
-            TripOversightDto dto = tripOversightService.getTripOversight(tripId);
-            return ResponseEntity.ok(dto);
-        } catch (RuntimeException ex) {
-            // Check if it's a "not found" error
-            if (ex.getMessage() != null && ex.getMessage().contains("Trip not found")) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+        TripOversightDto dto = tripOversightService.getTripOversight(tripId);
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/oversight")
@@ -41,54 +31,34 @@ public class TripOversightController {
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        try {
-            TripOversightListResponse response = tripOversightService.getTripsOversight(status, page, size);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+        TripOversightListResponse response = tripOversightService.getTripsOversight(status, page, size);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/delay-reports")
     public ResponseEntity<List<TripOversightDto>> getTripsWithDelayReports() {
-        try {
-            List<TripOversightDto> delayedTrips = tripOversightService.getTripsWithDelayReports();
-            return ResponseEntity.ok(delayedTrips);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+        List<TripOversightDto> delayedTrips = tripOversightService.getTripsWithDelayReports();
+        return ResponseEntity.ok(delayedTrips);
     }
 
     @PutMapping("/{tripId}/status")
     public ResponseEntity<TripOversightDto> updateTripStatus(
             @PathVariable Integer tripId,
             @Valid @RequestBody TripStatusUpdateRequest request) {
-        try {
-            TripOversightDto dto = tripOversightService.updateTripStatus(tripId, request.getStatus());
-            return ResponseEntity.ok(dto);
-        } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+        TripOversightDto dto = tripOversightService.updateTripStatus(tripId, request.getStatus());
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping("/{tripId}/delay-response")
     public ResponseEntity<TripOversightDto> respondToTripDelayReport(
             @PathVariable Integer tripId,
             @RequestBody DelayResponseRequest request) {
-        try {
-            TripOversightDto dto = tripOversightService.respondToTripDelayReport(
-                tripId,
-                request.getResponseType(),
-                request.getExtensionMinutes()
-            );
-            return ResponseEntity.ok(dto);
-        } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+        TripOversightDto dto = tripOversightService.respondToTripDelayReport(
+            tripId,
+            request.getResponseType(),
+            request.getExtensionMinutes()
+        );
+        return ResponseEntity.ok(dto);
     }
 
 

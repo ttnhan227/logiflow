@@ -75,6 +75,16 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "You are not allowed to perform this operation", request, null);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException exception, HttpServletRequest request) {
+        return response(HttpStatus.BAD_REQUEST, "INVALID_ARGUMENT", exception.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    ResponseEntity<ApiErrorResponse> handleIllegalState(IllegalStateException exception, HttpServletRequest request) {
+        return response(HttpStatus.CONFLICT, "INVALID_STATE", exception.getMessage(), request, null);
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception, HttpServletRequest request) {
         log.error("Unhandled request failure for {} {}", request.getMethod(), request.getRequestURI(), exception);

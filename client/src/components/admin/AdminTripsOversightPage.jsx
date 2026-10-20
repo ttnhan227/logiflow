@@ -120,7 +120,7 @@ export const AdminTripsOversightPage = () => {
       await tripsOversightService.updateTripOrderStatus(tripId, targetStatus);
       await loadData();
     } catch {
-      alert('Failed to override status.');
+      setError('Failed to override status. Please verify permissions or network connection.');
     } finally {
       setActingId(null);
     }

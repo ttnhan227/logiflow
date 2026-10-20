@@ -47,6 +47,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.logiflow.server.exceptions.BusinessRuleException;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
+import com.logiflow.server.services.dispatch.TripService;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TripOversightServiceImpl implements TripOversightService {
@@ -59,22 +63,26 @@ public class TripOversightServiceImpl implements TripOversightService {
     private final TripAssignmentRepository tripAssignmentRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final TripService tripService;
 
     public TripOversightServiceImpl(
             TripRepository tripRepository,
             @Nullable TripAssignmentRepository tripAssignmentRepository,
             NotificationService notificationService,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            TripService tripService) {
         this.tripRepository = tripRepository;
         this.tripAssignmentRepository = tripAssignmentRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.tripService = tripService;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TripOversightDto getTripOversight(Integer tripId) {
         Trip trip = tripRepository.findByIdForAdminOversight(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id: " + tripId));
         return TripOversightDto.fromTrip(trip);
     }
 
@@ -169,18 +177,21 @@ public class TripOversightServiceImpl implements TripOversightService {
     }
 
     @Override
+    @Transactional
     public TripOversightDto updateTripStatus(Integer tripId, String status) {
-        Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
-
-        String oldStatus = trip.getStatus();
         if (status == null || status.isBlank()) {
-            throw new RuntimeException("Status is required");
+            throw new IllegalArgumentException("Status is required");
         }
 
-        // Validation can be tightened when Trip status is migrated to an enum.
-        trip.setStatus(status);
-        Trip savedTrip = tripRepository.save(trip);
+        Trip trip = tripRepository.findByIdWithRelations(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id: " + tripId));
+
+        String oldStatus = trip.getStatus();
+
+        // Delegate to tripService to validate transitions and maintain consistency across assignments and orders
+        com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest request = new com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest();
+        request.setStatus(status);
+        tripService.updateTripStatus(tripId, request);
 
         // Audit the admin trip status update
         auditLogService.log(
@@ -191,22 +202,23 @@ public class TripOversightServiceImpl implements TripOversightService {
                 tripId, oldStatus != null ? oldStatus : "null", status)
         );
 
-        Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+        Trip tripWithRelations = tripRepository.findByIdForAdminOversight(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id: " + tripId));
         return TripOversightDto.fromTrip(tripWithRelations);
     }
 
     @Override
+    @Transactional
     public TripOversightDto respondToTripDelayReport(Integer tripId, String responseType, Integer extensionMinutes) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id: " + tripId));
 
         if (trip.getDelayReason() == null || trip.getDelayReason().isBlank()) {
-            throw new RuntimeException("No delay report found for this trip");
+            throw new BusinessRuleException("No delay report found for this trip");
         }
 
         if (responseType == null || responseType.isBlank()) {
-            throw new RuntimeException("Response type is required");
+            throw new IllegalArgumentException("Response type is required");
         }
 
         // Find the driver's trip assignment and user details for notifications
@@ -255,7 +267,7 @@ public class TripOversightServiceImpl implements TripOversightService {
                 break;
 
             default:
-                throw new RuntimeException("Invalid response type: " + responseType);
+                throw new IllegalArgumentException("Invalid response type: " + responseType);
         }
 
         // Admin decision is tracked but no comment stored for customers
@@ -326,8 +338,8 @@ public class TripOversightServiceImpl implements TripOversightService {
             }
         }
 
-        Trip tripWithRelations = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated trip"));
+        Trip tripWithRelations = tripRepository.findByIdForAdminOversight(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id: " + tripId));
         return TripOversightDto.fromTrip(tripWithRelations);
     }
 

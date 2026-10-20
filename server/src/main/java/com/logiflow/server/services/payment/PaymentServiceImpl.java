@@ -149,6 +149,14 @@ public class PaymentServiceImpl implements PaymentService {
                         return paymentRepository.save(newPayment);
                     });
 
+            // Idempotency check: if already processed as PAID, return early and do not re-capture
+            if (payment.getPaymentStatus() == Payment.PaymentStatus.PAID ||
+                order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+                logger.info("Payment for PayPal order {} (Order #{}) has already been processed as PAID. Skipping duplicate capture.",
+                        paypalOrderId, orderId);
+                return;
+            }
+
             // Capture the payment
             Map<String, Object> captureResponse = payPalService.capturePayment(paypalOrderId);
 
@@ -194,13 +202,22 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (Exception e) {
             logger.error("Failed to process payment capture for PayPal order {} and order {}: {}", paypalOrderId, orderId, e.getMessage(), e);
 
-            // Mark payment as failed if capture fails
+            // Double check if payment is already marked PAID to prevent overwriting successful payments
             try {
                 Order order = orderRepository.findById(orderId).orElse(null);
                 if (order != null) {
-                    // Find the payment record and mark as failed
                     Payment payment = paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
                             .orElse(null);
+                    if (payment != null && payment.getPaymentStatus() == Payment.PaymentStatus.PAID) {
+                        logger.info("Order #{} is already marked PAID, not overwriting with FAILED on exception: {}", orderId, e.getMessage());
+                        return;
+                    }
+                    if (order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+                        logger.info("Order #{} status is already PAID, not overwriting with FAILED.", orderId);
+                        return;
+                    }
+
+                    // Only mark as failed if neither payment nor order was already PAID
                     if (payment != null) {
                         payment.markAsFailed(e.getMessage());
                         paymentRepository.save(payment);

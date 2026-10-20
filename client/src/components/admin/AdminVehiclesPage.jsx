@@ -147,7 +147,7 @@ export const AdminVehiclesPage = () => {
       await vehicleService.deleteVehicle(vehicleId);
       await loadData();
     } catch {
-      alert('Failed to decommission vehicle.');
+      setError('Failed to decommission vehicle.');
     }
   };
 
@@ -163,7 +163,7 @@ export const AdminVehiclesPage = () => {
       setShowModal(false);
       await loadData();
     } catch (err) {
-      alert(typeof err === 'string' ? err : 'Failed to save vehicle data.');
+      setError(typeof err === 'string' ? err : (err?.response?.data?.message || err?.response?.data?.error || 'Failed to save vehicle data.'));
     } finally {
       setSubmitting(false);
     }
