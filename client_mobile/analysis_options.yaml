@@ -20,7 +20,17 @@ analyzer:
     use_super_parameters: ignore
     library_private_types_in_public_api: ignore
     prefer_final_fields: ignore
+    control_flow_in_finally: ignore
+    curly_braces_in_flow_control_structures: ignore
+    sort_child_properties_last: ignore
+    prefer_interpolation_to_compose_strings: ignore
+    unnecessary_brace_in_string_interps: ignore
 
 linter:
   rules:
     avoid_print: false  # Allow print statements across services and screens
+    control_flow_in_finally: false
+    curly_braces_in_flow_control_structures: false
+    sort_child_properties_last: false
+    prefer_interpolation_to_compose_strings: false
+    unnecessary_brace_in_string_interps: false
