@@ -222,7 +222,7 @@ export const DriversPage = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/register/driver">
               <Button variant="primary" size="lg">
                 Open Driver Registration

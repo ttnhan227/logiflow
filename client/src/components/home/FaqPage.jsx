@@ -262,7 +262,7 @@ export const FaqPage = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/contact">
               <Button variant="primary">View Form Demo</Button>
             </Link>

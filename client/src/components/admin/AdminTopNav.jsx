@@ -47,6 +47,7 @@ export const AdminTopNav = ({ user, onLogout }) => {
 
   return (
     <header
+      className="admin-topnav"
       style={{
         height: 'var(--header-height)',
         backgroundColor: 'var(--bg-surface)',
@@ -62,10 +63,13 @@ export const AdminTopNav = ({ user, onLogout }) => {
     >
       {/* Left Breadcrumb Context */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span
+          className="admin-console-crumb"
+          style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+        >
           Admin Console
         </span>
-        <span style={{ color: 'var(--border-strong)', fontSize: '12px' }}>/</span>
+        <span className="admin-crumb-separator" style={{ color: 'var(--border-strong)', fontSize: '12px' }}>/</span>
         <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
           {getBreadcrumbTitle()}
         </span>
@@ -92,7 +96,7 @@ export const AdminTopNav = ({ user, onLogout }) => {
             backgroundColor: 'var(--color-white)',
           }}
         >
-          Public Site <LuExternalLink size={13} />
+          <span className="admin-public-link-text">Public Site </span><LuExternalLink size={13} />
         </Link>
 
         {/* Real-time Notifications */}
@@ -213,6 +217,20 @@ export const AdminTopNav = ({ user, onLogout }) => {
           )}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .admin-topnav {
+            padding: 0 14px !important;
+          }
+          .admin-console-crumb, .admin-crumb-separator {
+            display: none !important;
+          }
+          .admin-public-link-text {
+            display: none !important;
+          }
+        }
+      `}</style>
     </header>
   );
 };

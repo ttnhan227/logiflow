@@ -78,9 +78,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT o FROM Order o WHERE o.orderStatus = :status AND o.createdAt >= :startDate AND o.createdAt < :endDate")
     Page<Order> findByOrderStatusAndCreatedAtDateWithoutRelations(@Param("status") Order.OrderStatus status, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
-    @Query("SELECT o FROM Order o " +
+    @Query(value = "SELECT o FROM Order o " +
+           "LEFT JOIN FETCH o.customer c " +
+           "LEFT JOIN FETCH o.createdBy u " +
+           "LEFT JOIN FETCH o.trip t " +
            "ORDER BY CASE WHEN o.orderStatus = 'PENDING' THEN 1 ELSE 2 END, " +
-           "o.createdAt DESC")
+           "o.createdAt DESC",
+           countQuery = "SELECT count(o) FROM Order o")
     Page<Order> findAllWithRelations(Pageable pageable);
 
     // Find by ID with relations

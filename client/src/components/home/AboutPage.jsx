@@ -155,7 +155,7 @@ export const AboutPage = () => {
               Review the demonstration workflows or create a sample account.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/register/driver">
               <Button variant="primary">Apply as Driver</Button>
             </Link>

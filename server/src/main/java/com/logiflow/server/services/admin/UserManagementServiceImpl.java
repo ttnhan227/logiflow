@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class UserManagementServiceImpl implements UserManagementService {
 
     private static final String SYSTEM_ACTOR = "system";

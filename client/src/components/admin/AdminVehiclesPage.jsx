@@ -30,6 +30,7 @@ import {
   TableCell,
   LoadingSpinner,
   EmptyState,
+  ConfirmModal,
 } from '@/components/ui';
 import {
   LuTruck,
@@ -52,6 +53,8 @@ export const AdminVehiclesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('view');
   const [submitting, setSubmitting] = useState(false);
+  const [decommissionVehicleId, setDecommissionVehicleId] = useState(null);
+  const [decommissioning, setDecommissioning] = useState(false);
 
   const [formData, setFormData] = useState({
     vehicleType: 'truck',
@@ -141,13 +144,21 @@ export const AdminVehiclesPage = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (vehicleId) => {
-    if (!window.confirm('Are you sure you want to decommission and remove this vehicle?')) return;
+  const handleDelete = (vehicleId) => {
+    setDecommissionVehicleId(vehicleId);
+  };
+
+  const executeDecommission = async () => {
+    if (!decommissionVehicleId) return;
+    setDecommissioning(true);
     try {
-      await vehicleService.deleteVehicle(vehicleId);
+      await vehicleService.deleteVehicle(decommissionVehicleId);
+      setDecommissionVehicleId(null);
       await loadData();
     } catch {
       setError('Failed to decommission vehicle.');
+    } finally {
+      setDecommissioning(false);
     }
   };
 
@@ -492,6 +503,18 @@ export const AdminVehiclesPage = () => {
           )}
         </Modal>
       )}
+
+      {/* Decommission Vehicle Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!decommissionVehicleId}
+        onClose={() => setDecommissionVehicleId(null)}
+        onConfirm={executeDecommission}
+        title="Decommission Fleet Vehicle"
+        message="Are you sure you want to decommission and remove this vehicle from active fleet dispatch? All telemetry and operational assignments for this asset will be retired."
+        confirmText="Decommission Vehicle"
+        variant="danger"
+        loading={decommissioning}
+      />
     </div>
   );
 };

@@ -12,7 +12,9 @@ export const Table = ({
       className="ui-table-container"
       style={{
         width: '100%',
+        maxWidth: '100%',
         overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
         border: '1px solid var(--border-default)',
         borderRadius: 'var(--radius-lg)',
         backgroundColor: 'var(--bg-surface)',
@@ -53,9 +55,10 @@ export const TableHeader = ({ children, className = '', style = {}, ...props }) 
   );
 };
 
-export const TableHead = ({ children, className = '', style = {}, align = 'left', ...props }) => {
+export const TableHead = ({ children, className = '', style = {}, align = 'left', scope = 'col', ...props }) => {
   return (
     <th
+      scope={scope}
       className={`ui-table-head ${className}`}
       style={{
         padding: '10px 14px',

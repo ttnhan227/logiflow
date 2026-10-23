@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class OrderDto {
     private Integer orderId;
+    private Long version;
     private Integer tripId;
     private Integer customerId;
     private Integer customerUserId;
@@ -41,7 +42,8 @@ public class OrderDto {
 
     public static OrderDto fromOrder(Order order) {
         OrderDto dto = new OrderDto();
-        dto.setOrderId(order.getOrderId());
+        dto.setOrderId(order.getOrderId());
+        dto.setVersion(order.getVersion());
         dto.setTripId(order.getTrip() != null ? order.getTrip().getTripId() : null);
         dto.setCustomerId(order.getCustomer() != null ? order.getCustomer().getUserId() : null);
         dto.setCustomerUserId(order.getCustomer() != null ? order.getCustomer().getUserId() : null);

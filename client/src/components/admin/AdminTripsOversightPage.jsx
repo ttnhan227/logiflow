@@ -19,6 +19,7 @@ import {
   TableCell,
   LoadingSpinner,
   EmptyState,
+  ConfirmModal,
 } from '@/components/ui';
 import {
   LuTruck,
@@ -42,6 +43,7 @@ export const AdminTripsOversightPage = () => {
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [actingId, setActingId] = useState(null);
+  const [overrideConfirm, setOverrideConfirm] = useState(null);
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
@@ -113,11 +115,17 @@ export const AdminTripsOversightPage = () => {
     }
   };
 
-  const handleOverride = async (tripId, targetStatus = 'ASSIGNED') => {
-    if (!window.confirm(`Override and set trip #${tripId} status to ${targetStatus}?`)) return;
+  const handleOverride = (tripId, targetStatus = 'ASSIGNED') => {
+    setOverrideConfirm({ tripId, targetStatus });
+  };
+
+  const executeOverride = async () => {
+    if (!overrideConfirm) return;
+    const { tripId, targetStatus } = overrideConfirm;
     setActingId(tripId);
     try {
       await tripsOversightService.updateTripOrderStatus(tripId, targetStatus);
+      setOverrideConfirm(null);
       await loadData();
     } catch {
       setError('Failed to override status. Please verify permissions or network connection.');
@@ -345,6 +353,16 @@ export const AdminTripsOversightPage = () => {
                             Inspect
                           </Button>
                         </Link>
+                        {trip.tripStatus !== 'COMPLETED' && trip.tripStatus !== 'CANCELLED' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOverride(trip.tripId, 'ASSIGNED')}
+                            title="Emergency Reset Status to ASSIGNED"
+                          >
+                            Reset
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -365,6 +383,18 @@ export const AdminTripsOversightPage = () => {
           </>
         )}
       </Card>
+
+      {/* Override Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!overrideConfirm}
+        onClose={() => setOverrideConfirm(null)}
+        onConfirm={executeOverride}
+        title="Override Trip Status"
+        message={`Are you sure you want to administratively override Trip #${overrideConfirm?.tripId} status to "${overrideConfirm?.targetStatus}"?`}
+        confirmText="Override Status"
+        variant="warning"
+        loading={!!actingId}
+      />
     </div>
   );
 };

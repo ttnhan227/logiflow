@@ -203,7 +203,7 @@ export const MobileAppPage = () => {
               Create a sample driver profile and continue through the demo onboarding flow.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/register/driver">
               <Button variant="primary">Open Driver Registration</Button>
             </Link>

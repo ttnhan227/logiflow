@@ -5,10 +5,12 @@ export const PageHeader = ({
   description,
   breadcrumbs = null, // Array of { label, href }
   actions = null,
+  action = null,
   badge = null,
   className = '',
   style = {},
 }) => {
+  const headerActions = actions || action;
   return (
     <div
       className={`ui-page-header ${className}`}
@@ -88,7 +90,7 @@ export const PageHeader = ({
           )}
         </div>
 
-        {actions && (
+        {headerActions && (
           <div
             style={{
               display: 'flex',
@@ -97,7 +99,7 @@ export const PageHeader = ({
               flexWrap: 'wrap',
             }}
           >
-            {actions}
+            {headerActions}
           </div>
         )}
       </div>

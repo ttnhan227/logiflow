@@ -247,7 +247,7 @@ export const ServicesPage = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/business">
               <Button variant="primary">View Project Workflows</Button>
             </Link>

@@ -12,3 +12,4 @@ export * from './Alert';
 export * from './PageHeader';
 export * from './EmptyState';
 export * from './LoadingSpinner';
+export * from './ConfirmModal';

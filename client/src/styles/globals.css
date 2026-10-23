@@ -108,8 +108,22 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 }
 
 :focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+.ui-input:focus,
+.ui-input:focus-visible {
+  border-color: var(--color-brand-600) !important;
+  box-shadow: 0 0 0 3px rgba(23, 111, 174, 0.2) !important;
+  outline: none !important;
+}
+
+.ui-input.has-error:focus,
+.ui-input.has-error:focus-visible {
+  border-color: var(--color-danger-600) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
+  outline: none !important;
 }
 
 /* Scrollbars */
@@ -214,6 +228,8 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 .leaflet-container {
   font-family: var(--font-sans) !important;
   border-radius: var(--radius-lg);
+  max-width: 100% !important;
+  overflow: hidden !important;
   z-index: 10;
 }
 

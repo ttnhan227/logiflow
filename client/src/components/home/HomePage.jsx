@@ -39,41 +39,6 @@ import {
 } from 'react-icons/lu';
 
 // Custom Leaflet DivIcon helpers
-const createTruckPin = (label, speed, status = 'moving') =>
-  divIcon({
-    className: 'custom-truck-pin',
-    html: `
-      <div style="
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background-color: #0f172a;
-        color: #ffffff;
-        border: 2px solid ${status === 'moving' ? '#2563eb' : '#059669'};
-        border-radius: 9999px;
-        padding: 3px 10px;
-        font-size: 11px;
-        font-weight: 700;
-        font-family: Inter, sans-serif;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.35);
-        white-space: nowrap;
-      ">
-        <span style="
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background-color: ${status === 'moving' ? '#38bdf8' : '#34d399'};
-          display: inline-block;
-        "></span>
-        <span>${label}</span>
-        <span style="color: #94a3b8; font-size: 10px; font-weight: 500;">${speed}</span>
-      </div>
-    `,
-    iconSize: [110, 26],
-    iconAnchor: [55, 13],
-    popupAnchor: [0, -13],
-  });
-
 const createHubPin = (label, type = 'gateway') =>
   divIcon({
     className: 'custom-hub-pin',
@@ -124,16 +89,8 @@ const tradeLanes = {
   ],
 };
 
-const activeLiveFleet = [
-  { id: 'TRK-29H-8841', name: 'Linehaul 8841', pos: [19.2, 105.7], speed: '68 km/h', origin: 'Hanoi Gateway', dest: 'HCMC Southern Hub', cargo: '24T Industrial Electronics', status: 'moving', eta: '14 hrs remaining' },
-  { id: 'TRK-51D-9214', name: 'ColdChain 9214', pos: [14.1, 108.9], speed: '62 km/h', origin: 'Da Nang Central', dest: 'Nha Trang Terminal', cargo: '14T Frozen Seafood (-18°C)', status: 'moving', eta: '3.5 hrs remaining' },
-  { id: 'TRK-65C-3410', name: 'Mekong 3410', pos: [10.2, 106.0], speed: '55 km/h', origin: 'Can Tho Hub', dest: 'Cat Lai Port', cargo: '18T Export Agriculture', status: 'moving', eta: '1.2 hrs remaining' },
-  { id: 'TRK-15C-7702', name: 'PortExpress 7702', pos: [20.9, 106.4], speed: '50 km/h', origin: 'Hai Phong Seaport', dest: 'Hanoi Mega-Hub', status: 'moving', eta: '45 mins remaining' },
-];
-
 export const HomePage = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
-  const [selectedLane] = useState('northSouthTrunk');
   const [leadForm, setLeadForm] = useState({ company: '', email: '', mode: 'FTL', monthlyVolume: '10-50_TRIPS' });
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const navigate = useNavigate();
@@ -337,7 +294,7 @@ export const HomePage = () => {
                     }}
                     leftIcon={<LuLogIn size={16} />}
                   >
-                    Sign in to Demo
+                    Sign In
                   </Button>
                 </Link>
               </div>
@@ -354,138 +311,6 @@ export const HomePage = () => {
                   <LuCheck size={16} color="var(--color-success-400)" /> Signature-Based e-POD
                 </span>
               </div>
-            </div>
-
-            {/* Right Hero Column: Interactive Floating Live Radar Preview */}
-            <div style={{ display: 'none' }} aria-hidden="true">
-              <Card
-                style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  boxShadow: '0 24px 48px -12px rgba(0,0,0,0.6)',
-                  padding: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Dashboard Top Header Bar */}
-                <div
-                  style={{
-                    padding: '14px 18px',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: '#34d399',
-                        display: 'inline-block',
-                      }}
-                    />
-                    <strong style={{ fontSize: 'var(--text-xs)', color: 'var(--color-white)', letterSpacing: '0.5px' }}>
-                      ACTIVE FREIGHT RADAR & TELEMETRY
-                    </strong>
-                  </div>
-                  <Badge variant="brand" size="sm">
-                    LIVE FLEET
-                  </Badge>
-                </div>
-
-                {/* Leaflet Live Map */}
-                <div style={{ height: '310px', width: '100%', position: 'relative' }}>
-                  <MapContainer
-                    center={[16.0544, 107.5]}
-                    zoom={5.4}
-                    style={{ height: '100%', width: '100%', backgroundColor: '#0f172a' }}
-                    scrollWheelZoom={false}
-                    attributionControl={false}
-                  >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      maxZoom={19}
-                    />
-
-                    <Polyline
-                      positions={tradeLanes[selectedLane] || tradeLanes.northSouthTrunk}
-                      color="#2563eb"
-                      weight={4}
-                      opacity={0.85}
-                      dashArray="8, 6"
-                    />
-
-                    <Marker position={[21.0278, 105.8342]} icon={createHubPin('Hanoi Gateway', 'gateway')}>
-                      <Popup>
-                        <div style={{ padding: '4px', fontSize: '12px' }}>
-                          <strong>Hanoi Northern Terminal</strong>
-                          <div>Daily Outbound: 65 Trucks</div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                    <Marker position={[16.0544, 108.2022]} icon={createHubPin('Da Nang Hub', 'crossdock')}>
-                      <Popup>
-                        <div style={{ padding: '4px', fontSize: '12px' }}>
-                          <strong>Da Nang Central Cross-Dock</strong>
-                          <div>Transit Hub: 40 Trucks/day</div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                    <Marker position={[10.8231, 106.6297]} icon={createHubPin('HCMC Mega-Hub', 'gateway')}>
-                      <Popup>
-                        <div style={{ padding: '4px', fontSize: '12px' }}>
-                          <strong>HCMC Southern Mega-Hub</strong>
-                          <div>Daily Outbound: 120 Trucks</div>
-                        </div>
-                      </Popup>
-                    </Marker>
-
-                    {activeLiveFleet.map((truck) => (
-                      <Marker key={truck.id} position={truck.pos} icon={createTruckPin(truck.name, truck.speed, truck.status)}>
-                        <Popup>
-                          <div style={{ padding: '4px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            <strong style={{ color: '#2563eb' }}>{truck.id}</strong>
-                            <div><strong>Lane:</strong> {truck.origin} → {truck.dest}</div>
-                            <div><strong>Cargo:</strong> {truck.cargo}</div>
-                            <div><strong>Speed:</strong> {truck.speed} (Live GPS)</div>
-                            <div><strong>ETA:</strong> {truck.eta}</div>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    ))}
-                  </MapContainer>
-                </div>
-
-                {/* Dashboard Bottom Telemetry Stats */}
-                <div
-                  style={{
-                    padding: '12px 18px',
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '12px',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Display</div>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#ffffff' }}>Sample Data</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Channel</div>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#34d399' }}>WebSocket</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>Exceptions</div>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#38bdf8' }}>0 Cleared</div>
-                  </div>
-                </div>
-              </Card>
             </div>
           </div>
         </div>
@@ -622,30 +447,6 @@ export const HomePage = () => {
                 alt="Commercial Linehaul Truck"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-
-              {/* Minimalist Floating Telemetry Pill */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '18px',
-                  left: '18px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.82)',
-                  backdropFilter: 'blur(12px)',
-                  color: '#ffffff',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: 'var(--text-xs)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.18)',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-                }}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34d399', display: 'inline-block' }} />
-                <span><strong>Trunk 29H-8841</strong> • Hanoi → HCMC</span>
-                <span style={{ color: '#38bdf8', fontWeight: 600 }}>• On Schedule</span>
-              </div>
             </div>
           </div>
         </div>
@@ -695,30 +496,6 @@ export const HomePage = () => {
                 alt="Seaport Container Drayage"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-
-              {/* Minimalist Floating Telemetry Pill */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '18px',
-                  left: '18px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.82)',
-                  backdropFilter: 'blur(12px)',
-                  color: '#ffffff',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: 'var(--text-xs)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.18)',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-                }}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34d399', display: 'inline-block' }} />
-                <span><strong>Cat Lai Drayage</strong> • Port → Song Than ICD</span>
-                <span style={{ color: '#38bdf8', fontWeight: 600 }}>• In Transit</span>
-              </div>
             </div>
           </div>
         </div>
@@ -768,29 +545,6 @@ export const HomePage = () => {
                 alt="Express Urban Fulfillment"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-
-              {/* Minimalist Floating Telemetry Pill */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '18px',
-                  left: '18px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.82)',
-                  backdropFilter: 'blur(12px)',
-                  color: '#ffffff',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: 'var(--text-xs)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.18)',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-                }}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34d399', display: 'inline-block' }} />
-                <span><strong>Urban Hub SGN-02</strong> • 99.4% On-Time e-POD</span>
-              </div>
             </div>
           </div>
         </div>
@@ -840,29 +594,6 @@ export const HomePage = () => {
                 alt="Cold-Chain Transport"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-
-              {/* Minimalist Floating Telemetry Pill */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '18px',
-                  left: '18px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.82)',
-                  backdropFilter: 'blur(12px)',
-                  color: '#ffffff',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: 'var(--text-xs)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.18)',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-                }}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#38bdf8', display: 'inline-block' }} />
-                <span><strong>Reefer 51D-9214</strong> • Cold-Chain (-18°C) • Verified</span>
-              </div>
             </div>
           </div>
         </div>

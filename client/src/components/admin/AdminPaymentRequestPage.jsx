@@ -17,6 +17,7 @@ import {
   TableCell,
   LoadingSpinner,
   EmptyState,
+  ConfirmModal,
 } from '@/components/ui';
 import {
   LuSearch,
@@ -35,6 +36,8 @@ export const AdminPaymentRequestPage = () => {
   const [customerDialog, setCustomerDialog] = useState({ open: false, customer: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [banner, setBanner] = useState(null);
+  const [confirmOrderId, setConfirmOrderId] = useState(null);
+  const [dispatching, setDispatching] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -75,16 +78,24 @@ export const AdminPaymentRequestPage = () => {
     setFilteredCustomers(filtered);
   }, [customers, searchTerm]);
 
-  const handleSendPaymentRequest = async (orderId) => {
-    if (!window.confirm(`Issue and dispatch freight tariff invoice for Order #${orderId}?`)) return;
+  const handleSendPaymentRequest = (orderId) => {
+    setConfirmOrderId(orderId);
+  };
+
+  const executeSendPaymentRequest = async () => {
+    if (!confirmOrderId) return;
+    setDispatching(true);
     try {
-      await paymentRequestService.sendPaymentRequest(orderId);
-      setBanner({ text: `Payment request dispatched successfully for Order #${orderId}.`, variant: 'success' });
+      await paymentRequestService.sendPaymentRequest(confirmOrderId);
+      setBanner({ text: `Payment request dispatched successfully for Order #${confirmOrderId}.`, variant: 'success' });
       await loadData();
       await loadStatistics();
       setCustomerDialog({ open: false, customer: null });
+      setConfirmOrderId(null);
     } catch (err) {
       setBanner({ text: 'Failed to dispatch payment request: ' + err.message, variant: 'danger' });
+    } finally {
+      setDispatching(false);
     }
   };
 
@@ -262,6 +273,18 @@ export const AdminPaymentRequestPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!confirmOrderId}
+        onClose={() => setConfirmOrderId(null)}
+        onConfirm={executeSendPaymentRequest}
+        title="Issue Freight Invoice"
+        message={`Are you sure you want to issue and dispatch the freight tariff invoice for Order #${confirmOrderId}? An invoice notification will be transmitted to the customer.`}
+        confirmText="Dispatch Invoice"
+        variant="primary"
+        loading={dispatching}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { LuX } from 'react-icons/lu';
 import { Button } from './Button';
 
@@ -14,21 +14,72 @@ export const Modal = ({
   className = '',
   style = {},
 }) => {
+  const containerRef = useRef(null);
+  const previousActiveElement = useRef(null);
+
   useEffect(() => {
+    if (!isOpen) return;
+
+    previousActiveElement.current = document.activeElement;
+    document.body.style.overflow = 'hidden';
+
+    // Auto-focus first focusable element inside modal container
+    const focusTimer = setTimeout(() => {
+      if (!containerRef.current) return;
+      const focusable = containerRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      } else {
+        containerRef.current.focus();
+      }
+    }, 50);
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen && onClose) {
-        onClose();
+      if (e.key === 'Escape') {
+        if (onClose) onClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && containerRef.current) {
+        const focusable = Array.from(
+          containerRef.current.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        );
+
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first || !containerRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !containerRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     };
 
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      clearTimeout(focusTimer);
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
+      if (previousActiveElement.current && typeof previousActiveElement.current.focus === 'function') {
+        previousActiveElement.current.focus();
+      }
     };
   }, [isOpen, onClose]);
 
@@ -51,6 +102,12 @@ export const Modal = ({
       }}
     >
       <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'logiflow-modal-title' : undefined}
+        aria-describedby={description ? 'logiflow-modal-desc' : undefined}
+        tabIndex={-1}
         className={`ui-modal-container ${className}`}
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -64,6 +121,7 @@ export const Modal = ({
           flexDirection: 'column',
           maxHeight: 'calc(100vh - 32px)',
           overflow: 'hidden',
+          outline: 'none',
           animation: 'fadeIn var(--transition-base) cubic-bezier(0.16, 1, 0.3, 1)',
           ...style,
         }}
@@ -83,12 +141,18 @@ export const Modal = ({
           >
             <div>
               {title && (
-                <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-semibold)', color: 'var(--text-primary)', margin: 0 }}>
+                <h3
+                  id="logiflow-modal-title"
+                  style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-semibold)', color: 'var(--text-primary)', margin: 0 }}
+                >
                   {title}
                 </h3>
               )}
               {description && (
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                <p
+                  id="logiflow-modal-desc"
+                  style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}
+                >
                   {description}
                 </p>
               )}

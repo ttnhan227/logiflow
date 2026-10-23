@@ -209,7 +209,7 @@ export const FleetPage = () => {
               See how sample vehicle capacity and driver records are used in the project.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/business">
               <Button variant="primary">View Project Workflows</Button>
             </Link>

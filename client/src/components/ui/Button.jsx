@@ -98,6 +98,7 @@ export const Button = React.forwardRef(({
       ref={ref}
       type={type}
       disabled={disabled || loading}
+      aria-busy={loading ? 'true' : undefined}
       onClick={onClick}
       className={`ui-btn ui-btn-${variant} ui-btn-${size} ${className}`}
       style={{
@@ -108,13 +109,13 @@ export const Button = React.forwardRef(({
       {...props}
     >
       {loading ? (
-        <LuLoaderCircle className="animate-spin" size={size === 'sm' ? 14 : 16} />
+        <LuLoaderCircle className="animate-spin" size={size === 'sm' ? 14 : 16} aria-hidden="true" />
       ) : leftIcon ? (
-        <span className="inline-flex items-center">{leftIcon}</span>
+        <span className="inline-flex items-center" aria-hidden="true">{leftIcon}</span>
       ) : null}
       {children}
       {!loading && rightIcon && (
-        <span className="inline-flex items-center">{rightIcon}</span>
+        <span className="inline-flex items-center" aria-hidden="true">{rightIcon}</span>
       )}
     </button>
   );

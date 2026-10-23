@@ -12,6 +12,8 @@ import com.logiflow.server.repositories.trip.TripRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.services.maps.MapsService;
+import com.logiflow.server.exceptions.BusinessRuleException;
+import com.logiflow.server.exceptions.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import com.logiflow.server.exceptions.ResourceNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,40 +127,40 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
     @Transactional(readOnly = true)
     public void validateAssignment(Integer tripId, Integer driverId, Integer vehicleId) {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id: " + tripId));
 
         Vehicle vehicle = trip.getVehicle();
         if (vehicleId != null) {
             vehicle = vehicleRepository.findById(vehicleId)
-                    .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + vehicleId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with id: " + vehicleId));
         }
-        if (vehicle == null) throw new RuntimeException("Vehicle is required for trip assignment");
+        if (vehicle == null) throw new BusinessRuleException("Vehicle is required for trip assignment");
 
         Driver driver = driverRepository.findById(driverId)
-                .orElseThrow(() -> new RuntimeException("Driver not found with id: " + driverId));
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
 
-        // Availability (existing rule)
+        // Availability check
         if (driver.getStatus() != null && !driver.getStatus().equalsIgnoreCase("available")) {
-            throw new RuntimeException("Driver is not available (status: " + driver.getStatus() + ")");
+            throw new BusinessRuleException("Driver is not available (status: " + driver.getStatus() + ")");
         }
 
-        // Active assignment rule (existing behavior)
+        // Active assignment rule (prevent double-booking active drivers)
         Long activeAssignmentsCount = tripAssignmentRepository.countActiveAssignmentsByDriverId(driverId);
         if (activeAssignmentsCount != null && activeAssignmentsCount > 0) {
-            throw new RuntimeException("Driver already has an active trip assignment. Drivers can only have one active trip at a time.");
+            throw new BusinessRuleException("Driver already has an active trip assignment. Drivers can only have one active trip at a time.");
         }
 
-        // License requirement (existing behavior)
+        // License requirement
         if (vehicle.getRequiredLicense() != null && driver.getLicenseType() != null
                 && !vehicle.getRequiredLicense().equalsIgnoreCase(driver.getLicenseType())) {
-            throw new RuntimeException("Driver license (" + driver.getLicenseType() + ") does not match vehicle requirement (" + vehicle.getRequiredLicense() + ")");
+            throw new BusinessRuleException("Driver license (" + driver.getLicenseType() + ") does not match vehicle requirement (" + vehicle.getRequiredLicense() + ")");
         }
 
         // Compliance / rest: reuse current worklog logic
         LocalDateTime at = trip.getScheduledDeparture() != null ? trip.getScheduledDeparture() : LocalDateTime.now();
         LocalDateTime nextAvailable = driverWorkLogRepository.findLatestNextAvailableTimeByDriverId(driverId);
         if (nextAvailable != null && at.isBefore(nextAvailable)) {
-            throw new RuntimeException("Driver is not rested/compliant until: " + nextAvailable);
+            throw new BusinessRuleException("Driver is not rested/compliant until: " + nextAvailable);
         }
 
         // Capacity vs cargo weight: interpret Vehicle.capacity as tons.
@@ -166,7 +168,7 @@ public class TripAssignmentMatchingServiceImpl implements TripAssignmentMatching
         if (totalWeightTons != null && vehicle.getCapacityTons() != null) {
             BigDecimal capTons = vehicle.getCapacityTons();
             if (totalWeightTons.compareTo(capTons) > 0) {
-                throw new RuntimeException("Vehicle capacity (" + capTons + " tons) is insufficient for trip cargo (" + totalWeightTons + " tons)");
+                throw new BusinessRuleException("Vehicle capacity (" + capTons + " tons) is insufficient for trip cargo (" + totalWeightTons + " tons)");
             }
         }
     }

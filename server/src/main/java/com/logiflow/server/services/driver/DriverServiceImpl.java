@@ -605,51 +605,28 @@ public class DriverServiceImpl implements DriverService {
     public void updateOrderStatus(Integer driverId, Integer tripId, Integer orderId, String status) {
         // Verify the trip belongs to this driver
         Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found or not assigned to you"));
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found or not assigned to driver #" + driverId));
 
         // Find the order in this trip
         Order order = trip.getOrders().stream()
                 .filter(o -> o.getOrderId().equals(orderId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Order not found in this trip"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order #" + orderId + " not found in trip #" + tripId));
 
         // Debug logging
         log.debug("updateOrderStatus - orderId: {}, currentStatus: {}, requestedStatus: {}",
             orderId, order.getOrderStatus(), status);
 
-        // Validate status transitions
-        Order.OrderStatus currentStatus = order.getOrderStatus();
+        // Parse requested target status
         Order.OrderStatus newStatus;
-
         try {
             newStatus = Order.OrderStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid order status: " + status + ". Valid values: PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED");
+            throw new BusinessRuleException("Invalid order status: " + status + ". Valid values: PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED");
         }
 
-        // Validate allowed transitions
-        boolean validTransition = false;
-        switch (currentStatus) {
-            case ASSIGNED:
-                validTransition = newStatus == Order.OrderStatus.IN_TRANSIT || newStatus == Order.OrderStatus.DELIVERED;
-                break;
-            case IN_TRANSIT:
-                validTransition = newStatus == Order.OrderStatus.DELIVERED;
-                break;
-            case DELIVERED:
-                // Allow re-delivery if needed (e.g., for corrections)
-                validTransition = newStatus == Order.OrderStatus.DELIVERED;
-                break;
-            default:
-                validTransition = false;
-        }
-
-        if (!validTransition) {
-            throw new RuntimeException("Invalid status transition from " + currentStatus + " to " + newStatus + ". ASSIGNED->IN_TRANSIT/DELIVERED, IN_TRANSIT->DELIVERED only.");
-        }
-
-        // Update order status
-        order.setOrderStatus(newStatus);
+        // Validate allowed transitions using domain state machine
+        order.transitionTo(newStatus);
 
         // If order is delivered and has payment status PENDING, trigger payment notification
         if (newStatus == Order.OrderStatus.DELIVERED && order.getPaymentStatus() == Order.PaymentStatus.PENDING) {

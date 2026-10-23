@@ -5,6 +5,7 @@ import com.logiflow.server.models.Driver;
 import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.driver_worklog.DriverWorkLogRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class DispatchDriverServiceImpl implements DispatchDriverService {
 
     private final DriverRepository driverRepository;

@@ -18,6 +18,10 @@ public class Trip {
     @Column(name = "trip_id")
     private Integer tripId;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;

@@ -3,13 +3,18 @@ import { LuLoaderCircle } from 'react-icons/lu';
 
 export const LoadingSpinner = ({
   size = 24,
-  message = 'Loading...',
+  message,
+  text,
   fullPage = false,
   className = '',
   style = {},
 }) => {
+  const displayMessage = text ?? message ?? 'Loading...';
+
   const content = (
     <div
+      role="status"
+      aria-live="polite"
       className={`ui-loading-spinner ${className}`}
       style={{
         display: 'flex',
@@ -24,8 +29,8 @@ export const LoadingSpinner = ({
         ...style,
       }}
     >
-      <LuLoaderCircle size={size} className="animate-spin" color="var(--color-brand-600)" />
-      {message && <span>{message}</span>}
+      <LuLoaderCircle size={size} className="animate-spin" color="var(--color-brand-600)" aria-hidden="true" />
+      {displayMessage && <span>{displayMessage}</span>}
     </div>
   );
 

@@ -11,6 +11,7 @@ import {
   PageHeader,
   Alert,
   LoadingSpinner,
+  ConfirmModal,
 } from '@/components/ui';
 import {
   LuArrowLeft,
@@ -33,6 +34,7 @@ export const AdminRegistrationRequestDetailsPage = () => {
   const [request, setRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedData, setEditedData] = useState({});
   const [approvalSuccess, setApprovalSuccess] = useState(false);
@@ -102,13 +104,17 @@ export const AdminRegistrationRequestDetailsPage = () => {
     }
   };
 
-  const handleRejectClick = async () => {
-    if (!window.confirm('Reject this onboarding registration request?')) return;
+  const handleRejectClick = () => {
+    setShowRejectModal(true);
+  };
+
+  const executeReject = async () => {
     setActionLoading(true);
     setActionError(null);
     try {
       await api.post(`/admin/registration-requests/${requestId}/reject`);
       await loadRequestDetails();
+      setShowRejectModal(false);
     } catch (err) {
       setActionError(err?.response?.data?.message || err?.message || 'Failed to reject registration request.');
     } finally {
@@ -414,6 +420,18 @@ export const AdminRegistrationRequestDetailsPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Reject Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
+        onConfirm={executeReject}
+        title="Reject Registration Request"
+        message="Are you sure you want to reject this onboarding registration request? This will mark the request as rejected and notify the applicant."
+        confirmText="Reject Application"
+        variant="danger"
+        loading={actionLoading}
+      />
     </div>
   );
 };

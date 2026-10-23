@@ -116,7 +116,7 @@ export const DispatchReportsPage = () => {
         description="Monitor daily trip volume, SLA commitments, delay justifications, and fulfillment performance."
         badge={<Badge variant="brand">Operational Analytics</Badge>}
         actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <Input
               type="date"
               value={dateRange.startDate}

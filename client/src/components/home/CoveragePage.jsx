@@ -269,7 +269,7 @@ export const CoveragePage = () => {
               Use sample records to review the map and shipment status interfaces.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/track">
               <Button variant="primary">Open Tracking Demo</Button>
             </Link>

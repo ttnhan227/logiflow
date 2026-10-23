@@ -17,6 +17,7 @@ import com.logiflow.server.dtos.dispatch.TripProgressEventDto;
 @NoArgsConstructor
 public class TripDto {
     private Integer tripId;
+    private Long version;
     private Integer driverId;
     private String driverName;
     private String driverPhone;
@@ -45,7 +46,8 @@ public class TripDto {
 
     public static TripDto fromTrip(Trip trip) {
         TripDto dto = new TripDto();
-        dto.setTripId(trip.getTripId());
+        dto.setTripId(trip.getTripId());
+        dto.setVersion(trip.getVersion());
         dto.setVehicleId(trip.getVehicle() != null ? trip.getVehicle().getVehicleId() : null);
         dto.setVehicleLicensePlate(trip.getVehicle() != null ? trip.getVehicle().getLicensePlate() : null);
         dto.setVehicleType(trip.getVehicle() != null ? trip.getVehicle().getVehicleType() : null);

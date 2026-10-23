@@ -13,6 +13,7 @@ import {
   PageHeader,
   Alert,
   LoadingSpinner,
+  ConfirmModal,
 } from '@/components/ui';
 import {
   LuTruck,
@@ -61,6 +62,7 @@ export const AdminTripsOversightDetailsPage = () => {
   const [actionError, setActionError] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [delayDecisionConfirm, setDelayDecisionConfirm] = useState(null);
 
   const loadTrip = async () => {
     try {
@@ -79,8 +81,13 @@ export const AdminTripsOversightDetailsPage = () => {
     loadTrip();
   }, [tripId]);
 
-  const handleDelayResponse = async (response, customExtensionMinutes = null) => {
-    if (!window.confirm(`Confirm ${response} decision for Trip #${trip.tripId} delay report?`)) return;
+  const handleDelayResponse = (response, customExtensionMinutes = null) => {
+    setDelayDecisionConfirm({ response, customExtensionMinutes });
+  };
+
+  const executeDelayResponse = async () => {
+    if (!delayDecisionConfirm || !trip) return;
+    const { response, customExtensionMinutes } = delayDecisionConfirm;
     setActingId(trip.tripId);
     try {
       await tripsOversightService.respondToTripDelayReport(
@@ -91,6 +98,7 @@ export const AdminTripsOversightDetailsPage = () => {
       await loadTrip();
       setShowApprovalInput(false);
       setShowUpdateSlaInput(false);
+      setDelayDecisionConfirm(null);
     } catch (err) {
       setActionError(err?.response?.data?.message || err?.message || 'Failed to submit SLA decision.');
     } finally {
@@ -386,6 +394,18 @@ export const AdminTripsOversightDetailsPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Delay Decision Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!delayDecisionConfirm}
+        onClose={() => setDelayDecisionConfirm(null)}
+        onConfirm={executeDelayResponse}
+        title={`Confirm ${delayDecisionConfirm?.response || ''} Decision`}
+        message={`Are you sure you want to record a ${delayDecisionConfirm?.response} decision for Trip #${trip?.tripId} delay report?${delayDecisionConfirm?.customExtensionMinutes ? ` Approved SLA extension: ${delayDecisionConfirm.customExtensionMinutes} minutes.` : ''}`}
+        confirmText="Confirm Decision"
+        variant={delayDecisionConfirm?.response === 'REJECTED' ? 'danger' : 'primary'}
+        loading={!!actingId}
+      />
     </div>
   );
 };

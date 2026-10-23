@@ -8,6 +8,28 @@ export const Tabs = ({
   className = '',
   style = {},
 }) => {
+  const handleKeyDown = (e) => {
+    if (!onChange || items.length === 0) return;
+    const currentIndex = items.findIndex((t) => t.id === activeTab);
+    if (currentIndex === -1) return;
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const nextIndex = (currentIndex + 1) % items.length;
+      onChange(items[nextIndex].id);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prevIndex = (currentIndex - 1 + items.length) % items.length;
+      onChange(items[prevIndex].id);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      onChange(items[0].id);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      onChange(items[items.length - 1].id);
+    }
+  };
+
   return (
     <div
       className={`ui-tabs ui-tabs-${variant} ${className}`}
@@ -21,6 +43,7 @@ export const Tabs = ({
         ...style,
       }}
       role="tablist"
+      onKeyDown={handleKeyDown}
     >
       {items.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -29,8 +52,10 @@ export const Tabs = ({
           return (
             <button
               key={tab.id}
+              type="button"
               role="tab"
               aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => onChange && onChange(tab.id)}
               style={{
                 display: 'inline-flex',
@@ -72,8 +97,10 @@ export const Tabs = ({
         return (
           <button
             key={tab.id}
+            type="button"
             role="tab"
             aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
             onClick={() => onChange && onChange(tab.id)}
             style={{
               display: 'inline-flex',

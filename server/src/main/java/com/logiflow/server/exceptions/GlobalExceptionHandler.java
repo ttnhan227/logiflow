@@ -48,6 +48,15 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.CONFLICT, "DATA_CONFLICT", "The request conflicts with existing data", request, null);
     }
 
+    @ExceptionHandler({
+        org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+        jakarta.persistence.OptimisticLockException.class
+    })
+    ResponseEntity<ApiErrorResponse> handleOptimisticLock(Exception exception, HttpServletRequest request) {
+        return response(HttpStatus.CONFLICT, "OPTIMISTIC_LOCK_CONFLICT",
+                "The resource was modified by another concurrent transaction. Please refresh and retry.", request, null);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     ResponseEntity<ApiErrorResponse> handleNotFound(ResourceNotFoundException exception,
                                                     HttpServletRequest request) {

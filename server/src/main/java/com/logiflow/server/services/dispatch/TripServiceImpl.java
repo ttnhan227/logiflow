@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.logiflow.server.exceptions.BusinessRuleException;
 import com.logiflow.server.exceptions.ResourceNotFoundException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -102,10 +103,26 @@ public class TripServiceImpl implements TripService {
             throw new BusinessRuleException("Some orders not found. Expected " + request.getOrderIds().size() + " orders, found " + orders.size());
         }
 
+        if (com.logiflow.server.constants.VehicleStatus.MAINTENANCE.equalsIgnoreCase(vehicle.getStatus())) {
+            throw new BusinessRuleException("Vehicle " + vehicle.getLicensePlate() + " is currently in maintenance and cannot be assigned to a trip");
+        }
+
         for (Order order : orders) {
             if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
                 throw new BusinessRuleException("Order with id " + order.getOrderId() + " has status " + order.getOrderStatus() + ". Only PENDING orders can be assigned to a trip.");
             }
+        }
+
+        BigDecimal totalCargoWeightTons = orders.stream()
+                .map(Order::getWeightTons)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (vehicle.getCapacityTons() != null && totalCargoWeightTons.compareTo(vehicle.getCapacityTons()) > 0) {
+            throw new BusinessRuleException(String.format(
+                    "Cargo weight exceeds vehicle capacity: total order weight is %.3f tons, but vehicle %s (%s) max capacity is %.3f tons",
+                    totalCargoWeightTons, vehicle.getLicensePlate(), vehicle.getVehicleType(), vehicle.getCapacityTons()
+            ));
         }
 
         Trip trip = new Trip();

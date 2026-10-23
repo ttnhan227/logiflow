@@ -6,11 +6,13 @@ import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class DispatchVehicleServiceImpl implements DispatchVehicleService {
 
     private final VehicleRepository vehicleRepository;

@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AdminVehicleServiceImpl implements AdminVehicleService {
 
     private static final String SYSTEM_ACTOR = "system";

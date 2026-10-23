@@ -8,7 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -66,6 +67,21 @@ class GlobalExceptionHandlerTest {
         assertEquals(404, response.getBody().status());
         assertEquals("RESOURCE_NOT_FOUND", response.getBody().error());
         assertEquals("Trip with id 999 not found", response.getBody().message());
+    }
+
+    @Test
+    @DisplayName("ObjectOptimisticLockingFailureException maps to HTTP 409 Conflict with OPTIMISTIC_LOCK_CONFLICT")
+    void testOptimisticLockException() {
+        org.springframework.orm.ObjectOptimisticLockingFailureException ex =
+                new org.springframework.orm.ObjectOptimisticLockingFailureException("Trip", 42);
+
+        ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleOptimisticLock(ex, request);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(409, response.getBody().status());
+        assertEquals("OPTIMISTIC_LOCK_CONFLICT", response.getBody().error());
+        assertTrue(response.getBody().message().contains("concurrent"));
     }
 
     @Test

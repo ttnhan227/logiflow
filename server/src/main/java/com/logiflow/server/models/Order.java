@@ -18,6 +18,10 @@ public class Order {
     @Column(name = "order_id")
     private Integer orderId;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id")
     private Trip trip;
@@ -120,8 +124,64 @@ public class Order {
         WAREHOUSE
     }
 
+    public void transitionTo(OrderStatus newStatus) {
+        if (this.orderStatus != null) {
+            this.orderStatus.validateTransition(newStatus);
+        }
+        this.orderStatus = newStatus;
+    }
+
     public static enum OrderStatus {
-        PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED
+        PENDING, ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED;
+
+        public static final java.util.Set<OrderStatus> TERMINAL_STATUSES = java.util.Set.of(DELIVERED, CANCELLED);
+
+        private static final java.util.Map<OrderStatus, java.util.Set<OrderStatus>> VALID_TRANSITIONS = java.util.Map.of(
+            PENDING, java.util.Set.of(ASSIGNED, CANCELLED),
+            ASSIGNED, java.util.Set.of(IN_TRANSIT, PENDING, CANCELLED),
+            IN_TRANSIT, java.util.Set.of(DELIVERED, PENDING, CANCELLED),
+            DELIVERED, java.util.Set.of(),
+            CANCELLED, java.util.Set.of()
+        );
+
+        public boolean isTerminal() {
+            return TERMINAL_STATUSES.contains(this);
+        }
+
+        public boolean canTransitionTo(OrderStatus target) {
+            if (target == null) return false;
+            if (this == target) return true; // idempotent
+            java.util.Set<OrderStatus> allowed = VALID_TRANSITIONS.get(this);
+            return allowed != null && allowed.contains(target);
+        }
+
+        public void validateTransition(OrderStatus target) {
+            validateTransition(this, target);
+        }
+
+        public static void validateTransition(OrderStatus from, OrderStatus to) {
+            if (to == null) {
+                throw new com.logiflow.server.exceptions.BusinessRuleException("Target order status cannot be null");
+            }
+            if (from == null) {
+                return; // initial state
+            }
+            if (from == to) {
+                return; // idempotent
+            }
+            if (from == DELIVERED) {
+                throw new com.logiflow.server.exceptions.BusinessRuleException("Cannot change status of a delivered order (Order is terminal: DELIVERED)");
+            }
+            if (from == CANCELLED) {
+                throw new com.logiflow.server.exceptions.BusinessRuleException("Cannot change status of a cancelled order (Order is terminal: CANCELLED)");
+            }
+            if (!from.canTransitionTo(to)) {
+                throw new com.logiflow.server.exceptions.BusinessRuleException(String.format(
+                    "Invalid order status transition from %s to %s. Allowed transitions from %s: %s",
+                    from, to, from, VALID_TRANSITIONS.get(from)
+                ));
+            }
+        }
     }
 
     public static enum PaymentStatus {

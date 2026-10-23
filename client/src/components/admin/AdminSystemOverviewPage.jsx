@@ -19,6 +19,7 @@ import {
   TableCell,
   LoadingSpinner,
   EmptyState,
+  ConfirmModal,
 } from '@/components/ui';
 import {
   LuServer,
@@ -61,6 +62,8 @@ export const AdminSystemOverviewPage = () => {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [filters, setFilters] = useState({ category: '', key: '', description: '', isEncrypted: '' });
   const [categories, setCategories] = useState([]);
@@ -138,13 +141,21 @@ export const AdminSystemOverviewPage = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this system configuration parameter?')) return;
+  const handleDelete = (id) => {
+    setDeleteTargetId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteTargetId) return;
+    setDeleting(true);
     try {
-      await settingsService.deleteSetting(id);
+      await settingsService.deleteSetting(deleteTargetId);
+      setDeleteTargetId(null);
       await fetchSettings(page, filters);
     } catch {
       setSettingsError('Failed to remove configuration setting.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -380,6 +391,18 @@ export const AdminSystemOverviewPage = () => {
           </form>
         </Modal>
       )}
+
+      {/* Delete Setting Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deleteTargetId}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={executeDelete}
+        title="Delete System Setting"
+        message="Are you sure you want to delete this system configuration parameter? This action cannot be undone."
+        confirmText="Delete Parameter"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 };

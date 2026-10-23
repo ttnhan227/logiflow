@@ -79,7 +79,8 @@ export const Pagination = ({
   };
 
   return (
-    <div
+    <nav
+      aria-label="Pagination"
       className={`ui-pagination ${className}`}
       style={{
         display: 'flex',
@@ -96,13 +97,14 @@ export const Pagination = ({
       <div>
         {typeof totalItems === 'number' && typeof pageSize === 'number' && (
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
-            Showing <strong style={{ color: 'var(--text-primary)' }}>{from}</strong>–<strong style={{ color: 'var(--text-primary)' }}>{to}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalItems}</strong> entries
+            Showing <strong style={{ color: 'var(--text-primary)' }}>{from}</strong> &ndash; <strong style={{ color: 'var(--text-primary)' }}>{to}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalItems}</strong> entries
           </span>
         )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         <button
+          type="button"
           style={buttonStyle}
           onClick={() => goto(0)}
           disabled={disabled || clampedPage === 0}
@@ -112,6 +114,7 @@ export const Pagination = ({
           <LuChevronsLeft size={14} />
         </button>
         <button
+          type="button"
           style={buttonStyle}
           onClick={() => goto(clampedPage - 1)}
           disabled={disabled || clampedPage === 0}
@@ -127,6 +130,7 @@ export const Pagination = ({
               return (
                 <span
                   key={it.key}
+                  aria-hidden="true"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -136,7 +140,7 @@ export const Pagination = ({
                     fontSize: 'var(--text-xs)',
                   }}
                 >
-                  …
+                  &hellip;
                 </span>
               );
             }
@@ -144,9 +148,12 @@ export const Pagination = ({
             const active = it.page === clampedPage;
             return (
               <button
+                type="button"
                 key={it.key}
                 onClick={() => goto(it.page)}
                 disabled={disabled}
+                aria-label={`Page ${it.page + 1}`}
+                aria-current={active ? 'page' : undefined}
                 style={{
                   ...buttonStyle,
                   fontWeight: active ? 700 : 500,
@@ -162,6 +169,7 @@ export const Pagination = ({
         </div>
 
         <button
+          type="button"
           style={buttonStyle}
           onClick={() => goto(clampedPage + 1)}
           disabled={disabled || clampedPage >= totalPages - 1}
@@ -171,6 +179,7 @@ export const Pagination = ({
           <LuChevronRight size={14} />
         </button>
         <button
+          type="button"
           style={buttonStyle}
           onClick={() => goto(totalPages - 1)}
           disabled={disabled || clampedPage >= totalPages - 1}
@@ -180,7 +189,7 @@ export const Pagination = ({
           <LuChevronsRight size={14} />
         </button>
       </div>
-    </div>
+    </nav>
   );
 };
 
