@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>An academic freight-management application with multi-role workflows, WebSocket driver-location updates, React/Leaflet maps, and a Flutter driver client.</strong>
+  <strong>An academic freight-management application with multi-role workflows, WebSocket driver-location updates, a React/Leaflet web console for admins and dispatchers, and a Flutter mobile app for customers and drivers.</strong>
 </p>
 
 <p align="center">
@@ -40,7 +40,7 @@ LogiFlow is orchestrated with Docker Compose locally. GitHub Actions validates e
 ### End-to-End Architecture
 
 ```text
-React 19 Web App (Admin / Dispatcher)        Flutter Mobile App (Driver GPS)
+React 19 Web App (Admin / Dispatcher)   Flutter Mobile App (Customer / Driver)
                  │                                           │
                  │ HTTPS / REST & WSS / STOMP                │ HTTPS / WSS
                  ▼                                           ▼
@@ -63,8 +63,8 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 | Service | Technology | Role |
 |---|---|---|
 | Backend API | Spring Boot 3 + Java 21 | RESTful endpoints, WebSocket broker, security, business logic |
-| Web Client | React 19 + Ant Design | Dispatcher command console, tracking portal, analytics |
-| Mobile Client | Flutter (Dart) | Driver turn-by-turn tracking, signature capture, status updates |
+| Web Client | React 19 + Ant Design | Admin and dispatcher operations console, tracking portal, analytics |
+| Mobile Client | Flutter (Dart) | Customer ordering and tracking; driver deliveries, GPS tracking, signature capture, status updates |
 | Database | PostgreSQL 15 | Relational storage for users, orders, trips, and telemetry |
 | Telemetry Broker | Spring STOMP / WebSockets | Trip-scoped driver-location updates |
 | Containerization | Docker + Docker Compose | Multi-service orchestration (`compose.yaml`) |
@@ -81,7 +81,7 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 ## Features
 
 - **Driver Location Updates**: Trip-scoped coordinates are sent over WebSockets and displayed on Leaflet maps.
-- **Multi-Role Coordination**: Tailored portals for Admins (fleet config), Dispatchers (trip routing), Drivers (POD execution), and Customers (public tracking).
+- **Multi-Role Coordination**: The React web app serves Admins (users, registrations, vehicles, audit logs, settings) and Dispatchers (trip routing); the Flutter app serves Drivers (deliveries, GPS, POD) and Customers (ordering and tracking).
 - **Proof of Delivery (POD)**: On-glass digital signature capture and delivery photo uploads.
 - **Rule-Based Driver Recommendations**: Scores drivers using availability, license category, current location, and vehicle capacity.
 - **License Data Extraction**: Uses Mistral OCR to prefill fields from a driver-license image for human review.
@@ -102,7 +102,7 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 
 ## Individual Contributions & Engineering Decisions
 
-LogiFlow was developed as a collaborative team project. To provide complete clarity on individual ownership versus shared team delivery, here are the core backend, architectural, and infrastructure systems I personally owned and implemented:
+LogiFlow was developed as a collaborative team project of four members. I was the team leader and owned the backend: authentication (stateless JWT, BCrypt), multi-role RBAC, database schema design, security configuration, and the admin-role features (user management, registration approval, vehicles, audit logs, system settings). Beyond that, here are the core systems I personally owned and implemented:
 
 ### 1. Delivery Lifecycle Finite State Machine (FSM)
 * **Problem**: Unvalidated status updates allowed completed trips to be cancelled or modified, causing inconsistent state across driver and dispatcher views.
@@ -111,7 +111,7 @@ LogiFlow was developed as a collaborative team project. To provide complete clar
 
 ### 2. High-Frequency GPS Telemetry & WebSocket Hardening
 * **Problem**: Continuous streaming of raw location coordinates from driver devices risked memory leaks, coordinate corruption (out-of-bounds or `NaN`/`Infinity` coordinates), and WebSocket crashes on transient DB write errors.
-* **My Implementation**: Hardened `GpsTrackingController.java` with coordinate validation (bounded latitude [-90, 90] and longitude [-180, 180]), thread-safe bounded in-memory circular buffers (`MAX_HISTORY_PER_TRIP = 500`), and decoupled STOMP broadcasting from relational persistence.
+* **My Implementation**: Hardened `GpsTrackingController.java` with coordinate validation (bounded latitude [-90, 90] and longitude [-180, 180]), thread-safe bounded in-memory circular buffers (`MAX_HISTORY_PER_TRIP = 100`), and decoupled STOMP broadcasting from relational persistence.
 * **Verification**: Wrote controller validation tests (`GpsTrackingControllerValidationTest`) ensuring corrupted frames are discarded without dropping active WebSocket channels.
 
 ### 3. Payment Processing & Callback Idempotency
