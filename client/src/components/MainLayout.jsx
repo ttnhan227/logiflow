@@ -173,15 +173,15 @@ export const MainLayout = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'var(--color-route-orange)',
-                border: '1px solid rgba(68, 197, 225, 0.35)',
-                borderRadius: '9px',
-                backgroundColor: 'rgba(68, 197, 225, 0.08)',
+                border: '1px solid rgba(255, 103, 20, 0.35)',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(255, 103, 20, 0.08)',
               }}
             >
-              <LuTruck size={21} />
+              <LuTruck size={20} />
             </span>
-            <span style={{ marginLeft: '9px', color: 'var(--color-white)', fontSize: '20px', fontWeight: 750, letterSpacing: '-0.04em' }}>
-              Logi<span style={{ color: 'var(--color-route-cyan)' }}>Flow</span>
+            <span style={{ marginLeft: '9px', color: 'var(--color-white)', fontSize: '20px', fontWeight: 800, letterSpacing: '-0.04em' }}>
+              LOGI<span style={{ color: 'var(--color-route-orange)' }}>FLOW</span>
             </span>
           </Link>
 

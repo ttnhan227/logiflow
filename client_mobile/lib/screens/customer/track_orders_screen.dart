@@ -94,20 +94,7 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
   }
 
   String _getStatusEmoji(String status) {
-    switch (status.toUpperCase()) {
-      case 'PENDING':
-        return '⬜';
-      case 'ASSIGNED':
-        return '🔵';
-      case 'IN_TRANSIT':
-        return '🟡';
-      case 'DELIVERED':
-        return '🟢';
-      case 'CANCELLED':
-        return '🔴';
-      default:
-        return '⚪';
-    }
+    return '';
   }
 
   Color _getStatusColorForCard(String status) {

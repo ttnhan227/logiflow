@@ -299,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.support_agent_rounded,
               title: 'Dispatch Help',
               subtitle: '24/7 Operations desk',
-              color: const Color(0xFF7C3AED),
+              color: AppTheme.routeOrange,
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Contacting Dispatch Control Tower Hotline: 1900-8888')),
