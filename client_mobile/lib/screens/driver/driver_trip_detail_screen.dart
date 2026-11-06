@@ -1,3 +1,4 @@
+import '../../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../services/api_client.dart';
@@ -984,45 +985,30 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
               children: [
                 CustomScrollView(
                   slivers: [
-                    // Compact App Bar with Trip Info and Actions
+                    // Enterprise Dark Asphalt App Bar
                     SliverAppBar(
                       pinned: true,
-                      backgroundColor: Colors.white,
-                      elevation: 2,
+                      backgroundColor: AppTheme.navy,
+                      foregroundColor: Colors.white,
+                      iconTheme: const IconThemeData(color: Colors.white),
+                      elevation: 0,
                       title: Row(
                         children: [
                           Text(
-                            '#${_tripDetail!['tripId']}',
+                            'TRIP #${_tripDetail!['tripId']}',
                             style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: Colors.white,
+                              letterSpacing: 0.3,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getTripStatusColor(
-                                _tripDetail!['status'],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _tripDetail!['status']?.toUpperCase() ?? 'N/A',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                          AppTheme.buildStatusPill(_tripDetail!['status'] ?? 'N/A'),
                         ],
                       ),
                       leading: IconButton(
-                        icon: const Icon(Icons.arrow_back),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       actions: [
@@ -1113,7 +1099,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                 child: ElevatedButton(
                                   onPressed: onPressed,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: onPressed != null ? Colors.blue : Colors.grey,
+                                    backgroundColor: onPressed != null ? AppTheme.routeOrange : const Color(0xFF64748B),
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                     textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
@@ -1185,7 +1171,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.blue,
+                                            color: AppTheme.primary,
                                           ),
                                         ),
                                         Builder(
@@ -1219,7 +1205,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                                               value: percentage,
                                               backgroundColor: Colors.grey[300],
                                               valueColor: AlwaysStoppedAnimation<Color>(
-                                                percentage == 1.0 ? Colors.green : Colors.blue,
+                                                percentage == 1.0 ? AppTheme.success : AppTheme.routeOrange,
                                               ),
                                             ),
                                             const SizedBox(height: 8),

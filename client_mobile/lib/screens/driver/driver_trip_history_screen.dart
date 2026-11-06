@@ -1,3 +1,4 @@
+import '../../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../../services/driver/driver_service.dart';
 import '../../models/driver/trip.dart';
@@ -72,96 +73,6 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
 
   Future<void> _refresh() async {
     await _loadTripHistory();
-  }
-
-  String _getStatusEmoji(String status) {
-    switch (status.toUpperCase()) {
-      case 'COMPLETED':
-        return '🟢';
-      case 'CANCELLED':
-        return '🔴';
-      default:
-        return '⚪';
-    }
-  }
-
-  Color _getStatusColorForCard(String status) {
-    switch (status.toUpperCase()) {
-      case 'COMPLETED':
-        return Colors.green;
-      case 'CANCELLED':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Widget _buildSectionCard(
-    String title,
-    IconData icon,
-    Color color,
-    List<Widget> children,
-  ) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Today';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      return weekdays[date.weekday - 1];
-    } else {
-      return '${date.month}/${date.day}/${date.year}';
-    }
-  }
-
-  String _formatDateTime(DateTime date) {
-    return '${date.month}/${date.day}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -244,6 +155,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                         final trip = _trips[index];
 
                         return InkWell(
+                          borderRadius: BorderRadius.circular(10),
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -254,266 +166,141 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                               ),
                             );
                           },
-                          child: _buildSectionCard(
-                            'TRIP #${trip.tripId}',
-                            Icons.local_shipping,
-                            _getStatusColorForCard(trip.status ?? ''),
-                            [
-                              // Status badge at the top
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _getStatusColorForCard(
-                                    trip.status ?? '',
-                                  ).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: _getStatusColorForCard(
-                                      trip.status ?? '',
-                                    ).withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Text(
-                                  trip.status ?? 'Unknown',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: _getStatusColorForCard(
-                                      trip.status ?? '',
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              // Route Information
+                          child: AppTheme.buildDispatchCard(
+                            title: 'ARCHIVED TRIP #${trip.tripId}',
+                            icon: Icons.history_rounded,
+                            headerIconColor: AppTheme.primary,
+                            trailing: AppTheme.buildStatusPill(trip.status ?? 'COMPLETED'),
+                            children: [
                               if (trip.routeName != null) ...[
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.route,
-                                      color: Colors.blue,
-                                      size: 16,
+                                      Icons.alt_route_rounded,
+                                      color: AppTheme.routeOrange,
+                                      size: 18,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         trip.routeName!,
-                                        style: const TextStyle(fontSize: 14),
+                                        style: const TextStyle(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.text,
+                                        ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 12),
                               ],
-
-                              // Departure/Arrival Information
-                              if (trip.departureLocation != null)
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on,
-                                      color: Colors.red,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        trip.departureLocation!,
-                                        style: const TextStyle(fontSize: 14),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              if (trip.arrivalLocation != null) ...[
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.flag,
-                                      color: Colors.green,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        trip.arrivalLocation!,
-                                        style: const TextStyle(fontSize: 14),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-
-                              const SizedBox(height: 12),
-
-                              // Package specs
                               Row(
                                 children: [
-                                  if (trip.distance != null)
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.route,
-                                            size: 16,
-                                            color: Colors.grey,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${trip.distance!.toStringAsFixed(0)}km',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  if (trip.estimatedDuration != null)
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.access_time,
-                                            size: 16,
-                                            color: Colors.grey,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${trip.estimatedDuration} min',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  if (trip.vehiclePlate != null)
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.directions_car,
-                                            size: 16,
-                                            color: Colors.grey,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            trip.vehiclePlate!,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-
-                              // Pickup Types Information
-                              if (trip.pickupTypes != null &&
-                                  trip.pickupTypes!.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.blue[200]!,
+                                  Expanded(
+                                    child: AppTheme.buildMetricTile(
+                                      label: 'Distance',
+                                      value: trip.distance != null ? trip.distance!.toStringAsFixed(0) : '--',
+                                      unit: 'km',
+                                      icon: Icons.straighten_rounded,
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: AppTheme.buildMetricTile(
+                                      label: 'Duration',
+                                      value: trip.estimatedDuration != null ? '${trip.estimatedDuration}' : '--',
+                                      unit: 'min',
+                                      icon: Icons.timer_outlined,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: AppTheme.buildMetricTile(
+                                      label: 'Vehicle',
+                                      value: trip.vehiclePlate ?? 'TRUCK',
+                                      icon: Icons.directions_car_outlined,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (trip.departureLocation != null || trip.arrivalLocation != null) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceMuted,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
                                     children: [
-                                      SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: Row(
+                                      if (trip.departureLocation != null)
+                                        Row(
                                           children: [
-                                            Icon(
-                                              Icons.business,
-                                              size: 16,
-                                              color: Colors.blue[700],
-                                            ),
+                                            const Icon(Icons.circle, size: 8, color: AppTheme.primary),
                                             const SizedBox(width: 6),
-                                            Text(
-                                              'Pickup Types: ${trip.pickupTypes}',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.blue,
+                                            Expanded(
+                                              child: Text(
+                                                'From: ${trip.departureLocation}',
+                                                style: const TextStyle(fontSize: 11.5, color: AppTheme.text),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
+                                      if (trip.departureLocation != null && trip.arrivalLocation != null)
+                                        const SizedBox(height: 4),
+                                      if (trip.arrivalLocation != null)
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.location_on, size: 10, color: AppTheme.routeOrange),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                'To: ${trip.arrivalLocation}',
+                                                style: const TextStyle(fontSize: 11.5, color: AppTheme.text, fontWeight: FontWeight.w600),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                     ],
                                   ),
                                 ),
                               ],
-
-                              const SizedBox(height: 12),
-
-                              // Departure Date
-                              if (trip.scheduledDeparture != null)
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.calendar_today,
-                                      size: 16,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Completed: ${_formatDate(DateTime.parse(trip.scheduledDeparture!))}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                              // Tap indicator
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 10),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Icon(
-                                    Icons.touch_app,
-                                    size: 14,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Tap for details',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey[500],
-                                    ),
+                                  if (trip.scheduledDeparture != null)
+                                    Text(
+                                      'Date: ${_formatDate(DateTime.parse(trip.scheduledDeparture!))}',
+                                      style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                                    )
+                                  else
+                                    const SizedBox.shrink(),
+                                  Row(
+                                    children: const [
+                                      Text(
+                                        'VIEW LOG',
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                          color: AppTheme.routeOrange,
+                                        ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.arrow_forward_rounded, size: 12, color: AppTheme.routeOrange),
+                                    ],
                                   ),
                                 ],
                               ),
                             ],
                           ),
-                        );
-                      },
+                        );                      },
                     ),
             ),
     );

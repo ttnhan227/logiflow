@@ -443,21 +443,50 @@ class _MainLayoutState extends State<MainLayout> {
               text: const TextSpan(
                 children: [
                   TextSpan(
-                    text: 'Logi',
+                    text: 'LOGI',
                     style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.navy,
-                      letterSpacing: -0.4,
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                   ),
                   TextSpan(
-                    text: 'Flow',
+                    text: 'FLOW',
                     style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.primary,
-                      letterSpacing: -0.4,
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.routeOrange,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D253E),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFF1E3A5F), width: 0.8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle),
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    '24Hz',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
                     ),
                   ),
                 ],
