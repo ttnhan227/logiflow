@@ -26,10 +26,6 @@
       <stop offset="60%" stop-color="#0284c7" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="#060c18" stop-opacity="0"/>
     </radialGradient>
-
-    <filter id="logoDropShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
-    </filter>
   </defs>
 
   <!-- Base Squircle -->
@@ -51,12 +47,14 @@
   <circle cx="172" cy="64" r="10" fill="none" stroke="#10b981" stroke-width="1.2" stroke-opacity="0.45"/>
 
   <!-- Center Freight Semi-Truck Assembly -->
-  <g transform="translate(32, 64)" filter="url(#logoDropShadow)">
+  <g transform="translate(32, 64)">
     <!-- Top Speed Chevrons -->
     <path d="M 16 0 L 38 0 L 50 10 L 28 10 Z" fill="#38bdf8" opacity="0.9"/>
     <path d="M 46 0 L 68 0 L 80 10 L 58 10 Z" fill="url(#lfAmberGrad)"/>
     <path d="M 76 0 L 98 0 L 110 10 L 88 10 Z" fill="#10b981"/>
 
+    <!-- Trailer Container Shadow Layer -->
+    <rect x="2" y="16" width="76" height="56" rx="5" fill="#040812" fill-opacity="0.5"/>
     <!-- Trailer Container -->
     <rect x="0" y="14" width="76" height="56" rx="5" fill="url(#trailerGrad)" stroke="#475569" stroke-width="1.5"/>
     <!-- Container Grooves -->
@@ -87,4 +85,4 @@
     <circle cx="108" cy="72" r="11" fill="#0a0f1d" stroke="#64748b" stroke-width="2.5"/>
     <circle cx="108" cy="72" r="4.5" fill="#f59e0b"/>
   </g>
-</svg>\n
+</svg>
