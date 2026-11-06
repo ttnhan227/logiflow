@@ -101,21 +101,29 @@ export const LoginPage = () => {
               label="Username"
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. admin or dispatcher_01"
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) setError('');
+              }}
+              placeholder="e.g. admin or john.dispatcher"
               leftIcon={<LuUser size={16} />}
               required
               autoFocus
+              error={error && !username.trim() ? 'Username is required' : undefined}
             />
 
             <Input
               label="Password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError('');
+              }}
               placeholder="Enter account password"
               leftIcon={<LuLock size={16} />}
               required
+              error={error && !password.trim() ? 'Password is required' : undefined}
             />
 
             <Button
@@ -129,6 +137,73 @@ export const LoginPage = () => {
               Sign In to Control Tower
             </Button>
           </form>
+
+          {/* Quick Demo Logins for Evaluators */}
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '12px 14px',
+              backgroundColor: 'var(--bg-surface-subtle)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-default)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginBottom: '8px',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <LuShieldCheck size={14} color="var(--color-brand-600)" />
+              <span>Quick Demo Autofill (Evaluator Access)</span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setUsername('john.dispatcher');
+                  setPassword('123');
+                  setError('');
+                }}
+                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
+              >
+                Dispatcher (john.dispatcher)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setUsername('admin');
+                  setPassword('123');
+                  setError('');
+                }}
+                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
+              >
+                Admin (admin)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setUsername('alice.customer');
+                  setPassword('123');
+                  setError('');
+                }}
+                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
+              >
+                Customer (alice.customer)
+              </Button>
+            </div>
+          </div>
 
           {/* Registration Options */}
           <div

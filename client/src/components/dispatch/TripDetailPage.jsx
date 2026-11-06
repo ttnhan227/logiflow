@@ -281,6 +281,7 @@ export const TripDetailPage = () => {
           <div style={{ display: 'flex', gap: '8px' }}>
             <input
               type="text"
+              aria-label="Reason for cancellation"
               placeholder="Reason for cancellation (required)..."
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}

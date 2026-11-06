@@ -55,9 +55,10 @@ export const AdminDashboardPage = () => {
         setDashboardData(data);
         setActiveDrivers(drivers || []);
 
-        const activeTripsData = (trips?.items || []).filter((trip) =>
-          ['in_progress', 'assigned', 'in_transit', 'arrived'].includes(trip.tripStatus)
-        );
+        const activeTripsData = (trips?.items || []).filter((trip) => {
+          const status = (trip.tripStatus || '').toLowerCase();
+          return ['in_progress', 'assigned', 'in_transit', 'arrived'].includes(status);
+        });
         setActiveTrips(activeTripsData);
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Failed to load executive dashboard telemetry.');
@@ -156,12 +157,12 @@ export const AdminDashboardPage = () => {
       {/* Fleet & Distribution Visualizations */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
         {/* Vehicle Class Distribution */}
-        <Card style={{ padding: '24px' }}>
+        <Card style={{ padding: '24px', minWidth: 0 }}>
           <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
             Commercial Vehicle Class Breakdown
           </h3>
-          <div style={{ height: '240px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: '240px', width: '100%', minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
                 <Pie
                   data={vehicleTypeData}
@@ -200,12 +201,12 @@ export const AdminDashboardPage = () => {
         </Card>
 
         {/* Fleet Operational Readiness */}
-        <Card style={{ padding: '24px' }}>
+        <Card style={{ padding: '24px', minWidth: 0 }}>
           <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
             Fleet Operational Readiness
           </h3>
-          <div style={{ height: '260px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: '260px', width: '100%', minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart
                 data={[
                   { name: 'Available', value: fleetLifecycle?.availableVehicles || 0, fill: '#059669' },

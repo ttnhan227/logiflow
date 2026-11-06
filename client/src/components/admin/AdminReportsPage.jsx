@@ -169,7 +169,7 @@ export const AdminReportsPage = () => {
 
       {/* Visual Trends */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
-        <Card style={{ padding: '24px' }}>
+        <Card style={{ padding: '24px', minWidth: 0 }}>
           <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
             Volume & Cancellation Rates
           </h3>
@@ -177,8 +177,8 @@ export const AdminReportsPage = () => {
             Daily trip manifests plotted against operational cancellations.
           </p>
 
-          <div style={{ height: '260px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: '260px', width: '100%', minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <AreaChart data={performanceReport?.dailyStats || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
@@ -199,7 +199,7 @@ export const AdminReportsPage = () => {
           </div>
         </Card>
 
-        <Card style={{ padding: '24px' }}>
+        <Card style={{ padding: '24px', minWidth: 0 }}>
           <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
             Average Delivery Latency (Minutes)
           </h3>
@@ -207,8 +207,8 @@ export const AdminReportsPage = () => {
             Fulfillment duration metrics by calendar date.
           </p>
 
-          <div style={{ height: '260px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: '260px', width: '100%', minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={performanceReport?.dailyStats || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />

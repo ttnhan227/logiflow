@@ -21,15 +21,33 @@
 
 > **Project scope:** LogiFlow is a portfolio and academic project, not a live freight carrier. PayPal runs in sandbox mode, license OCR extracts fields for human review, and sample coverage, contacts, and operational data are demonstrations rather than commercial commitments.
 
+## Platform in Action
+
+<p align="center">
+  <img src="docs/assets/logiflow-demo.gif" alt="LogiFlow in Action - End-to-End Freight Operations Demo" width="100%">
+</p>
+
+> **End-to-End Walkthrough**: Public Shipment Tracking lookup with milestone telemetry modal &rarr; Quick 1-click Dispatcher demo login &rarr; High-density Orders Queue &rarr; Trips Manifest with debounced search &rarr; Executive Admin Control Tower with real-time operational analytics and KPI charts.
+
 ## Platform Visual Preview
 
-| Landing Page & Operations Dashboard | Driver Locations & Route Map |
+### 1. Unified Web Console (Dispatcher & Executive Admin)
+
+| Public Shipper Portal & Live Tracking | Executive Administration Dashboard |
 |:---:|:---:|
-| ![LogiFlow landing page](docs/screenshots/logiflow-home-hero.png) | ![Driver location map](docs/screenshots/logiflow-map.png) |
-| **Operations Management Dashboard** | **Public Shipment Tracking & Telemetry** |
-| ![Dispatcher Operations Console](docs/screenshots/logiflow-dashboard.png) | ![Public Milestone Tracking](docs/screenshots/logiflow-track.png) |
-| **Performance & Delay Reports** | **Sample Logistics News Feed** |
-| ![Performance and delay reports](docs/screenshots/logiflow-reports.png) | ![Sample logistics news](docs/screenshots/logiflow-news.png) |
+| ![LogiFlow Landing Console](docs/screenshots/01_home_desktop.png) | ![Admin Executive Dashboard](docs/screenshots/16_admin_dashboard.png) |
+| **Dispatcher High-Density Orders Queue** | **Linehaul Trips Manifest & Telemetry** |
+| ![Dispatcher Orders Queue](docs/screenshots/11_dispatch_orders.png) | ![Linehaul Dispatch Trips](docs/screenshots/13_dispatch_trips.png) |
+| **Delay Latency & Fleet Analytics** | **Nationwide Corridor Coverage & Fleet** |
+| ![Dispatch Reports & Delay Analytics](docs/screenshots/14_dispatch_reports.png) | ![Pan-Vietnam Corridor Network](docs/screenshots/06_coverage_network.png) |
+
+### 2. Flutter Mobile Application (Customer Shipper & Driver Partner)
+
+| Driver Operations Dashboard | Active Linehaul Trips & Manifest | Live Trip Navigation & e-POD |
+|:---:|:---:|:---:|
+| ![Driver Operations Home](docs/screenshots/mobile_02_driver_home.png) | ![Driver Assigned Trips](docs/screenshots/mobile_03_driver_trips.png) | ![Trip Detail & OpenStreetMap](docs/screenshots/mobile_04_driver_trip_detail.png) |
+| **Mobile Authentication Portal** | **Customer Shipper Console** | **Live Shipment Tracking & History** |
+| ![Mobile Login Screen](docs/screenshots/mobile_01_login.png) | ![Customer Freight Actions](docs/screenshots/mobile_06_customer_home.png) | ![Customer Order History & POD](docs/screenshots/mobile_09_customer_history.png) |
 
 ---
 

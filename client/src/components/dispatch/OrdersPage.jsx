@@ -131,6 +131,14 @@ export const OrdersPage = () => {
       return bTime - aTime;
     });
 
+  const hasActiveFilters = Boolean(searchTerm || statusFilter || pickupTypeFilter);
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('');
+    setPickupTypeFilter('');
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <PageHeader
@@ -152,6 +160,7 @@ export const OrdersPage = () => {
           <div style={{ flex: 1, minWidth: '240px' }}>
             <Input
               placeholder="Search by customer, phone, or order ID..."
+              aria-label="Search orders by customer, phone, or order ID"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               leftIcon={<LuSearch size={16} />}
@@ -160,6 +169,7 @@ export const OrdersPage = () => {
 
           <div style={{ width: '160px' }}>
             <Select
+              aria-label="Filter by order status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
@@ -175,6 +185,7 @@ export const OrdersPage = () => {
 
           <div style={{ width: '160px' }}>
             <Select
+              aria-label="Filter by pickup type"
               value={pickupTypeFilter}
               onChange={(e) => setPickupTypeFilter(e.target.value)}
               options={[
@@ -184,6 +195,12 @@ export const OrdersPage = () => {
               ]}
             />
           </div>
+
+          {hasActiveFilters && (
+            <Button variant="ghost" size="md" onClick={resetFilters}>
+              Clear
+            </Button>
+          )}
 
           <Button variant="outline" size="md" onClick={fetchOrders} loading={loading} leftIcon={<LuRefreshCw size={14} />}>
             Refresh
@@ -206,14 +223,24 @@ export const OrdersPage = () => {
         ) : filteredOrders.length === 0 ? (
           <EmptyState
             icon={<LuPackage size={36} color="var(--color-slate-400)" />}
-            title="No orders found"
-            description="Adjust your search filters or import new delivery orders to populate the dispatch queue."
+            title={hasActiveFilters ? 'No matching orders found' : 'No orders found'}
+            description={
+              hasActiveFilters
+                ? 'No freight orders match your search or filter settings. Reset filters to view all orders.'
+                : 'Adjust your search filters or import new delivery orders to populate the dispatch queue.'
+            }
             action={
-              <Link to="/dispatch/orders/import">
-                <Button variant="outline" size="sm">
-                  Import Orders
+              hasActiveFilters ? (
+                <Button variant="outline" size="sm" onClick={resetFilters}>
+                  Clear Active Filters
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/dispatch/orders/import">
+                  <Button variant="outline" size="sm">
+                    Import Orders
+                  </Button>
+                </Link>
+              )
             }
           />
         ) : (

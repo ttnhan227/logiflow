@@ -198,7 +198,9 @@ export const TripAssignPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead style={{ width: '48px' }}></TableHead>
+                      <TableHead style={{ width: '48px' }}>
+                        <span className="sr-only">Select Driver</span>
+                      </TableHead>
                       <TableHead>Driver Name</TableHead>
                       <TableHead>Compatibility Score</TableHead>
                       <TableHead>Status / Eligibility</TableHead>
@@ -224,6 +226,7 @@ export const TripAssignPage = () => {
                               type="radio"
                               name="driver"
                               checked={isSelected}
+                              aria-label={`Select driver ${r.fullName || `Driver #${r.driverId}`}`}
                               onChange={() => setSelectedDriver(r.driverId)}
                             />
                           </TableCell>

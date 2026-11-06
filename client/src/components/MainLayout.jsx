@@ -202,6 +202,8 @@ export const MainLayout = () => {
             <div style={{ position: 'relative' }} ref={servicesRef}>
               <button
                 onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
+                aria-expanded={servicesDropdownOpen}
+                aria-haspopup="true"
                 style={{
                   ...navLinkStyle('/services'),
                   color: servicesDropdownOpen ? 'var(--color-route-orange)' : '#d7e7f3',
@@ -213,6 +215,8 @@ export const MainLayout = () => {
 
               {servicesDropdownOpen && (
                 <div
+                  role="menu"
+                  aria-label="Services menu"
                   style={{
                     position: 'absolute',
                     top: 'calc(100% + 6px)',
@@ -231,6 +235,7 @@ export const MainLayout = () => {
                 >
                   <Link
                     to="/services"
+                    role="menuitem"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -247,6 +252,7 @@ export const MainLayout = () => {
                   </Link>
                   <Link
                     to="/track"
+                    role="menuitem"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -263,6 +269,7 @@ export const MainLayout = () => {
                   </Link>
                   <Link
                     to="/coverage"
+                    role="menuitem"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -328,6 +335,9 @@ export const MainLayout = () => {
               <div style={{ position: 'relative' }} ref={userRef}>
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  aria-expanded={userDropdownOpen}
+                  aria-haspopup="true"
+                  aria-label={`User account options for ${user.username || 'User'}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -371,6 +381,8 @@ export const MainLayout = () => {
 
                 {userDropdownOpen && (
                   <div
+                    role="menu"
+                    aria-label="User account menu"
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 6px)',
@@ -398,6 +410,7 @@ export const MainLayout = () => {
 
                     <Link
                       to="/profile"
+                      role="menuitem"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -415,6 +428,7 @@ export const MainLayout = () => {
                     {user.role === 'ADMIN' && (
                       <Link
                         to="/admin/dashboard"
+                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -433,6 +447,7 @@ export const MainLayout = () => {
                     {user.role === 'DISPATCHER' && (
                       <Link
                         to="/dispatch/orders"
+                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -449,6 +464,7 @@ export const MainLayout = () => {
                     )}
 
                     <button
+                      role="menuitem"
                       onClick={handleLogout}
                       style={{
                         display: 'flex',
@@ -474,23 +490,29 @@ export const MainLayout = () => {
                 <div className="join-menu" style={{ position: 'relative' }} ref={joinRef}>
                   <button
                     onClick={() => setJoinDropdownOpen(!joinDropdownOpen)}
+                    aria-expanded={joinDropdownOpen}
+                    aria-haspopup="true"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
                       padding: '7px 12px',
                       fontSize: 'var(--text-sm)',
-                      fontWeight: 500,
-                      color: 'var(--text-secondary)',
+                      fontWeight: 600,
+                      color: joinDropdownOpen ? 'var(--color-route-orange)' : '#d7e7f3',
+                      backgroundColor: joinDropdownOpen ? 'rgba(255, 103, 20, 0.12)' : 'transparent',
                       borderRadius: 'var(--radius-md)',
                       cursor: 'pointer',
+                      transition: 'all var(--transition-fast)',
                     }}
                   >
-                    Join Us <LuChevronDown size={14} />
+                    Join Us <LuChevronDown size={14} style={{ transform: joinDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
                   </button>
 
                   {joinDropdownOpen && (
                     <div
+                      role="menu"
+                      aria-label="Registration options menu"
                       style={{
                         position: 'absolute',
                         top: 'calc(100% + 6px)',
@@ -509,6 +531,7 @@ export const MainLayout = () => {
                     >
                       <Link
                         to="/register/driver"
+                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -525,6 +548,7 @@ export const MainLayout = () => {
                       </Link>
                       <Link
                         to="/register/customer"
+                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -566,15 +590,19 @@ export const MainLayout = () => {
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="mobile-menu-btn"
-              aria-label="Toggle navigation menu"
+              aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-drawer"
               style={{
                 display: 'none',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '6px',
-                color: 'var(--text-secondary)',
+                padding: '6px 8px',
+                color: 'var(--color-white)',
                 borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-default)',
+                border: '1px solid rgba(68, 197, 225, 0.35)',
+                backgroundColor: 'rgba(68, 197, 225, 0.08)',
+                cursor: 'pointer',
               }}
             >
               {isMobileMenuOpen ? <LuX size={20} /> : <LuMenu size={20} />}

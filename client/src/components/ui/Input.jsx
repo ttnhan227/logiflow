@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useId } from 'react';
+import { LuEye, LuEyeOff } from 'react-icons/lu';
 
 export const Input = React.forwardRef(({
   label,
@@ -16,11 +17,18 @@ export const Input = React.forwardRef(({
   'aria-describedby': ariaDescribedByProp,
   ...props
 }, ref) => {
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
-  const errorId = error && inputId ? `${inputId}-error` : undefined;
-  const hintId = hint && !error && inputId ? `${inputId}-hint` : undefined;
+  const generatedId = useId();
+  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `input-${generatedId}`);
+  const errorId = error ? `${inputId}-error` : undefined;
+  const hintId = hint && !error ? `${inputId}-hint` : undefined;
   const describedBy = [ariaDescribedByProp, errorId, hintId].filter(Boolean).join(' ') || undefined;
   const isInvalid = ariaInvalidProp != null ? ariaInvalidProp : !!error;
+
+  const [showPassword, setShowPassword] = useState(false);
+  const isPasswordType = type === 'password';
+  const effectiveType = isPasswordType ? (showPassword ? 'text' : 'password') : type;
+
+  const hasRightControl = rightIcon || isPasswordType;
 
   return (
     <div className={`ui-input-group ${className}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
@@ -53,6 +61,7 @@ export const Input = React.forwardRef(({
               pointerEvents: 'none',
               zIndex: 1,
             }}
+            aria-hidden="true"
           >
             {leftIcon}
           </span>
@@ -61,16 +70,17 @@ export const Input = React.forwardRef(({
         <input
           ref={ref}
           id={inputId}
-          type={type}
+          type={effectiveType}
           disabled={disabled}
           required={required}
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy}
+          aria-label={!label ? (props['aria-label'] || props.placeholder) : undefined}
           className={`ui-input ${error ? 'has-error' : ''}`}
           style={{
             width: '100%',
             height: '38px',
-            padding: `8px ${rightIcon ? '36px' : '12px'} 8px ${leftIcon ? '36px' : '12px'}`,
+            padding: `8px ${hasRightControl ? '40px' : '12px'} 8px ${leftIcon ? '36px' : '12px'}`,
             fontSize: 'var(--text-sm)',
             color: 'var(--text-primary)',
             backgroundColor: disabled ? 'var(--color-slate-100)' : error ? 'var(--color-danger-50)' : 'var(--color-white)',
@@ -83,6 +93,30 @@ export const Input = React.forwardRef(({
           }}
           {...props}
         />
+
+        {isPasswordType && !rightIcon && (
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              background: 'none',
+              border: 'none',
+              padding: '4px',
+              color: 'var(--color-slate-400)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 'var(--radius-sm)',
+              zIndex: 1,
+            }}
+          >
+            {showPassword ? <LuEyeOff size={16} /> : <LuEye size={16} />}
+          </button>
+        )}
 
         {rightIcon && (
           <span

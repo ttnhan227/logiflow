@@ -241,6 +241,7 @@ export const HomePage = () => {
                 <form className="logiflow-track-form" onSubmit={handleTrackSubmit} style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
+                    aria-label="Enter Tracking Code or Order ID"
                     placeholder="Enter Tracking Code (e.g. TRK-882194)..."
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}

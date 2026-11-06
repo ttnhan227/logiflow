@@ -10,6 +10,14 @@ export const LoadingSpinner = ({
   style = {},
 }) => {
   const displayMessage = text ?? message ?? 'Loading...';
+  const numericSize = typeof size === 'number'
+    ? size
+    : size === 'xs' ? 12
+    : size === 'sm' ? 16
+    : size === 'md' ? 24
+    : size === 'lg' ? 32
+    : size === 'xl' ? 48
+    : 24;
 
   const content = (
     <div
@@ -22,14 +30,14 @@ export const LoadingSpinner = ({
         alignItems: 'center',
         justifyContent: 'center',
         gap: '12px',
-        padding: '32px',
+        padding: fullPage ? '32px' : '16px',
         color: 'var(--color-slate-500)',
         fontSize: 'var(--text-sm)',
         fontWeight: 500,
         ...style,
       }}
     >
-      <LuLoaderCircle size={size} className="animate-spin" color="var(--color-brand-600)" aria-hidden="true" />
+      <LuLoaderCircle size={numericSize} className="animate-spin" color="var(--color-brand-600)" aria-hidden="true" />
       {displayMessage && <span>{displayMessage}</span>}
     </div>
   );
