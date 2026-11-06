@@ -38,10 +38,6 @@
     <pattern id="roadPattern" width="40" height="40" patternUnits="userSpaceOnUse">
       <path d="M 40 0 L 0 40 M 0 0 L 40 40" fill="none" stroke="#172554" stroke-width="0.75" stroke-opacity="0.35"/>
     </pattern>
-
-    <filter id="shadowFilter" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.6"/>
-    </filter>
   </defs>
 
   <!-- Banner Outer Shell -->
@@ -51,8 +47,10 @@
 
   <!-- Left Side: Freight Logistics Emblem Card -->
   <g transform="translate(36, 35)">
+    <!-- Card Backplate Drop-shadow Layer -->
+    <rect x="2" y="4" width="160" height="160" rx="22" fill="#030712" fill-opacity="0.7"/>
     <!-- Card Backplate -->
-    <rect width="160" height="160" rx="22" fill="#0b172d" stroke="#1e3a5f" stroke-width="1.5" filter="url(#shadowFilter)"/>
+    <rect width="160" height="160" rx="22" fill="#0b172d" stroke="#1e3a5f" stroke-width="1.5"/>
     <rect width="160" height="160" rx="22" fill="none" stroke="url(#lfAmberGrad)" stroke-width="1.5" stroke-opacity="0.5"/>
     
     <!-- Ambient glow inside card -->
@@ -75,6 +73,8 @@
       <path d="M 36 4 L 54 4 L 64 12 L 46 12 Z" fill="url(#lfAmberGrad)"/>
       <path d="M 60 4 L 78 4 L 88 12 L 70 12 Z" fill="#10b981"/>
 
+      <!-- Trailer Container Shadow -->
+      <rect x="2" y="18" width="62" height="46" rx="4" fill="#040812" fill-opacity="0.5"/>
       <!-- Trailer Container -->
       <rect x="0" y="16" width="62" height="46" rx="4" fill="url(#trailerGrad)" stroke="#475569" stroke-width="1.2"/>
       <!-- Container Vertical Grooves -->
@@ -174,4 +174,4 @@
       <text x="460" y="16.5" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="600" fill="#cbd5e1">Driver &amp; Dispatch</text>
     </g>
   </g>
-</svg>\n
+</svg>
