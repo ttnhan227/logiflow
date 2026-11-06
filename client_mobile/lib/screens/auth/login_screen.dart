@@ -23,6 +23,14 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _fillDemoCredentials(String username) {
+    setState(() {
+      _usernameController.text = username;
+      _passwordController.text = 'password123';
+      _errorMessage = null;
+    });
+  }
+
   Future<void> _login() async {
     if (_usernameController.text.trim().isEmpty || _passwordController.text.isEmpty) {
       setState(() {
@@ -37,13 +45,12 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final user = await authService.login(
+      await authService.login(
         _usernameController.text.trim(),
         _passwordController.text,
       );
 
       if (mounted) {
-        // Navigate to main layout with bottom navigation
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainLayout()),
         );
@@ -69,96 +76,195 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: AppTheme.border, width: 1),
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: AppTheme.border, width: 1.2),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(28),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                   child: AutofillGroup(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Sleek Typographic Logo Mark
+                        // Web-Aligned Brand Logotype
                         Row(
                           children: [
                             Container(
-                              width: 36,
-                              height: 36,
+                              width: 38,
+                              height: 38,
                               decoration: BoxDecoration(
-                                color: AppTheme.primary,
+                                color: AppTheme.navy,
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF1E3A5F), width: 1),
                               ),
-                              child: const Icon(
-                                Icons.local_shipping_rounded,
-                                color: Colors.white,
-                                size: 20,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.hub_rounded,
+                                  color: AppTheme.routeOrange,
+                                  size: 20,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            RichText(
-                              text: const TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'Logi',
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppTheme.navy,
-                                      letterSpacing: -0.5,
-                                    ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                RichText(
+                                  text: const TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: 'LOGI',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppTheme.navy,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: 'FLOW',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppTheme.routeOrange,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  TextSpan(
-                                    text: 'Flow',
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppTheme.primary,
-                                      letterSpacing: -0.5,
-                                    ),
+                                ),
+                                const Text(
+                                  'ENTERPRISE FREIGHT PLATFORM',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.textMuted,
+                                    letterSpacing: 0.8,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 22),
                         const Text(
-                          'Sign in to your account',
+                          'Operations Sign In',
                           style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.text,
-                            letterSpacing: -0.2,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.navy,
+                            letterSpacing: -0.3,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         const Text(
-                          'Access live trips, GPS telemetry, and freight orders.',
+                          'Access linehaul dispatch, GPS radar, and customer manifests.',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             color: AppTheme.textMuted,
                             height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+
+                        // Quick 1-Tap Demo Credentials
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.canvas,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'QUICK DEMO ACCESS (1-TAP)',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppTheme.textMuted,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => _fillDemoCredentials('driver.mike'),
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: AppTheme.borderStrong),
+                                        ),
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.local_shipping_rounded, size: 14, color: AppTheme.primary),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Driver',
+                                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppTheme.navy),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => _fillDemoCredentials('alice.customer'),
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: AppTheme.borderStrong),
+                                        ),
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.business_rounded, size: 14, color: AppTheme.routeOrange),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Shipper',
+                                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppTheme.navy),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
                         TextField(
                           controller: _usernameController,
                           autofillHints: const [AutofillHints.username],
                           textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
-                            labelText: 'Username',
-                            prefixIcon: Icon(Icons.person_outline_rounded, size: 20),
+                            labelText: 'Username or ID',
+                            prefixIcon: Icon(Icons.person_outline_rounded, size: 18),
                           ),
                           enabled: !_isLoading,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         TextField(
                           controller: _passwordController,
                           autofillHints: const [AutofillHints.password],
@@ -168,28 +274,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           decoration: const InputDecoration(
                             labelText: 'Password',
-                            prefixIcon: Icon(Icons.lock_outline_rounded, size: 20),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, size: 18),
                           ),
                           obscureText: true,
                           enabled: !_isLoading,
                         ),
                         if (_errorMessage != null) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppTheme.dangerBg,
                               border: Border.all(
-                                color: AppTheme.danger.withOpacity(0.25),
+                                color: AppTheme.dangerBorder,
                               ),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(
                                   Icons.error_outline_rounded,
-                                  size: 18,
+                                  size: 16,
                                   color: AppTheme.danger,
                                 ),
                                 const SizedBox(width: 8),
@@ -198,8 +304,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     _errorMessage!,
                                     style: const TextStyle(
                                       color: AppTheme.danger,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -207,18 +313,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: _isLoading ? null : _login,
                           child: _isLoading
                               ? const SizedBox.square(
-                                  dimension: 20,
+                                  dimension: 18,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2.2,
+                                    strokeWidth: 2,
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Sign in'),
+                              : const Text('Sign in to Operations'),
                         ),
                       ],
                     ),
