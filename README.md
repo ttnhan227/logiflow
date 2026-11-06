@@ -35,11 +35,13 @@
 
 ### 2. Flutter Mobile Application (Customer Shipper & Driver Partner)
 
-| Driver Operations Dashboard | Active Linehaul Trips & Manifest | Live Trip Navigation & e-POD |
+| Driver Operations Dashboard | Active Linehaul Trips Manifest | Live Trip Navigation & e-POD |
 |:---:|:---:|:---:|
 | ![Driver Operations Home](docs/screenshots/mobile_02_driver_home.png) | ![Driver Assigned Trips](docs/screenshots/mobile_03_driver_trips.png) | ![Trip Detail & OpenStreetMap](docs/screenshots/mobile_04_driver_trip_detail.png) |
-| **Mobile Authentication Portal** | **Customer Shipper Console** | **Live Shipment Tracking & History** |
-| ![Mobile Login Screen](docs/screenshots/mobile_01_login.png) | ![Customer Freight Actions](docs/screenshots/mobile_06_customer_home.png) | ![Customer Order History & POD](docs/screenshots/mobile_09_customer_history.png) |
+| **Hours of Service (HOS) Compliance** | **Customer Shipper Console** | **New Freight Order Booking** |
+| ![Driver HOS Compliance](docs/screenshots/mobile_05_driver_compliance.png) | ![Customer Freight Actions](docs/screenshots/mobile_06_customer_home.png) | ![Customer Create Order](docs/screenshots/mobile_07_customer_create_order.png) |
+| **Live Telemetry & Tracking** | **Delivered Order History & POD** | **Driver & Shipper Sign-In** |
+| ![Customer Real-time Tracking](docs/screenshots/mobile_08_customer_track.png) | ![Customer Order History & POD](docs/screenshots/mobile_09_customer_history.png) | ![Mobile Login Screen](docs/screenshots/mobile_01_login.png) |
 
 ---
 

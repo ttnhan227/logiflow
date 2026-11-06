@@ -1,3 +1,4 @@
+import '../../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -20,6 +21,465 @@ class AddressSuggestion extends StatelessWidget {
     required this.address,
     required this.onTap,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(title: Text(address), onTap: onTap);
+  }
+}
+
+class CreateOrderScreen extends StatefulWidget {
+  const CreateOrderScreen({super.key});
+
+  @override
+  State<CreateOrderScreen> createState() => _CreateOrderScreenState();
+}
+
+class _CreateOrderScreenState extends State<CreateOrderScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _customerNameController = TextEditingController();
+  final _customerPhoneController = TextEditingController();
+  final _pickupAddressController = TextEditingController();
+  final _containerNumberController = TextEditingController();
+  final _terminalNameController = TextEditingController();
+  final _warehouseNameController = TextEditingController();
+  final _dockNumberController = TextEditingController();
+  final _deliveryAddressController = TextEditingController();
+  final _packageDetailsController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _packageValueController = TextEditingController();
+  final LayerLink _pickupLink = LayerLink();
+  final LayerLink _deliveryLink = LayerLink();
+
+  String _pickupType = '';
+  String _priority = 'NORMAL';
+  bool _isInitializing = true;
+
+  // Address suggestions state
+  List<String> _pickupSuggestions = [];
+  List<String> _deliverySuggestions = [];
+  bool _isLoadingPickupSuggestions = false;
+  bool _isLoadingDeliverySuggestions = false;
+
+  // Distance calculation state
+  String? _calculatedDistance;
+  String? _calculatedDuration;
+  bool _isCalculatingDistance = false;
+
+  // Customer profile for map selection
+  CustomerProfile? _customerProfile;
+
+  // Distance calculation debouncing
+  bool _isDistanceCalculationInProgress = false;
+
+  Timer? _pickupDebounce;
+  Timer? _deliveryDebounce;
+
+  // Geocoding state
+  double? _pickupLat, _pickupLng;
+  double? _deliveryLat, _deliveryLng;
+
+  bool _pickupGeocoding = false;
+  bool _deliveryGeocoding = false;
+
+  // để biết đang chọn pickup hay delivery khi mở map
+  bool _pickingPickup = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Set up listeners on first mount
+  }
+
+  void _loadPickupSuggestions(String query) {
+    if (query.isEmpty || query.length < 2) {
+      setState(() {
+        _pickupSuggestions = [];
+        _isLoadingPickupSuggestions = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingPickupSuggestions = true;
+    });
+
+    mapsService
+        .getBasicAddressSuggestions(query, limit: 5)
+        .then((suggestions) {
+          if (mounted) {
+            setState(() {
+              _pickupSuggestions = suggestions ?? [];
+              _isLoadingPickupSuggestions = false;
+            });
+          }
+        })
+        .catchError((e) {
+          if (mounted) {
+            setState(() {
+              _pickupSuggestions = [];
+              _isLoadingPickupSuggestions = false;
+            });
+          }
+        });
+  }
+
+  void _loadDeliverySuggestions(String query) {
+    if (query.isEmpty || query.length < 2) {
+      setState(() {
+        _deliverySuggestions = [];
+        _isLoadingDeliverySuggestions = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingDeliverySuggestions = true;
+    });
+
+    mapsService
+        .getBasicAddressSuggestions(query, limit: 5)
+        .then((suggestions) {
+          if (mounted) {
+            setState(() {
+              _deliverySuggestions = suggestions ?? [];
+              _isLoadingDeliverySuggestions = false;
+            });
+          }
+        })
+        .catchError((e) {
+          if (mounted) {
+            setState(() {
+              _deliverySuggestions = [];
+              _isLoadingDeliverySuggestions = false;
+            });
+          }
+        });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeForm();
+  }
+
+  Future<void> _initializeForm() async {
+    try {
+      // Pre-fill customer info from profile if available
+      final profile = await customerService.getProfile();
+      setState(() {
+        _customerProfile = profile;
+        if (profile.fullName != null && profile.fullName!.isNotEmpty) {
+          _customerNameController.text = profile.fullName!;
+        }
+        if (profile.phone != null && profile.phone!.isNotEmpty) {
+          _customerPhoneController.text = profile.phone!;
+        }
+        _isInitializing = false;
+      });
+    } catch (e) {
+      // Skip pre-filling on error, user can still enter manually
+      setState(() => _isInitializing = false);
+    }
+  }
+
+  Future<void> _calculateDistance() async {
+    final pickupAddress = _pickupAddressController.text.trim();
+    final deliveryAddress = _deliveryAddressController.text.trim();
+
+    if (pickupAddress.isEmpty ||
+        deliveryAddress.isEmpty ||
+        _isDistanceCalculationInProgress) {
+      return;
+    }
+
+    _isDistanceCalculationInProgress = true;
+    setState(() => _isCalculatingDistance = true);
+
+    try {
+      final result = await mapsService.calculateDistance(
+        pickupAddress,
+        deliveryAddress,
+      );
+
+      if (mounted && result != null) {
+        setState(() {
+          _calculatedDistance = result.totalDistance;
+          _calculatedDuration = result.totalDuration;
+        });
+      } else if (mounted) {
+        setState(() {
+          _calculatedDistance = null;
+          _calculatedDuration = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _calculatedDistance = null;
+          _calculatedDuration = null;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCalculatingDistance = false);
+      }
+      _isDistanceCalculationInProgress = false;
+    }
+  }
+
+  Future<void> _setPickupAddress(String address) async {
+    _pickupAddressController.text = address;
+    _pickupAddressController.selection = TextSelection.fromPosition(
+      TextPosition(offset: address.length),
+    );
+
+    setState(() {
+      _pickupLat = null;
+      _pickupLng = null;
+      _pickupGeocoding = true;
+    });
+
+    try {
+      final geo = await mapsService.geocodeAddress(address);
+      if (!mounted) return;
+      setState(() {
+        _pickupLat = geo?.latitude;
+        _pickupLng = geo?.longitude;
+      });
+    } catch (_) {
+      // cứ để null, lát submit sẽ báo
+    } finally {
+      if (!mounted) return;
+      setState(() => _pickupGeocoding = false);
+    }
+  }
+
+  Future<void> _setDeliveryAddress(String address) async {
+    _deliveryAddressController.text = address;
+    _deliveryAddressController.selection = TextSelection.fromPosition(
+      TextPosition(offset: address.length),
+    );
+
+    setState(() {
+      _deliveryLat = null;
+      _deliveryLng = null;
+      _deliveryGeocoding = true;
+    });
+
+    try {
+      final geo = await mapsService.geocodeAddress(address);
+      if (!mounted) return;
+      setState(() {
+        _deliveryLat = geo?.latitude;
+        _deliveryLng = geo?.longitude;
+      });
+    } catch (_) {
+      // cứ để null, lát submit sẽ báo
+    } finally {
+      if (!mounted) return;
+      setState(() => _deliveryGeocoding = false);
+    }
+  }
+
+  void _openDualPointSelection() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapSelectionScreen(
+          initialLat: 10.8231, // Default to Ho Chi Minh City
+          initialLng: 106.6297,
+          title: 'Select Pickup & Delivery Locations',
+          allowDualSelection: true, // Enable dual-point selection
+          customerProfile: _customerProfile, // Pass customer profile for default address
+        ),
+      ),
+    );
+
+    if (result != null &&
+        result is PickedLocation &&
+        result.routeData != null) {
+      // Extract route data from dual selection
+      final routeData = result.routeData!;
+      final pickupData = routeData['pickup'] as Map<String, dynamic>;
+      final deliveryData = routeData['delivery'] as Map<String, dynamic>;
+
+      setState(() {
+        // Set pickup location
+        _pickupLat = pickupData['lat'] as double;
+        _pickupLng = pickupData['lng'] as double;
+        _pickupAddressController.text =
+            pickupData['address'] as String? ?? 'Selected pickup location';
+
+        // Set delivery location
+        _deliveryLat = deliveryData['lat'] as double;
+        _deliveryLng = deliveryData['lng'] as double;
+        _deliveryAddressController.text =
+            deliveryData['address'] as String? ?? 'Selected delivery location';
+
+        // Set calculated distance from route data
+        _calculatedDistance = routeData['distanceText'] as String?;
+        _calculatedDuration = routeData['distanceKm'] != null
+            ? '${routeData['distanceKm']} km'
+            : null;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pickupDebounce?.cancel();
+    _deliveryDebounce?.cancel();
+
+    _customerNameController.dispose();
+    _customerPhoneController.dispose();
+    _pickupAddressController.dispose();
+    _containerNumberController.dispose();
+    _terminalNameController.dispose();
+    _warehouseNameController.dispose();
+    _dockNumberController.dispose();
+    _deliveryAddressController.dispose();
+    _packageDetailsController.dispose();
+    _weightController.dispose();
+    super.dispose();
+  }
+
+  void _navigateToConfirmation() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Ensure distance calculation is complete before proceeding
+    final pickupAddress = _pickupAddressController.text.trim();
+    final deliveryAddress = _deliveryAddressController.text.trim();
+
+    if (pickupAddress.isNotEmpty &&
+        deliveryAddress.isNotEmpty &&
+        (_calculatedDistance == null || _calculatedDuration == null) &&
+        !_isDistanceCalculationInProgress) {
+      // Trigger final distance calculation if not already calculated
+      await _calculateDistance();
+    }
+
+    final weightTonnes = double.tryParse(_weightController.text.trim());
+    final packageValue = double.tryParse(_packageValueController.text.trim().replaceAll(',', ''));
+    final request = CreateOrderRequest(
+      customerName: _customerNameController.text.trim(),
+      customerPhone: _customerPhoneController.text.trim(),
+      pickupAddress: _pickupAddressController.text.trim(),
+      deliveryAddress: _deliveryAddressController.text.trim(),
+      pickupLat: _pickupLat,
+      pickupLng: _pickupLng,
+      deliveryLat: _deliveryLat,
+      deliveryLng: _deliveryLng,
+      packageDetails: _packageDetailsController.text.trim().isNotEmpty
+          ? _packageDetailsController.text.trim()
+          : null,
+      weightKg: weightTonnes != null ? weightTonnes * 1000 : null,
+      packageValue: packageValue,
+      priority: _priority,
+      pickupType: _pickupType.isNotEmpty ? _pickupType : null,
+      containerNumber: _containerNumberController.text.trim().isNotEmpty
+          ? _containerNumberController.text.trim()
+          : null,
+      terminalName: _terminalNameController.text.trim().isNotEmpty
+          ? _terminalNameController.text.trim()
+          : null,
+      warehouseName: _warehouseNameController.text.trim().isNotEmpty
+          ? _warehouseNameController.text.trim()
+          : null,
+      dockNumber: _dockNumberController.text.trim().isNotEmpty
+          ? _dockNumberController.text.trim()
+          : null,
+    );
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderConfirmationScreen(
+          orderRequest: request,
+          calculatedDistance: _calculatedDistance,
+          calculatedDuration: _calculatedDuration,
+        ),
+      ),
+    );
+  }
+
+  void _resetForm() {
+    // Reset form state
+    _formKey.currentState?.reset();
+
+    // Clear all controllers
+    _customerNameController.clear();
+    _customerPhoneController.clear();
+    _pickupAddressController.clear();
+    _containerNumberController.clear();
+    _terminalNameController.clear();
+    _warehouseNameController.clear();
+    _dockNumberController.clear();
+    _deliveryAddressController.clear();
+    _packageDetailsController.clear();
+    _weightController.clear();
+
+    // Reset state variables
+    setState(() {
+      _pickupType = '';
+      _priority = 'NORMAL';
+      _pickupLat = null;
+      _pickupLng = null;
+      _deliveryLat = null;
+      _deliveryLng = null;
+      _calculatedDistance = null;
+      _calculatedDuration = null;
+      _pickupSuggestions = [];
+      _deliverySuggestions = [];
+    });
+  }
+
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    dynamic value, {
+    Color? iconColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: iconColor ?? Colors.grey.shade600),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value?.toString() ?? 'N/A',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionCard(String title, IconData icon, Color color, List<Widget> children) {
+    return AppTheme.buildDispatchCard(
+      title: title,
+      icon: icon,
+      headerIconColor: AppTheme.primary,
+      children: children,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1042,7 +1502,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: AppTheme.routeOrange,
                       foregroundColor: Colors.white,
                       elevation: 3,
                       shape: RoundedRectangleBorder(
