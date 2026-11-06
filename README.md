@@ -21,14 +21,6 @@
 
 > **Project scope:** LogiFlow is a portfolio and academic project, not a live freight carrier. PayPal runs in sandbox mode, license OCR extracts fields for human review, and sample coverage, contacts, and operational data are demonstrations rather than commercial commitments.
 
-## Platform in Action
-
-<p align="center">
-  <img src="docs/assets/logiflow-demo.gif" alt="LogiFlow in Action - End-to-End Freight Operations Demo" width="100%">
-</p>
-
-> **End-to-End Walkthrough**: Public Shipment Tracking lookup with milestone telemetry modal &rarr; Quick 1-click Dispatcher demo login &rarr; High-density Orders Queue &rarr; Trips Manifest with debounced search &rarr; Executive Admin Control Tower with real-time operational analytics and KPI charts.
-
 ## Platform Visual Preview
 
 ### 1. Unified Web Console (Dispatcher & Executive Admin)
