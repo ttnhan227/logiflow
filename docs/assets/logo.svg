@@ -1,34 +1,90 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
   <defs>
+    <!-- Background Gradient -->
     <linearGradient id="lfLogoBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a1128"/>
-      <stop offset="100%" stop-color="#141e3c"/>
+      <stop offset="0%" stop-color="#060c18"/>
+      <stop offset="50%" stop-color="#0c1830"/>
+      <stop offset="100%" stop-color="#112242"/>
     </linearGradient>
-    <linearGradient id="lfAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+
+    <!-- Amber / Safety Orange Gradient -->
+    <linearGradient id="lfAmberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#f59e0b"/>
       <stop offset="50%" stop-color="#f97316"/>
-      <stop offset="100%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#ef4444"/>
     </linearGradient>
+
+    <!-- Trailer Gradient -->
+    <linearGradient id="trailerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="60%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+
+    <radialGradient id="logoGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#0284c7" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#060c18" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="logoDropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
   </defs>
 
-  <rect width="200" height="200" rx="40" fill="url(#lfLogoBg)"/>
-  <rect width="196" height="196" x="2" y="2" rx="38" fill="none" stroke="#334155" stroke-width="2"/>
-  <rect width="196" height="196" x="2" y="2" rx="38" fill="none" stroke="url(#lfAccent)" stroke-width="2" stroke-opacity="0.5"/>
+  <!-- Base Squircle -->
+  <rect width="200" height="200" rx="44" fill="url(#lfLogoBg)"/>
+  <rect width="196" height="196" x="2" y="2" rx="42" fill="none" stroke="#1e293b" stroke-width="2"/>
+  <rect width="196" height="196" x="2" y="2" rx="42" fill="none" stroke="url(#lfAmberGrad)" stroke-width="1.5" stroke-opacity="0.4"/>
 
-  <g transform="translate(100, 100)">
-    <polygon points="0,-64 56,-32 56,32 0,64 -56,32 -56,-32" fill="#132347" stroke="url(#lfAccent)" stroke-width="3" stroke-linejoin="round"/>
-    
-    <circle cx="0" cy="0" r="24" fill="#0d1b38" stroke="#38bdf8" stroke-width="2.5"/>
-    
-    <path d="M -32 -16 L 0 -34 L 32 -16" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M 32 16 L 0 34 L -32 16" fill="none" stroke="#06b6d4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Radial Glow behind truck -->
+  <circle cx="100" cy="105" r="70" fill="url(#logoGlow)"/>
 
-    <circle cx="0" cy="0" r="6" fill="#f59e0b"/>
-    <circle cx="0" cy="0" r="12" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.5"/>
+  <!-- Route Line & Highway Waypoints -->
+  <path d="M 24 154 L 176 154" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 24 161 L 176 161" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5 5" stroke-opacity="0.6"/>
+  <path d="M 30 138 C 55 138 72 96 102 96 C 132 96 148 64 172 64" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="4 4" stroke-opacity="0.7"/>
 
-    <circle cx="-32" cy="-16" r="4.5" fill="#f97316"/>
-    <circle cx="32" cy="-16" r="4.5" fill="#38bdf8"/>
-    <circle cx="32" cy="16" r="4.5" fill="#22c55e"/>
-    <circle cx="-32" cy="16" r="4.5" fill="#f59e0b"/>
+  <!-- Waypoints -->
+  <circle cx="102" cy="96" r="4.5" fill="#38bdf8"/>
+  <circle cx="172" cy="64" r="5.5" fill="#10b981"/>
+  <circle cx="172" cy="64" r="10" fill="none" stroke="#10b981" stroke-width="1.2" stroke-opacity="0.45"/>
+
+  <!-- Center Freight Semi-Truck Assembly -->
+  <g transform="translate(32, 64)" filter="url(#logoDropShadow)">
+    <!-- Top Speed Chevrons -->
+    <path d="M 16 0 L 38 0 L 50 10 L 28 10 Z" fill="#38bdf8" opacity="0.9"/>
+    <path d="M 46 0 L 68 0 L 80 10 L 58 10 Z" fill="url(#lfAmberGrad)"/>
+    <path d="M 76 0 L 98 0 L 110 10 L 88 10 Z" fill="#10b981"/>
+
+    <!-- Trailer Container -->
+    <rect x="0" y="14" width="76" height="56" rx="5" fill="url(#trailerGrad)" stroke="#475569" stroke-width="1.5"/>
+    <!-- Container Grooves -->
+    <line x1="16" y1="19" x2="16" y2="65" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="32" y1="19" x2="32" y2="65" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="48" y1="19" x2="48" y2="65" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="64" y1="19" x2="64" y2="65" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round"/>
+
+    <!-- Hitch Connection -->
+    <rect x="75" y="48" width="10" height="12" fill="#334155"/>
+
+    <!-- Aerodynamic Truck Cab -->
+    <path d="M 82 70 L 82 22 C 82 17 86 13 92 13 L 104 13 C 115 13 125 24 129 36 L 132 54 C 133 58 133 62 133 70 Z" fill="url(#lfAmberGrad)"/>
+    <!-- Windshield -->
+    <path d="M 97 19 L 106 19 C 114 19 120 26 123 35 L 124 41 L 97 41 Z" fill="#0f172a" opacity="0.95"/>
+    <!-- Headlight Beam -->
+    <polygon points="133,58 143,62 133,66" fill="#fef08a"/>
+    <!-- Front Bumper -->
+    <rect x="128" y="65" width="6" height="6" rx="2" fill="#334155"/>
+
+    <!-- Heavy Wheels & Hubs -->
+    <circle cx="18" cy="72" r="11" fill="#0a0f1d" stroke="#64748b" stroke-width="2.5"/>
+    <circle cx="18" cy="72" r="4.5" fill="#f59e0b"/>
+
+    <circle cx="44" cy="72" r="11" fill="#0a0f1d" stroke="#64748b" stroke-width="2.5"/>
+    <circle cx="44" cy="72" r="4.5" fill="#f59e0b"/>
+
+    <circle cx="108" cy="72" r="11" fill="#0a0f1d" stroke="#64748b" stroke-width="2.5"/>
+    <circle cx="108" cy="72" r="4.5" fill="#f59e0b"/>
   </g>
-</svg>
+</svg>\n
