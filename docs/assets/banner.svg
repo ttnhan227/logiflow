@@ -1,177 +1,124 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 230" width="100%" height="230">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" width="100%" height="220">
   <defs>
-    <!-- Background Gradient: Deep Freight Navy -->
-    <linearGradient id="lfBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#060c18"/>
-      <stop offset="50%" stop-color="#0b162c"/>
-      <stop offset="100%" stop-color="#070f20"/>
-    </linearGradient>
-
-    <!-- Logistics Amber / Safety Orange Gradient -->
-    <linearGradient id="lfAmberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f59e0b"/>
-      <stop offset="50%" stop-color="#f97316"/>
-      <stop offset="100%" stop-color="#ef4444"/>
-    </linearGradient>
-
-    <!-- Logistics Signal Blue Gradient -->
-    <linearGradient id="lfBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="100%" stop-color="#1d4ed8"/>
-    </linearGradient>
-
-    <!-- Cargo Trailer Metallic Gradient -->
-    <linearGradient id="trailerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e293b"/>
-      <stop offset="60%" stop-color="#334155"/>
-      <stop offset="100%" stop-color="#1e293b"/>
-    </linearGradient>
-
-    <!-- Subtle Glow Behind Freight Truck -->
-    <radialGradient id="hubGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
-      <stop offset="60%" stop-color="#0284c7" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#060c18" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Map Highway Grid Lines (Logistics Corridors) -->
-    <pattern id="roadPattern" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 40 M 0 0 L 40 40" fill="none" stroke="#172554" stroke-width="0.75" stroke-opacity="0.35"/>
-    </pattern>
+    <style>
+      .mono-bold { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Courier New', monospace; font-weight: 700; }
+      .mono-reg  { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace; font-weight: 500; }
+      .sans-bold { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; font-weight: 800; }
+    </style>
   </defs>
 
-  <!-- Banner Outer Shell -->
-  <rect width="820" height="230" rx="16" fill="url(#lfBg)"/>
-  <rect width="820" height="230" rx="16" fill="url(#roadPattern)"/>
-  <rect width="818" height="228" x="1" y="1" rx="15" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+  <!-- Solid Industrial Carbon Surface -->
+  <rect width="820" height="220" fill="#090D14"/>
+  <rect width="818" height="218" x="1" y="1" fill="none" stroke="#1B2230" stroke-width="1.5"/>
 
-  <!-- Left Side: Freight Logistics Emblem Card -->
-  <g transform="translate(36, 35)">
-    <!-- Card Backplate Drop-shadow Layer -->
-    <rect x="2" y="4" width="160" height="160" rx="22" fill="#030712" fill-opacity="0.7"/>
-    <!-- Card Backplate -->
-    <rect width="160" height="160" rx="22" fill="#0b172d" stroke="#1e3a5f" stroke-width="1.5"/>
-    <rect width="160" height="160" rx="22" fill="none" stroke="url(#lfAmberGrad)" stroke-width="1.5" stroke-opacity="0.5"/>
-    
-    <!-- Ambient glow inside card -->
-    <circle cx="80" cy="80" r="65" fill="url(#hubGlow)"/>
+  <!-- Top Accent Ruler: International Freight Orange Stripe -->
+  <rect x="0" y="0" width="820" height="3" fill="#FF5500"/>
 
-    <!-- Corridor Waypoint Path Lines inside Emblem -->
-    <path d="M 22 124 L 138 124" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round"/>
-    <path d="M 22 130 L 138 130" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="4 4" stroke-opacity="0.6"/>
-    <path d="M 26 112 C 45 112 60 78 85 78 C 110 78 120 52 138 52" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
-    
-    <!-- Waypoint Nodes on Route -->
-    <circle cx="85" cy="78" r="3.5" fill="#38bdf8"/>
-    <circle cx="138" cy="52" r="4.5" fill="#10b981"/>
-    <circle cx="138" cy="52" r="8" fill="none" stroke="#10b981" stroke-width="1" stroke-opacity="0.4"/>
-
-    <!-- Semi-Truck Freight Carrier Silhouette -->
-    <g transform="translate(24, 52)">
-      <!-- Top Aerodynamic Flow Chevrons -->
-      <path d="M 12 4 L 30 4 L 40 12 L 22 12 Z" fill="#38bdf8" opacity="0.9"/>
-      <path d="M 36 4 L 54 4 L 64 12 L 46 12 Z" fill="url(#lfAmberGrad)"/>
-      <path d="M 60 4 L 78 4 L 88 12 L 70 12 Z" fill="#10b981"/>
-
-      <!-- Trailer Container Shadow -->
-      <rect x="2" y="18" width="62" height="46" rx="4" fill="#040812" fill-opacity="0.5"/>
-      <!-- Trailer Container -->
-      <rect x="0" y="16" width="62" height="46" rx="4" fill="url(#trailerGrad)" stroke="#475569" stroke-width="1.2"/>
-      <!-- Container Vertical Grooves -->
-      <line x1="13" y1="20" x2="13" y2="58" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="26" y1="20" x2="26" y2="58" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="39" y1="20" x2="39" y2="58" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="52" y1="20" x2="52" y2="58" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round"/>
-
-      <!-- Hitch Connector -->
-      <rect x="61" y="44" width="8" height="10" fill="#334155"/>
-
-      <!-- Truck Cab -->
-      <path d="M 67 62 L 67 22 C 67 18 70 15 75 15 L 85 15 C 94 15 102 24 105 34 L 107 48 C 108 52 108 55 108 62 Z" fill="url(#lfAmberGrad)"/>
-      <!-- Windshield -->
-      <path d="M 79 20 L 87 20 C 93 20 98 26 100 33 L 101 38 L 79 38 Z" fill="#0f172a" opacity="0.95"/>
-      <!-- Headlight Beam -->
-      <polygon points="108,52 116,55 108,58" fill="#fef08a"/>
-      <!-- Bumper -->
-      <rect x="104" y="58" width="5" height="5" rx="1.5" fill="#334155"/>
-
-      <!-- Heavy Wheels with Rims -->
-      <circle cx="15" cy="63" r="9" fill="#0a0f1d" stroke="#64748b" stroke-width="2"/>
-      <circle cx="15" cy="63" r="3.5" fill="#f59e0b"/>
-
-      <circle cx="36" cy="63" r="9" fill="#0a0f1d" stroke="#64748b" stroke-width="2"/>
-      <circle cx="36" cy="63" r="3.5" fill="#f59e0b"/>
-
-      <circle cx="88" cy="63" r="9" fill="#0a0f1d" stroke="#64748b" stroke-width="2"/>
-      <circle cx="88" cy="63" r="3.5" fill="#f59e0b"/>
-    </g>
-  </g>
-
-  <!-- Right Side Background: Live Logistics Waypoint Route Network Visualizer -->
-  <g transform="translate(560, 24)" opacity="0.65">
-    <!-- Curved Route Corridors -->
-    <path d="M 0 140 C 60 120 80 40 140 40 C 180 40 210 90 240 80" fill="none" stroke="#1e3a5f" stroke-width="2" stroke-dasharray="4 4"/>
-    <path d="M 10 170 C 70 170 120 110 170 110 C 200 110 215 140 240 135" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.4"/>
-    
-    <!-- Origin Node -->
-    <circle cx="140" cy="40" r="5" fill="#38bdf8"/>
-    <circle cx="140" cy="40" r="10" fill="none" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.4"/>
-    <text x="125" y="26" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="700" fill="#93c5fd">ORIGIN HUB</text>
-
-    <!-- In-Transit Pulse Node -->
-    <circle cx="170" cy="110" r="5" fill="#f59e0b"/>
-    <circle cx="170" cy="110" r="11" fill="none" stroke="#f59e0b" stroke-width="1" stroke-opacity="0.5"/>
-    <text x="146" y="132" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="700" fill="#fde68a">IN TRANSIT</text>
-
-    <!-- Destination Delivered Node -->
-    <circle cx="215" cy="85" r="5" fill="#10b981"/>
-    <circle cx="215" cy="85" r="10" fill="none" stroke="#10b981" stroke-width="1" stroke-opacity="0.4"/>
-    <text x="185" y="72" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="700" fill="#86efac">DESTINATION</text>
-  </g>
-
-  <!-- Typography & Information Hierarchy (Center-Left to Right) -->
-  <g transform="translate(225, 48)">
-    <!-- Category Badge -->
-    <g transform="translate(0, 0)">
-      <rect width="186" height="22" rx="11" fill="#431407" stroke="#f97316" stroke-width="1"/>
-      <circle cx="12" cy="11" r="3.5" fill="#f59e0b"/>
-      <text x="22" y="14.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9.5" font-weight="700" fill="#fdba74" letter-spacing="0.6">ENTERPRISE FREIGHT DISPATCH</text>
-    </g>
-
-    <!-- Main Title with Custom Brand Treatment -->
-    <g transform="translate(0, 52)">
-      <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif" font-size="38" font-weight="900" letter-spacing="-0.8">
-        <tspan fill="#ffffff">LOGI</tspan><tspan fill="url(#lfAmberGrad)">FLOW</tspan>
-      </text>
-      <text x="210" y="-8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="700" fill="#38bdf8" letter-spacing="1">v1.0 ENTERPRISE</text>
-    </g>
-
-    <!-- Subtitle -->
-    <text x="0" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif" font-size="14.5" font-weight="500" fill="#94a3b8">
-      Real-Time GPS Telemetry, Fleet Manifest Routing &amp; Multi-Role Operations
+  <!-- ================= TOP HEADER BAR ================= -->
+  <g transform="translate(24, 25)">
+    <!-- Brand Wordmark -->
+    <text class="sans-bold" font-size="18" letter-spacing="1.5">
+      <tspan fill="#F8FAFC">LOGI</tspan><tspan fill="#FF5500">FLOW</tspan>
     </text>
+    <text x="110" y="-1" class="mono-reg" font-size="10" fill="#64748B" letter-spacing="0.5">│ ENTERPRISE FREIGHT DISPATCH &amp; TELEMETRY</text>
 
-    <!-- Logistics Architecture Badges -->
-    <g transform="translate(0, 104)">
-      <!-- Spring Boot 3 Engine -->
-      <rect x="0" y="0" width="124" height="26" rx="13" fill="#0f172a" stroke="#334155" stroke-width="1"/>
-      <circle cx="13" cy="13" r="3.5" fill="#f59e0b"/>
-      <text x="24" y="16.5" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="600" fill="#cbd5e1">Spring Boot 3</text>
+    <!-- Operational State Indicator -->
+    <rect x="635" y="-12" width="135" height="18" rx="2" fill="#0D1F17" stroke="#10B981" stroke-width="0.8"/>
+    <circle cx="646" cy="-3" r="3" fill="#10B981"/>
+    <text x="655" y="1" class="mono-bold" font-size="8.5" fill="#34D399" letter-spacing="0.5">STOMP 24Hz LIVE</text>
+  </g>
 
-      <!-- STOMP GPS Telemetry -->
-      <rect x="134" y="0" width="144" height="26" rx="13" fill="#0f172a" stroke="#334155" stroke-width="1"/>
-      <circle cx="147" cy="13" r="3.5" fill="#38bdf8"/>
-      <text x="158" y="16.5" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="600" fill="#cbd5e1">STOMP Telemetry</text>
+  <line x1="0" y1="38" x2="820" y2="38" stroke="#18202F" stroke-width="1"/>
 
-      <!-- GIS Route Engine -->
-      <rect x="288" y="0" width="138" height="26" rx="13" fill="#0f172a" stroke="#334155" stroke-width="1"/>
-      <circle cx="301" cy="13" r="3.5" fill="#10b981"/>
-      <text x="312" y="16.5" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="600" fill="#cbd5e1">Leaflet GIS Engine</text>
+  <!-- ================= DISPATCH TABLE HEADER ================= -->
+  <g transform="translate(24, 54)">
+    <text x="0" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">LINEHAUL CORRIDOR</text>
+    <text x="180" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">CONSIGNMENT &amp; PAYLOAD</text>
+    <text x="390" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">GPS TELEMETRY &amp; SPEED</text>
+    <text x="600" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">DISPATCH STATUS</text>
+    <text x="715" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">ON-TIME</text>
+  </g>
 
-      <!-- Multi-Tenant Portals -->
-      <rect x="436" y="0" width="130" height="26" rx="13" fill="#0f172a" stroke="#334155" stroke-width="1"/>
-      <circle cx="449" cy="13" r="3.5" fill="#f97316"/>
-      <text x="460" y="16.5" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="600" fill="#cbd5e1">Driver &amp; Dispatch</text>
-    </g>
+  <line x1="20" y1="62" x2="800" y2="62" stroke="#1E2738" stroke-width="1"/>
+
+  <!-- ================= DISPATCH ROW 1 ================= -->
+  <g transform="translate(24, 82)">
+    <!-- Corridor -->
+    <text class="mono-bold" font-size="11" fill="#F8FAFC">HAN <tspan fill="#FF5500">→</tspan> DAD <tspan fill="#64748B">→</tspan> SGN</text>
+    <text y="14" class="mono-reg" font-size="8.5" fill="#64748B">Corridor 1A · 1,720 km</text>
+
+    <!-- Cargo -->
+    <text x="180" class="mono-bold" font-size="10.5" fill="#CBD5E1">#LF-8842 <tspan fill="#64748B">│</tspan> 18.4 / 24.0 T</text>
+    <text x="180" y="14" class="mono-reg" font-size="8.5" fill="#64748B">Volvo FH16 · Cold-Chain</text>
+
+    <!-- Telemetry -->
+    <text x="390" class="mono-bold" font-size="10" fill="#38BDF8">16.0544°N, 108.2022°E</text>
+    <text x="390" y="14" class="mono-reg" font-size="8.5" fill="#94A3B8">Velocity: 68 km/h · Da Nang Gate</text>
+
+    <!-- Status Badge -->
+    <rect x="600" y="-10" width="84" height="18" rx="2" fill="#1C1408" stroke="#FF5500" stroke-width="0.8"/>
+    <text x="608" y="2.5" class="mono-bold" font-size="8" fill="#FB923C">IN TRANSIT</text>
+
+    <!-- Metric -->
+    <text x="715" class="mono-bold" font-size="11" fill="#34D399">99.4%</text>
+    <text x="715" y="14" class="mono-reg" font-size="8" fill="#64748B">ETA 14:30</text>
+  </g>
+
+  <line x1="20" y1="104" x2="800" y2="104" stroke="#141B28" stroke-width="0.8"/>
+
+  <!-- ================= DISPATCH ROW 2 ================= -->
+  <g transform="translate(24, 124)">
+    <!-- Corridor -->
+    <text class="mono-bold" font-size="11" fill="#F8FAFC">DAD <tspan fill="#FF5500">→</tspan> QNH <tspan fill="#64748B">→</tspan> NHA</text>
+    <text y="14" class="mono-reg" font-size="8.5" fill="#64748B">Central Coastal · 530 km</text>
+
+    <!-- Cargo -->
+    <text x="180" class="mono-bold" font-size="10.5" fill="#CBD5E1">#LF-8843 <tspan fill="#64748B">│</tspan> 22.1 / 24.0 T</text>
+    <text x="180" y="14" class="mono-reg" font-size="8.5" fill="#64748B">Scania R500 · Heavy Bulk</text>
+
+    <!-- Telemetry -->
+    <text x="390" class="mono-bold" font-size="10" fill="#38BDF8">13.7820°N, 109.2194°E</text>
+    <text x="390" y="14" class="mono-reg" font-size="8.5" fill="#94A3B8">Velocity: 72 km/h · Qui Nhon Bypass</text>
+
+    <!-- Status Badge -->
+    <rect x="600" y="-10" width="84" height="18" rx="2" fill="#1C1408" stroke="#FF5500" stroke-width="0.8"/>
+    <text x="608" y="2.5" class="mono-bold" font-size="8" fill="#FB923C">IN TRANSIT</text>
+
+    <!-- Metric -->
+    <text x="715" class="mono-bold" font-size="11" fill="#34D399">98.8%</text>
+    <text x="715" y="14" class="mono-reg" font-size="8" fill="#64748B">ETA 18:15</text>
+  </g>
+
+  <line x1="20" y1="146" x2="800" y2="146" stroke="#141B28" stroke-width="0.8"/>
+
+  <!-- ================= DISPATCH ROW 3 ================= -->
+  <g transform="translate(24, 166)">
+    <!-- Corridor -->
+    <text class="mono-bold" font-size="11" fill="#F8FAFC">SGN <tspan fill="#10B981">→</tspan> BDU <tspan fill="#10B981">→</tspan> CTH</text>
+    <text y="14" class="mono-reg" font-size="8.5" fill="#64748B">Mekong Delta · 280 km</text>
+
+    <!-- Cargo -->
+    <text x="180" class="mono-bold" font-size="10.5" fill="#CBD5E1">#LF-8845 <tspan fill="#64748B">│</tspan> 08.5 / 10.0 T</text>
+    <text x="180" y="14" class="mono-reg" font-size="8.5" fill="#64748B">Isuzu Giga · Fast Parcel</text>
+
+    <!-- Telemetry -->
+    <text x="390" class="mono-bold" font-size="10" fill="#10B981">10.0333°N, 105.7833°E</text>
+    <text x="390" y="14" class="mono-reg" font-size="8.5" fill="#94A3B8">Arrived · e-POD Signed &amp; Stamped</text>
+
+    <!-- Status Badge -->
+    <rect x="600" y="-10" width="84" height="18" rx="2" fill="#0D1F17" stroke="#10B981" stroke-width="0.8"/>
+    <text x="611" y="2.5" class="mono-bold" font-size="8" fill="#34D399">DELIVERED</text>
+
+    <!-- Metric -->
+    <text x="715" class="mono-bold" font-size="11" fill="#34D399">100%</text>
+    <text x="715" y="14" class="mono-reg" font-size="8" fill="#64748B">ON-TIME</text>
+  </g>
+
+  <!-- ================= FOOTER RUNTIME SPECS ================= -->
+  <line x1="0" y1="190" x2="820" y2="190" stroke="#18202F" stroke-width="1"/>
+  <g transform="translate(24, 206)">
+    <text class="mono-reg" font-size="9" fill="#475569">
+      <tspan fill="#64748B">STACK:</tspan> Java 21 · Spring Boot 3 REST  │  <tspan fill="#64748B">MAPPING:</tspan> Leaflet GIS  │  <tspan fill="#64748B">CLIENTS:</tspan> React 19 Dispatcher + Flutter Mobile  │  <tspan fill="#64748B">STORE:</tspan> PostgreSQL 15
+    </text>
   </g>
 </svg>
