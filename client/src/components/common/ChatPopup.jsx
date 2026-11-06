@@ -127,6 +127,8 @@ export const ChatPopup = ({ tripId, driverId }) => {
       <button
         onClick={toggleOpen}
         title="Chat with Assigned Driver"
+        aria-label="Chat with Assigned Driver"
+        aria-expanded={isOpen}
         style={{
           position: 'fixed',
           bottom: '24px',
@@ -233,6 +235,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
               <button
                 onClick={toggleMinimize}
                 title={isMinimized ? 'Maximize' : 'Minimize'}
+                aria-label={isMinimized ? 'Maximize chat window' : 'Minimize chat window'}
                 style={{
                   padding: '4px',
                   color: 'var(--color-slate-300)',
@@ -245,6 +248,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
               <button
                 onClick={() => setIsOpen(false)}
                 title="Close chat"
+                aria-label="Close chat window"
                 style={{
                   padding: '4px',
                   color: 'var(--color-slate-300)',
@@ -368,6 +372,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
                 <input
                   type="text"
                   placeholder="Type message..."
+                  aria-label="Type message to assigned driver"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyPress}
@@ -385,6 +390,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
                 <button
                   onClick={handleSend}
                   disabled={!inputText.trim()}
+                  aria-label="Send message"
                   style={{
                     width: '32px',
                     height: '32px',

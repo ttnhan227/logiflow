@@ -228,6 +228,9 @@ const NotificationBell = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         title="Notifications"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
         style={{
           position: 'relative',
           display: 'inline-flex',

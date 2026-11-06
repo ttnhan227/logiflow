@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { LuChevronDown } from 'react-icons/lu';
 
 export const Select = React.forwardRef(({
@@ -16,9 +16,10 @@ export const Select = React.forwardRef(({
   'aria-describedby': ariaDescribedByProp,
   ...props
 }, ref) => {
-  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
-  const errorId = error && selectId ? `${selectId}-error` : undefined;
-  const hintId = hint && !error && selectId ? `${selectId}-hint` : undefined;
+  const generatedId = useId();
+  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `select-${generatedId}`);
+  const errorId = error ? `${selectId}-error` : undefined;
+  const hintId = hint && !error ? `${selectId}-hint` : undefined;
   const describedBy = [ariaDescribedByProp, errorId, hintId].filter(Boolean).join(' ') || undefined;
   const isInvalid = ariaInvalidProp != null ? ariaInvalidProp : !!error;
 
@@ -49,6 +50,7 @@ export const Select = React.forwardRef(({
           required={required}
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy}
+          aria-label={!label ? (props['aria-label'] || props.placeholder) : undefined}
           className={`ui-select ${error ? 'has-error' : ''}`}
           style={{
             width: '100%',
@@ -87,6 +89,7 @@ export const Select = React.forwardRef(({
             display: 'inline-flex',
             alignItems: 'center',
           }}
+          aria-hidden="true"
         >
           <LuChevronDown size={16} />
         </span>

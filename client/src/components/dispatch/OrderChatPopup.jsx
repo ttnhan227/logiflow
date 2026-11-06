@@ -140,6 +140,8 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
           transition: 'transform var(--transition-fast)',
         }}
         title="Chat with Customer"
+        aria-label="Chat with Customer"
+        aria-expanded={isOpen}
       >
         <LuMessageSquare size={22} />
         {unreadCount > 0 && (
@@ -207,12 +209,14 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
+                aria-label={isMinimized ? 'Maximize customer chat window' : 'Minimize customer chat window'}
                 style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-400)', cursor: 'pointer' }}
               >
                 {isMinimized ? <LuMaximize2 size={14} /> : <LuMinimize2 size={14} />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
+                aria-label="Close customer chat window"
                 style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-400)', cursor: 'pointer' }}
               >
                 <LuX size={16} />
@@ -296,6 +300,7 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
                 <input
                   type="text"
                   placeholder="Type a message..."
+                  aria-label="Type message to customer"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -308,7 +313,7 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
                     outline: 'none',
                   }}
                 />
-                <Button variant="primary" size="sm" onClick={handleSend} disabled={!inputText.trim()}>
+                <Button variant="primary" size="sm" onClick={handleSend} disabled={!inputText.trim()} aria-label="Send message">
                   <LuSend size={14} />
                 </Button>
               </div>

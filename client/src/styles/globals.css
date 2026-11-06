@@ -224,6 +224,111 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Button interaction states */
+.ui-btn {
+  position: relative;
+  font-family: inherit;
+  outline: none;
+}
+
+.ui-btn:focus-visible {
+  outline: 2px solid var(--color-brand-600) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(23, 111, 174, 0.25) !important;
+}
+
+.ui-btn-primary:hover:not(:disabled) {
+  background-color: var(--color-brand-700) !important;
+  border-color: var(--color-brand-700) !important;
+}
+
+.ui-btn-primary:active:not(:disabled) {
+  background-color: var(--color-brand-800) !important;
+  border-color: var(--color-brand-800) !important;
+  transform: translateY(1px);
+}
+
+.ui-btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-slate-200) !important;
+  border-color: var(--color-slate-300) !important;
+}
+
+.ui-btn-secondary:active:not(:disabled) {
+  background-color: var(--color-slate-300) !important;
+  transform: translateY(1px);
+}
+
+.ui-btn-outline:hover:not(:disabled) {
+  background-color: var(--color-slate-50) !important;
+  border-color: var(--color-slate-400) !important;
+  color: var(--color-slate-900) !important;
+}
+
+.ui-btn-outline:active:not(:disabled) {
+  background-color: var(--color-slate-100) !important;
+  transform: translateY(1px);
+}
+
+.ui-btn-ghost:hover:not(:disabled) {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+  color: var(--color-slate-900) !important;
+}
+
+.ui-btn-ghost:active:not(:disabled) {
+  background-color: rgba(15, 23, 42, 0.1) !important;
+  transform: translateY(1px);
+}
+
+.ui-btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-700) !important;
+  border-color: var(--color-danger-700) !important;
+}
+
+.ui-btn-danger:active:not(:disabled) {
+  background-color: var(--color-danger-800) !important;
+  border-color: var(--color-danger-800) !important;
+  transform: translateY(1px);
+}
+
+.ui-btn-success:hover:not(:disabled) {
+  background-color: var(--color-success-700) !important;
+  border-color: var(--color-success-700) !important;
+}
+
+.ui-btn-success:active:not(:disabled) {
+  background-color: var(--color-success-800) !important;
+  border-color: var(--color-success-800) !important;
+  transform: translateY(1px);
+}
+
+/* Table row interactive hover */
+.ui-table-row.hoverable:hover td {
+  background-color: rgba(234, 240, 244, 0.5) !important;
+}
+
+/* Accessible reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Leaflet Map overrides for enterprise theme */
 .leaflet-container {
   font-family: var(--font-sans) !important;

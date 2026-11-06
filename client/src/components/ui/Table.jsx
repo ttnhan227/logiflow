@@ -5,10 +5,14 @@ export const Table = ({
   className = '',
   style = {},
   dense = false,
+  'aria-label': ariaLabel = 'Data table',
   ...props
 }) => {
   return (
     <div
+      role="region"
+      aria-label={ariaLabel}
+      tabIndex={0}
       className="ui-table-container"
       style={{
         width: '100%',
@@ -19,6 +23,7 @@ export const Table = ({
         borderRadius: 'var(--radius-lg)',
         backgroundColor: 'var(--bg-surface)',
         boxShadow: 'var(--shadow-xs)',
+        outline: 'none',
       }}
     >
       <table

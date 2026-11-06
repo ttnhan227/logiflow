@@ -13,6 +13,7 @@ export const Button = React.forwardRef(({
   style = {},
   type = 'button',
   onClick,
+  'aria-label': ariaLabelProp,
   ...props
 }, ref) => {
   const baseStyles = {
@@ -98,7 +99,9 @@ export const Button = React.forwardRef(({
       ref={ref}
       type={type}
       disabled={disabled || loading}
+      aria-disabled={disabled || loading ? 'true' : undefined}
       aria-busy={loading ? 'true' : undefined}
+      aria-label={ariaLabelProp}
       onClick={onClick}
       className={`ui-btn ui-btn-${variant} ui-btn-${size} ${className}`}
       style={{

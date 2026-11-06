@@ -34,9 +34,17 @@ export const TripsPage = () => {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(0);
   const size = 10;
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const fetchTrips = async () => {
     setLoading(true);
@@ -44,7 +52,7 @@ export const TripsPage = () => {
     try {
       const data = await tripService.getTrips({
         status: statusFilter || undefined,
-        search: searchTerm || undefined,
+        search: debouncedSearch || undefined,
         page,
         size,
       });
@@ -62,12 +70,12 @@ export const TripsPage = () => {
 
   useEffect(() => {
     setPage(0);
-  }, [statusFilter, searchTerm]);
+  }, [statusFilter, debouncedSearch]);
 
   useEffect(() => {
     fetchTrips();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, searchTerm, page, size]);
+  }, [statusFilter, debouncedSearch, page, size]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -124,6 +132,7 @@ export const TripsPage = () => {
           <div style={{ flex: 1, minWidth: '260px' }}>
             <Input
               placeholder="Search by route corridor, vehicle plate, or trip ID..."
+              aria-label="Search trips by route corridor, vehicle plate, or trip ID"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               leftIcon={<LuSearch size={16} />}
@@ -132,6 +141,7 @@ export const TripsPage = () => {
 
           <div style={{ width: '180px' }}>
             <Select
+              aria-label="Filter by trip status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
@@ -145,6 +155,19 @@ export const TripsPage = () => {
               ]}
             />
           </div>
+
+          {(searchTerm || statusFilter) && (
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('');
+              }}
+            >
+              Clear
+            </Button>
+          )}
 
           <Button variant="outline" size="md" onClick={fetchTrips} loading={loading} leftIcon={<LuRefreshCw size={14} />}>
             Refresh
@@ -167,14 +190,31 @@ export const TripsPage = () => {
         ) : filteredTrips.length === 0 ? (
           <EmptyState
             icon={<LuTruck size={36} color="var(--color-slate-400)" />}
-            title="No scheduled trips"
-            description="Create your first linehaul dispatch trip or refine search filters."
+            title={searchTerm || statusFilter ? 'No matching trips found' : 'No scheduled trips'}
+            description={
+              searchTerm || statusFilter
+                ? 'No linehaul trips match your current search or status filters.'
+                : 'Create your first linehaul dispatch trip or refine search filters.'
+            }
             action={
-              <Link to="/dispatch/trips/create">
-                <Button variant="primary" size="sm" leftIcon={<LuPlus size={14} />}>
-                  Create Trip
+              searchTerm || statusFilter ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('');
+                  }}
+                >
+                  Clear Active Filters
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/dispatch/trips/create">
+                  <Button variant="primary" size="sm" leftIcon={<LuPlus size={14} />}>
+                    Create Trip
+                  </Button>
+                </Link>
+              )
             }
           />
         ) : (
