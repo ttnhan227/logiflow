@@ -471,7 +471,7 @@ class _MainLayoutState extends State<MainLayout> {
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(color: const Color(0xFF1E3A5F), width: 0.8),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(

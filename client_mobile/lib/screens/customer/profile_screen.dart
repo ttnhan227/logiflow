@@ -225,7 +225,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             Expanded(
               child: AppTheme.buildMetricTile(
                 label: 'Total Spend',
-                value: '$${_profile!.totalSpent.toStringAsFixed(0)}',
+                value: '\${_profile!.totalSpent.toStringAsFixed(0)}',
                 unit: 'USD',
                 icon: Icons.account_balance_wallet_outlined,
                 iconColor: AppTheme.success,
