@@ -4,15 +4,24 @@ import fs from 'fs';
 
 const screenshotDir = 'C:\\Users\\ttnha\\.gemini\\antigravity\\brain\\74785307-d59c-4a7d-9ed5-3349349713be\\screenshots';
 const docsDir = 'D:\\projects\\logiflow\\docs\\screenshots';
+const portfolioMobileImg = 'D:\\projects\\trongnhan-portfolio\\public\\styles\\projects\\logiflow\\logiflow-mobile.png';
 
-function saveScreenshot(sourcePath, filename) {
-  const destPath = path.join(docsDir, filename);
-  fs.copyFileSync(sourcePath, destPath);
-  console.log(`[Captured & Mirrored]: ${filename}`);
+if (!fs.existsSync(screenshotDir)) {
+  fs.mkdirSync(screenshotDir, { recursive: true });
+}
+if (!fs.existsSync(docsDir)) {
+  fs.mkdirSync(docsDir, { recursive: true });
+}
+
+function mirrorFile(src, filename) {
+  const docsTarget = path.join(docsDir, filename);
+  fs.copyFileSync(src, docsTarget);
+  const stat = fs.statSync(docsTarget);
+  console.log(`[Captured & Saved]: ${filename} (${stat.size} bytes)`);
 }
 
 (async () => {
-  console.log('Starting Mobile UI capture automation in Docker...');
+  console.log('=== Starting Verified Mobile UI Capture Automation ===');
   const browser = await chromium.launch({ headless: true });
 
   const context = await browser.newContext({
@@ -24,10 +33,11 @@ function saveScreenshot(sourcePath, filename) {
 
   const page = await context.newPage();
 
-  // Unified API route interceptor
+  // Mock API routes for Driver and Customer
   await page.route('**/api/**', async (route) => {
     const url = route.request().url();
 
+    // 1. Auth Login
     if (url.includes('/api/auth/login')) {
       let username = 'driver.mike';
       try {
@@ -49,6 +59,7 @@ function saveScreenshot(sourcePath, filename) {
       });
     }
 
+    // 2. Driver Trips List
     if (url.includes('/api/driver/me/trips') && !url.includes('/api/driver/me/trips/')) {
       return route.fulfill({
         status: 200,
@@ -86,6 +97,7 @@ function saveScreenshot(sourcePath, filename) {
       });
     }
 
+    // 3. Driver Trip Detail (#101)
     if (url.includes('/api/driver/me/trips/101')) {
       return route.fulfill({
         status: 200,
@@ -134,6 +146,7 @@ function saveScreenshot(sourcePath, filename) {
       });
     }
 
+    // 4. Driver Compliance
     if (url.includes('/api/driver/me/compliance')) {
       return route.fulfill({
         status: 200,
@@ -150,6 +163,7 @@ function saveScreenshot(sourcePath, filename) {
       });
     }
 
+    // 5. Driver Profile
     if (url.includes('/api/driver/me/profile')) {
       return route.fulfill({
         status: 200,
@@ -170,6 +184,7 @@ function saveScreenshot(sourcePath, filename) {
       });
     }
 
+    // 6. Customer Orders (Active Tracker)
     if (url.includes('/api/customer/me/orders')) {
       return route.fulfill({
         status: 200,
@@ -177,32 +192,29 @@ function saveScreenshot(sourcePath, filename) {
         body: JSON.stringify([
           {
             orderId: 501,
-            trackingCode: 'LF-2026-8941',
-            orderStatus: 'IN_TRANSIT',
-            originAddress: 'Hanoi Gateway Hub, Long Bien, Hanoi',
-            destinationAddress: 'Da Nang Regional Depot, Lien Chieu, Da Nang',
-            cargoWeightTon: 16.5,
+            customerName: 'Vinamilk Logistics JSC',
+            pickupAddress: 'Hanoi Gateway Hub, Long Bien, Hanoi',
+            pickupType: 'CONTAINER_FTL',
+            containerNumber: 'VNM-948201',
+            terminalName: 'Gateway Terminal A',
+            deliveryAddress: 'Da Nang Regional Depot, Lien Chieu, Da Nang',
             packageDetails: 'Refrigerated Dairy Products (24 Pallets)',
-            totalFee: 18500000,
-            isUrgent: true,
+            weightTons: 16.5,
+            packageValue: 450000000,
+            distanceKm: 765.4,
+            shippingFee: 18500000,
+            deliveryFee: 18500000,
+            orderStatus: 'IN_TRANSIT',
+            paymentStatus: 'PAID',
+            tripStatus: 'IN_PROGRESS',
             createdAt: '2026-11-06T10:00:00Z',
-          },
-          {
-            orderId: 498,
-            trackingCode: 'LF-2026-8812',
-            orderStatus: 'DELIVERED',
-            originAddress: 'Hai Phong Port Terminal 3',
-            destinationAddress: 'Bac Ninh Industrial Park',
-            cargoWeightTon: 8.2,
-            packageDetails: 'Automotive Electronics Components',
-            totalFee: 7800000,
-            isUrgent: false,
-            createdAt: '2026-11-05T08:30:00Z',
+            estimatedDeliveryTime: '2026-11-08T02:00:00Z',
           },
         ]),
       });
     }
 
+    // 7. Customer Order History
     if (url.includes('/api/customer/me/history')) {
       return route.fulfill({
         status: 200,
@@ -228,28 +240,11 @@ function saveScreenshot(sourcePath, filename) {
             driverName: 'Tran Van Minh',
             driverRating: 5,
           },
-          {
-            orderId: 482,
-            pickupAddress: 'Tan Son Nhat Air Cargo Depot, Tan Binh, HCMC',
-            pickupType: 'PALLET_LTL',
-            deliveryAddress: 'Bien Hoa Industrial Zone 2, Dong Nai',
-            packageDetails: 'Pharmaceutical Temperature Controlled Consignment',
-            weightTons: 3.5,
-            packageValue: 650000000,
-            distanceKm: 42.0,
-            shippingFee: 3200000,
-            orderStatus: 'DELIVERED',
-            paymentStatus: 'PAID',
-            priorityLevel: 'URGENT',
-            createdAt: '2026-11-02T09:00:00Z',
-            deliveredAt: '2026-11-02T16:45:00Z',
-            driverName: 'Nguyen Tuan Anh',
-            driverRating: 5,
-          },
         ]),
       });
     }
 
+    // 8. Customer Profile
     if (url.includes('/api/customer/me/profile')) {
       return route.fulfill({
         status: 200,
@@ -266,7 +261,7 @@ function saveScreenshot(sourcePath, filename) {
       });
     }
 
-    // Default 200 OK
+    // Fallback 200 OK
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -274,114 +269,129 @@ function saveScreenshot(sourcePath, filename) {
     });
   });
 
-  // Step 1: Open Login
-  console.log('Loading mobile login...');
+  // ------------------------------------------------------------------------
+  // SCREEN 1: Operations Sign In
+  // ------------------------------------------------------------------------
+  console.log('[1/9] Capturing mobile_01_login.png...');
   await page.goto('http://127.0.0.1:8085/', { waitUntil: 'networkidle', timeout: 30000 });
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(4000);
 
   const loginPath = path.join(screenshotDir, 'mobile_01_login.png');
   await page.screenshot({ path: loginPath });
-  saveScreenshot(loginPath, 'mobile_01_login.png');
+  mirrorFile(loginPath, 'mobile_01_login.png');
 
-  // Step 2: Driver Login
-  console.log('Logging in as Driver (driver.mike)...');
-  await page.mouse.click(195, 430);
-  await page.waitForTimeout(300);
-  await page.keyboard.type('driver.mike', { delay: 40 });
-  await page.waitForTimeout(300);
+  // ------------------------------------------------------------------------
+  // SCREEN 2: Driver Home
+  // ------------------------------------------------------------------------
+  console.log('[2/9] Logging in as Driver (driver.mike)...');
+  // Click Driver Quick Demo Chip at (135, 407)
+  await page.mouse.click(135, 407);
+  await page.waitForTimeout(800);
+  // Click "Sign in to Operations" button at (195, 605)
+  await page.mouse.click(195, 605);
+  await page.waitForTimeout(4500);
 
-  await page.mouse.click(195, 500);
-  await page.waitForTimeout(300);
-  await page.keyboard.type('password123', { delay: 40 });
-  await page.waitForTimeout(300);
-
-  await page.mouse.click(195, 572);
-  await page.waitForTimeout(4000);
-
-  // Screen 2: Driver Home
   const driverHomePath = path.join(screenshotDir, 'mobile_02_driver_home.png');
   await page.screenshot({ path: driverHomePath });
-  saveScreenshot(driverHomePath, 'mobile_02_driver_home.png');
+  mirrorFile(driverHomePath, 'mobile_02_driver_home.png');
 
-  // Screen 3: Driver Trips
-  console.log('Opening Driver Trips screen...');
-  await page.mouse.click(120, 340); // Click "My Trips" card
-  await page.waitForTimeout(3000);
+  // Also update portfolio image with authentic Driver Home screen!
+  fs.copyFileSync(driverHomePath, portfolioMobileImg);
+  console.log(`[Portfolio Mirrored]: ${portfolioMobileImg}`);
+
+  // ------------------------------------------------------------------------
+  // SCREEN 3: Driver Trips
+  // ------------------------------------------------------------------------
+  console.log('[3/9] Navigating to Driver Trips (Tab 1)...');
+  await page.mouse.click(97, 815);
+  await page.waitForTimeout(3500);
+
   const driverTripsPath = path.join(screenshotDir, 'mobile_03_driver_trips.png');
   await page.screenshot({ path: driverTripsPath });
-  saveScreenshot(driverTripsPath, 'mobile_03_driver_trips.png');
+  mirrorFile(driverTripsPath, 'mobile_03_driver_trips.png');
 
-  // Screen 4: Driver Trip Detail
-  console.log('Opening Driver Trip Detail screen...');
-  await page.mouse.click(195, 230); // Click the trip item card
-  await page.waitForTimeout(3500);
-  const driverTripDetailPath = path.join(screenshotDir, 'mobile_04_driver_trip_detail.png');
-  await page.screenshot({ path: driverTripDetailPath });
-  saveScreenshot(driverTripDetailPath, 'mobile_04_driver_trip_detail.png');
-
-  // Screen 5: Driver Compliance
-  // Directly navigate to reload as driver to go to Compliance cleanly
-  console.log('Navigating to Compliance tab...');
-  await page.goto('http://127.0.0.1:8085/', { waitUntil: 'networkidle', timeout: 30000 });
-  await page.waitForTimeout(3000);
-  await page.mouse.click(280, 340); // Click "Compliance" card directly on Home!
-  await page.waitForTimeout(3000);
-  const driverCompliancePath = path.join(screenshotDir, 'mobile_05_driver_compliance.png');
-  await page.screenshot({ path: driverCompliancePath });
-  saveScreenshot(driverCompliancePath, 'mobile_05_driver_compliance.png');
-
-  // Step 6: Customer Experience
-  console.log('Logging out driver and switching to Customer session...');
-  await page.evaluate(() => {
-    localStorage.clear();
-  });
-  await page.goto('http://127.0.0.1:8085/', { waitUntil: 'networkidle', timeout: 30000 });
-  await page.waitForTimeout(3000);
-
-  // Customer Login
-  console.log('Logging in as Customer (alice.customer)...');
-  await page.mouse.click(195, 430);
-  await page.waitForTimeout(300);
-  await page.keyboard.type('alice.customer', { delay: 40 });
-  await page.waitForTimeout(300);
-
-  await page.mouse.click(195, 500);
-  await page.waitForTimeout(300);
-  await page.keyboard.type('password123', { delay: 40 });
-  await page.waitForTimeout(300);
-
-  await page.mouse.click(195, 572);
+  // ------------------------------------------------------------------------
+  // SCREEN 4: Driver Trip Detail
+  // ------------------------------------------------------------------------
+  console.log('[4/9] Opening Driver Trip Detail for Trip #101...');
+  await page.mouse.click(195, 200);
   await page.waitForTimeout(4000);
 
-  // Screen 6: Customer Home
+  const driverTripDetailPath = path.join(screenshotDir, 'mobile_04_driver_trip_detail.png');
+  await page.screenshot({ path: driverTripDetailPath });
+  mirrorFile(driverTripDetailPath, 'mobile_04_driver_trip_detail.png');
+
+  // ------------------------------------------------------------------------
+  // SCREEN 5: Driver Compliance
+  // ------------------------------------------------------------------------
+  console.log('[5/9] Returning from Trip Detail & Navigating to Compliance (Tab 3)...');
+  // Click AppBar Back Arrow at (25, 40)
+  await page.mouse.click(25, 40);
+  await page.waitForTimeout(1500);
+  // Click Tab 3 (Compliance) at (227, 815)
+  await page.mouse.click(227, 815);
+  await page.waitForTimeout(3500);
+
+  const driverCompliancePath = path.join(screenshotDir, 'mobile_05_driver_compliance.png');
+  await page.screenshot({ path: driverCompliancePath });
+  mirrorFile(driverCompliancePath, 'mobile_05_driver_compliance.png');
+
+  // ------------------------------------------------------------------------
+  // SCREEN 6: Customer Home
+  // ------------------------------------------------------------------------
+  console.log('[6/9] Resetting session for Customer experience...');
+  await page.evaluate(() => localStorage.clear());
+  await page.goto('http://127.0.0.1:8085/', { waitUntil: 'networkidle', timeout: 30000 });
+  await page.waitForTimeout(4000);
+
+  console.log('Logging in as Shipper (alice.customer)...');
+  // Click Shipper Quick Demo Chip at (275, 407)
+  await page.mouse.click(275, 407);
+  await page.waitForTimeout(800);
+  // Click "Sign in to Operations" button at (195, 605)
+  await page.mouse.click(195, 605);
+  await page.waitForTimeout(4500);
+
   const customerHomePath = path.join(screenshotDir, 'mobile_06_customer_home.png');
   await page.screenshot({ path: customerHomePath });
-  saveScreenshot(customerHomePath, 'mobile_06_customer_home.png');
+  mirrorFile(customerHomePath, 'mobile_06_customer_home.png');
 
-  // Screen 7: Customer Create Order
-  console.log('Opening Customer Create Order screen...');
+  // ------------------------------------------------------------------------
+  // SCREEN 7: Customer Create Order
+  // ------------------------------------------------------------------------
+  console.log('[7/9] Navigating to Customer Create Order (Tab 1)...');
+  // Customer Tab 1 (Create Order) at (117, 815)
   await page.mouse.click(117, 815);
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(3500);
+
   const customerCreateOrderPath = path.join(screenshotDir, 'mobile_07_customer_create_order.png');
   await page.screenshot({ path: customerCreateOrderPath });
-  saveScreenshot(customerCreateOrderPath, 'mobile_07_customer_create_order.png');
+  mirrorFile(customerCreateOrderPath, 'mobile_07_customer_create_order.png');
 
-  // Screen 8: Customer Track Orders
-  console.log('Opening Customer Track Orders screen...');
+  // ------------------------------------------------------------------------
+  // SCREEN 8: Customer Track Orders
+  // ------------------------------------------------------------------------
+  console.log('[8/9] Navigating to Customer Track Orders (Tab 2)...');
+  // Customer Tab 2 (Track Orders) at (195, 815)
   await page.mouse.click(195, 815);
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(3500);
+
   const customerTrackPath = path.join(screenshotDir, 'mobile_08_customer_track.png');
   await page.screenshot({ path: customerTrackPath });
-  saveScreenshot(customerTrackPath, 'mobile_08_customer_track.png');
+  mirrorFile(customerTrackPath, 'mobile_08_customer_track.png');
 
-  // Screen 9: Customer Order History
-  console.log('Opening Customer Order History screen...');
+  // ------------------------------------------------------------------------
+  // SCREEN 9: Customer Order History
+  // ------------------------------------------------------------------------
+  console.log('[9/9] Navigating to Customer Order History (Tab 3)...');
+  // Customer Tab 3 (History) at (273, 815)
   await page.mouse.click(273, 815);
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(3500);
+
   const customerHistoryPath = path.join(screenshotDir, 'mobile_09_customer_history.png');
   await page.screenshot({ path: customerHistoryPath });
-  saveScreenshot(customerHistoryPath, 'mobile_09_customer_history.png');
+  mirrorFile(customerHistoryPath, 'mobile_09_customer_history.png');
 
   await browser.close();
-  console.log('ALL 9 MOBILE SCREENSHOTS COMPLETED SUCCESSFULLY!');
+  console.log('=== ALL 9 AUTHENTIC MOBILE SCREENS CAPTURED SUCCESSFULLY ===');
 })();
