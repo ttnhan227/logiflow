@@ -305,4 +305,8 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
             ),
     );
   }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
 }

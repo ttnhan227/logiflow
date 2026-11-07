@@ -250,7 +250,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             Expanded(
               child: AppTheme.buildMetricTile(
                 label: 'Earnings',
-                value: '$${_profile!.totalEarnings.toStringAsFixed(0)}',
+                value: '\${_profile!.totalEarnings.toStringAsFixed(0)}',
                 unit: 'USD',
                 icon: Icons.payments_outlined,
                 iconColor: AppTheme.success,
