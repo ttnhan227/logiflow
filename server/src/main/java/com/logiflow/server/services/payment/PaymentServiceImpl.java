@@ -6,6 +6,7 @@ import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.payment.PaymentRepository;
 import com.logiflow.server.services.email.EmailService;
 import com.logiflow.server.websocket.NotificationService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -27,6 +28,16 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final NotificationService notificationService;
+    @Value("${logiflow.payment.vnd-usd-rate:23000}")
+    private BigDecimal vndUsdRate = new BigDecimal("23000");
+
+    public void setVndUsdRate(BigDecimal vndUsdRate) {
+        this.vndUsdRate = vndUsdRate;
+    }
+
+    public BigDecimal getVndUsdRate() {
+        return this.vndUsdRate;
+    }
 
     public PaymentServiceImpl(
             PayPalService payPalService,
@@ -59,7 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             // Convert VND to USD for PayPal (approximate rate: 1 USD = 23,000 VND)
-            BigDecimal usdAmount = order.getShippingFee().divide(new BigDecimal("23000"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal usdAmount = order.getShippingFee().divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
 
             // Create PayPal order first to get the order ID
             String description = "Payment for Order #" + orderId + " - " + order.getCustomerName();
@@ -248,7 +259,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     public Map<String, Object> createPayPalOrder(BigDecimal amount, String description) {
         // Convert VND to USD for PayPal (approximate rate: 1 USD = 23,000 VND)
-        BigDecimal usdAmount = amount.divide(new BigDecimal("23000"), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal usdAmount = amount.divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
         return payPalService.createPaymentOrder(usdAmount, "USD", description);
     }
 
@@ -262,7 +273,7 @@ public class PaymentServiceImpl implements PaymentService {
             new RuntimeException("Order not found: " + orderId));
 
         // Convert VND to USD for PayPal (approximate rate: 1 USD = 23,000 VND)
-        BigDecimal usdAmount = amount.divide(new BigDecimal("23000"), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal usdAmount = amount.divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
 
         Map<String, Object> paypalOrder = payPalService.createPaymentOrder(usdAmount, "USD", description);
 
@@ -297,7 +308,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             // Convert VND to USD for PayPal (approximate rate: 1 USD = 23,000 VND)
-            BigDecimal usdAmount = order.getShippingFee().divide(new BigDecimal("23000"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal usdAmount = order.getShippingFee().divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
 
             // Generate new PayPal link (they expire after 24 hours)
             String description = "Payment Reminder for Order #" + orderId + " - " + order.getCustomerName();

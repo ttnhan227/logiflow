@@ -169,4 +169,17 @@ class PaymentServiceIdempotencyTest {
                 any()
         );
     }
+
+    @Test
+    @DisplayName("Externalized exchange rate converts VND shipping fee to configured USD amount")
+    void testExternalizedExchangeRateConversion() {
+        paymentService.setVndUsdRate(new BigDecimal("25000"));
+        when(payPalService.createPaymentOrder(eq(new BigDecimal("10.00")), eq("USD"), anyString()))
+                .thenReturn(Map.of("id", "ORDER-TEST-RATE"));
+
+        Map<String, Object> result = paymentService.createPayPalOrder(new BigDecimal("250000"), "Rate test");
+        assertNotNull(result);
+        assertEquals("ORDER-TEST-RATE", result.get("id"));
+        verify(payPalService).createPaymentOrder(eq(new BigDecimal("10.00")), eq("USD"), eq("Rate test"));
+    }
 }
