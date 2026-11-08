@@ -129,7 +129,8 @@ LogiFlow was developed as a collaborative team project of four members. I was th
 ### 3. Payment Processing & Callback Idempotency
 * **Problem**: Webhook retries and network duplicates in the PayPal sandbox flow could re-trigger payment capture and corrupt order statuses.
 * **My Implementation**: Implemented defensive idempotency checks in `PaymentServiceImpl.java`, ensuring repeat callbacks for `PAID` orders return the existing payment confirmation safely without duplicate processing or duplicate audit records.
-* **Verification**: Added `PaymentServiceIdempotencyTest` simulating parallel webhook replays.
+* **My Implementation**: Implemented defensive idempotency checks in `PaymentServiceImpl.java`, ensuring repeat callbacks for `PAID` orders return the existing payment confirmation safely without duplicate processing or duplicate audit records. Externalized VND-to-USD currency conversions (`logiflow.payment.vnd-usd-rate`) to configurable properties.
+* **Verification**: Added `PaymentServiceIdempotencyTest` simulating parallel webhook replays and rate conversions.
 
 ### 4. Containerization, Testing & CI/CD Pipelines
 * **My Implementation**: Authored the unified `compose.yaml` orchestrating PostgreSQL 15, Spring Boot 3 backend, React 19 web app, and Flutter mobile web. Configured GitHub Actions workflows (`.github/workflows/ci.yml` and `cd.yml`) executing hermetic unit tests, container builds, and GHCR image publishing.
@@ -187,7 +188,7 @@ The Compose defaults are intended for local development. For production, use a g
 ## Testing & Quality Assurance
 
 ```bash
-# Run backend JUnit & Mockito test suites
+# Run backend JUnit & Mockito test suites (70 tests covering state machines, GPS telemetry, and payment idempotency)
 cd server
 ./mvnw test
 
