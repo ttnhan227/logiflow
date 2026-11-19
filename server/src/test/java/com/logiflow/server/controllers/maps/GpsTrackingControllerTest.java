@@ -1,6 +1,7 @@
 package com.logiflow.server.controllers.maps;
 
 import com.logiflow.server.controllers.maps.GpsTrackingController.LocationMessage;
+import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.services.driver.DriverService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -133,5 +134,41 @@ class GpsTrackingControllerTest {
         assertEquals(10.0 + (10 * 0.001), history.get(0).getLatitude(), 0.0001);
         // Last item should be entry 109
         assertEquals(10.0 + (109 * 0.001), history.get(99).getLatitude(), 0.0001);
+    }
+
+    @Test
+    void receiveLocation_nonDriverRole_rejectsAndReturnsNull() {
+        TripAssignmentRepository assignmentRepo = mock(TripAssignmentRepository.class);
+        GpsTrackingController guardedController = new GpsTrackingController(messagingTemplate, driverService, assignmentRepo);
+
+        SimpMessageHeaderAccessor accessor = mock(SimpMessageHeaderAccessor.class);
+        Map<String, Object> attrs = new HashMap<>();
+        attrs.put("userId", "cust_1");
+        attrs.put("userRole", "CUSTOMER");
+        when(accessor.getSessionAttributes()).thenReturn(attrs);
+
+        LocationMessage result = guardedController.receiveLocation(new LocationMessage("cust_1", "10", 10.76, 106.66), accessor);
+
+        assertNull(result);
+        verifyNoInteractions(messagingTemplate, assignmentRepo);
+    }
+
+    @Test
+    void receiveLocation_unassignedOrNonNumericTrip_rejectsAndReturnsNull() {
+        TripAssignmentRepository assignmentRepo = mock(TripAssignmentRepository.class);
+        when(assignmentRepo.existsActiveAssignment("driver_42", 99)).thenReturn(false);
+        GpsTrackingController guardedController = new GpsTrackingController(messagingTemplate, driverService, assignmentRepo);
+
+        SimpMessageHeaderAccessor accessor = mock(SimpMessageHeaderAccessor.class);
+        Map<String, Object> attrs = new HashMap<>();
+        attrs.put("userId", "driver_42");
+        attrs.put("userRole", "DRIVER");
+        when(accessor.getSessionAttributes()).thenReturn(attrs);
+
+        assertNull(guardedController.receiveLocation(new LocationMessage("driver_42", "99", 10.76, 106.66), accessor));
+        assertNull(guardedController.receiveLocation(new LocationMessage("driver_42", "trip_abc", 10.76, 106.66), accessor));
+
+        verifyNoInteractions(messagingTemplate);
+        assertNull(GpsTrackingController.getLatestLocation("driver_42", "99"));
     }
 }
