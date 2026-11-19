@@ -25,4 +25,14 @@ public interface TripAssignmentRepository extends JpaRepository<TripAssignment, 
 
     @Query("SELECT COUNT(ta) FROM TripAssignment ta WHERE ta.driver.driverId = :driverId AND ta.status IN ('assigned', 'accepted', 'in_progress')")
     Long countActiveAssignmentsByDriverId(@Param("driverId") Integer driverId);
+
+    @Query("SELECT CASE WHEN COUNT(ta) > 0 THEN true ELSE false END FROM TripAssignment ta " +
+           "WHERE ta.trip.tripId = :tripId AND ta.driver.user.username = :username " +
+           "AND LOWER(ta.status) NOT IN ('declined', 'cancelled', 'completed')")
+    boolean existsActiveAssignment(@Param("username") String username, @Param("tripId") Integer tripId);
+
+    @Query("SELECT CASE WHEN COUNT(ta) > 0 THEN true ELSE false END FROM TripAssignment ta " +
+           "WHERE ta.trip.tripId = :tripId AND ta.driver.user.username = :username " +
+           "AND LOWER(ta.status) NOT IN ('declined', 'cancelled')")
+    boolean existsAssignedTrip(@Param("username") String username, @Param("tripId") Integer tripId);
 }

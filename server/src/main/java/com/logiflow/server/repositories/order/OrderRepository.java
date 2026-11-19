@@ -18,6 +18,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT COUNT(o) FROM Order o WHERE o.trip.tripId IN (SELECT t.tripId FROM Trip t JOIN t.tripAssignments ta WHERE ta.driver.driverId = :driverId)")
     int countByDriverTrips(@Param("driverId") Integer driverId);
 
+    boolean existsByTrip_TripIdAndCustomer_Username(Integer tripId, String username);
+
     @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = :status")
     int countByOrderStatus(@Param("status") Order.OrderStatus status);
 

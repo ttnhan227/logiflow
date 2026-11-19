@@ -14,9 +14,11 @@
  */
 package com.logiflow.server.controllers.maps;
 
+import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.services.driver.DriverService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -33,10 +35,20 @@ public class GpsTrackingController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final DriverService driverService;
+    private final TripAssignmentRepository tripAssignmentRepository;
 
-    public GpsTrackingController(SimpMessagingTemplate messagingTemplate, DriverService driverService) {
+    @Autowired
+    public GpsTrackingController(
+            SimpMessagingTemplate messagingTemplate,
+            DriverService driverService,
+            TripAssignmentRepository tripAssignmentRepository) {
         this.messagingTemplate = messagingTemplate;
         this.driverService = driverService;
+        this.tripAssignmentRepository = tripAssignmentRepository;
+    }
+
+    public GpsTrackingController(SimpMessagingTemplate messagingTemplate, DriverService driverService) {
+        this(messagingTemplate, driverService, null);
     }
     public static final int MAX_HISTORY_PER_TRIP = 100;
 
@@ -82,13 +94,26 @@ public class GpsTrackingController {
     public LocationMessage receiveLocation(LocationMessage message, SimpMessageHeaderAccessor headerAccessor) {
         log.debug("GPS WebSocket message received: {}", message);
 
-        // Get authenticated driverId from session attributes (set by JwtHandshakeInterceptor as "userId")
-        String driverId = headerAccessor != null && headerAccessor.getSessionAttributes() != null
-                ? (String) headerAccessor.getSessionAttributes().get("userId")
-                : null;
-        log.debug("Authenticated driverId from session: {}", driverId);
+        // Get authenticated driverId and role from session attributes (set by JwtHandshakeInterceptor / StompAuthChannelInterceptor)
+        Map<String, Object> attrs = headerAccessor != null ? headerAccessor.getSessionAttributes() : null;
+        String driverId = attrs != null && attrs.get("userId") instanceof String u ? u : null;
+        String userRole = attrs != null && attrs.get("userRole") instanceof String r ? r : null;
+        log.debug("Authenticated driverId from session: {}, role: {}", driverId, userRole);
+
+        if (userRole != null && !"DRIVER".equalsIgnoreCase(userRole)) {
+            log.warn("Rejected GPS update from non-DRIVER role: user={}, role={}", driverId, userRole);
+            return null;
+        }
 
         if (driverId != null && message != null && isValidTripId(message.getTripId())) {
+            if (tripAssignmentRepository != null) {
+                Integer numericTripId = parseNumericTripId(message.getTripId());
+                if (numericTripId == null || !tripAssignmentRepository.existsActiveAssignment(driverId, numericTripId)) {
+                    log.warn("Rejected GPS update for unassigned trip - driver: {}, tripId: {}",
+                            driverId, message.getTripId());
+                    return null;
+                }
+            }
             if (!isValidCoordinate(message.getLatitude(), message.getLongitude())) {
                 log.warn("Invalid GPS coordinates received - driver: {}, lat: {}, lng: {}",
                     driverId, message.getLatitude(), message.getLongitude());
@@ -143,6 +168,15 @@ public class GpsTrackingController {
         }
         return null;
     }
+    private static Integer parseNumericTripId(String rawTripId) {
+        try {
+            int parsed = Integer.parseInt(rawTripId);
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // Get location history for a driver/trip
     public static java.util.List<LocationMessage> getLocationHistory(String driverId, String tripId) {
         String key = driverId + "_" + tripId;

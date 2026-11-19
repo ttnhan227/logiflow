@@ -3,10 +3,20 @@ package com.logiflow.server.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.logiflow.server.controllers.maps.GpsTrackingController;
 import com.logiflow.server.dtos.notification.TripNotificationDto;
+import com.logiflow.server.models.Driver;
 import com.logiflow.server.models.Role;
+import com.logiflow.server.models.Route;
+import com.logiflow.server.models.Trip;
+import com.logiflow.server.models.TripAssignment;
 import com.logiflow.server.models.User;
+import com.logiflow.server.models.Vehicle;
+import com.logiflow.server.repositories.driver.DriverRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
+import com.logiflow.server.repositories.route.RouteRepository;
+import com.logiflow.server.repositories.trip.TripRepository;
+import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.repositories.user.UserRepository;
+import com.logiflow.server.repositories.vehicle.VehicleRepository;
 import com.logiflow.server.utils.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +36,8 @@ import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -58,7 +70,23 @@ class WebSocketAuthAndRoutingIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private DriverRepository driverRepository;
+
+    @Autowired
+    private VehicleRepository vehicleRepository;
+
+    @Autowired
+    private RouteRepository routeRepository;
+
+    @Autowired
+    private TripRepository tripRepository;
+
+    @Autowired
+    private TripAssignmentRepository tripAssignmentRepository;
+
     private Role customerRole;
+    private Role driverRole;
 
     @BeforeEach
     void setupRoles() {
@@ -66,6 +94,12 @@ class WebSocketAuthAndRoutingIntegrationTest {
             Role r = new Role();
             r.setRoleName("CUSTOMER");
             r.setDescription("Customer role");
+            return roleRepository.save(r);
+        });
+        driverRole = roleRepository.findByRoleName("DRIVER").orElseGet(() -> {
+            Role r = new Role();
+            r.setRoleName("DRIVER");
+            r.setDescription("Driver role");
             return roleRepository.save(r);
         });
     }
@@ -117,9 +151,54 @@ class WebSocketAuthAndRoutingIntegrationTest {
 
     @Test
     void sockJsClientsConnectWithStompAuthorizationHeaderAndReceiveBroadcasts() throws Exception {
-        String driverUsername = "ws_driver_" + UUID.randomUUID().toString().substring(0, 8);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String driverUsername = "ws_driver_" + suffix;
+
+        User driverUser = new User();
+        driverUser.setUsername(driverUsername);
+        driverUser.setEmail(driverUsername + "@example.com");
+        driverUser.setPasswordHash(passwordEncoder.encode("DrvPass123!"));
+        driverUser.setFullName("WS Driver");
+        driverUser.setRole(driverRole);
+        driverUser.setIsActive(true);
+        driverUser = userRepository.save(driverUser);
+
+        Driver driver = new Driver();
+        driver.setUser(driverUser);
+        driver.setLicenseType("C");
+        driver.setYearsExperience(3);
+        driver = driverRepository.save(driver);
+
+        Vehicle vehicle = new Vehicle();
+        vehicle.setVehicleType("Truck");
+        vehicle.setLicensePlate("51C-" + suffix);
+        vehicle.setCapacityTons(new BigDecimal("10.0"));
+        vehicle.setRequiredLicense("C");
+        vehicle = vehicleRepository.save(vehicle);
+
+        Route route = new Route();
+        route.setRouteName("WS Route " + suffix);
+        route.setRouteType("INTERCITY");
+        route = routeRepository.save(route);
+
+        Trip trip = new Trip();
+        trip.setVehicle(vehicle);
+        trip.setRoute(route);
+        trip.setTripType("DELIVERY");
+        trip.setScheduledDeparture(LocalDateTime.now());
+        trip.setScheduledArrival(LocalDateTime.now().plusHours(4));
+        trip.setStatus("in_progress");
+        trip = tripRepository.save(trip);
+
+        TripAssignment assignment = new TripAssignment();
+        assignment.setTrip(trip);
+        assignment.setDriver(driver);
+        assignment.setRole("PRIMARY");
+        assignment.setStatus("in_progress");
+        tripAssignmentRepository.save(assignment);
+
         String driverToken = jwtUtils.generateToken(driverUsername, "DRIVER");
-        String adminToken = jwtUtils.generateToken("ws_admin_" + UUID.randomUUID().toString().substring(0, 8), "ADMIN");
+        String adminToken = jwtUtils.generateToken("ws_admin_" + suffix, "ADMIN");
 
         WebSocketStompClient notificationsSockJs = createSockJsStompClient();
         StompHeaders adminHeaders = new StompHeaders();
@@ -147,7 +226,7 @@ class WebSocketAuthAndRoutingIntegrationTest {
         assertThat(trackingSession.isConnected()).isTrue();
 
         CompletableFuture<GpsTrackingController.LocationMessage> received = new CompletableFuture<>();
-        String tripId = "trip_ws_" + UUID.randomUUID().toString().substring(0, 6);
+        String tripId = String.valueOf(trip.getTripId());
         trackingSession.subscribe("/topic/trips/" + tripId + "/location", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
