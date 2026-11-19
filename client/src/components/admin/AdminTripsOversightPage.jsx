@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { tripsOversightService } from '../../services';
-import notificationService from '../../services/admin/notificationService';
 import Pagination from '../common/Pagination';
 import {
   Button,
@@ -33,7 +32,6 @@ import {
 } from 'react-icons/lu';
 
 export const AdminTripsOversightPage = () => {
-  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [delayReports, setDelayReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +64,7 @@ export const AdminTripsOversightPage = () => {
 
   useEffect(() => {
     const loadDelayReports = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       try {
         setLoadingDelays(true);
         const reports = await tripsOversightService.getTripsWithDelayReports();
@@ -78,7 +77,16 @@ export const AdminTripsOversightPage = () => {
     };
     loadDelayReports();
     const interval = setInterval(loadDelayReports, 30000);
-    return () => clearInterval(interval);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadDelayReports();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   const getStatusBadge = (status) => {
@@ -218,11 +226,9 @@ export const AdminTripsOversightPage = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700 }}>Trip #{r.tripId}</span>
-                  <Link to={`/admin/trips-oversight/${r.tripId}`}>
-                    <Button variant="outline" size="sm">
-                      Review SLA
-                    </Button>
-                  </Link>
+                  <Button as={Link} to={`/admin/trips-oversight/${r.tripId}`} variant="outline" size="sm">
+                    Review SLA
+                  </Button>
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                   Reason: <strong>{r.delayReason || 'Unspecified'}</strong>
@@ -348,11 +354,9 @@ export const AdminTripsOversightPage = () => {
                     </TableCell>
                     <TableCell style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                        <Link to={`/admin/trips-oversight/${trip.tripId}`}>
-                          <Button variant="outline" size="sm">
-                            Inspect
-                          </Button>
-                        </Link>
+                        <Button as={Link} to={`/admin/trips-oversight/${trip.tripId}`} variant="outline" size="sm">
+                          Inspect
+                        </Button>
                         {trip.tripStatus !== 'COMPLETED' && trip.tripStatus !== 'CANCELLED' && (
                           <Button
                             variant="ghost"

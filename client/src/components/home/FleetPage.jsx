@@ -65,7 +65,8 @@ export const FleetPage = () => {
 
       {/* Fleet Classification Cards */}
       <section className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+        <h2 className="sr-only">Sample Vehicle Classes</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr))', gap: '24px' }}>
           {vehicleClasses.map((v) => (
             <Card key={v.type || v.title} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <CardContent style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1, gap: '16px' }}>
@@ -145,40 +146,40 @@ export const FleetPage = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
           <Card style={{ padding: '20px' }}>
-            <LuCpu size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
-            <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
+            <LuCpu size={22} color="var(--color-brand-600)" aria-hidden="true" style={{ marginBottom: '10px' }} />
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
               Trip Location Updates
-            </h4>
+            </h3>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
               Driver coordinates can be shared for an authorized active trip.
             </p>
           </Card>
 
           <Card style={{ padding: '20px' }}>
-            <LuWrench size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
-            <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
+            <LuWrench size={22} color="var(--color-brand-600)" aria-hidden="true" style={{ marginBottom: '10px' }} />
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
               Vehicle Records
-            </h4>
+            </h3>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
               Store vehicle identifiers, type, capacity, and availability data used by operations screens.
             </p>
           </Card>
 
           <Card style={{ padding: '20px' }}>
-            <LuShieldCheck size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
-            <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
+            <LuShieldCheck size={22} color="var(--color-brand-600)" aria-hidden="true" style={{ marginBottom: '10px' }} />
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
               Assignment Constraints
-            </h4>
+            </h3>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
               Rule-based recommendations compare vehicle capacity and driver-license compatibility.
             </p>
           </Card>
 
           <Card style={{ padding: '20px' }}>
-            <LuLeaf size={22} color="var(--color-brand-600)" style={{ marginBottom: '10px' }} />
-            <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
+            <LuLeaf size={22} color="var(--color-brand-600)" aria-hidden="true" style={{ marginBottom: '10px' }} />
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', margin: '0 0 4px 0' }}>
               Demonstration Boundaries
-            </h4>
+            </h3>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
               No IoT sensor network, insurance product, emissions calculation, or owned fleet is claimed.
             </p>
@@ -202,17 +203,15 @@ export const FleetPage = () => {
           }}
         >
           <div>
-            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               Review the Assignment Workflow
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
               See how sample vehicle capacity and driver records are used in the project.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/business">
-              <Button variant="primary">View Project Workflows</Button>
-            </Link>
+            <Button as={Link} to="/business" variant="primary">View Project Workflows</Button>
           </div>
         </div>
       </section>

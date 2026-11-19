@@ -61,7 +61,7 @@ export const MobileAppPage = () => {
       {/* Hero Showcase Card */}
       <section className="container">
         <Card style={{ padding: '48px 36px', backgroundColor: 'var(--color-slate-900)', color: 'var(--color-white)', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '36px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '36px', alignItems: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <Badge variant="brand" size="md" style={{ width: 'fit-content' }}>
                 Academic Demo Build
@@ -74,7 +74,7 @@ export const MobileAppPage = () => {
               </p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffd700', fontSize: 'var(--text-xs)' }}>
-                <div style={{ display: 'flex', gap: '2px' }}>
+                <div aria-hidden="true" style={{ display: 'flex', gap: '2px' }}>
                   {[...Array(5)].map((_, i) => (
                     <LuStar key={i} size={14} fill="#ffd700" color="#ffd700" />
                   ))}
@@ -85,22 +85,22 @@ export const MobileAppPage = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
-                <Button variant="primary" size="lg" leftIcon={<LuDownload size={16} />}>
+                <Button variant="primary" size="lg" leftIcon={<LuDownload size={16} aria-hidden="true" />}>
                   Android Build
                 </Button>
-                <Link to="/track">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    style={{
-                      backgroundColor: 'transparent',
-                      borderColor: 'var(--color-slate-700)',
-                      color: 'var(--color-white)',
-                    }}
-                  >
-                    Open Web Tracker
-                  </Button>
-                </Link>
+                <Button
+                  as={Link}
+                  to="/track"
+                  variant="outline"
+                  size="lg"
+                  style={{
+                    backgroundColor: 'transparent',
+                    borderColor: 'var(--color-slate-700)',
+                    color: 'var(--color-white)',
+                  }}
+                >
+                  Open Web Tracker
+                </Button>
               </div>
             </div>
 
@@ -196,20 +196,16 @@ export const MobileAppPage = () => {
           }}
         >
           <div>
-            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               Want to Access the Driver App?
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
               Create a sample driver profile and continue through the demo onboarding flow.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/register/driver">
-              <Button variant="primary">Open Driver Registration</Button>
-            </Link>
-            <Link to="/contact">
-              <Button variant="outline">Project Information</Button>
-            </Link>
+            <Button as={Link} to="/register/driver" variant="primary">Open Driver Registration</Button>
+            <Button as={Link} to="/contact" variant="outline">Project Information</Button>
           </div>
         </div>
       </section>

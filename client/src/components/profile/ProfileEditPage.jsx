@@ -165,9 +165,9 @@ export const ProfileEditPage = () => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Avatar Upload Card */}
           <Card style={{ padding: '28px' }}>
-            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
               Profile Photo
-            </h3>
+            </h2>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
               <div
@@ -187,12 +187,13 @@ export const ProfileEditPage = () => {
                 {previewUrl ? (
                   <img src={previewUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <LuUser size={36} color="var(--color-slate-400)" />
+                  <LuUser size={36} color="var(--color-slate-400)" aria-hidden="true" />
                 )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label
+                  className="ui-file-dropzone"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -208,8 +209,8 @@ export const ProfileEditPage = () => {
                     boxShadow: 'var(--shadow-xs)',
                   }}
                 >
-                  <input type="file" accept="image/*" onChange={handleFileChange} disabled={uploading} style={{ display: 'none' }} />
-                  <LuCloudUpload size={16} />
+                  <input type="file" accept="image/*" onChange={handleFileChange} disabled={uploading} className="sr-only" />
+                  <LuCloudUpload size={16} aria-hidden="true" />
                   <span>{uploading ? 'Uploading...' : 'Upload New Photo'}</span>
                 </label>
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -221,14 +222,15 @@ export const ProfileEditPage = () => {
 
           {/* Form Fields Card */}
           <Card style={{ padding: '28px' }}>
-            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
               Personal & Contact Details
-            </h3>
+            </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <Input
                 label="Username"
                 name="username"
+                autoComplete="username"
                 value={form.username}
                 disabled
                 hint="Username cannot be altered."
@@ -237,16 +239,20 @@ export const ProfileEditPage = () => {
               <Input
                 label="Full Name"
                 name="fullName"
+                autoComplete="name"
                 value={form.fullName}
                 onChange={handleInput}
                 placeholder="Enter your full name"
               />
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="responsive-grid-2" style={{ gap: '16px' }}>
                 <Input
                   label="Email Address"
                   name="email"
                   type="email"
+                  autoComplete="email"
+                  spellCheck={false}
+                  autoCapitalize="none"
                   value={form.email}
                   onChange={handleInput}
                   placeholder="name@example.com"
@@ -255,6 +261,7 @@ export const ProfileEditPage = () => {
                   label="Phone Number"
                   name="phone"
                   type="tel"
+                  autoComplete="tel"
                   value={form.phone}
                   onChange={handleInput}
                   placeholder="+84..."

@@ -18,7 +18,7 @@ export const Input = React.forwardRef(({
   ...props
 }, ref) => {
   const generatedId = useId();
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `input-${generatedId}`);
+  const inputId = id || `input-${generatedId}`;
   const errorId = error ? `${inputId}-error` : undefined;
   const hintId = hint && !error ? `${inputId}-hint` : undefined;
   const describedBy = [ariaDescribedByProp, errorId, hintId].filter(Boolean).join(' ') || undefined;
@@ -29,10 +29,11 @@ export const Input = React.forwardRef(({
   const effectiveType = isPasswordType ? (showPassword ? 'text' : 'password') : type;
 
   const hasRightControl = rightIcon || isPasswordType;
+  const cleanLabel = typeof label === 'string' && required ? label.replace(/\s*\*$/, '') : label;
 
   return (
     <div className={`ui-input-group ${className}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-      {label && (
+      {cleanLabel && (
         <label
           htmlFor={inputId}
           style={{
@@ -44,7 +45,7 @@ export const Input = React.forwardRef(({
             gap: '4px',
           }}
         >
-          {label}
+          {cleanLabel}
           {required && <span style={{ color: 'var(--color-danger-600)' }} aria-hidden="true">*</span>}
         </label>
       )}
@@ -55,7 +56,7 @@ export const Input = React.forwardRef(({
             style={{
               position: 'absolute',
               left: '12px',
-              color: error ? 'var(--color-danger-600)' : 'var(--color-slate-400)',
+              color: error ? 'var(--color-danger-600)' : 'var(--text-muted)',
               display: 'inline-flex',
               alignItems: 'center',
               pointerEvents: 'none',
@@ -75,20 +76,19 @@ export const Input = React.forwardRef(({
           required={required}
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy}
-          aria-label={!label ? (props['aria-label'] || props.placeholder) : undefined}
+          aria-label={!cleanLabel ? (props['aria-label'] || props.placeholder) : undefined}
           className={`ui-input ${error ? 'has-error' : ''}`}
           style={{
             width: '100%',
-            height: '38px',
-            padding: `8px ${hasRightControl ? '40px' : '12px'} 8px ${leftIcon ? '36px' : '12px'}`,
-            fontSize: 'var(--text-sm)',
+            minHeight: '40px',
+            padding: `8px ${hasRightControl ? '42px' : '12px'} 8px ${leftIcon ? '36px' : '12px'}`,
+            fontSize: 'max(1rem, var(--text-sm))',
             color: 'var(--text-primary)',
             backgroundColor: disabled ? 'var(--color-slate-100)' : error ? 'var(--color-danger-50)' : 'var(--color-white)',
             border: `1px solid ${error ? 'var(--color-danger-600)' : 'var(--border-strong)'}`,
             borderRadius: 'var(--radius-md)',
             boxShadow: 'var(--shadow-xs)',
-            transition: 'all var(--transition-fast)',
-            outline: 'none',
+            transition: 'border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast)',
             ...style,
           }}
           {...props}
@@ -98,14 +98,17 @@ export const Input = React.forwardRef(({
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
+            aria-pressed={showPassword}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             style={{
               position: 'absolute',
-              right: '10px',
+              right: '8px',
               background: 'none',
               border: 'none',
-              padding: '4px',
-              color: 'var(--color-slate-400)',
+              padding: '6px',
+              minWidth: '28px',
+              minHeight: '28px',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
@@ -114,7 +117,7 @@ export const Input = React.forwardRef(({
               zIndex: 1,
             }}
           >
-            {showPassword ? <LuEyeOff size={16} /> : <LuEye size={16} />}
+            {showPassword ? <LuEyeOff size={16} aria-hidden="true" /> : <LuEye size={16} aria-hidden="true" />}
           </button>
         )}
 
@@ -123,11 +126,12 @@ export const Input = React.forwardRef(({
             style={{
               position: 'absolute',
               right: '12px',
-              color: error ? 'var(--color-danger-600)' : 'var(--color-slate-400)',
+              color: error ? 'var(--color-danger-600)' : 'var(--text-muted)',
               display: 'inline-flex',
               alignItems: 'center',
               zIndex: 1,
             }}
+            aria-hidden="true"
           >
             {rightIcon}
           </span>

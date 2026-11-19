@@ -92,7 +92,17 @@ export const ChatPopup = ({ tripId, driverId }) => {
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen]);
+
   const handleKeyPress = (e) => {
+    if (e.nativeEvent?.isComposing || e.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -177,11 +187,13 @@ export const ChatPopup = ({ tripId, driverId }) => {
       {/* Floating Dialog Window */}
       {isOpen && (
         <div
+          role="dialog"
+          aria-label="Driver Dispatch Chat"
           style={{
             position: 'fixed',
             bottom: '84px',
-            right: '24px',
-            width: '340px',
+            right: '16px',
+            width: 'min(340px, calc(100vw - 32px))',
             maxHeight: isMinimized ? '48px' : '480px',
             height: isMinimized ? '48px' : '440px',
             backgroundColor: 'var(--bg-surface)',
@@ -192,7 +204,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
             flexDirection: 'column',
             zIndex: 1000,
             overflow: 'hidden',
-            transition: 'all var(--transition-base)',
+            transition: 'height var(--transition-base), max-height var(--transition-base)',
           }}
         >
           {/* Header */}
@@ -209,6 +221,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div
+                aria-hidden="true"
                 style={{
                   width: '26px',
                   height: '26px',
@@ -233,30 +246,32 @@ export const ChatPopup = ({ tripId, driverId }) => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
               <button
+                type="button"
                 onClick={toggleMinimize}
                 title={isMinimized ? 'Maximize' : 'Minimize'}
                 aria-label={isMinimized ? 'Maximize chat window' : 'Minimize chat window'}
                 style={{
-                  padding: '4px',
+                  padding: '6px',
                   color: 'var(--color-slate-300)',
                   cursor: 'pointer',
                   borderRadius: 'var(--radius-sm)',
                 }}
               >
-                {isMinimized ? <LuMaximize2 size={13} /> : <LuMinus size={13} />}
+                {isMinimized ? <LuMaximize2 size={13} aria-hidden="true" /> : <LuMinus size={13} aria-hidden="true" />}
               </button>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 title="Close chat"
                 aria-label="Close chat window"
                 style={{
-                  padding: '4px',
+                  padding: '6px',
                   color: 'var(--color-slate-300)',
                   cursor: 'pointer',
                   borderRadius: 'var(--radius-sm)',
                 }}
               >
-                <LuX size={14} />
+                <LuX size={14} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -371,6 +386,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
               >
                 <input
                   type="text"
+                  className="chat-input"
                   placeholder="Type message..."
                   aria-label="Type message to assigned driver"
                   value={inputText}
@@ -378,22 +394,22 @@ export const ChatPopup = ({ tripId, driverId }) => {
                   onKeyDown={handleKeyPress}
                   style={{
                     flex: 1,
-                    height: '32px',
+                    minHeight: '36px',
                     padding: '0 10px',
-                    fontSize: 'var(--text-xs)',
+                    fontSize: 'max(1rem, var(--text-xs))',
                     borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--border-default)',
-                    outline: 'none',
                     backgroundColor: 'var(--color-white)',
                   }}
                 />
                 <button
+                  type="button"
                   onClick={handleSend}
                   disabled={!inputText.trim()}
                   aria-label="Send message"
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '36px',
+                    height: '36px',
                     borderRadius: 'var(--radius-md)',
                     backgroundColor: 'var(--color-brand-600)',
                     color: 'var(--color-white)',
@@ -404,7 +420,7 @@ export const ChatPopup = ({ tripId, driverId }) => {
                     opacity: inputText.trim() ? 1 : 0.5,
                   }}
                 >
-                  <LuSend size={14} />
+                  <LuSend size={14} aria-hidden="true" />
                 </button>
               </div>
             </>

@@ -54,7 +54,7 @@ export const AdminSystemOverviewPage = () => {
   });
 
   const [settings, setSettings] = useState([]);
-  const [totalElements, setTotalElements] = useState(0);
+  const [, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
@@ -65,8 +65,8 @@ export const AdminSystemOverviewPage = () => {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const [filters, setFilters] = useState({ category: '', key: '', description: '', isEncrypted: '' });
-  const [categories, setCategories] = useState([]);
+  const [filters] = useState({ category: '', key: '', description: '', isEncrypted: '' });
+  const [, setCategories] = useState([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -110,6 +110,7 @@ export const AdminSystemOverviewPage = () => {
 
   useEffect(() => {
     fetchSettings(0, filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -180,7 +181,7 @@ export const AdminSystemOverviewPage = () => {
     }
   };
 
-  const { systemUptime, activeAlerts, systemVersion, systemHealth = {} } = dashboardData;
+  const { systemUptime, systemVersion, systemHealth = {} } = dashboardData;
 
   if (loading) {
     return <LoadingSpinner fullPage text="Scanning enterprise platform telemetry..." />;

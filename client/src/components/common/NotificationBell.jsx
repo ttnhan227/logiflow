@@ -116,7 +116,7 @@ const NotificationBell = () => {
 
       setRealTimeNotifications(prev => [enhancedNotification, ...prev]);
 
-      if (Notification.permission === 'granted') {
+      if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(notification.title, {
           body: notification.message,
           icon: '/logo.png',
@@ -127,20 +127,23 @@ const NotificationBell = () => {
 
     notificationClient.addListener(handleNotification);
 
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       notificationClient.removeListener(handleNotification);
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -337,10 +340,30 @@ const NotificationBell = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {'Notification' in window && Notification.permission === 'default' && (
+                <button
+                  type="button"
+                  onClick={() => Notification.requestPermission().catch(() => {})}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'var(--color-brand-700)',
+                    backgroundColor: 'var(--color-brand-50)',
+                    border: '1px solid var(--color-brand-200)',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Enable Alerts
+                </button>
+              )}
               {unreadCount > 0 && (
                 <button
+                  type="button"
                   onClick={handleMarkAllRead}
                   title="Mark all read"
+                  aria-label="Mark all notifications read"
                   style={{
                     padding: '4px',
                     color: 'var(--text-secondary)',
@@ -348,13 +371,15 @@ const NotificationBell = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  <LuCheck size={15} />
+                  <LuCheck size={15} aria-hidden="true" />
                 </button>
               )}
               {notifications.length > 0 && (
                 <button
+                  type="button"
                   onClick={handleClearAll}
                   title="Clear all"
+                  aria-label="Clear all notifications"
                   style={{
                     padding: '4px',
                     color: 'var(--text-secondary)',
@@ -362,15 +387,17 @@ const NotificationBell = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  <LuTrash2 size={15} />
+                  <LuTrash2 size={15} aria-hidden="true" />
                 </button>
               )}
               <button
+                type="button"
                 onClick={() => {
                   setIsOpen(false);
                   navigate(getNotificationsPath());
                 }}
                 title="View full notification center"
+                aria-label="View full notification center"
                 style={{
                   padding: '4px',
                   color: 'var(--color-brand-600)',
@@ -378,7 +405,7 @@ const NotificationBell = () => {
                   cursor: 'pointer',
                 }}
               >
-                <LuExternalLink size={15} />
+                <LuExternalLink size={15} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -387,15 +414,18 @@ const NotificationBell = () => {
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {notifications.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <LuBell size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+                <LuBell size={24} aria-hidden="true" style={{ margin: '0 auto 8px', opacity: 0.5 }} />
                 <p style={{ fontSize: 'var(--text-xs)', margin: 0 }}>No notifications at this time</p>
               </div>
             ) : (
               notifications.map((n) => (
-                <div
+                <button
                   key={n.id}
+                  type="button"
                   onClick={() => handleNotificationClick(n)}
                   style={{
+                    width: '100%',
+                    textAlign: 'left',
                     padding: '12px 16px',
                     borderBottom: '1px solid var(--border-subtle)',
                     backgroundColor: !n.isRead ? 'var(--color-brand-50)' : 'transparent',
@@ -406,7 +436,7 @@ const NotificationBell = () => {
                     transition: 'background-color var(--transition-fast)',
                   }}
                 >
-                  <span style={{ marginTop: '2px', flexShrink: 0 }}>
+                  <span aria-hidden="true" style={{ marginTop: '2px', flexShrink: 0 }}>
                     {getSeverityIcon(n.severity)}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -427,7 +457,7 @@ const NotificationBell = () => {
                       </span>
                     )}
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>

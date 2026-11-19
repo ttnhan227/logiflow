@@ -67,6 +67,7 @@ export const AdminAuditLogPage = () => {
 
   useEffect(() => {
     fetchLogs(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInputChange = (e) => {

@@ -37,8 +37,18 @@ export const DispatchLayout = () => {
         setDropdownOpen(false);
       }
     };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -62,6 +72,7 @@ export const DispatchLayout = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       {/* Top Tactical Dispatch Header */}
       <header
         className="dispatch-header"
@@ -116,13 +127,14 @@ export const DispatchLayout = () => {
           </span>
 
           {/* Desktop Nav Items */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '12px' }} className="dispatch-nav">
+          <nav aria-label="Dispatch navigation" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '12px' }} className="dispatch-nav">
             {navLinks.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <Link
                   key={item.path}
                   to={item.path}
+                  aria-current={isActive ? 'page' : undefined}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -133,10 +145,10 @@ export const DispatchLayout = () => {
                     fontWeight: isActive ? 600 : 500,
                     color: isActive ? 'var(--color-white)' : 'var(--color-slate-300)',
                     backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
-                    transition: 'all var(--transition-fast)',
+                    transition: 'background-color var(--transition-fast), color var(--transition-fast)',
                   }}
                 >
-                  <span style={{ opacity: isActive ? 1 : 0.8 }}>{item.icon}</span>
+                  <span aria-hidden="true" style={{ opacity: isActive ? 1 : 0.8 }}>{item.icon}</span>
                   <span>{item.label}</span>
                 </Link>
               );
@@ -165,7 +177,7 @@ export const DispatchLayout = () => {
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
             }}
           >
-            Public Site <LuExternalLink size={12} />
+            Public Site <LuExternalLink size={12} aria-hidden="true" />
           </Link>
 
           {user && <NotificationBell />}
@@ -173,7 +185,11 @@ export const DispatchLayout = () => {
           {user && (
             <div style={{ position: 'relative' }} ref={dropdownRef}>
               <button
+                type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
+                aria-expanded={dropdownOpen}
+                aria-controls="dispatch-user-dropdown"
+                aria-label={`Account menu for ${user.username || 'Dispatcher'}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -205,11 +221,12 @@ export const DispatchLayout = () => {
                 <span className="dispatch-username" style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>
                   {user.username || 'Dispatcher'}
                 </span>
-                <LuChevronDown size={14} color="var(--color-slate-400)" />
+                <LuChevronDown size={14} color="var(--color-slate-400)" aria-hidden="true" />
               </button>
 
               {dropdownOpen && (
                 <div
+                  id="dispatch-user-dropdown"
                   style={{
                     position: 'absolute',
                     top: 'calc(100% + 6px)',
@@ -248,7 +265,7 @@ export const DispatchLayout = () => {
                     }}
                     onClick={() => setDropdownOpen(false)}
                   >
-                    <LuUser size={15} /> My Profile
+                    <LuUser size={15} aria-hidden="true" /> My Profile
                   </Link>
 
                   <button
@@ -267,7 +284,7 @@ export const DispatchLayout = () => {
                       textAlign: 'left',
                     }}
                   >
-                    <LuLogOut size={15} /> Sign Out
+                    <LuLogOut size={15} aria-hidden="true" /> Sign Out
                   </button>
                 </div>
               )}
@@ -280,6 +297,8 @@ export const DispatchLayout = () => {
             className="dispatch-mobile-btn"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="dispatch-mobile-drawer"
             style={{
               display: 'none',
               alignItems: 'center',
@@ -292,7 +311,7 @@ export const DispatchLayout = () => {
               borderRadius: 'var(--radius-md)',
             }}
           >
-            {isMobileMenuOpen ? <LuX size={20} /> : <LuMenu size={20} />}
+            {isMobileMenuOpen ? <LuX size={20} aria-hidden="true" /> : <LuMenu size={20} aria-hidden="true" />}
           </button>
         </div>
       </header>
@@ -300,6 +319,7 @@ export const DispatchLayout = () => {
       {/* Mobile Slide-down Navigation Drawer */}
       {isMobileMenuOpen && (
         <nav
+          id="dispatch-mobile-drawer"
           aria-label="Mobile Dispatch Navigation"
           style={{
             backgroundColor: 'var(--color-slate-900)',
@@ -316,6 +336,7 @@ export const DispatchLayout = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-current={isActive ? 'page' : undefined}
                 onClick={() => setIsMobileMenuOpen(false)}
                 style={{
                   display: 'flex',
@@ -329,7 +350,7 @@ export const DispatchLayout = () => {
                   backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
                 }}
               >
-                {item.icon}
+                <span aria-hidden="true">{item.icon}</span>
                 <span>{item.label}</span>
               </Link>
             );
@@ -348,7 +369,7 @@ export const DispatchLayout = () => {
                 color: 'var(--color-slate-300)',
               }}
             >
-              <LuExternalLink size={15} /> Public Site
+              <LuExternalLink size={15} aria-hidden="true" /> Public Site
             </Link>
             <Link
               to="/profile"
@@ -362,7 +383,7 @@ export const DispatchLayout = () => {
                 color: 'var(--color-slate-300)',
               }}
             >
-              <LuUser size={15} /> My Profile
+              <LuUser size={15} aria-hidden="true" /> My Profile
             </Link>
             <button
               type="button"
@@ -373,7 +394,7 @@ export const DispatchLayout = () => {
                 gap: '8px',
                 padding: '8px 14px',
                 fontSize: 'var(--text-sm)',
-                color: 'var(--color-danger-600)',
+                color: 'var(--color-danger-300)',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -381,7 +402,7 @@ export const DispatchLayout = () => {
                 width: '100%',
               }}
             >
-              <LuLogOut size={15} /> Sign Out
+              <LuLogOut size={15} aria-hidden="true" /> Sign Out
             </button>
           </div>
         </nav>
@@ -389,6 +410,8 @@ export const DispatchLayout = () => {
 
       {/* Main Content Area */}
       <main
+        id="main-content"
+        tabIndex={-1}
         className="dispatch-main-content"
         style={{
           flex: 1,

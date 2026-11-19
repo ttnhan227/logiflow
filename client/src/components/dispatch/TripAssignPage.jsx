@@ -30,7 +30,7 @@ export const TripAssignPage = () => {
   const navigate = useNavigate();
 
   const [trip, setTrip] = useState(null);
-  const [drivers, setDrivers] = useState([]);
+  const [, setDrivers] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -79,13 +79,8 @@ export const TripAssignPage = () => {
       loadRecommendations();
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
-
-  const isLicenseCompatible = (driverLicense, requiredLicense) => {
-    if (!requiredLicense) return true;
-    if (!driverLicense) return false;
-    return driverLicense.toUpperCase() === requiredLicense.toUpperCase();
-  };
 
   const onAssign = async () => {
     if (!selectedDriver) return setError('Please select a driver to assign.');
@@ -117,11 +112,9 @@ export const TripAssignPage = () => {
         description="Match and allocate qualified commercial driver to this linehaul trip manifest."
         badge={<Badge variant="brand">Driver Allocation</Badge>}
         actions={
-          <Link to={`/dispatch/trips/${tripId}`}>
-            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Trip
-            </Button>
-          </Link>
+          <Button as={Link} to={`/dispatch/trips/${tripId}`} variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Trip
+          </Button>
         }
       />
 

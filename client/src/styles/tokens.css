@@ -4,6 +4,8 @@
  */
 
 :root {
+  color-scheme: light;
+
   /* Color Palette - Neutrals / Grayscale */
   --color-white: #ffffff;
   --color-slate-50: #f3f6f8;
@@ -23,6 +25,7 @@
   --color-brand-50: #eaf5fb;
   --color-brand-100: #d6edf8;
   --color-brand-200: #addcf1;
+  --color-brand-400: #4da7db;
   --color-brand-500: #258dc8;
   --color-brand-600: #176fae;
   --color-brand-700: #12598e;
@@ -39,25 +42,32 @@
   --color-success-50: #f0fdf4;
   --color-success-100: #dcfce7;
   --color-success-200: #bbf7d0;
+  --color-success-400: #4ade80;
+  --color-emerald-400: #34d399;
   --color-success-600: #16a34a;
   --color-success-700: #15803d;
   --color-success-800: #166534;
+  --color-success-900: #14532d;
 
   /* Semantic Status: Warning */
   --color-warning-50: #fffbeb;
   --color-warning-100: #fef3c7;
   --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
   --color-warning-600: #d97706;
   --color-warning-700: #b45309;
   --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
 
   /* Semantic Status: Danger / Error */
   --color-danger-50: #fef2f2;
   --color-danger-100: #fee2e2;
   --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
   --color-danger-600: #dc2626;
   --color-danger-700: #b91c1c;
   --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
 
   /* Semantic Status: Info / In-Transit */
   --color-info-50: #f0f9ff;
@@ -73,14 +83,15 @@
   --bg-surface-subtle: var(--color-slate-50);
   --bg-surface-hover: var(--color-slate-100);
   --bg-surface-active: var(--color-slate-200);
-  
+
   --bg-sidebar: var(--color-asphalt);
   --bg-sidebar-hover: #0d2946;
   --bg-sidebar-active: #123b61;
 
   --text-primary: var(--color-slate-900);
   --text-secondary: var(--color-slate-600);
-  --text-muted: var(--color-slate-400);
+  /* Slate-550 equivalent >= 4.5:1 contrast on both #ffffff and #f3f6f8 */
+  --text-muted: #526174;
   --text-inverse: var(--color-white);
   --text-brand: var(--color-brand-600);
 
@@ -89,19 +100,19 @@
   --border-strong: var(--color-slate-300);
   --border-focus: var(--color-route-cyan);
 
-  /* Typography */
+  /* Typography (relative rem scale honoring user/OS font preferences) */
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --text-xs: 11px;
-  --text-sm: 13px;
-  --text-base: 14px;
-  --text-md: 15px;
-  --text-lg: 18px;
-  --text-xl: 20px;
-  --text-2xl: 24px;
-  --text-3xl: 30px;
-  --text-4xl: 36px;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
 
   --font-normal: 400;
   --font-medium: 500;
@@ -151,8 +162,13 @@
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
   --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
   --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
   --shadow-dropdown: 0 10px 24px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
   --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+
+  /* Z-index layers */
+  --z-fixed: 900;
+  --z-modal: 1000;
 
   /* Focus Ring */
   --focus-ring: 0 0 0 2px var(--color-brand-600);

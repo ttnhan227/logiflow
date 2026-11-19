@@ -114,31 +114,6 @@ export const CustomerRegisterPage = () => {
     }
   };
 
-  const uploadDocuments = async () => {
-    const uploads = [];
-
-    if (formData.businessLicense && !formData.businessLicenseUrl) {
-      uploads.push(
-        uploadService.uploadBusinessLicense(formData.businessLicense).then(({ path }) => {
-          setFormData((prev) => ({ ...prev, businessLicenseUrl: path }));
-          return path;
-        })
-      );
-    }
-
-    if (formData.taxCertificate && !formData.taxCertificateUrl) {
-      uploads.push(
-        uploadService.uploadTaxCertificate(formData.taxCertificate).then(({ path }) => {
-          setFormData((prev) => ({ ...prev, taxCertificateUrl: path }));
-          return path;
-        })
-      );
-    }
-
-    const results = await Promise.all(uploads);
-    return results;
-  };
-
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
@@ -200,25 +175,23 @@ export const CustomerRegisterPage = () => {
             <LuCircleCheck size={32} />
           </div>
 
-          <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 8px 0' }}>
+          <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 8px 0' }}>
             Corporate Registration Submitted
-          </h2>
+          </h1>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 24px 0' }}>
             Thank you for registering <strong>{formData.companyName}</strong>. Our enterprise compliance team will review your business license certificate and provision your corporate dispatch credentials within 1 business day.
           </p>
 
-          <Link to="/">
-            <Button variant="primary" style={{ width: '100%' }}>
-              Return to Homepage
-            </Button>
-          </Link>
+          <Button as={Link} to="/" variant="primary" style={{ width: '100%' }}>
+            Return to Homepage
+          </Button>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="container" style={{ padding: '40px 16px 64px 16px', maxWidth: '720px' }}>
+    <main id="main-content" className="container" style={{ padding: '40px 16px 64px 16px', maxWidth: '720px' }}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <Badge variant="brand" size="sm" style={{ marginBottom: '8px' }}>
           Enterprise Account
@@ -232,88 +205,93 @@ export const CustomerRegisterPage = () => {
       </div>
 
       {/* Stepper Progress */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '28px',
-          padding: '16px 24px',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-lg)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: currentStep >= 1 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
-              color: currentStep >= 1 ? 'var(--color-white)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            1
-          </span>
-          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 1 ? 700 : 500, color: 'var(--text-primary)' }}>
-            Company Details
-          </span>
-        </div>
+      <nav aria-label="Registration steps">
+        <ol
+          style={{
+            listStyle: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px',
+            marginBottom: '28px',
+            padding: '16px 20px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+          }}
+        >
+          <li aria-current={currentStep === 1 ? 'step' : undefined} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: currentStep >= 1 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+                color: currentStep >= 1 ? 'var(--color-white)' : 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              1
+            </span>
+            <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 1 ? 700 : 500, color: 'var(--text-primary)' }}>
+              Company Details
+            </span>
+          </li>
 
-        <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-default)', margin: '0 12px' }} />
+          <li aria-hidden="true" style={{ height: '1px', flex: '1 1 24px', backgroundColor: 'var(--border-default)', margin: '0 4px' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: currentStep >= 2 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
-              color: currentStep >= 2 ? 'var(--color-white)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            2
-          </span>
-          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 2 ? 700 : 500, color: 'var(--text-primary)' }}>
-            Contact Representative
-          </span>
-        </div>
+          <li aria-current={currentStep === 2 ? 'step' : undefined} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: currentStep >= 2 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+                color: currentStep >= 2 ? 'var(--color-white)' : 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              2
+            </span>
+            <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 2 ? 700 : 500, color: 'var(--text-primary)' }}>
+              Contact Representative
+            </span>
+          </li>
 
-        <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-default)', margin: '0 12px' }} />
+          <li aria-hidden="true" style={{ height: '1px', flex: '1 1 24px', backgroundColor: 'var(--border-default)', margin: '0 4px' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: currentStep >= 3 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
-              color: currentStep >= 3 ? 'var(--color-white)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            3
-          </span>
-          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 3 ? 700 : 500, color: 'var(--text-primary)' }}>
-            Documents
-          </span>
-        </div>
-      </div>
+          <li aria-current={currentStep === 3 ? 'step' : undefined} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: currentStep >= 3 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+                color: currentStep >= 3 ? 'var(--color-white)' : 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              3
+            </span>
+            <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 3 ? 700 : 500, color: 'var(--text-primary)' }}>
+              Documents
+            </span>
+          </li>
+        </ol>
+      </nav>
 
       {error && (
         <div style={{ marginBottom: '20px' }}>
@@ -327,20 +305,21 @@ export const CustomerRegisterPage = () => {
         {/* Step 1: Company Info */}
         {currentStep === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               1. Business Organization Information
-            </h3>
+            </h2>
 
             <Input
               label="Company Name *"
               name="companyName"
+              autoComplete="organization"
               value={formData.companyName}
               onChange={handleInputChange}
               placeholder="e.g. VinFast Logistics JSC"
               required
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-2" style={{ gap: '16px' }}>
               <Input
                 label="Tax ID / Registration Code *"
                 name="companyTaxId"
@@ -370,6 +349,7 @@ export const CustomerRegisterPage = () => {
             <Textarea
               label="Registered Office Address *"
               name="companyAddress"
+              autoComplete="street-address"
               value={formData.companyAddress}
               onChange={handleInputChange}
               placeholder="Full registered headquarters address"
@@ -377,10 +357,12 @@ export const CustomerRegisterPage = () => {
               required
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-2" style={{ gap: '16px' }}>
               <Input
                 label="Corporate Switchboard Phone"
                 name="companyPhone"
+                type="tel"
+                autoComplete="tel"
                 value={formData.companyPhone}
                 onChange={handleInputChange}
                 placeholder="+84 28 3822 0000"
@@ -388,6 +370,8 @@ export const CustomerRegisterPage = () => {
               <Input
                 label="Company Website"
                 name="companyWebsite"
+                type="url"
+                autoComplete="url"
                 value={formData.companyWebsite}
                 onChange={handleInputChange}
                 placeholder="https://example.vn"
@@ -399,24 +383,28 @@ export const CustomerRegisterPage = () => {
         {/* Step 2: Contact Person */}
         {currentStep === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               2. Authorized Representative
-            </h3>
+            </h2>
 
             <Input
               label="Full Name *"
               name="fullName"
+              autoComplete="name"
               value={formData.fullName}
               onChange={handleInputChange}
               placeholder="e.g. Tran Minh Tuan"
               required
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-2" style={{ gap: '16px' }}>
               <Input
                 label="Corporate Email *"
                 name="email"
                 type="email"
+                autoComplete="email"
+                spellCheck={false}
+                autoCapitalize="none"
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="tuan.tran@company.vn"
@@ -426,6 +414,7 @@ export const CustomerRegisterPage = () => {
                 label="Direct Phone Number *"
                 name="phone"
                 type="tel"
+                autoComplete="tel"
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="+84 908 123 456"
@@ -436,6 +425,7 @@ export const CustomerRegisterPage = () => {
             <Input
               label="Job Position / Role *"
               name="userPosition"
+              autoComplete="organization-title"
               value={formData.userPosition}
               onChange={handleInputChange}
               placeholder="e.g. Supply Chain Manager / Logistics Director"
@@ -447,15 +437,15 @@ export const CustomerRegisterPage = () => {
         {/* Step 3: Documents */}
         {currentStep === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               3. Verification Documents
-            </h3>
+            </h2>
 
             {/* Business License */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Business License / Enterprise Registration Certificate (ERC) *
-              </label>
+              </span>
 
               {formData.businessLicenseName ? (
                 <div
@@ -470,7 +460,7 @@ export const CustomerRegisterPage = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <LuFileText size={20} color="var(--color-success-600)" />
+                    <LuFileText size={20} color="var(--color-success-600)" aria-hidden="true" />
                     <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-success-900)' }}>
                       {formData.businessLicenseName}
                     </span>
@@ -491,6 +481,7 @@ export const CustomerRegisterPage = () => {
                 </div>
               ) : (
                 <label
+                  className="ui-file-dropzone"
                   style={{
                     border: '2px dashed var(--border-default)',
                     borderRadius: 'var(--radius-lg)',
@@ -508,9 +499,9 @@ export const CustomerRegisterPage = () => {
                     type="file"
                     accept="image/*,.pdf"
                     onChange={handleFileUpload('businessLicense', 'businessLicenseName')}
-                    style={{ display: 'none' }}
+                    className="sr-only"
                   />
-                  <LuCloudUpload size={26} color="var(--color-brand-600)" />
+                  <LuCloudUpload size={26} color="var(--color-brand-600)" aria-hidden="true" />
                   <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
                     Upload Business License (PDF or Image)
                   </span>
@@ -521,9 +512,9 @@ export const CustomerRegisterPage = () => {
 
             {/* Optional Tax Cert */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Tax Identification Certificate (Optional)
-              </label>
+              </span>
 
               {formData.taxCertificateName ? (
                 <div
@@ -538,7 +529,7 @@ export const CustomerRegisterPage = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <LuFileText size={20} color="var(--color-success-600)" />
+                    <LuFileText size={20} color="var(--color-success-600)" aria-hidden="true" />
                     <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-success-900)' }}>
                       {formData.taxCertificateName}
                     </span>
@@ -559,6 +550,7 @@ export const CustomerRegisterPage = () => {
                 </div>
               ) : (
                 <label
+                  className="ui-file-dropzone"
                   style={{
                     border: '2px dashed var(--border-default)',
                     borderRadius: 'var(--radius-lg)',
@@ -576,9 +568,9 @@ export const CustomerRegisterPage = () => {
                     type="file"
                     accept="image/*,.pdf"
                     onChange={handleFileUpload('taxCertificate', 'taxCertificateName')}
-                    style={{ display: 'none' }}
+                    className="sr-only"
                   />
-                  <LuFileText size={24} color="var(--color-slate-500)" />
+                  <LuFileText size={24} color="var(--color-slate-500)" aria-hidden="true" />
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
                     Upload Tax Certificate (optional)
                   </span>
@@ -589,28 +581,26 @@ export const CustomerRegisterPage = () => {
         )}
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
           {currentStep > 1 ? (
-            <Button variant="outline" onClick={() => setCurrentStep((prev) => prev - 1)} disabled={loading} leftIcon={<LuArrowLeft size={16} />}>
+            <Button variant="outline" onClick={() => setCurrentStep((prev) => prev - 1)} disabled={loading} leftIcon={<LuArrowLeft size={16} aria-hidden="true" />}>
               Back
             </Button>
           ) : (
-            <Link to="/login">
-              <Button variant="ghost">Cancel</Button>
-            </Link>
+            <Button as={Link} to="/login" variant="ghost">Cancel</Button>
           )}
 
           <Button
             variant="primary"
             onClick={handleNext}
             loading={loading}
-            rightIcon={currentStep === 3 ? <LuCheck size={16} /> : <LuArrowRight size={16} />}
+            rightIcon={currentStep === 3 ? <LuCheck size={16} aria-hidden="true" /> : <LuArrowRight size={16} aria-hidden="true" />}
           >
             {currentStep === 3 ? 'Submit Corporate Application' : 'Continue'}
           </Button>
         </div>
       </Card>
-    </div>
+    </main>
   );
 };
 

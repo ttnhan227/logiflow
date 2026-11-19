@@ -51,7 +51,7 @@ export const AdminReportsPage = () => {
   });
 
   const [performanceReport, setPerformanceReport] = useState(null);
-  const [costAnalysis, setCostAnalysis] = useState(null);
+  const [, setCostAnalysis] = useState(null);
   const [driverPerformance, setDriverPerformance] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [showDriverDetailModal, setShowDriverDetailModal] = useState(false);
@@ -77,6 +77,7 @@ export const AdminReportsPage = () => {
 
   useEffect(() => {
     loadReportData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
   const handleDownloadReport = async () => {

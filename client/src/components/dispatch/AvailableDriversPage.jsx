@@ -86,11 +86,9 @@ export const AvailableDriversPage = () => {
         description="Live status, license ratings, and assignment status for all registered commercial drivers."
         badge={<Badge variant="brand">Driver Operations</Badge>}
         actions={
-          <Link to="/dispatch/trips">
-            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Trips
-            </Button>
-          </Link>
+          <Button as={Link} to="/dispatch/trips" variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Trips
+          </Button>
         }
       />
 

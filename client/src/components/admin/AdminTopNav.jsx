@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { authService } from '../../services';
 import NotificationBell from '../common/NotificationBell';
 import { LuChevronDown, LuUser, LuLogOut, LuExternalLink } from 'react-icons/lu';
 
 export const AdminTopNav = ({ user, onLogout }) => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -25,8 +24,17 @@ export const AdminTopNav = ({ user, onLogout }) => {
         setDropdownOpen(false);
       }
     };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setDropdownOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const getBreadcrumbTitle = () => {
@@ -105,7 +113,11 @@ export const AdminTopNav = ({ user, onLogout }) => {
         {/* User Dropdown */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button
+            type="button"
             onClick={() => setDropdownOpen(!dropdownOpen)}
+            aria-expanded={dropdownOpen}
+            aria-controls="admin-user-dropdown"
+            aria-label={`Admin account menu for ${user?.username || 'Admin'}`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -149,11 +161,12 @@ export const AdminTopNav = ({ user, onLogout }) => {
                 System Admin
               </span>
             </div>
-            <LuChevronDown size={14} color="var(--color-slate-400)" />
+            <LuChevronDown size={14} color="var(--color-slate-600)" aria-hidden="true" />
           </button>
 
           {dropdownOpen && (
             <div
+              id="admin-user-dropdown"
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 6px)',
@@ -170,11 +183,9 @@ export const AdminTopNav = ({ user, onLogout }) => {
                 zIndex: 1000,
               }}
             >
-              <button
-                onClick={() => {
-                  navigate('/profile');
-                  setDropdownOpen(false);
-                }}
+              <Link
+                to="/profile"
+                onClick={() => setDropdownOpen(false)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -183,17 +194,15 @@ export const AdminTopNav = ({ user, onLogout }) => {
                   borderRadius: 'var(--radius-md)',
                   fontSize: 'var(--text-sm)',
                   color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
                 }}
               >
-                <LuUser size={15} /> My Profile
-              </button>
+                <LuUser size={15} aria-hidden="true" /> My Profile
+              </Link>
 
               <div style={{ height: '1px', backgroundColor: 'var(--border-subtle)', margin: '4px 0' }} />
 
               <button
+                type="button"
                 onClick={() => {
                   setDropdownOpen(false);
                   onLogout();
@@ -211,7 +220,7 @@ export const AdminTopNav = ({ user, onLogout }) => {
                   textAlign: 'left',
                 }}
               >
-                <LuLogOut size={15} /> Sign Out
+                <LuLogOut size={15} aria-hidden="true" /> Sign Out
               </button>
             </div>
           )}

@@ -37,8 +37,6 @@ export default defineConfig({
           if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) {
             return 'react-vendor'
           }
-          if (id.includes('/antd/') || id.includes('/rc-')) return 'antd-vendor'
-          if (id.includes('/@mui/') || id.includes('/@emotion/')) return 'mui-vendor'
           if (id.includes('/recharts/') || id.includes('/d3-')) return 'charts-vendor'
           if (id.includes('/leaflet')) return 'maps-vendor'
           return undefined

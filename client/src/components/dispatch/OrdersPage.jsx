@@ -9,13 +9,13 @@ import {
   Select,
   Badge,
   PageHeader,
+  Alert,
   Table,
   TableHeader,
   TableHead,
   TableBody,
   TableRow,
   TableCell,
-  TableEmpty,
   LoadingSpinner,
   EmptyState,
 } from '@/components/ui';
@@ -26,13 +26,12 @@ import {
   LuPackage,
   LuArrowRight,
   LuZap,
-  LuWarehouse,
-  LuContainer,
 } from 'react-icons/lu';
 
 export const OrdersPage = () => {
   const [ordersResp, setOrdersResp] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [pickupTypeFilter, setPickupTypeFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +40,7 @@ export const OrdersPage = () => {
 
   const fetchOrders = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await orderService.getOrders({
         status: statusFilter || undefined,
@@ -49,7 +49,7 @@ export const OrdersPage = () => {
       });
       setOrdersResp(data);
     } catch (err) {
-      console.error('Failed to load orders', err);
+      setError(err?.response?.data?.message || err?.message || 'Failed to load freight orders.');
     } finally {
       setLoading(false);
     }
@@ -146,13 +146,17 @@ export const OrdersPage = () => {
         description="Monitor, screen, and assign incoming customer shipping manifests."
         badge={<Badge variant="brand">Dispatch Desk</Badge>}
         actions={
-          <Link to="/dispatch/orders/import">
-            <Button variant="primary" size="sm" leftIcon={<LuCloudUpload size={16} />}>
-              Import Manifest (CSV / Excel)
-            </Button>
-          </Link>
+          <Button as={Link} to="/dispatch/orders/import" variant="primary" size="sm" leftIcon={<LuCloudUpload size={16} aria-hidden="true" />}>
+            Import Manifest (CSV / Excel)
+          </Button>
         }
       />
+
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Filter Bar */}
       <Card style={{ padding: '16px 20px' }}>
@@ -163,7 +167,7 @@ export const OrdersPage = () => {
               aria-label="Search orders by customer, phone, or order ID"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              leftIcon={<LuSearch size={16} />}
+              leftIcon={<LuSearch size={16} aria-hidden="true" />}
             />
           </div>
 
@@ -202,7 +206,7 @@ export const OrdersPage = () => {
             </Button>
           )}
 
-          <Button variant="outline" size="md" onClick={fetchOrders} loading={loading} leftIcon={<LuRefreshCw size={14} />}>
+          <Button variant="outline" size="md" onClick={fetchOrders} loading={loading} leftIcon={<LuRefreshCw size={14} aria-hidden="true" />}>
             Refresh
           </Button>
 
@@ -222,7 +226,7 @@ export const OrdersPage = () => {
           </div>
         ) : filteredOrders.length === 0 ? (
           <EmptyState
-            icon={<LuPackage size={36} color="var(--color-slate-400)" />}
+            icon={<LuPackage size={36} color="var(--color-slate-400)" aria-hidden="true" />}
             title={hasActiveFilters ? 'No matching orders found' : 'No orders found'}
             description={
               hasActiveFilters
@@ -235,11 +239,9 @@ export const OrdersPage = () => {
                   Clear Active Filters
                 </Button>
               ) : (
-                <Link to="/dispatch/orders/import">
-                  <Button variant="outline" size="sm">
-                    Import Orders
-                  </Button>
-                </Link>
+                <Button as={Link} to="/dispatch/orders/import" variant="outline" size="sm">
+                  Import Orders
+                </Button>
               )
             }
           />
@@ -275,7 +277,7 @@ export const OrdersPage = () => {
                         {order.pickupAddress}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        <LuArrowRight size={11} />
+                        <LuArrowRight size={11} aria-hidden="true" />
                         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {order.deliveryAddress}
                         </span>
@@ -295,18 +297,16 @@ export const OrdersPage = () => {
                     <TableCell>
                       {order.priorityLevel === 'URGENT' ? (
                         <Badge variant="danger" size="sm">
-                          <LuZap size={11} /> URGENT
+                          <LuZap size={11} aria-hidden="true" /> URGENT
                         </Badge>
                       ) : (
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Normal</span>
                       )}
                     </TableCell>
                     <TableCell style={{ textAlign: 'right' }}>
-                      <Link to={`/dispatch/orders/${order.orderId}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </Link>
+                      <Button as={Link} to={`/dispatch/orders/${order.orderId}`} variant="outline" size="sm">
+                        View
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

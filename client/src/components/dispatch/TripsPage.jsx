@@ -112,11 +112,9 @@ export const TripsPage = () => {
         description="Schedule, coordinate, and supervise multi-order carrier trips across regional corridors."
         badge={<Badge variant="brand">Fleet Dispatch</Badge>}
         actions={
-          <Link to="/dispatch/trips/create">
-            <Button variant="primary" size="sm" leftIcon={<LuPlus size={16} />}>
-              Create New Trip
-            </Button>
-          </Link>
+          <Button as={Link} to="/dispatch/trips/create" variant="primary" size="sm" leftIcon={<LuPlus size={16} aria-hidden="true" />}>
+            Create New Trip
+          </Button>
         }
       />
 
@@ -209,11 +207,9 @@ export const TripsPage = () => {
                   Clear Active Filters
                 </Button>
               ) : (
-                <Link to="/dispatch/trips/create">
-                  <Button variant="primary" size="sm" leftIcon={<LuPlus size={14} />}>
-                    Create Trip
-                  </Button>
-                </Link>
+                <Button as={Link} to="/dispatch/trips/create" variant="primary" size="sm" leftIcon={<LuPlus size={14} aria-hidden="true" />}>
+                  Create Trip
+                </Button>
               )
             }
           />
@@ -284,11 +280,9 @@ export const TripsPage = () => {
                       </TableCell>
                       <TableCell>{getStatusBadge(trip.status)}</TableCell>
                       <TableCell style={{ textAlign: 'right' }}>
-                        <Link to={`/dispatch/trips/${trip.tripId}`}>
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                        </Link>
+                        <Button as={Link} to={`/dispatch/trips/${trip.tripId}`} variant="outline" size="sm">
+                          View
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );

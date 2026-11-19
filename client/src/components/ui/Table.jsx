@@ -5,6 +5,7 @@ export const Table = ({
   className = '',
   style = {},
   dense = false,
+  caption = null,
   'aria-label': ariaLabel = 'Data table',
   ...props
 }) => {
@@ -23,7 +24,6 @@ export const Table = ({
         borderRadius: 'var(--radius-lg)',
         backgroundColor: 'var(--bg-surface)',
         boxShadow: 'var(--shadow-xs)',
-        outline: 'none',
       }}
     >
       <table
@@ -38,6 +38,7 @@ export const Table = ({
         }}
         {...props}
       >
+        {caption && <caption className="sr-only">{caption}</caption>}
         {children}
       </table>
     </div>

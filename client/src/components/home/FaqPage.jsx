@@ -123,8 +123,10 @@ export const FaqPage = () => {
 
       {/* Category Filter Pills */}
       <section className="container">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div role="group" aria-label="Filter FAQ by category" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <button
+            type="button"
+            aria-pressed={activeCategory === 'All'}
             onClick={() => setActiveCategory('All')}
             style={{
               padding: '6px 14px',
@@ -135,7 +137,7 @@ export const FaqPage = () => {
               border: '1px solid var(--border-default)',
               backgroundColor: activeCategory === 'All' ? 'var(--color-brand-600)' : 'var(--color-white)',
               color: activeCategory === 'All' ? 'var(--color-white)' : 'var(--text-secondary)',
-              transition: 'all var(--transition-fast)',
+              transition: 'background-color var(--transition-fast), color var(--transition-fast)',
             }}
           >
             All Questions
@@ -143,6 +145,8 @@ export const FaqPage = () => {
           {faqCategories.map((c) => (
             <button
               key={c.name}
+              type="button"
+              aria-pressed={activeCategory === c.name}
               onClick={() => setActiveCategory(c.name)}
               style={{
                 display: 'inline-flex',
@@ -156,10 +160,10 @@ export const FaqPage = () => {
                 border: '1px solid var(--border-default)',
                 backgroundColor: activeCategory === c.name ? 'var(--color-brand-600)' : 'var(--color-white)',
                 color: activeCategory === c.name ? 'var(--color-white)' : 'var(--text-secondary)',
-                transition: 'all var(--transition-fast)',
+                transition: 'background-color var(--transition-fast), color var(--transition-fast)',
               }}
             >
-              {c.icon}
+              <span aria-hidden="true">{c.icon}</span>
               {c.name}
             </button>
           ))}
@@ -171,14 +175,15 @@ export const FaqPage = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           {filteredCategories.map((cat, catIdx) => (
             <div key={cat.name} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+              <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
                 {cat.name}
-              </h3>
+              </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {cat.items.map((item, itemIdx) => {
                   const key = `${catIdx}-${itemIdx}`;
                   const isOpen = openItems.has(key);
+                  const panelId = `faq-panel-${key}`;
 
                   return (
                     <Card
@@ -189,6 +194,9 @@ export const FaqPage = () => {
                       }}
                     >
                       <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        aria-controls={panelId}
                         onClick={() => toggleItem(key)}
                         style={{
                           width: '100%',
@@ -207,6 +215,7 @@ export const FaqPage = () => {
                         </span>
                         <LuChevronDown
                           size={18}
+                          aria-hidden="true"
                           style={{
                             transform: isOpen ? 'rotate(180deg)' : 'none',
                             transition: 'transform 180ms ease',
@@ -218,6 +227,7 @@ export const FaqPage = () => {
 
                       {isOpen && (
                         <div
+                          id={panelId}
                           style={{
                             padding: '0 20px 16px 20px',
                             borderTop: '1px solid var(--border-subtle)',
@@ -254,30 +264,28 @@ export const FaqPage = () => {
           }}
         >
           <div>
-            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 4px 0' }}>
               Still have specific questions?
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
               LogiFlow has no live dispatch desk. Use the repository issue tracker for project questions.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/contact">
-              <Button variant="primary">View Form Demo</Button>
-            </Link>
-            <Link to="/about">
-              <Button
-                variant="outline"
-                style={{
-                  backgroundColor: 'transparent',
-                  borderColor: 'var(--color-slate-700)',
-                  color: 'var(--color-white)',
-                }}
-              >
-                About the Project
-              </Button>
-            </Link>
+            <Button as={Link} to="/contact" variant="primary">View Form Demo</Button>
+            <Button
+              as={Link}
+              to="/about"
+              variant="outline"
+              style={{
+                backgroundColor: 'transparent',
+                borderColor: 'var(--color-slate-700)',
+                color: 'var(--color-white)',
+              }}
+            >
+              About the Project
+            </Button>
           </div>
         </div>
       </section>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { userService, uploadService, authService } from '../../services';
+import { userService, authService } from '../../services';
 import {
   Button,
   Card,
@@ -120,11 +120,9 @@ export const AdminUserEditPage = () => {
         title={`Edit User • ${user.username}`}
         description={`Update account profile credentials, security role, and active status.`}
         actions={
-          <Link to={`/admin/users/${userId}`}>
-            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-              Cancel & Return
-            </Button>
-          </Link>
+          <Button as={Link} to={`/admin/users/${userId}`} variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Cancel & Return
+          </Button>
         }
       />
 
@@ -136,7 +134,7 @@ export const AdminUserEditPage = () => {
 
       <Card style={{ padding: '24px' }}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="responsive-grid-2" style={{ gap: '16px' }}>
             <Input
               label="Username *"
               required
@@ -152,7 +150,7 @@ export const AdminUserEditPage = () => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="responsive-grid-2" style={{ gap: '16px' }}>
             <Input
               label="Full Name"
               value={form.fullName}
@@ -167,7 +165,7 @@ export const AdminUserEditPage = () => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="responsive-grid-2" style={{ gap: '16px' }}>
             <Select
               label="Assigned System Role *"
               value={form.role}
@@ -191,12 +189,10 @@ export const AdminUserEditPage = () => {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
-            <Link to={`/admin/users/${userId}`}>
-              <Button variant="outline" type="button">
-                Cancel
-              </Button>
-            </Link>
-            <Button variant="primary" type="submit" loading={submitting} leftIcon={<LuSave size={16} />}>
+            <Button as={Link} to={`/admin/users/${userId}`} variant="outline">
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={submitting} leftIcon={<LuSave size={16} aria-hidden="true" />}>
               Save Account Changes
             </Button>
           </div>

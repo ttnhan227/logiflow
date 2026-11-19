@@ -114,11 +114,9 @@ export const OrderImportPage = () => {
         description="Bulk upload shipping manifests via formatted CSV or Excel worksheets."
         badge={<Badge variant="brand">Bulk Ingestion</Badge>}
         actions={
-          <Link to="/dispatch/orders">
-            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Orders
-            </Button>
-          </Link>
+          <Button as={Link} to="/dispatch/orders" variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Orders
+          </Button>
         }
       />
 
@@ -129,18 +127,19 @@ export const OrderImportPage = () => {
       )}
 
       {/* Upload & Template Downloads */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '20px' }}>
         {/* Upload Form Card */}
         <Card style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+          <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
             Upload File
-          </h3>
+          </h2>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '0 0 16px 0' }}>
             Select a structured CSV or XLSX file containing customer orders.
           </p>
 
           <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <label
+              className="ui-file-dropzone"
               style={{
                 border: '2px dashed var(--border-default)',
                 borderRadius: 'var(--radius-lg)',
@@ -154,8 +153,8 @@ export const OrderImportPage = () => {
                 backgroundColor: 'var(--bg-surface-subtle)',
               }}
             >
-              <input type="file" accept=".csv, .xlsx, .xls" onChange={onFileChange} style={{ display: 'none' }} />
-              <LuCloudUpload size={28} color="var(--color-brand-600)" />
+              <input type="file" accept=".csv, .xlsx, .xls" onChange={onFileChange} className="sr-only" />
+              <LuCloudUpload size={28} color="var(--color-brand-600)" aria-hidden="true" />
               <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
                 {file ? file.name : 'Choose CSV or Excel Spreadsheet'}
               </span>
@@ -167,7 +166,7 @@ export const OrderImportPage = () => {
               variant="primary"
               disabled={!file}
               loading={loading}
-              leftIcon={<LuCloudUpload size={16} />}
+              leftIcon={<LuCloudUpload size={16} aria-hidden="true" />}
               style={{ width: '100%' }}
             >
               {loading ? 'Processing Orders...' : 'Import Manifest'}
@@ -177,9 +176,9 @@ export const OrderImportPage = () => {
 
         {/* Template Downloads Card */}
         <Card style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
+          <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: 0 }}>
             Official Import Templates
-          </h3>
+          </h2>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
             Ensure your column headers match required system schemas: Customer Name, Pickup Address, Delivery Address, Weight (tons), and Pickup Type.
           </p>
@@ -290,9 +289,7 @@ export const OrderImportPage = () => {
           )}
 
           <div style={{ marginTop: '20px' }}>
-            <Link to="/dispatch/orders">
-              <Button variant="primary">View Dispatch Queue</Button>
-            </Link>
+            <Button as={Link} to="/dispatch/orders" variant="primary">View Dispatch Queue</Button>
           </div>
         </Card>
       )}

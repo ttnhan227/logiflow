@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -35,7 +35,6 @@ import {
 } from 'react-icons/lu';
 
 export const AdminDashboardPage = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
@@ -87,7 +86,6 @@ export const AdminDashboardPage = () => {
     fleetLifecycle,
     complianceStatus,
     activeOperations,
-    systemHealth,
   } = dashboardData || {};
 
   const vehicleTypeColors = ['#2563eb', '#7c3aed', '#0284c7', '#059669', '#d97706', '#dc2626'];
@@ -106,17 +104,13 @@ export const AdminDashboardPage = () => {
         description="Comprehensive real-time command of nationwide linehaul carrier operations, DIFOT reliability, and fleet health."
         badge={<Badge variant="brand">Executive Suite</Badge>}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Link to="/admin/reports">
-              <Button variant="outline" size="sm">
-                Financial Reports
-              </Button>
-            </Link>
-            <Link to="/admin/trips-oversight">
-              <Button variant="primary" size="sm">
-                Trips Oversight
-              </Button>
-            </Link>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button as={Link} to="/admin/reports" variant="outline" size="sm">
+              Financial Reports
+            </Button>
+            <Button as={Link} to="/admin/trips-oversight" variant="primary" size="sm">
+              Trips Oversight
+            </Button>
           </div>
         }
       />
