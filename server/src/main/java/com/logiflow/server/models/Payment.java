@@ -19,7 +19,7 @@ public class Payment {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Column(name = "paypal_order_id", length = 100)
+    @Column(name = "paypal_order_id", length = 100, unique = true)
     private String paypalOrderId;
 
     @Column(name = "paypal_transaction_id", length = 100)
@@ -29,7 +29,7 @@ public class Payment {
     private BigDecimal amount;
 
     @Column(name = "currency", length = 3, nullable = false)
-    private String currency = "USD";
+    private String currency = "VND";
 
     @Column(name = "payment_method", length = 50, nullable = false)
     private String paymentMethod = "PAYPAL";

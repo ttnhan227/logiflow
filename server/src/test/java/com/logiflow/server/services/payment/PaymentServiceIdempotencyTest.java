@@ -182,4 +182,74 @@ class PaymentServiceIdempotencyTest {
         assertEquals("ORDER-TEST-RATE", result.get("id"));
         verify(payPalService).createPaymentOrder(eq(new BigDecimal("10.00")), eq("USD"), eq("Rate test"));
     }
+
+    @Test
+    @DisplayName("sendPaymentReminder persists Payment with paypalOrderId and VND currency before emailing link")
+    void testSendPaymentReminderPersistsPaymentRecord() {
+        User customer = new User();
+        customer.setUserId(9);
+        customer.setEmail("reminder@test.com");
+        customer.setUsername("reminder_user");
+
+        Order order = new Order();
+        order.setOrderId(205);
+        order.setCustomer(customer);
+        order.setCustomerName("Reminder Customer");
+        order.setShippingFee(new BigDecimal("460000"));
+        order.setPaymentStatus(Order.PaymentStatus.PENDING);
+
+        when(orderRepository.findByIdWithRelations(205)).thenReturn(Optional.of(order));
+        when(payPalService.createPaymentOrder(eq(new BigDecimal("20.00")), eq("USD"), anyString()))
+                .thenReturn(Map.of(
+                        "id", "PAYPAL-REMINDER-205",
+                        "links", java.util.List.of(Map.of("rel", "approve", "href", "https://paypal.test/approve/205"))
+                ));
+        when(paymentRepository.findByOrderAndPaypalOrderId(order, "PAYPAL-REMINDER-205"))
+                .thenReturn(Optional.empty());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.sendPaymentReminder(205);
+
+        verify(paymentRepository).save(argThat(saved ->
+                "PAYPAL-REMINDER-205".equals(saved.getPaypalOrderId())
+                        && "VND".equals(saved.getCurrency())
+                        && new BigDecimal("460000").compareTo(saved.getAmount()) == 0
+                        && order.equals(saved.getOrder())
+        ));
+        verify(emailService).sendPaymentRequestEmail(
+                eq("reminder@test.com"),
+                eq("Reminder Customer"),
+                eq(205),
+                eq(new BigDecimal("460000")),
+                eq("https://paypal.test/approve/205")
+        );
+    }
+
+    @Test
+    @DisplayName("processPaymentCapture rejects PayPal token belonging to another order without calling PayPal or marking FAILED")
+    void testRejectsMismatchedOrderBinding() {
+        Order targetOrder = new Order();
+        targetOrder.setOrderId(301);
+        targetOrder.setPaymentStatus(Order.PaymentStatus.PENDING);
+
+        Order actualOwnerOrder = new Order();
+        actualOwnerOrder.setOrderId(999);
+
+        Payment foreignPayment = new Payment();
+        foreignPayment.setOrder(actualOwnerOrder);
+        foreignPayment.setPaypalOrderId("PAYPAL-FOREIGN-999");
+
+        when(orderRepository.findByIdWithRelations(301)).thenReturn(Optional.of(targetOrder));
+        when(paymentRepository.findByOrderAndPaypalOrderId(targetOrder, "PAYPAL-FOREIGN-999"))
+                .thenReturn(Optional.empty());
+        when(paymentRepository.findByPaypalOrderId("PAYPAL-FOREIGN-999"))
+                .thenReturn(Optional.of(foreignPayment));
+
+        assertThrows(RuntimeException.class,
+                () -> paymentService.processPaymentCapture("PAYPAL-FOREIGN-999", 301));
+
+        verify(payPalService, never()).capturePayment(anyString());
+        verify(orderRepository, never()).save(any());
+        verify(paymentRepository, never()).save(any());
+    }
 }

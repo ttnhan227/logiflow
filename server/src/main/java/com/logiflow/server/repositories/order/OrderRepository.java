@@ -1,9 +1,11 @@
 package com.logiflow.server.repositories.order;
 
 import com.logiflow.server.models.Order;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,6 +16,10 @@ import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.orderId = :orderId")
+    Optional<Order> findByIdForUpdate(@Param("orderId") Integer orderId);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.trip.tripId IN (SELECT t.tripId FROM Trip t JOIN t.tripAssignments ta WHERE ta.driver.driverId = :driverId)")
     int countByDriverTrips(@Param("driverId") Integer driverId);

@@ -6,17 +6,22 @@ import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.payment.PaymentRepository;
 import com.logiflow.server.services.email.EmailService;
 import com.logiflow.server.websocket.NotificationService;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -28,6 +33,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final NotificationService notificationService;
+    private final TransactionTemplate captureTransactionTemplate;
+    private final TransactionTemplate failureTransactionTemplate;
+
     @Value("${logiflow.payment.vnd-usd-rate:23000}")
     private BigDecimal vndUsdRate = new BigDecimal("23000");
 
@@ -45,11 +53,30 @@ public class PaymentServiceImpl implements PaymentService {
             OrderRepository orderRepository,
             PaymentRepository paymentRepository,
             NotificationService notificationService) {
+        this(payPalService, emailService, orderRepository, paymentRepository, notificationService, null);
+    }
+
+    @Autowired
+    public PaymentServiceImpl(
+            PayPalService payPalService,
+            EmailService emailService,
+            OrderRepository orderRepository,
+            PaymentRepository paymentRepository,
+            NotificationService notificationService,
+            PlatformTransactionManager transactionManager) {
         this.payPalService = payPalService;
         this.emailService = emailService;
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
         this.notificationService = notificationService;
+        if (transactionManager != null) {
+            this.captureTransactionTemplate = new TransactionTemplate(transactionManager);
+            this.failureTransactionTemplate = new TransactionTemplate(transactionManager);
+            this.failureTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        } else {
+            this.captureTransactionTemplate = null;
+            this.failureTransactionTemplate = null;
+        }
     }
 
     /**
@@ -69,42 +96,9 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // Convert VND to USD for PayPal (approximate rate: 1 USD = 23,000 VND)
-            BigDecimal usdAmount = order.getShippingFee().divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
-
-            // Create PayPal order first to get the order ID
             String description = "Payment for Order #" + orderId + " - " + order.getCustomerName();
-            Map<String, Object> paypalOrder = payPalService.createPaymentOrder(usdAmount, "USD", description);
-
-            // Extract PayPal order ID and store it for later capture
-            String paypalOrderId = (String) paypalOrder.get("id");
-
-            // Find or create payment record to store PayPal order ID
-            Payment payment = paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
-                    .orElseGet(() -> {
-                        Payment newPayment = new Payment();
-                        newPayment.setOrder(order);
-                        newPayment.setPaypalOrderId(paypalOrderId);
-                        newPayment.setAmount(order.getShippingFee());
-                        newPayment.setDescription(description);
-                        return paymentRepository.save(newPayment);
-                    });
-
-            // Extract approval URL from PayPal response
-            String paymentLink = null;
-            if (paypalOrder.containsKey("links")) {
-                @SuppressWarnings("unchecked")
-                java.util.List<Object> links = (java.util.List<Object>) paypalOrder.get("links");
-                if (links != null) {
-                    for (Object linkObj : links) {
-                        Map<String, Object> link = (Map<String, Object>) linkObj;
-                        if ("approve".equals(link.get("rel"))) {
-                            paymentLink = (String) link.get("href");
-                            break;
-                        }
-                    }
-                }
-            }
+            Map<String, Object> paypalOrder = createPayPalOrderAndPersistPayment(order, order.getShippingFee(), description);
+            String paymentLink = extractApprovalLink(paypalOrder);
 
             if (paymentLink == null) {
                 throw new RuntimeException("Failed to generate PayPal approval link");
@@ -140,111 +134,151 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * Process PayPal payment capture and send confirmation
+     * Process PayPal payment capture and send confirmation.
+     * Uses explicit transaction boundaries so capture locking commits/rolls back independently
+     * from durable FAILED status persistence and post-commit confirmation emails.
      */
-    @Transactional
     public void processPaymentCapture(String paypalOrderId, Integer orderId) {
+        if (paypalOrderId == null || paypalOrderId.isBlank() || orderId == null) {
+            throw new IllegalArgumentException("PayPal order ID and order ID are required");
+        }
+
+        CaptureEmailPayload emailPayload;
         try {
-            // Get order details first
-            Order order = orderRepository.findByIdWithRelations(orderId)
-                    .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
-
-            // Find or create payment record
-            Payment payment = paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
-                    .orElseGet(() -> {
-                        Payment newPayment = new Payment();
-                        newPayment.setOrder(order);
-                        newPayment.setPaypalOrderId(paypalOrderId);
-                        newPayment.setAmount(order.getShippingFee());
-                        newPayment.setDescription("Payment for Order #" + orderId);
-                        return paymentRepository.save(newPayment);
-                    });
-
-            // Idempotency check: if already processed as PAID, return early and do not re-capture
-            if (payment.getPaymentStatus() == Payment.PaymentStatus.PAID ||
-                order.getPaymentStatus() == Order.PaymentStatus.PAID) {
-                logger.info("Payment for PayPal order {} (Order #{}) has already been processed as PAID. Skipping duplicate capture.",
-                        paypalOrderId, orderId);
-                return;
-            }
-
-            // Capture the payment
-            Map<String, Object> captureResponse = payPalService.capturePayment(paypalOrderId);
-
-            // Extract transaction ID
-            String transactionId = payPalService.extractTransactionId(captureResponse);
-
-            // Mark payment as successful
-            payment.markAsPaid(transactionId);
-            paymentRepository.save(payment);
-
-            // Update order payment status
-            order.setPaymentStatus(Order.PaymentStatus.PAID);
-            order.setPaymentUpdatedAt(LocalDateTime.now());
-            orderRepository.save(order);
-
-            // Send payment confirmation email with detailed receipt (don't fail payment if email fails)
-            if (order.getCustomer() != null) {
-                try {
-                    // Gather order details for comprehensive receipt
-                    Map<String, Object> orderDetails = new java.util.HashMap<>();
-                    orderDetails.put("pickupAddress", order.getPickupAddress() != null ? order.getPickupAddress() : "N/A");
-                    orderDetails.put("deliveryAddress", order.getDeliveryAddress() != null ? order.getDeliveryAddress() : "N/A");
-                    orderDetails.put("packageDetails", order.getPackageDetails() != null ? order.getPackageDetails() : "N/A");
-                    orderDetails.put("weightTons", order.getWeightTons() != null ? order.getWeightTons() : null);
-
-                    // Note: Driver and vehicle info could be added here if available in Order model
-                    // For now, we'll focus on the core order details
-
-                    emailService.sendPaymentConfirmationEmail(
-                        order.getCustomer().getEmail(),
-                        order.getCustomerName(),
-                        orderId,
-                        order.getShippingFee(),
-                        transactionId,
-                        orderDetails
-                    );
-                } catch (Exception emailError) {
-                    logger.error("Failed to send payment confirmation email for order {}: {}. Payment completed successfully.", orderId, emailError.getMessage(), emailError);
-                    // Don't throw - payment should still succeed even if email fails
-                }
-            }
-
+            emailPayload = executeInTransaction(captureTransactionTemplate,
+                    () -> captureInsideTransaction(paypalOrderId, orderId));
+        } catch (InvalidPaymentBindingException e) {
+            logger.warn("Rejected invalid payment capture request for PayPal order {} and order {}: {}",
+                    paypalOrderId, orderId, e.getMessage());
+            throw new RuntimeException(e.getMessage(), e);
         } catch (Exception e) {
             logger.error("Failed to process payment capture for PayPal order {} and order {}: {}", paypalOrderId, orderId, e.getMessage(), e);
 
-            // Double check if payment is already marked PAID to prevent overwriting successful payments
+            boolean alreadyPaid = false;
             try {
-                Order order = orderRepository.findById(orderId).orElse(null);
-                if (order != null) {
-                    Payment payment = paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
-                            .orElse(null);
-                    if (payment != null && payment.getPaymentStatus() == Payment.PaymentStatus.PAID) {
-                        logger.info("Order #{} is already marked PAID, not overwriting with FAILED on exception: {}", orderId, e.getMessage());
-                        return;
-                    }
-                    if (order.getPaymentStatus() == Order.PaymentStatus.PAID) {
-                        logger.info("Order #{} status is already PAID, not overwriting with FAILED.", orderId);
-                        return;
-                    }
-
-                    // Only mark as failed if neither payment nor order was already PAID
-                    if (payment != null) {
-                        payment.markAsFailed(e.getMessage());
-                        paymentRepository.save(payment);
-                    }
-
-                    // Update order status
-                    order.setPaymentStatus(Order.PaymentStatus.FAILED);
-                    order.setPaymentUpdatedAt(LocalDateTime.now());
-                    orderRepository.save(order);
-                }
+                alreadyPaid = Boolean.TRUE.equals(executeInTransaction(failureTransactionTemplate,
+                        () -> recordCaptureFailure(paypalOrderId, orderId, e.getMessage())));
             } catch (Exception saveError) {
                 logger.error("Failed to update payment status to FAILED for order {}: {}", orderId, saveError.getMessage(), saveError);
             }
 
+            if (alreadyPaid) {
+                return;
+            }
+
             throw new RuntimeException("Payment processing failed. Please contact support if the issue persists.");
         }
+
+        // Send payment confirmation email post-commit so slow SMTP never holds DB locks
+        if (emailPayload != null && emailPayload.customerEmail() != null) {
+            try {
+                emailService.sendPaymentConfirmationEmail(
+                    emailPayload.customerEmail(),
+                    emailPayload.customerName(),
+                    orderId,
+                    emailPayload.shippingFee(),
+                    emailPayload.transactionId(),
+                    emailPayload.orderDetails()
+                );
+            } catch (Exception emailError) {
+                logger.error("Failed to send payment confirmation email for order {}: {}. Payment completed successfully.", orderId, emailError.getMessage(), emailError);
+            }
+        }
+    }
+
+    private CaptureEmailPayload captureInsideTransaction(String paypalOrderId, Integer orderId) {
+        // Acquire pessimistic write lock on Order when backed by JPA; fall back cleanly for unit tests
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .or(() -> orderRepository.findByIdWithRelations(orderId))
+                .orElseThrow(() -> new InvalidPaymentBindingException("Order not found: " + orderId));
+
+        Payment payment = paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
+                .orElseGet(() -> {
+                    Optional<Payment> byToken = paymentRepository.findByPaypalOrderId(paypalOrderId);
+                    if (byToken.isPresent()) {
+                        throw new InvalidPaymentBindingException(
+                                "PayPal order " + paypalOrderId + " does not belong to order #" + orderId);
+                    }
+                    throw new InvalidPaymentBindingException(
+                            "No payment record found for PayPal order " + paypalOrderId);
+                });
+
+        // Idempotency check: if already processed as PAID, return early and do not re-capture
+        if (payment.getPaymentStatus() == Payment.PaymentStatus.PAID ||
+            order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+            logger.info("Payment for PayPal order {} (Order #{}) has already been processed as PAID. Skipping duplicate capture.",
+                    paypalOrderId, orderId);
+            return null;
+        }
+
+        // Capture the payment
+        Map<String, Object> captureResponse = payPalService.capturePayment(paypalOrderId);
+
+        // Extract transaction ID
+        String transactionId = payPalService.extractTransactionId(captureResponse);
+
+        // Mark payment as successful
+        payment.markAsPaid(transactionId);
+        paymentRepository.save(payment);
+
+        // Update order payment status
+        order.setPaymentStatus(Order.PaymentStatus.PAID);
+        order.setPaymentUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        if (order.getCustomer() == null) {
+            return new CaptureEmailPayload(null, null, null, transactionId, null);
+        }
+
+        Map<String, Object> orderDetails = new HashMap<>();
+        orderDetails.put("pickupAddress", order.getPickupAddress() != null ? order.getPickupAddress() : "N/A");
+        orderDetails.put("deliveryAddress", order.getDeliveryAddress() != null ? order.getDeliveryAddress() : "N/A");
+        orderDetails.put("packageDetails", order.getPackageDetails() != null ? order.getPackageDetails() : "N/A");
+        orderDetails.put("weightTons", order.getWeightTons() != null ? order.getWeightTons() : null);
+
+        return new CaptureEmailPayload(
+                order.getCustomer().getEmail(),
+                order.getCustomerName(),
+                order.getShippingFee(),
+                transactionId,
+                orderDetails
+        );
+    }
+
+    private boolean recordCaptureFailure(String paypalOrderId, Integer orderId, String failureReason) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) {
+            return false;
+        }
+
+        Payment payment = paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
+                .orElse(null);
+        if (payment != null && payment.getPaymentStatus() == Payment.PaymentStatus.PAID) {
+            logger.info("Order #{} is already marked PAID, not overwriting with FAILED on exception: {}", orderId, failureReason);
+            return true;
+        }
+        if (order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+            logger.info("Order #{} status is already PAID, not overwriting with FAILED.", orderId);
+            return true;
+        }
+
+        // Only mark as failed if neither payment nor order was already PAID
+        if (payment != null) {
+            payment.markAsFailed(failureReason);
+            paymentRepository.save(payment);
+        }
+
+        order.setPaymentStatus(Order.PaymentStatus.FAILED);
+        order.setPaymentUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+        return false;
+    }
+
+    private <T> T executeInTransaction(TransactionTemplate template, Supplier<T> action) {
+        if (template == null) {
+            return action.get();
+        }
+        return template.execute(status -> action.get());
     }
 
     /**
@@ -268,30 +302,9 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Transactional
     public Map<String, Object> createPayPalOrder(BigDecimal amount, String description, Integer orderId) {
-        // Get order to store PayPal order ID
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
             new RuntimeException("Order not found: " + orderId));
-
-        // Convert VND to USD for PayPal (approximate rate: 1 USD = 23,000 VND)
-        BigDecimal usdAmount = amount.divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
-
-        Map<String, Object> paypalOrder = payPalService.createPaymentOrder(usdAmount, "USD", description);
-
-        // Extract PayPal order ID and store it for later capture
-        String paypalOrderId = (String) paypalOrder.get("id");
-
-        // Find or create payment record to store PayPal order ID
-        Payment payment = paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
-                .orElseGet(() -> {
-                    Payment newPayment = new Payment();
-                    newPayment.setOrder(order);
-                    newPayment.setPaypalOrderId(paypalOrderId);
-                    newPayment.setAmount(amount);
-                    newPayment.setDescription(description);
-                    return paymentRepository.save(newPayment);
-                });
-
-        return paypalOrder;
+        return createPayPalOrderAndPersistPayment(order, amount, description);
     }
 
     /**
@@ -302,23 +315,23 @@ public class PaymentServiceImpl implements PaymentService {
         Order order = orderRepository.findByIdWithRelations(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
 
-        if (order.getCustomer() == null || order.getShippingFee() == null) {
-            return; // Skip if order is not properly set up
+        if (order.getCustomer() == null
+                || order.getShippingFee() == null
+                || order.getShippingFee().compareTo(BigDecimal.ZERO) <= 0
+                || order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+            return; // Skip if order is already paid or not properly set up
         }
 
         try {
-            // Convert VND to USD for PayPal (approximate rate: 1 USD = 23,000 VND)
-            BigDecimal usdAmount = order.getShippingFee().divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
-
-            // Generate new PayPal link (they expire after 24 hours)
+            // Create tracked PayPal order and persist Payment so /api/payment/return?token=... resolves
             String description = "Payment Reminder for Order #" + orderId + " - " + order.getCustomerName();
-            String paymentLink = payPalService.generatePaymentLink(
-                usdAmount,
-                "USD",
-                description
-            );
+            Map<String, Object> paypalOrder = createPayPalOrderAndPersistPayment(order, order.getShippingFee(), description);
+            String paymentLink = extractApprovalLink(paypalOrder);
+            if (paymentLink == null) {
+                throw new RuntimeException("Failed to generate PayPal approval link for reminder");
+            }
 
-            // Send reminder email with VND amount displayed but USD link
+            // Send reminder email with VND amount displayed
             emailService.sendPaymentRequestEmail(
                 order.getCustomer().getEmail(),
                 order.getCustomerName(),
@@ -331,6 +344,45 @@ public class PaymentServiceImpl implements PaymentService {
             // Log error but don't fail the operation
             logger.warn("Failed to send payment reminder for order {}: {}", orderId, e.getMessage());
         }
+    }
+
+    private Map<String, Object> createPayPalOrderAndPersistPayment(Order order, BigDecimal vndAmount, String description) {
+        BigDecimal usdAmount = vndAmount.divide(vndUsdRate, 2, java.math.RoundingMode.HALF_UP);
+        Map<String, Object> paypalOrder = payPalService.createPaymentOrder(usdAmount, "USD", description);
+        String paypalOrderId = paypalOrder != null ? (String) paypalOrder.get("id") : null;
+
+        if (paypalOrderId != null && !paypalOrderId.isBlank()) {
+            paymentRepository.findByOrderAndPaypalOrderId(order, paypalOrderId)
+                    .orElseGet(() -> {
+                        Payment newPayment = new Payment();
+                        newPayment.setOrder(order);
+                        newPayment.setPaypalOrderId(paypalOrderId);
+                        newPayment.setAmount(vndAmount);
+                        newPayment.setCurrency("VND");
+                        newPayment.setDescription(description);
+                        return paymentRepository.save(newPayment);
+                    });
+        }
+
+        return paypalOrder;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractApprovalLink(Map<String, Object> paypalOrder) {
+        if (paypalOrder == null || !paypalOrder.containsKey("links")) {
+            return null;
+        }
+        java.util.List<Object> links = (java.util.List<Object>) paypalOrder.get("links");
+        if (links == null) {
+            return null;
+        }
+        for (Object linkObj : links) {
+            Map<String, Object> link = (Map<String, Object>) linkObj;
+            if ("approve".equals(link.get("rel"))) {
+                return (String) link.get("href");
+            }
+        }
+        return null;
     }
 
     /**
@@ -368,5 +420,19 @@ public class PaymentServiceImpl implements PaymentService {
         summary.put("weightTons", order.getWeightTons());
         summary.put("distanceKm", order.getDistanceKm());
         return summary;
+    }
+
+    private record CaptureEmailPayload(
+            String customerEmail,
+            String customerName,
+            BigDecimal shippingFee,
+            String transactionId,
+            Map<String, Object> orderDetails
+    ) {}
+
+    private static class InvalidPaymentBindingException extends RuntimeException {
+        InvalidPaymentBindingException(String message) {
+            super(message);
+        }
     }
 }

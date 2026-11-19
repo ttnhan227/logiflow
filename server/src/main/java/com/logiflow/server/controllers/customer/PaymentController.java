@@ -51,32 +51,27 @@ public class PaymentController {
         logger.info("PayPal return received - token: {}, orderId: {}", token, orderId);
 
         try {
-            // If orderId is provided directly, use it
-            if (orderId != null) {
-                logger.info("Processing payment capture for order {} with PayPal token {}", orderId, token);
-                paymentService.processPaymentCapture(token, orderId);
-                logger.info("Payment capture completed successfully for order {}", orderId);
-
-                // Return success HTML page
-                return generateSuccessHtml(orderId);
-            } else {
-                // Try to find orderId by PayPal token (order ID)
-                logger.info("Looking up order by PayPal token: {}", token);
-                Integer foundOrderId = paymentService.findOrderIdByPaypalOrderId(token);
-
-                if (foundOrderId != null) {
-                    logger.info("Found order {} for PayPal token {}", foundOrderId, token);
-                    paymentService.processPaymentCapture(token, foundOrderId);
-                    logger.info("Payment capture completed successfully for order {}", foundOrderId);
-
-                    // Return success HTML page
-                    return generateSuccessHtml(foundOrderId);
-                } else {
-                    logger.error("PayPal return received but no payment record found for token: {}", token);
-                    // Return error HTML page
-                    return generateErrorHtml("No payment record found for this transaction.");
-                }
+            if (token == null || token.isBlank()) {
+                return generateErrorHtml("Invalid payment token.");
             }
+
+            Integer boundOrderId = paymentService.findOrderIdByPaypalOrderId(token);
+            if (boundOrderId == null) {
+                logger.error("PayPal return received but no payment record found for token: {}", token);
+                return generateErrorHtml("No payment record found for this transaction.");
+            }
+
+            if (orderId != null && !orderId.equals(boundOrderId)) {
+                logger.warn("PayPal return orderId mismatch: requested orderId={}, boundOrderId={}, token={}",
+                        orderId, boundOrderId, token);
+                return generateErrorHtml("Payment token does not match the specified order.");
+            }
+
+            logger.info("Processing payment capture for order {} with PayPal token {}", boundOrderId, token);
+            paymentService.processPaymentCapture(token, boundOrderId);
+            logger.info("Payment capture completed successfully for order {}", boundOrderId);
+
+            return generateSuccessHtml(boundOrderId);
         } catch (Exception e) {
             logger.error("Failed to process PayPal return for token {} and order {}: {}", token, orderId, e.getMessage(), e);
             // Return error HTML page
