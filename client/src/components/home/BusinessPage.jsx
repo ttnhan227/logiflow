@@ -102,7 +102,8 @@ export const BusinessPage = () => {
 
       {/* Enterprise Capabilities Grid */}
       <section className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <h2 className="sr-only">Core Platform Capabilities</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr))', gap: '24px' }}>
           {capabilities.map((cap) => (
             <Card key={cap.title} style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div
@@ -250,11 +251,9 @@ export const BusinessPage = () => {
                 </div>
 
                 <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-                  <Link to="/contact">
-                    <Button variant={tier.popular ? 'primary' : 'outline'} style={{ width: '100%' }}>
-                      View Project Information
-                    </Button>
-                  </Link>
+                  <Button as={Link} to="/contact" variant={tier.popular ? 'primary' : 'outline'} style={{ width: '100%' }}>
+                    View Project Information
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -278,25 +277,21 @@ export const BusinessPage = () => {
           }}
         >
           <div>
-            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               LogiFlow Is a Portfolio Project
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
               It does not operate a carrier network, support desk, or commercial service.
             </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/about">
-              <Button variant="primary" leftIcon={<LuPhone size={16} />}>
-                About the Project
-              </Button>
-            </Link>
-            <Link to="/faq">
-              <Button variant="outline" leftIcon={<LuMail size={16} />}>
-                Read the Demo FAQ
-              </Button>
-            </Link>
+            <Button as={Link} to="/about" variant="primary" leftIcon={<LuPhone size={16} aria-hidden="true" />}>
+              About the Project
+            </Button>
+            <Button as={Link} to="/faq" variant="outline" leftIcon={<LuMail size={16} aria-hidden="true" />}>
+              Read the Demo FAQ
+            </Button>
           </div>
         </div>
       </section>

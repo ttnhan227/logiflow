@@ -50,15 +50,15 @@ export const Badge = ({
 
   const sizeStyles = {
     sm: {
-      padding: '1px 7px',
-      fontSize: '11px',
-      height: '18px',
+      padding: '2px 7px',
+      fontSize: 'var(--text-xs)',
+      minHeight: '18px',
       gap: '4px',
     },
     md: {
-      padding: '2px 9px',
-      fontSize: '12px',
-      height: '22px',
+      padding: '3px 9px',
+      fontSize: 'var(--text-xs)',
+      minHeight: '22px',
       gap: '5px',
     },
   };
@@ -87,6 +87,7 @@ export const Badge = ({
     >
       {dot && (
         <span
+          aria-hidden="true"
           style={{
             width: size === 'sm' ? '5px' : '6px',
             height: size === 'sm' ? '5px' : '6px',

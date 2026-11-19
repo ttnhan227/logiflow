@@ -50,9 +50,9 @@ const InvoiceDownloadPage = () => {
             <p>Your invoice download is starting…</p>
           </>
         )}
-        <Link to="/track">
-          <Button variant="secondary">Return to tracking</Button>
-        </Link>
+        <Button as={Link} to="/track" variant="secondary">
+          Return to tracking
+        </Button>
       </Card>
     </div>
   );

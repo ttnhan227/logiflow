@@ -1,22 +1,31 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { authService } from './services';
 
 import MainLayout from './components/MainLayout';
-import AdminSideNav from './components/admin/AdminSideNav';
-import LoginPage from "./components/auth/LoginPage";
-import HomePage from "./components/home/HomePage";
-import AboutPage from "./components/home/AboutPage";
-import ServicesPage from "./components/home/ServicesPage";
-import FleetPage from "./components/home/FleetPage";
-import CoveragePage from "./components/home/CoveragePage";
-import TrackPage from "./components/home/TrackPage";
-import ContactPage from "./components/home/ContactPage";
-import FaqPage from "./components/home/FaqPage";
-import BusinessPage from "./components/home/BusinessPage";
-import DriversPage from "./components/home/DriversPage";
-import MobileAppPage from "./components/home/MobileAppPage";
-import InsightsPage from "./components/home/InsightsPage";
+import HomePage from './components/home/HomePage';
+
+const AdminSideNav = lazy(() => import('./components/admin/AdminSideNav'));
+const DispatchLayout = lazy(() => import('./components/dispatch/DispatchLayout'));
+const LoginPage = lazy(() => import('./components/auth/LoginPage'));
+const AboutPage = lazy(() => import('./components/home/AboutPage'));
+const ServicesPage = lazy(() => import('./components/home/ServicesPage'));
+const FleetPage = lazy(() => import('./components/home/FleetPage'));
+const CoveragePage = lazy(() => import('./components/home/CoveragePage'));
+const TrackPage = lazy(() => import('./components/home/TrackPage'));
+const ContactPage = lazy(() => import('./components/home/ContactPage'));
+const FaqPage = lazy(() => import('./components/home/FaqPage'));
+const BusinessPage = lazy(() => import('./components/home/BusinessPage'));
+const DriversPage = lazy(() => import('./components/home/DriversPage'));
+const MobileAppPage = lazy(() => import('./components/home/MobileAppPage'));
+const InsightsPage = lazy(() => import('./components/home/InsightsPage'));
+const DriverRegisterPage = lazy(() => import('./components/auth/DriverRegisterPage'));
+const CustomerRegisterPage = lazy(() => import('./components/auth/CustomerRegisterPage'));
+const NotFoundPage = lazy(() => import('./components/common/NotFoundPage'));
+const UnauthorizedPage = lazy(() => import('./components/common/UnauthorizedPage'));
+const ProfilePage = lazy(() => import('./components/profile/ProfilePage'));
+const ProfileEditPage = lazy(() => import('./components/profile/ProfileEditPage'));
+
 const AdminDashboardPage = lazy(() => import('./components/admin/AdminDashboardPage'));
 const AdminDriverManagementPage = lazy(() => import('./components/admin/AdminDriverManagementPage'));
 const AdminCustomerManagementPage = lazy(() => import('./components/admin/AdminCustomerManagementPage'));
@@ -33,12 +42,7 @@ const AdminTripsOversightPage = lazy(() => import('./components/admin/AdminTrips
 const AdminTripsOversightDetailsPage = lazy(() => import('./components/admin/AdminTripsOversightDetailsPage'));
 const AdminNotificationsPage = lazy(() => import('./components/admin/AdminNotificationsPage'));
 const AdminPaymentRequestPage = lazy(() => import('./components/admin/AdminPaymentRequestPage'));
-import DriverRegisterPage from "./components/auth/DriverRegisterPage";
-import CustomerRegisterPage from "./components/auth/CustomerRegisterPage";
-import NotFoundPage from "./components/common/NotFoundPage";
-import UnauthorizedPage from "./components/common/UnauthorizedPage";
-import ProfilePage from "./components/profile/ProfilePage";
-import ProfileEditPage from "./components/profile/ProfileEditPage";
+
 const OrdersPage = lazy(() => import('./components/dispatch/OrdersPage'));
 const OrderImportPage = lazy(() => import('./components/dispatch/OrderImportPage'));
 const DispatchOrderDetailPage = lazy(() => import('./components/dispatch/DispatchOrderDetailPage'));
@@ -50,30 +54,84 @@ const TripAssignPage = lazy(() => import('./components/dispatch/TripAssignPage')
 const DispatchNotificationsPage = lazy(() => import('./components/dispatch/DispatchNotificationsPage'));
 const DispatchReportsPage = lazy(() => import('./components/dispatch/DispatchReportsPage'));
 const InvoiceDownloadPage = lazy(() => import('./components/customer/InvoiceDownloadPage'));
-import DispatchLayout from "./components/dispatch/DispatchLayout";
 
+const ROUTE_TITLES = {
+  '/': 'LogiFlow | Enterprise Freight Operations & Live Dispatch',
+  '/about': 'About LogiFlow | Academic Freight Workflow Project',
+  '/services': 'Freight Services & Workflows | LogiFlow',
+  '/fleet': 'Sample Fleet & Vehicle Classes | LogiFlow',
+  '/coverage': 'Pan-Vietnam Route Coverage Map | LogiFlow',
+  '/track': 'Track Shipment & Telemetry | LogiFlow',
+  '/contact': 'Contact & Form Demo | LogiFlow',
+  '/faq': 'Frequently Asked Questions | LogiFlow',
+  '/business': 'Enterprise Role-Based Workflows | LogiFlow',
+  '/insights': 'Freight Market Insights & Analysis | LogiFlow',
+  '/news': 'Freight Market Insights & Analysis | LogiFlow',
+  '/mobile-app': 'Flutter Mobile Client Workflows | LogiFlow',
+  '/drivers': 'Driver Partner Workflow | LogiFlow',
+  '/login': 'Sign In | LogiFlow Control Tower',
+  '/register/customer': 'Corporate Customer Registration | LogiFlow',
+  '/register/driver': 'Driver Partner Application | LogiFlow',
+  '/profile': 'User Profile | LogiFlow',
+  '/profile/edit': 'Edit Profile | LogiFlow',
+  '/unauthorized': 'Access Restricted (403) | LogiFlow',
+  '/dispatch/orders': 'Dispatch Orders | LogiFlow Operations',
+  '/dispatch/orders/import': 'Bulk Import Orders | LogiFlow Operations',
+  '/dispatch/trips': 'Trips & Dispatch | LogiFlow Operations',
+  '/dispatch/trips/create': 'Create Dispatch Trip | LogiFlow Operations',
+  '/dispatch/drivers': 'Active Drivers | LogiFlow Operations',
+  '/dispatch/notifications': 'Dispatch Notifications | LogiFlow Operations',
+  '/dispatch/reports': 'Dispatch Performance Reports | LogiFlow Operations',
+  '/admin/dashboard': 'Admin Control Tower | LogiFlow',
+  '/admin/reports': 'Reports & Analytics | LogiFlow Admin',
+  '/admin/notifications': 'Admin Notifications | LogiFlow Admin',
+  '/admin/payment-requests': 'Payment Requests | LogiFlow Admin',
+  '/admin/users/drivers': 'Driver Accounts | LogiFlow Admin',
+  '/admin/users/customers': 'Customer Accounts | LogiFlow Admin',
+  '/admin/users/dispatchers': 'Dispatcher Accounts | LogiFlow Admin',
+  '/admin/system/overview': 'System Overview | LogiFlow Admin',
+  '/admin/audit-logs': 'Security & Audit Logs | LogiFlow Admin',
+  '/admin/trips-oversight': 'Trips Oversight | LogiFlow Admin',
+  '/admin/registration-requests': 'Registration Requests | LogiFlow Admin',
+  '/admin/vehicles': 'Fleet Vehicles | LogiFlow Admin',
+};
+
+const RouteTitleManager = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (ROUTE_TITLES[pathname]) {
+      document.title = ROUTE_TITLES[pathname];
+    } else if (pathname.startsWith('/dispatch/orders/')) {
+      document.title = 'Order Detail | LogiFlow Operations';
+    } else if (pathname.startsWith('/dispatch/trips/')) {
+      document.title = 'Trip Telemetry & Assignment | LogiFlow Operations';
+    } else if (pathname.startsWith('/admin/users/')) {
+      document.title = 'User Account Details | LogiFlow Admin';
+    } else if (pathname.startsWith('/admin/trips-oversight/')) {
+      document.title = 'Trip Oversight Detail | LogiFlow Admin';
+    } else if (pathname.startsWith('/admin/registration-requests/')) {
+      document.title = 'Registration Review | LogiFlow Admin';
+    } else if (pathname.startsWith('/orders/')) {
+      document.title = 'Invoice Download | LogiFlow';
+    } else {
+      document.title = 'Page Not Found (404) | LogiFlow';
+    }
+  }, [pathname]);
+  return null;
+};
 
 // Protected Route Component with role-based access
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const [authState, setAuthState] = useState({ loading: true, user: null });
   const location = useLocation();
+  const user = authService.getCurrentUser();
 
-  useEffect(() => {
-    const user = authService.getCurrentUser();
-    setAuthState({ loading: false, user });
-  }, [location]);
-
-  if (authState.loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!authState.user) {
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check if route requires specific role
   // Allow ADMIN users to access all role-specific pages
-  if (requiredRole && authState.user.role !== 'ADMIN' && authState.user.role !== requiredRole) {
+  if (requiredRole && user.role !== 'ADMIN' && user.role !== requiredRole) {
     return <UnauthorizedPage />;
   }
 
@@ -97,6 +155,7 @@ const AuthRedirect = () => {
 function App() {
   return (
     <Router>
+      <RouteTitleManager />
       <Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}>
       <Routes>
         {/* Public routes with MainLayout */}
@@ -115,8 +174,16 @@ function App() {
           <Route path="/news" element={<InsightsPage />} />
           <Route path="/mobile-app" element={<MobileAppPage />} />
           <Route path="/drivers" element={<DriversPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/edit" element={<ProfileEditPage />} />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile/edit" element={
+            <ProtectedRoute>
+              <ProfileEditPage />
+            </ProtectedRoute>
+          } />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/orders/:orderId/invoice" element={
             <ProtectedRoute>

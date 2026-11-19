@@ -72,10 +72,12 @@ export const DriversPage = () => {
 
       {/* Driver Value Props */}
       <section className="container">
+        <h2 className="sr-only">Driver Workflow Features</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
           {driverBenefits.map((b) => (
             <Card key={b.title} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div
+                aria-hidden="true"
                 style={{
                   width: '44px',
                   height: '44px',
@@ -187,9 +189,9 @@ export const DriversPage = () => {
               <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--color-brand-500)', opacity: 0.8, fontVariantNumeric: 'tabular-nums' }}>
                 {s.num}
               </span>
-              <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: '8px 0 4px 0' }}>
+              <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: '8px 0 4px 0' }}>
                 {s.title}
-              </h4>
+              </h3>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
                 {s.desc}
               </p>
@@ -214,20 +216,18 @@ export const DriversPage = () => {
           }}
         >
           <div>
-            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 4px 0' }}>
               Want to Test the Driver Flow?
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
               Create a sample driver profile and continue through the application screens.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/register/driver">
-              <Button variant="primary" size="lg">
-                Open Driver Registration
-              </Button>
-            </Link>
+            <Button as={Link} to="/register/driver" variant="primary" size="lg">
+              Open Driver Registration
+            </Button>
           </div>
         </div>
       </section>

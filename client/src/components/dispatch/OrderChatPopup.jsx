@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '../../services';
 import notificationClient from '../../services/notificationClient';
-import { Button, Input, Badge } from '@/components/ui';
+import { Button } from '@/components/ui';
 import {
   LuMessageSquare,
   LuSend,
   LuMinimize2,
   LuMaximize2,
   LuX,
-  LuUser,
 } from 'react-icons/lu';
 
 export const OrderChatPopup = ({ orderId, customerId, order }) => {
@@ -101,7 +100,17 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen]);
+
   const handleKeyPress = (e) => {
+    if (e.nativeEvent?.isComposing || e.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -166,12 +175,15 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
       {/* Chat Window */}
       {isOpen && (
         <div
+          role="dialog"
+          aria-label="Customer Order Chat"
           style={{
             position: 'fixed',
             bottom: '84px',
-            right: '88px',
-            width: '360px',
+            right: '16px',
+            width: 'min(360px, calc(100vw - 32px))',
             height: isMinimized ? '48px' : '480px',
+            maxHeight: 'calc(100dvh - 108px)',
             backgroundColor: 'var(--color-white)',
             borderRadius: 'var(--radius-xl)',
             border: '1px solid var(--border-default)',
@@ -195,12 +207,12 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <LuMessageSquare size={16} color="var(--color-brand-500)" />
+              <LuMessageSquare size={16} color="var(--color-brand-400)" aria-hidden="true" />
               <div>
                 <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, lineHeight: 1.2 }}>
                   Customer Chat
                 </div>
-                <div style={{ fontSize: '10px', color: 'var(--color-slate-400)' }}>
+                <div style={{ fontSize: '10px', color: 'var(--color-slate-300)' }}>
                   Order #{orderId}
                 </div>
               </div>
@@ -208,18 +220,20 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
+                type="button"
                 onClick={() => setIsMinimized(!isMinimized)}
                 aria-label={isMinimized ? 'Maximize customer chat window' : 'Minimize customer chat window'}
-                style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-400)', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-300)', cursor: 'pointer', padding: '4px' }}
               >
-                {isMinimized ? <LuMaximize2 size={14} /> : <LuMinimize2 size={14} />}
+                {isMinimized ? <LuMaximize2 size={14} aria-hidden="true" /> : <LuMinimize2 size={14} aria-hidden="true" />}
               </button>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close customer chat window"
-                style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-400)', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--color-slate-300)', cursor: 'pointer', padding: '4px' }}
               >
-                <LuX size={16} />
+                <LuX size={16} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -295,26 +309,42 @@ export const OrderChatPopup = ({ orderId, customerId, order }) => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {error && (
+                <div
+                  role="alert"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '11px',
+                    color: 'var(--color-danger-700)',
+                    backgroundColor: 'var(--color-danger-50)',
+                    borderTop: '1px solid var(--color-danger-200)',
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
               {/* Input row */}
               <div style={{ padding: '12px', borderTop: '1px solid var(--border-default)', display: 'flex', gap: '8px', backgroundColor: 'var(--color-white)' }}>
                 <input
                   type="text"
+                  className="chat-input"
                   placeholder="Type a message..."
                   aria-label="Type message to customer"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   style={{
                     flex: 1,
+                    minHeight: '36px',
                     padding: '8px 12px',
                     borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--border-default)',
-                    fontSize: 'var(--text-xs)',
-                    outline: 'none',
+                    fontSize: 'max(1rem, var(--text-xs))',
                   }}
                 />
                 <Button variant="primary" size="sm" onClick={handleSend} disabled={!inputText.trim()} aria-label="Send message">
-                  <LuSend size={14} />
+                  <LuSend size={14} aria-hidden="true" />
                 </Button>
               </div>
             </>

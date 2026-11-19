@@ -55,12 +55,12 @@ export const ContactPage = () => {
       </div>
 
       <section className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '32px' }}>
           {/* Inquiry Form */}
           <Card style={{ padding: '32px' }}>
-            <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
               Try the Form
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '0 0 20px 0' }}>
               Submitted values are cleared locally after the simulated response.
             </p>
@@ -74,10 +74,11 @@ export const ContactPage = () => {
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="responsive-grid-2" style={{ gap: '16px' }}>
                 <Input
                   label="Full Name"
                   name="name"
+                  autoComplete="name"
                   value={formData.name}
                   onChange={handleChange}
                   required
@@ -87,6 +88,9 @@ export const ContactPage = () => {
                   label="Work Email"
                   name="email"
                   type="email"
+                  autoComplete="email"
+                  spellCheck={false}
+                  autoCapitalize="none"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -145,10 +149,10 @@ export const ContactPage = () => {
             <Card style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <LuPhone size={20} color="var(--color-brand-600)" />
+                  <LuPhone size={20} color="var(--color-brand-600)" aria-hidden="true" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Project Type</h4>
+                  <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Project Type</h3>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Academic team project</span>
                 </div>
               </div>
@@ -160,10 +164,10 @@ export const ContactPage = () => {
             <Card style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <LuMail size={20} color="var(--color-brand-600)" />
+                  <LuMail size={20} color="var(--color-brand-600)" aria-hidden="true" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Integrations</h4>
+                  <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Integrations</h3>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Development and sandbox services</span>
                 </div>
               </div>
@@ -175,10 +179,10 @@ export const ContactPage = () => {
             <Card style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <LuMapPin size={20} color="var(--color-brand-600)" />
+                  <LuMapPin size={20} color="var(--color-brand-600)" aria-hidden="true" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Sample Geography</h4>
+                  <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Sample Geography</h3>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Vietnamese logistics scenarios</span>
                 </div>
               </div>
@@ -190,10 +194,10 @@ export const ContactPage = () => {
             <Card style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <LuClock size={20} color="var(--color-brand-600)" />
+                  <LuClock size={20} color="var(--color-brand-600)" aria-hidden="true" />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Availability</h4>
+                  <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>Availability</h3>
                 </div>
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>

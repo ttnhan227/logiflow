@@ -1,8 +1,11 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { LuLoaderCircle } from 'react-icons/lu';
 
 export const Button = React.forwardRef(({
   children,
+  as,
+  to,
   variant = 'primary', // 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success'
   size = 'md', // 'sm' | 'md' | 'lg' | 'icon'
   loading = false,
@@ -16,6 +19,10 @@ export const Button = React.forwardRef(({
   'aria-label': ariaLabelProp,
   ...props
 }, ref) => {
+  const Component = as || (to ? Link : 'button');
+  const isButton = Component === 'button';
+  const isDisabled = disabled || loading;
+
   const baseStyles = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -23,36 +30,35 @@ export const Button = React.forwardRef(({
     gap: '6px',
     fontWeight: 600,
     borderRadius: 'var(--radius-md)',
-    transition: 'all var(--transition-fast)',
-    cursor: disabled || loading ? 'not-allowed' : 'pointer',
-    opacity: disabled || loading ? 0.6 : 1,
+    transition: 'background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast)',
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+    opacity: isDisabled ? 0.6 : 1,
     whiteSpace: 'nowrap',
     userSelect: 'none',
     border: '1px solid transparent',
     textDecoration: 'none',
-    ...style,
   };
 
   const sizeStyles = {
     sm: {
       padding: '5px 10px',
       fontSize: 'var(--text-xs)',
-      height: '28px',
+      minHeight: '28px',
     },
     md: {
       padding: '8px 14px',
       fontSize: 'var(--text-sm)',
-      height: '36px',
+      minHeight: '36px',
     },
     lg: {
       padding: '10px 18px',
       fontSize: 'var(--text-base)',
-      height: '42px',
+      minHeight: '42px',
     },
     icon: {
       padding: '6px',
-      height: '36px',
-      width: '36px',
+      minHeight: '36px',
+      minWidth: '36px',
       borderRadius: 'var(--radius-md)',
     },
   };
@@ -94,20 +100,29 @@ export const Button = React.forwardRef(({
     },
   };
 
+  const handleLinkClick = (e) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
+    if (onClick) onClick(e);
+  };
+
   return (
-    <button
+    <Component
       ref={ref}
-      type={type}
-      disabled={disabled || loading}
-      aria-disabled={disabled || loading ? 'true' : undefined}
+      {...(to ? { to } : {})}
+      {...(isButton ? { type, disabled: isDisabled } : {})}
+      {...(!isButton && isDisabled ? { 'aria-disabled': 'true', tabIndex: -1 } : {})}
       aria-busy={loading ? 'true' : undefined}
       aria-label={ariaLabelProp}
-      onClick={onClick}
+      onClick={isButton ? onClick : handleLinkClick}
       className={`ui-btn ui-btn-${variant} ui-btn-${size} ${className}`}
       style={{
         ...baseStyles,
         ...sizeStyles[size],
         ...variantStyles[variant],
+        ...style,
       }}
       {...props}
     >
@@ -120,7 +135,7 @@ export const Button = React.forwardRef(({
       {!loading && rightIcon && (
         <span className="inline-flex items-center" aria-hidden="true">{rightIcon}</span>
       )}
-    </button>
+    </Component>
   );
 });
 

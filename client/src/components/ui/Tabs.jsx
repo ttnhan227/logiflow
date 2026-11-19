@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 export const Tabs = ({
   items = [], // Array of { id, label, icon, badge, count }
@@ -8,25 +8,28 @@ export const Tabs = ({
   className = '',
   style = {},
 }) => {
+  const tabRefs = useRef([]);
+
   const handleKeyDown = (e) => {
     if (!onChange || items.length === 0) return;
     const currentIndex = items.findIndex((t) => t.id === activeTab);
     if (currentIndex === -1) return;
 
+    let targetIndex = null;
     if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      const nextIndex = (currentIndex + 1) % items.length;
-      onChange(items[nextIndex].id);
+      targetIndex = (currentIndex + 1) % items.length;
     } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const prevIndex = (currentIndex - 1 + items.length) % items.length;
-      onChange(items[prevIndex].id);
+      targetIndex = (currentIndex - 1 + items.length) % items.length;
     } else if (e.key === 'Home') {
-      e.preventDefault();
-      onChange(items[0].id);
+      targetIndex = 0;
     } else if (e.key === 'End') {
+      targetIndex = items.length - 1;
+    }
+
+    if (targetIndex !== null) {
       e.preventDefault();
-      onChange(items[items.length - 1].id);
+      onChange(items[targetIndex].id);
+      tabRefs.current[targetIndex]?.focus();
     }
   };
 
@@ -38,20 +41,23 @@ export const Tabs = ({
         alignItems: 'center',
         gap: variant === 'pills' ? '6px' : '24px',
         borderBottom: variant === 'underline' ? '1px solid var(--border-default)' : 'none',
-        paddingBottom: variant === 'underline' ? '0' : '0',
+        paddingBottom: '0',
         overflowX: 'auto',
         ...style,
       }}
       role="tablist"
       onKeyDown={handleKeyDown}
     >
-      {items.map((tab) => {
+      {items.map((tab, index) => {
         const isActive = activeTab === tab.id;
 
         if (variant === 'pills') {
           return (
             <button
               key={tab.id}
+              ref={(el) => {
+                tabRefs.current[index] = el;
+              }}
               type="button"
               role="tab"
               aria-selected={isActive}
@@ -68,12 +74,12 @@ export const Tabs = ({
                 color: isActive ? 'var(--color-brand-700)' : 'var(--text-secondary)',
                 backgroundColor: isActive ? 'var(--color-brand-50)' : 'transparent',
                 border: `1px solid ${isActive ? 'var(--color-brand-200)' : 'transparent'}`,
-                transition: 'all var(--transition-fast)',
+                transition: 'background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast)',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
               }}
             >
-              {tab.icon && <span className="inline-flex">{tab.icon}</span>}
+              {tab.icon && <span aria-hidden="true" className="inline-flex">{tab.icon}</span>}
               <span>{tab.label}</span>
               {(tab.badge !== undefined || tab.count !== undefined) && (
                 <span
@@ -97,6 +103,9 @@ export const Tabs = ({
         return (
           <button
             key={tab.id}
+            ref={(el) => {
+              tabRefs.current[index] = el;
+            }}
             type="button"
             role="tab"
             aria-selected={isActive}
@@ -112,12 +121,12 @@ export const Tabs = ({
               color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
               borderBottom: `2px solid ${isActive ? 'var(--color-brand-600)' : 'transparent'}`,
               marginBottom: '-1px',
-              transition: 'all var(--transition-fast)',
+              transition: 'color var(--transition-fast), border-color var(--transition-fast)',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
           >
-            {tab.icon && <span className="inline-flex">{tab.icon}</span>}
+            {tab.icon && <span aria-hidden="true" className="inline-flex">{tab.icon}</span>}
             <span>{tab.label}</span>
             {(tab.badge !== undefined || tab.count !== undefined) && (
               <span

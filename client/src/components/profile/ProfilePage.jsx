@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { profileService } from '../../services';
 import api from '../../services/api';
 import PasswordChangeModal from './PasswordChangeModal';
-import { Button, Card, CardContent, Badge, PageHeader, LoadingSpinner, Alert } from '@/components/ui';
+import { Button, Card, Badge, PageHeader, LoadingSpinner, Alert } from '@/components/ui';
 import {
   LuUser,
   LuMail,
   LuPhone,
-  LuShieldCheck,
   LuKey,
   LuPencil,
   LuCalendar,
@@ -77,16 +76,14 @@ export const ProfilePage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                leftIcon={<LuKey size={14} />}
+                leftIcon={<LuKey size={14} aria-hidden="true" />}
                 onClick={() => setShowPasswordModal(true)}
               >
                 Change Password
               </Button>
-              <Link to="/profile/edit">
-                <Button variant="primary" size="sm" leftIcon={<LuPencil size={14} />}>
-                  Edit Profile
-                </Button>
-              </Link>
+              <Button as={Link} to="/profile/edit" variant="primary" size="sm" leftIcon={<LuPencil size={14} aria-hidden="true" />}>
+                Edit Profile
+              </Button>
             </div>
           }
         />

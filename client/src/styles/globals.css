@@ -1,37 +1,71 @@
 @import './tokens.css';
 
-/* Universal Reset & Box Sizing */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html, body, h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote {
+    margin: 0;
+  }
+
+  ul, ol {
+    padding: 0;
+  }
 }
 
 html {
   font-family: var(--font-sans);
-  font-size: 14px;
   line-height: var(--leading-normal);
   color: var(--text-primary);
   background-color: var(--bg-app);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-size-adjust: from-font;
+  scroll-padding-top: calc(var(--header-height) + 16px);
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg-app);
   background-image:
     linear-gradient(rgba(7, 26, 46, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(7, 26, 46, 0.025) 1px, transparent 1px);
   background-size: 40px 40px;
   color: var(--text-primary);
-  overflow-x: hidden;
+  overflow-wrap: break-word;
+}
+
+img, video {
+  max-inline-size: 100%;
+  block-size: auto;
 }
 
 ::selection {
   color: var(--color-white);
   background: var(--color-route-orange);
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  inset-block-start: -100px;
+  inset-inline-start: 16px;
+  z-index: 2000;
+  padding: 10px 16px;
+  background-color: var(--color-slate-900);
+  color: var(--color-white);
+  border: 2px solid var(--color-route-orange);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  inset-block-start: 12px;
+  color: var(--color-white);
 }
 
 .logiflow-route-hero .ui-btn-primary {
@@ -50,7 +84,13 @@ body {
     flex-direction: column !important;
   }
 
-  .logiflow-route-hero .logiflow-track-form input,
+  .logiflow-route-hero .logiflow-track-form input {
+    flex: none !important;
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: max(1rem, 1em) !important;
+  }
+
   .logiflow-route-hero .logiflow-track-form .ui-btn {
     width: 100% !important;
   }
@@ -112,37 +152,65 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
   outline-offset: 2px;
 }
 
-.ui-input:focus,
-.ui-input:focus-visible {
+.ui-input:focus-visible,
+.ui-select:focus-visible,
+.ui-textarea:focus-visible,
+.logiflow-track-input:focus-visible,
+.chat-input:focus-visible {
   border-color: var(--color-brand-600) !important;
-  box-shadow: 0 0 0 3px rgba(23, 111, 174, 0.2) !important;
-  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(23, 111, 174, 0.25) !important;
+  outline: 2px solid var(--color-brand-600) !important;
+  outline-offset: 1px !important;
 }
 
-.ui-input.has-error:focus,
-.ui-input.has-error:focus-visible {
+.ui-input.has-error:focus-visible,
+.ui-select.has-error:focus-visible,
+.ui-textarea.has-error:focus-visible {
   border-color: var(--color-danger-600) !important;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
-  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25) !important;
+  outline: 2px solid var(--color-danger-600) !important;
+  outline-offset: 1px !important;
+}
+
+.ui-table-container:focus-visible {
+  outline: 2px solid var(--color-brand-600) !important;
+  outline-offset: 2px !important;
+}
+
+.ui-file-dropzone:focus-within {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+  border-color: var(--color-brand-600) !important;
+}
+
+.ui-clickable-card:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
 }
 
 /* Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+:root {
+  scrollbar-color: var(--color-slate-400) var(--color-slate-100);
 }
 
-::-webkit-scrollbar-track {
-  background: var(--color-slate-100);
-}
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-slate-300);
-  border-radius: var(--radius-full);
-}
+  ::-webkit-scrollbar-track {
+    background: var(--color-slate-100);
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-slate-400);
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-slate-400);
+    border-radius: var(--radius-full);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-slate-500);
+  }
 }
 
 /* Layout Utilities */
@@ -187,13 +255,40 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.responsive-sidebar-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+}
+
 @media (max-width: 1024px) {
   .grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+@media (max-width: 768px) {
+  .responsive-sidebar-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
-  .grid-cols-4, .grid-cols-3, .grid-cols-2 { grid-template-columns: 1fr; }
+  .grid-cols-4, .grid-cols-3, .grid-cols-2,
+  .responsive-grid-2, .responsive-grid-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Animation keyframes */
@@ -212,16 +307,26 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
   50% { opacity: 0.4; }
 }
 
-.animate-fade-in {
-  animation: fadeIn var(--transition-base) forwards;
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in {
+    animation: fadeIn var(--transition-base) forwards;
+  }
 }
 
 .animate-spin {
   animation: spin 0.8s linear infinite;
 }
 
-.animate-pulse {
-  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation-duration: 6s;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-pulse {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }
 
 /* Screen reader only utility */
@@ -232,9 +337,38 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* Native modal dialog top-layer styling & scroll containment */
+dialog.ui-native-modal {
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-modal);
+  max-height: calc(100dvh - 32px);
+  width: calc(100% - 32px);
+  overflow: hidden;
+}
+
+dialog.ui-native-modal[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.ui-native-modal:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.ui-native-modal::backdrop {
+  background-color: rgba(15, 23, 42, 0.55);
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 /* Button interaction states */
@@ -319,13 +453,24 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
   background-color: rgba(234, 240, 244, 0.5) !important;
 }
 
-/* Accessible reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* Forced Colors Mode support */
+@media (forced-colors: active) {
+  .ui-btn,
+  .ui-card,
+  .ui-badge,
+  .ui-input,
+  .ui-select,
+  .ui-textarea {
+    border: 1px solid ButtonBorder !important;
+  }
+
+  :focus-visible,
+  .ui-btn:focus-visible,
+  .ui-input:focus-visible,
+  .ui-select:focus-visible,
+  .ui-textarea:focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px !important;
   }
 }
 
@@ -347,7 +492,11 @@ button:disabled, input:disabled, select:disabled, textarea:disabled {
 
 .leaflet-popup-content {
   margin: 12px 16px !important;
-  font-size: 13px !important;
+  font-size: 0.8125rem !important;
   line-height: 1.4 !important;
   color: var(--text-primary) !important;
+}
+
+.dark-card-form label {
+  color: var(--color-slate-100) !important;
 }

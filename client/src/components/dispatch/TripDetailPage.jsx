@@ -69,7 +69,7 @@ export const TripDetailPage = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [routeWaypoints, setRouteWaypoints] = useState([]);
-  const [delayInfo, setDelayInfo] = useState(null);
+  const [, setDelayInfo] = useState(null);
 
   const loadTrip = async () => {
     setLoading(true);
@@ -135,6 +135,7 @@ export const TripDetailPage = () => {
 
   useEffect(() => {
     loadTrip();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId, location.state]);
 
   useEffect(() => {
@@ -208,11 +209,6 @@ export const TripDetailPage = () => {
     return [16.0471, 108.2068];
   }, [liveLocation]);
 
-  const timeline = useMemo(() => {
-    const events = trip?.progressEvents || [];
-    return [...events].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  }, [trip]);
-
   if (loading) {
     return <LoadingSpinner fullPage text="Retrieving trip manifest details..." />;
   }
@@ -222,11 +218,9 @@ export const TripDetailPage = () => {
       <div className="container" style={{ padding: '48px 16px', maxWidth: '600px' }}>
         <Alert variant="danger">{error || 'Trip record not found.'}</Alert>
         <div style={{ marginTop: '16px' }}>
-          <Link to="/dispatch/trips">
-            <Button variant="outline" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Trips
-            </Button>
-          </Link>
+          <Button as={Link} to="/dispatch/trips" variant="outline" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Trips
+          </Button>
         </div>
       </div>
     );
@@ -243,18 +237,14 @@ export const TripDetailPage = () => {
         }`}
         badge={getStatusBadge(trip.status)}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Link to="/dispatch/trips">
-              <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-                Trips Roster
-              </Button>
-            </Link>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button as={Link} to="/dispatch/trips" variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+              Trips Roster
+            </Button>
             {!trip.driverName && trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' && (
-              <Link to={`/dispatch/trips/${trip.tripId}/assign`}>
-                <Button variant="primary" size="sm" leftIcon={<LuUser size={14} />}>
-                  Assign Driver
-                </Button>
-              </Link>
+              <Button as={Link} to={`/dispatch/trips/${trip.tripId}/assign`} variant="primary" size="sm" leftIcon={<LuUser size={14} aria-hidden="true" />}>
+                Assign Driver
+              </Button>
             )}
             {trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' && (
               <Button variant="danger" size="sm" onClick={() => setShowCancelModal(true)}>

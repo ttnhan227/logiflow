@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { userService } from '../../services';
 import Pagination from '../common/Pagination';
 import {
@@ -28,14 +28,13 @@ import {
 } from 'react-icons/lu';
 
 export const AdminDispatcherManagementPage = () => {
-  const navigate = useNavigate();
   const [dispatchers, setDispatchers] = useState([]);
   const [filteredDispatchers, setFilteredDispatchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingDispatcher, setEditingDispatcher] = useState(null);
+  const [, setEditingDispatcher] = useState(null);
   const [page, setPage] = useState(0);
   const size = 10;
 
@@ -229,13 +228,11 @@ export const AdminDispatcherManagementPage = () => {
                     </TableCell>
                     <TableCell style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                        <Link to={`/admin/users/dispatchers/${d.id}`}>
-                          <Button variant="ghost" size="sm" title="View Profile">
-                            <LuEye size={14} />
-                          </Button>
-                        </Link>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(d)} title="Edit Account">
-                          <LuPencil size={14} />
+                        <Button as={Link} to={`/admin/users/dispatchers/${d.id}`} variant="ghost" size="sm" title="View Profile" aria-label={`View profile for ${d.username || 'dispatcher'}`}>
+                          <LuEye size={14} aria-hidden="true" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(d)} title="Edit Account" aria-label={`Edit account for ${d.username || 'dispatcher'}`}>
+                          <LuPencil size={14} aria-hidden="true" />
                         </Button>
                       </div>
                     </TableCell>

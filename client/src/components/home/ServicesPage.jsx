@@ -89,7 +89,7 @@ export const ServicesPage = () => {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr))', gap: '24px' }}>
           {individualServices.map((svc) => (
             <Card
               key={svc.title}
@@ -153,11 +153,9 @@ export const ServicesPage = () => {
                   </div>
                 </div>
 
-                <Link to="/business" style={{ marginTop: '8px' }}>
-                  <Button variant={svc.popular ? 'primary' : 'outline'} style={{ width: '100%' }}>
-                    View Workflow
-                  </Button>
-                </Link>
+                <Button as={Link} to="/business" variant={svc.popular ? 'primary' : 'outline'} style={{ width: '100%', marginTop: '8px' }}>
+                  View Workflow
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -178,10 +176,11 @@ export const ServicesPage = () => {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr))', gap: '24px' }}>
           {enterpriseServices.map((ent) => (
             <Card key={ent.title} style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div
+                aria-hidden="true"
                 style={{
                   width: '44px',
                   height: '44px',
@@ -207,17 +206,15 @@ export const ServicesPage = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto', paddingTop: '12px' }}>
                 {ent.features.map((f, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
-                    <LuCircleCheck size={14} color="var(--color-success-600)" />
+                    <LuCircleCheck size={14} color="var(--color-success-600)" aria-hidden="true" />
                     <span>{f}</span>
                   </div>
                 ))}
               </div>
 
-              <Link to="/business" style={{ marginTop: '12px' }}>
-                <Button variant="outline" size="sm" rightIcon={<LuArrowRight size={14} />}>
-                  Learn More
-                </Button>
-              </Link>
+              <Button as={Link} to="/business" variant="outline" size="sm" rightIcon={<LuArrowRight size={14} aria-hidden="true" />} style={{ marginTop: '12px', alignSelf: 'flex-start' }}>
+                Learn More
+              </Button>
             </Card>
           ))}
         </div>
@@ -239,30 +236,28 @@ export const ServicesPage = () => {
           }}
         >
           <div>
-            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 6px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 6px 0' }}>
               Want to Explore the Demonstration?
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-slate-300)', margin: 0 }}>
               Review the implemented workflows or open the tracking interface with sample data.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/business">
-              <Button variant="primary">View Project Workflows</Button>
-            </Link>
-            <Link to="/track">
-              <Button
-                variant="outline"
-                style={{
-                  backgroundColor: 'transparent',
-                  borderColor: 'var(--color-slate-700)',
-                  color: 'var(--color-white)',
-                }}
-              >
-                Open Tracking Demo
-              </Button>
-            </Link>
+            <Button as={Link} to="/business" variant="primary">View Project Workflows</Button>
+            <Button
+              as={Link}
+              to="/track"
+              variant="outline"
+              style={{
+                backgroundColor: 'transparent',
+                borderColor: 'var(--color-slate-700)',
+                color: 'var(--color-white)',
+              }}
+            >
+              Open Tracking Demo
+            </Button>
           </div>
         </div>
       </section>

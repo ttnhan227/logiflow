@@ -215,8 +215,8 @@ export const TrackPage = () => {
 
           {orders.length === 0 && !loading ? (
             <Card style={{ padding: '40px', textAlign: 'center' }}>
-              <LuPackage size={32} color="var(--color-slate-400)" style={{ margin: '0 auto 12px' }} />
-              <h4 style={{ margin: '0 0 4px 0', fontSize: 'var(--text-md)' }}>No active orders</h4>
+              <LuPackage size={32} color="var(--color-slate-400)" aria-hidden="true" style={{ margin: '0 auto 12px' }} />
+              <h3 style={{ margin: '0 0 4px 0', fontSize: 'var(--text-md)' }}>No active orders</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)', margin: 0 }}>
                 Orders booked under your enterprise account will appear here.
               </p>
@@ -224,10 +224,24 @@ export const TrackPage = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {orders.map((order) => (
-                <Card key={order.orderId} hoverable onClick={() => handleTrackOrder(order.orderId)} style={{ padding: '20px' }}>
+                <Card
+                  key={order.orderId}
+                  hoverable
+                  className="ui-clickable-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleTrackOrder(order.orderId)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleTrackOrder(order.orderId);
+                    }
+                  }}
+                  style={{ padding: '20px' }}
+                >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minWidth: '280px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minWidth: 'min(100%, 280px)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--color-brand-700)', fontVariantNumeric: 'tabular-nums' }}>
                           Order #{order.orderId}
                         </span>
@@ -236,20 +250,20 @@ export const TrackPage = () => {
                       </div>
 
                       {/* Route */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-sm)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-sm)', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)', fontWeight: 600 }}>
-                          <LuMapPin size={14} color="var(--color-brand-600)" />
+                          <LuMapPin size={14} color="var(--color-brand-600)" aria-hidden="true" />
                           <span>{order.pickupAddress}</span>
                         </div>
-                        <LuArrowRight size={14} color="var(--color-slate-400)" />
+                        <LuArrowRight size={14} color="var(--color-slate-400)" aria-hidden="true" />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)', fontWeight: 600 }}>
-                          <LuMapPin size={14} color="var(--color-success-600)" />
+                          <LuMapPin size={14} color="var(--color-success-600)" aria-hidden="true" />
                           <span>{order.deliveryAddress}</span>
                         </div>
                       </div>
 
                       {/* Specs */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                         <span>Weight: <strong>{order.weightTons}T</strong></span>
                         {order.distanceKm && <span>Distance: <strong>{order.distanceKm.toFixed(1)} km</strong></span>}
                         {order.packageValue && <span>Declared: <strong>{Number(order.packageValue).toLocaleString()} VND</strong></span>}
@@ -261,13 +275,13 @@ export const TrackPage = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--text-xs)', color: 'var(--color-brand-700)', backgroundColor: 'var(--color-brand-50)', padding: '6px 12px', borderRadius: 'var(--radius-md)' }}>
                           {order.pickupType === 'WAREHOUSE' && (
                             <>
-                              <LuWarehouse size={14} />
+                              <LuWarehouse size={14} aria-hidden="true" />
                               <span>Hub: <strong>{order.warehouseName}</strong> {order.dockNumber && `(Dock ${order.dockNumber})`}</span>
                             </>
                           )}
                           {order.pickupType === 'PORT_TERMINAL' && (
                             <>
-                              <LuContainer size={14} />
+                              <LuContainer size={14} aria-hidden="true" />
                               <span>Container: <strong>{order.containerNumber}</strong> {order.terminalName && `(${order.terminalName})`}</span>
                             </>
                           )}
@@ -290,18 +304,16 @@ export const TrackPage = () => {
       {!user && (
         <section className="container">
           <Card style={{ padding: '32px', textAlign: 'center', backgroundColor: 'var(--bg-surface-subtle)' }}>
-            <LuUser size={28} color="var(--color-slate-400)" style={{ margin: '0 auto 8px' }} />
-            <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <LuUser size={28} color="var(--color-slate-400)" aria-hidden="true" style={{ margin: '0 auto 8px' }} />
+            <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               Are you an enterprise customer?
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 16px auto' }}>
               Sign in to automatically load your company's full shipment manifest and dispatch invoices.
             </p>
-            <Link to="/login">
-              <Button variant="outline" size="sm">
-                Sign In to Account
-              </Button>
-            </Link>
+            <Button as={Link} to="/login" variant="outline" size="sm">
+              Sign In to Account
+            </Button>
           </Card>
         </section>
       )}

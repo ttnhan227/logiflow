@@ -294,18 +294,16 @@ export const DriverRegisterPage = () => {
             </div>
           </div>
 
-          <Link to="/drivers">
-            <Button variant="primary" style={{ width: '100%' }}>
-              Back to Driver Career Portal
-            </Button>
-          </Link>
+          <Button as={Link} to="/drivers" variant="primary" style={{ width: '100%' }}>
+            Back to Driver Career Portal
+          </Button>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="container" style={{ padding: '40px 16px 64px 16px', maxWidth: '720px' }}>
+    <main id="main-content" className="container" style={{ padding: '40px 16px 64px 16px', maxWidth: '720px' }}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <Badge variant="brand" size="sm" style={{ marginBottom: '8px' }}>
           Carrier Onboarding
@@ -319,88 +317,93 @@ export const DriverRegisterPage = () => {
       </div>
 
       {/* Stepper Progress */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '28px',
-          padding: '16px 24px',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-lg)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: currentStep >= 1 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
-              color: currentStep >= 1 ? 'var(--color-white)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            1
-          </span>
-          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 1 ? 700 : 500, color: 'var(--text-primary)' }}>
-            Upload Documents
-          </span>
-        </div>
+      <nav aria-label="Registration steps">
+        <ol
+          style={{
+            listStyle: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px',
+            marginBottom: '28px',
+            padding: '16px 20px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+          }}
+        >
+          <li aria-current={currentStep === 1 ? 'step' : undefined} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: currentStep >= 1 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+                color: currentStep >= 1 ? 'var(--color-white)' : 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              1
+            </span>
+            <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 1 ? 700 : 500, color: 'var(--text-primary)' }}>
+              Upload Documents
+            </span>
+          </li>
 
-        <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-default)', margin: '0 12px' }} />
+          <li aria-hidden="true" style={{ height: '1px', flex: '1 1 24px', backgroundColor: 'var(--border-default)', margin: '0 4px' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: currentStep >= 2 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
-              color: currentStep >= 2 ? 'var(--color-white)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            2
-          </span>
-          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 2 ? 700 : 500, color: 'var(--text-primary)' }}>
-            Profile Details
-          </span>
-        </div>
+          <li aria-current={currentStep === 2 ? 'step' : undefined} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: currentStep >= 2 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+                color: currentStep >= 2 ? 'var(--color-white)' : 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              2
+            </span>
+            <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 2 ? 700 : 500, color: 'var(--text-primary)' }}>
+              Profile Details
+            </span>
+          </li>
 
-        <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--border-default)', margin: '0 12px' }} />
+          <li aria-hidden="true" style={{ height: '1px', flex: '1 1 24px', backgroundColor: 'var(--border-default)', margin: '0 4px' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span
-            style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              backgroundColor: currentStep >= 3 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
-              color: currentStep >= 3 ? 'var(--color-white)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            3
-          </span>
-          <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 3 ? 700 : 500, color: 'var(--text-primary)' }}>
-            Review & Submit
-          </span>
-        </div>
-      </div>
+          <li aria-current={currentStep === 3 ? 'step' : undefined} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: currentStep >= 3 ? 'var(--color-brand-600)' : 'var(--color-slate-200)',
+                color: currentStep >= 3 ? 'var(--color-white)' : 'var(--text-secondary)',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              3
+            </span>
+            <span style={{ fontSize: 'var(--text-xs)', fontWeight: currentStep === 3 ? 700 : 500, color: 'var(--text-primary)' }}>
+              Review & Submit
+            </span>
+          </li>
+        </ol>
+      </nav>
 
       {error && (
         <div style={{ marginBottom: '20px' }}>
@@ -423,9 +426,9 @@ export const DriverRegisterPage = () => {
         {currentStep === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div>
-              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+              <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
                 1. Upload Driver License & CV
-              </h3>
+              </h2>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
                 High-resolution images help our OCR automatically pre-fill your license credentials.
               </p>
@@ -433,9 +436,9 @@ export const DriverRegisterPage = () => {
 
             {/* License Upload */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Driver's License Photo (Front) *
-              </label>
+              </span>
 
               {formData.licenseImagePreview ? (
                 <div
@@ -468,13 +471,14 @@ export const DriverRegisterPage = () => {
                       }))
                     }
                     style={{ position: 'absolute', top: '10px', right: '10px' }}
-                    leftIcon={<LuTrash2 size={14} />}
+                    leftIcon={<LuTrash2 size={14} aria-hidden="true" />}
                   >
                     Remove
                   </Button>
                 </div>
               ) : (
                 <label
+                  className="ui-file-dropzone"
                   style={{
                     border: '2px dashed var(--border-default)',
                     borderRadius: 'var(--radius-lg)',
@@ -488,8 +492,8 @@ export const DriverRegisterPage = () => {
                     backgroundColor: 'var(--bg-surface-subtle)',
                   }}
                 >
-                  <input type="file" accept="image/*" onChange={handleLicenseUpload} style={{ display: 'none' }} />
-                  <LuImage size={28} color="var(--color-brand-600)" />
+                  <input type="file" accept="image/*" onChange={handleLicenseUpload} className="sr-only" />
+                  <LuImage size={28} color="var(--color-brand-600)" aria-hidden="true" />
                   <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
                     Click to select license image
                   </span>
@@ -500,9 +504,9 @@ export const DriverRegisterPage = () => {
 
             {/* CV Upload */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Curriculum Vitae / Driving History Summary *
-              </label>
+              </span>
 
               {formData.cvFileName ? (
                 <div
@@ -517,7 +521,7 @@ export const DriverRegisterPage = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <LuFileText size={22} color="var(--color-success-600)" />
+                    <LuFileText size={22} color="var(--color-success-600)" aria-hidden="true" />
                     <div>
                       <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-success-900)' }}>
                         {formData.cvFileName}
@@ -544,6 +548,7 @@ export const DriverRegisterPage = () => {
                 </div>
               ) : (
                 <label
+                  className="ui-file-dropzone"
                   style={{
                     border: '2px dashed var(--border-default)',
                     borderRadius: 'var(--radius-lg)',
@@ -561,9 +566,9 @@ export const DriverRegisterPage = () => {
                     type="file"
                     accept=".pdf,.doc,.docx,application/pdf"
                     onChange={handleCvUpload}
-                    style={{ display: 'none' }}
+                    className="sr-only"
                   />
-                  <LuCloudUpload size={28} color="var(--color-brand-600)" />
+                  <LuCloudUpload size={28} color="var(--color-brand-600)" aria-hidden="true" />
                   <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)' }}>
                     Click to select CV document
                   </span>
@@ -578,18 +583,19 @@ export const DriverRegisterPage = () => {
         {currentStep === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+              <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
                 2. Profile & License Credentials
-              </h3>
+              </h2>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
                 Please review extracted license fields and complete emergency contacts.
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-2" style={{ gap: '16px' }}>
               <Input
                 label="Full Name *"
                 name="fullName"
+                autoComplete="name"
                 value={formData.fullName}
                 onChange={handleInputChange}
                 required
@@ -603,7 +609,7 @@ export const DriverRegisterPage = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-3" style={{ gap: '16px' }}>
               <Input
                 label="License Type (e.g. B2, C, FC) *"
                 name="licenseType"
@@ -622,6 +628,7 @@ export const DriverRegisterPage = () => {
                 label="Date of Birth *"
                 name="dateOfBirth"
                 type="date"
+                autoComplete="bday"
                 value={formData.dateOfBirth}
                 onChange={handleInputChange}
                 required
@@ -631,17 +638,19 @@ export const DriverRegisterPage = () => {
             <Textarea
               label="Permanent Residential Address *"
               name="address"
+              autoComplete="street-address"
               value={formData.address}
               onChange={handleInputChange}
               rows={2}
               required
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-2" style={{ gap: '16px' }}>
               <Input
                 label="Mobile Phone *"
                 name="phone"
                 type="tel"
+                autoComplete="tel"
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="+84 901 234 567"
@@ -651,6 +660,9 @@ export const DriverRegisterPage = () => {
                 label="Email Address *"
                 name="email"
                 type="email"
+                autoComplete="email"
+                spellCheck={false}
+                autoCapitalize="none"
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="driver@example.vn"
@@ -658,7 +670,7 @@ export const DriverRegisterPage = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-2" style={{ gap: '16px' }}>
               <Input
                 label="Emergency Contact Name *"
                 name="emergencyContactName"
@@ -683,18 +695,17 @@ export const DriverRegisterPage = () => {
         {currentStep === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+              <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
                 3. Final Review & Confirmation
-              </h3>
+              </h2>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
                 Please check the accuracy of your application before final submission.
               </p>
             </div>
 
             <div
+              className="responsive-grid-2"
               style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
                 gap: '12px',
                 padding: '16px',
                 backgroundColor: 'var(--bg-surface-subtle)',
@@ -760,28 +771,26 @@ export const DriverRegisterPage = () => {
         )}
 
         {/* Form Action Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
           {currentStep > 1 ? (
-            <Button variant="outline" onClick={() => setCurrentStep((prev) => prev - 1)} disabled={loading} leftIcon={<LuArrowLeft size={16} />}>
+            <Button variant="outline" onClick={() => setCurrentStep((prev) => prev - 1)} disabled={loading} leftIcon={<LuArrowLeft size={16} aria-hidden="true" />}>
               Back
             </Button>
           ) : (
-            <Link to="/login">
-              <Button variant="ghost">Cancel</Button>
-            </Link>
+            <Button as={Link} to="/login" variant="ghost">Cancel</Button>
           )}
 
           <Button
             variant="primary"
             onClick={handleNext}
             loading={loading}
-            rightIcon={currentStep === 3 ? <LuCheck size={16} /> : <LuArrowRight size={16} />}
+            rightIcon={currentStep === 3 ? <LuCheck size={16} aria-hidden="true" /> : <LuArrowRight size={16} aria-hidden="true" />}
           >
             {currentStep === 1 ? 'Process & Continue' : currentStep === 2 ? 'Review Application' : 'Submit Application'}
           </Button>
         </div>
       </Card>
-    </div>
+    </main>
   );
 };
 

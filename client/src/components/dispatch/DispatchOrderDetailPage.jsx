@@ -121,11 +121,9 @@ export const DispatchOrderDetailPage = () => {
       <div className="container" style={{ padding: '48px 16px', maxWidth: '600px' }}>
         <Alert variant="danger">{error || 'Order record not found.'}</Alert>
         <div style={{ marginTop: '16px' }}>
-          <Link to="/dispatch/orders">
-            <Button variant="outline" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Orders
-            </Button>
-          </Link>
+          <Button as={Link} to="/dispatch/orders" variant="outline" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Orders
+          </Button>
         </div>
       </div>
     );
@@ -138,34 +136,30 @@ export const DispatchOrderDetailPage = () => {
         description={`Customer: ${order.customerName} • Created ${new Date(order.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`}
         badge={getStatusBadge(order.orderStatus)}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {editMode ? (
               <>
-                <Button variant="outline" size="sm" onClick={() => setEditMode(false)} disabled={saving} leftIcon={<LuX size={14} />}>
+                <Button variant="outline" size="sm" onClick={() => setEditMode(false)} disabled={saving} leftIcon={<LuX size={14} aria-hidden="true" />}>
                   Cancel
                 </Button>
-                <Button variant="primary" size="sm" onClick={handleSave} loading={saving} leftIcon={<LuSave size={14} />}>
+                <Button variant="primary" size="sm" onClick={handleSave} loading={saving} leftIcon={<LuSave size={14} aria-hidden="true" />}>
                   Save Changes
                 </Button>
               </>
             ) : (
               <>
-                <Link to="/dispatch/orders">
-                  <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-                    Orders Queue
-                  </Button>
-                </Link>
+                <Button as={Link} to="/dispatch/orders" variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+                  Orders Queue
+                </Button>
                 {order.orderStatus === 'PENDING' && (
-                  <Button variant="outline" size="sm" onClick={handleEdit} leftIcon={<LuPencil size={14} />}>
+                  <Button variant="outline" size="sm" onClick={handleEdit} leftIcon={<LuPencil size={14} aria-hidden="true" />}>
                     Edit Order
                   </Button>
                 )}
                 {order.orderStatus === 'PENDING' && (
-                  <Link to={`/dispatch/trips/create?orderId=${order.orderId}`}>
-                    <Button variant="primary" size="sm" leftIcon={<LuTruck size={14} />}>
-                      Create / Assign Trip
-                    </Button>
-                  </Link>
+                  <Button as={Link} to={`/dispatch/trips/create?orderId=${order.orderId}`} variant="primary" size="sm" leftIcon={<LuTruck size={14} aria-hidden="true" />}>
+                    Create / Assign Trip
+                  </Button>
                 )}
               </>
             )}
@@ -173,7 +167,7 @@ export const DispatchOrderDetailPage = () => {
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '24px' }}>
         {/* Main Details Card */}
         <Card style={{ padding: '28px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -328,11 +322,9 @@ export const DispatchOrderDetailPage = () => {
                     Trip #{order.tripId}
                   </div>
                 </div>
-                <Link to={`/dispatch/trips/${order.tripId}`}>
-                  <Button variant="outline" size="sm" rightIcon={<LuArrowRight size={14} />}>
-                    View Trip Details
-                  </Button>
-                </Link>
+                <Button as={Link} to={`/dispatch/trips/${order.tripId}`} variant="outline" size="sm" rightIcon={<LuArrowRight size={14} aria-hidden="true" />}>
+                  View Trip Details
+                </Button>
               </div>
             ) : (
               <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>

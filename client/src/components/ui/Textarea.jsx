@@ -15,15 +15,16 @@ export const Textarea = React.forwardRef(({
   ...props
 }, ref) => {
   const generatedId = useId();
-  const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `textarea-${generatedId}`);
+  const textareaId = id || `textarea-${generatedId}`;
   const errorId = error ? `${textareaId}-error` : undefined;
   const hintId = hint && !error ? `${textareaId}-hint` : undefined;
   const describedBy = [ariaDescribedByProp, errorId, hintId].filter(Boolean).join(' ') || undefined;
   const isInvalid = ariaInvalidProp != null ? ariaInvalidProp : !!error;
+  const cleanLabel = typeof label === 'string' && required ? label.replace(/\s*\*$/, '') : label;
 
   return (
     <div className={`ui-textarea-group ${className}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-      {label && (
+      {cleanLabel && (
         <label
           htmlFor={textareaId}
           style={{
@@ -35,7 +36,7 @@ export const Textarea = React.forwardRef(({
             gap: '4px',
           }}
         >
-          {label}
+          {cleanLabel}
           {required && <span style={{ color: 'var(--color-danger-600)' }} aria-hidden="true">*</span>}
         </label>
       )}
@@ -48,19 +49,18 @@ export const Textarea = React.forwardRef(({
         required={required}
         aria-invalid={isInvalid || undefined}
         aria-describedby={describedBy}
-        aria-label={!label ? (props['aria-label'] || props.placeholder) : undefined}
+        aria-label={!cleanLabel ? (props['aria-label'] || props.placeholder) : undefined}
         className={`ui-textarea ${error ? 'has-error' : ''}`}
         style={{
           width: '100%',
           padding: '10px 12px',
-          fontSize: 'var(--text-sm)',
+          fontSize: 'max(1rem, var(--text-sm))',
           color: 'var(--text-primary)',
           backgroundColor: disabled ? 'var(--color-slate-100)' : error ? 'var(--color-danger-50)' : 'var(--color-white)',
           border: `1px solid ${error ? 'var(--color-danger-600)' : 'var(--border-strong)'}`,
           borderRadius: 'var(--radius-md)',
           boxShadow: 'var(--shadow-xs)',
-          transition: 'all var(--transition-fast)',
-          outline: 'none',
+          transition: 'border-color var(--transition-fast), box-shadow var(--transition-fast)',
           resize: 'vertical',
           ...style,
         }}

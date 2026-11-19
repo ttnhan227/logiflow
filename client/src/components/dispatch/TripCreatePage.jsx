@@ -112,20 +112,6 @@ export const TripCreatePage = () => {
     };
   }, [selectedOrderIds, pendingOrders]);
 
-  const validationInfo = useMemo(() => {
-    if (!selectedOrdersData?.totalWeightTons || vehicles.length === 0) {
-      return { maxCapacityTons: 0, exceedsAllVehicles: false };
-    }
-
-    const totalWeight = selectedOrdersData.totalWeightTons;
-    const availableVehicles = vehicles.filter((v) => v.status === 'available');
-    const maxCapacityTons =
-      availableVehicles.length > 0 ? Math.max(...availableVehicles.map((v) => v.capacityTons || 0)) : 0;
-    const exceedsAllVehicles = totalWeight > maxCapacityTons;
-
-    return { maxCapacityTons, exceedsAllVehicles };
-  }, [vehicles, selectedOrdersData?.totalWeightTons]);
-
   const sortedVehicles = useMemo(() => {
     if (!selectedOrdersData?.totalWeightTons) {
       return [...vehicles].sort((a, b) => {
@@ -220,11 +206,9 @@ export const TripCreatePage = () => {
         description="Consolidate pending orders, allocate transport vehicle, and compute optimized multi-stop route."
         badge={<Badge variant="brand">Trip Builder</Badge>}
         actions={
-          <Link to="/dispatch/trips">
-            <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Trips
-            </Button>
-          </Link>
+          <Button as={Link} to="/dispatch/trips" variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Trips
+          </Button>
         }
       />
 

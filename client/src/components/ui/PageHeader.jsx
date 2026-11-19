@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export const PageHeader = ({
   title,
@@ -28,26 +29,47 @@ export const PageHeader = ({
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
             gap: '6px',
             fontSize: 'var(--text-xs)',
             color: 'var(--text-muted)',
             marginBottom: '4px',
           }}
         >
-          {breadcrumbs.map((crumb, idx) => (
-            <React.Fragment key={idx}>
-              {idx > 0 && <span>/</span>}
-              {crumb.href ? (
-                <a href={crumb.href} style={{ color: 'var(--text-secondary)' }}>
-                  {crumb.label}
-                </a>
-              ) : (
-                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                  {crumb.label}
-                </span>
-              )}
-            </React.Fragment>
-          ))}
+          {breadcrumbs.map((crumb, idx) => {
+            const isLast = idx === breadcrumbs.length - 1;
+            return (
+              <React.Fragment key={idx}>
+                {idx > 0 && <span aria-hidden="true">/</span>}
+                {crumb.href ? (
+                  crumb.href.startsWith('/') ? (
+                    <Link
+                      to={crumb.href}
+                      aria-current={isLast ? 'page' : undefined}
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={crumb.href}
+                      aria-current={isLast ? 'page' : undefined}
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {crumb.label}
+                    </a>
+                  )
+                ) : (
+                  <span
+                    aria-current={isLast ? 'page' : undefined}
+                    style={{ color: 'var(--text-primary)', fontWeight: 500 }}
+                  >
+                    {crumb.label}
+                  </span>
+                )}
+              </React.Fragment>
+            );
+          })}
         </nav>
       )}
 
@@ -61,7 +83,7 @@ export const PageHeader = ({
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <h1
               style={{
                 fontSize: 'var(--text-2xl)',

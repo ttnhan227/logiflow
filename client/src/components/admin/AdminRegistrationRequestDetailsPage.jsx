@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { api, authService } from '../../services';
 import {
   Button,
@@ -27,7 +27,6 @@ import {
 
 export const AdminRegistrationRequestDetailsPage = () => {
   const { requestId } = useParams();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
@@ -39,7 +38,7 @@ export const AdminRegistrationRequestDetailsPage = () => {
   const [editedData, setEditedData] = useState({});
   const [approvalSuccess, setApprovalSuccess] = useState(false);
   const [finalCredentials, setFinalCredentials] = useState(null);
-  const [approvalMessage, setApprovalMessage] = useState('');
+  const [, setApprovalMessage] = useState('');
 
   const isDriverRegistration = request?.role?.roleName === 'DRIVER';
   const isCustomerRegistration = request?.role?.roleName === 'CUSTOMER';
@@ -61,6 +60,7 @@ export const AdminRegistrationRequestDetailsPage = () => {
     if (requestId) {
       loadRequestDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
   const toAbsoluteUrl = (path) => {
@@ -146,11 +146,9 @@ export const AdminRegistrationRequestDetailsPage = () => {
       <div style={{ padding: '24px', maxWidth: '600px' }}>
         <Alert variant="danger">{error || 'Registration request not found.'}</Alert>
         <div style={{ marginTop: '16px' }}>
-          <Link to="/admin/registration-requests">
-            <Button variant="outline" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Requests
-            </Button>
-          </Link>
+          <Button as={Link} to="/admin/registration-requests" variant="outline" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Requests
+          </Button>
         </div>
       </div>
     );
@@ -166,9 +164,9 @@ export const AdminRegistrationRequestDetailsPage = () => {
 
         <Card style={{ padding: '32px', textAlign: 'center' }}>
           <div style={{ fontSize: '48px', color: 'var(--color-success-600)', marginBottom: '16px' }}>✓</div>
-          <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
+          <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
             {isDriverRegistration ? 'Driver Application Approved for Interview' : 'Shipper Account Provisioned'}
-          </h3>
+          </h2>
 
           {finalCredentials && (
             <div style={{ padding: '16px', backgroundColor: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-lg)', margin: '20px 0', textAlign: 'left' }}>
@@ -185,9 +183,7 @@ export const AdminRegistrationRequestDetailsPage = () => {
           )}
 
           <div style={{ marginTop: '24px' }}>
-            <Link to="/admin/registration-requests">
-              <Button variant="primary">Return to Onboarding Queue</Button>
-            </Link>
+            <Button as={Link} to="/admin/registration-requests" variant="primary">Return to Onboarding Queue</Button>
           </div>
         </Card>
       </div>
@@ -209,12 +205,10 @@ export const AdminRegistrationRequestDetailsPage = () => {
           </Badge>
         }
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Link to="/admin/registration-requests">
-              <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-                Requests Queue
-              </Button>
-            </Link>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button as={Link} to="/admin/registration-requests" variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+              Requests Queue
+            </Button>
 
             {request.status === 'PENDING' && (
               <>

@@ -60,23 +60,23 @@ export const CardTitle = ({
   children,
   className = '',
   style = {},
-  as: Component = 'h3',
+  as: TitleTag = 'h3',
   ...props
 }) => {
-  return (
-    <Component
-      className={`ui-card-title ${className}`}
-      style={{
+  return React.createElement(
+    TitleTag,
+    {
+      className: `ui-card-title ${className}`,
+      style: {
         fontSize: 'var(--text-md)',
         fontWeight: 'var(--font-semibold)',
         color: 'var(--text-primary)',
         margin: 0,
         ...style,
-      }}
-      {...props}
-    >
-      {children}
-    </Component>
+      },
+      ...props,
+    },
+    children
   );
 };
 

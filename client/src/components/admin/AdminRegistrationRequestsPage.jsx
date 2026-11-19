@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { api } from '../../services';
 import Pagination from '../common/Pagination';
 import {
@@ -29,7 +29,6 @@ import {
 } from 'react-icons/lu';
 
 export const AdminRegistrationRequestsPage = () => {
-  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -187,11 +186,9 @@ export const AdminRegistrationRequestsPage = () => {
                       </Badge>
                     </TableCell>
                     <TableCell style={{ textAlign: 'right' }}>
-                      <Link to={`/admin/registration-requests/${req.requestId}`}>
-                        <Button variant="outline" size="sm" leftIcon={<LuEye size={14} />}>
-                          Review Application
-                        </Button>
-                      </Link>
+                      <Button as={Link} to={`/admin/registration-requests/${req.requestId}`} variant="outline" size="sm" leftIcon={<LuEye size={14} aria-hidden="true" />}>
+                        Review Application
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

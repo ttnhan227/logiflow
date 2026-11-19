@@ -5,7 +5,8 @@ import { LuFileQuestion, LuArrowLeft } from 'react-icons/lu';
 
 export const NotFoundPage = () => {
   return (
-    <div
+    <main
+      id="main-content"
       style={{
         minHeight: '70vh',
         display: 'flex',
@@ -17,6 +18,7 @@ export const NotFoundPage = () => {
       }}
     >
       <div
+        aria-hidden="true"
         style={{
           width: '64px',
           height: '64px',
@@ -68,12 +70,10 @@ export const NotFoundPage = () => {
         The page you are looking for might have been moved, deleted, or does not exist on LogiFlow.
       </p>
 
-      <Link to="/">
-        <Button variant="primary" leftIcon={<LuArrowLeft size={16} />}>
-          Return to Home
-        </Button>
-      </Link>
-    </div>
+      <Button as={Link} to="/" variant="primary" leftIcon={<LuArrowLeft size={16} aria-hidden="true" />}>
+        Return to Home
+      </Button>
+    </main>
   );
 };
 

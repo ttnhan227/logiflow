@@ -186,7 +186,8 @@ export const CoveragePage = () => {
 
       {/* Regional Operational Details */}
       <section className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        <h2 className="sr-only">Regional Operational Corridors</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '24px' }}>
           {/* North */}
           <Card style={{ padding: '24px', borderTop: '4px solid #2563eb' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -262,20 +263,16 @@ export const CoveragePage = () => {
       <section className="container">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', padding: '32px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' }}>
           <div>
-            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               Explore the Tracking Demonstration
-            </h3>
+            </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: 0 }}>
               Use sample records to review the map and shipment status interfaces.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/track">
-              <Button variant="primary">Open Tracking Demo</Button>
-            </Link>
-            <Link to="/business">
-              <Button variant="outline">View Project Workflows</Button>
-            </Link>
+            <Button as={Link} to="/track" variant="primary">Open Tracking Demo</Button>
+            <Button as={Link} to="/business" variant="outline">View Project Workflows</Button>
           </div>
         </div>
       </section>

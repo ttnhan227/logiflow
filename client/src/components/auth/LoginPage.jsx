@@ -53,7 +53,8 @@ export const LoginPage = () => {
   };
 
   return (
-    <div
+    <main
+      id="main-content"
       style={{
         minHeight: 'calc(100vh - 72px)',
         display: 'flex',
@@ -99,14 +100,18 @@ export const LoginPage = () => {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <Input
               label="Username"
+              name="username"
               type="text"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value);
                 if (error) setError('');
               }}
               placeholder="e.g. admin or john.dispatcher"
-              leftIcon={<LuUser size={16} />}
+              leftIcon={<LuUser size={16} aria-hidden="true" />}
               required
               autoFocus
               error={error && !username.trim() ? 'Username is required' : undefined}
@@ -114,14 +119,16 @@ export const LoginPage = () => {
 
             <Input
               label="Password"
+              name="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (error) setError('');
               }}
               placeholder="Enter account password"
-              leftIcon={<LuLock size={16} />}
+              leftIcon={<LuLock size={16} aria-hidden="true" />}
               required
               error={error && !password.trim() ? 'Password is required' : undefined}
             />
@@ -131,7 +138,7 @@ export const LoginPage = () => {
               variant="primary"
               size="lg"
               loading={loading}
-              rightIcon={<LuArrowRight size={16} />}
+              rightIcon={<LuArrowRight size={16} aria-hidden="true" />}
               style={{ width: '100%', marginTop: '8px' }}
             >
               Sign In to Control Tower
@@ -159,7 +166,7 @@ export const LoginPage = () => {
                 color: 'var(--text-secondary)',
               }}
             >
-              <LuShieldCheck size={14} color="var(--color-brand-600)" />
+              <LuShieldCheck size={14} color="var(--color-brand-600)" aria-hidden="true" />
               <span>Quick Demo Autofill (Evaluator Access)</span>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -172,7 +179,7 @@ export const LoginPage = () => {
                   setPassword('123');
                   setError('');
                 }}
-                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
+                style={{ fontSize: '11px', padding: '4px 10px', minHeight: '28px' }}
               >
                 Dispatcher (john.dispatcher)
               </Button>
@@ -185,7 +192,7 @@ export const LoginPage = () => {
                   setPassword('123');
                   setError('');
                 }}
-                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
+                style={{ fontSize: '11px', padding: '4px 10px', minHeight: '28px' }}
               >
                 Admin (admin)
               </Button>
@@ -198,7 +205,7 @@ export const LoginPage = () => {
                   setPassword('123');
                   setError('');
                 }}
-                style={{ fontSize: '11px', padding: '4px 10px', height: '28px' }}
+                style={{ fontSize: '11px', padding: '4px 10px', minHeight: '28px' }}
               >
                 Customer (alice.customer)
               </Button>
@@ -221,21 +228,17 @@ export const LoginPage = () => {
               Need an account?
             </span>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/register/customer">
-                <Button variant="outline" size="sm">
-                  Register as Shipper / Customer
-                </Button>
-              </Link>
-              <Link to="/register/driver">
-                <Button variant="outline" size="sm">
-                  Apply as Driver Partner
-                </Button>
-              </Link>
+              <Button as={Link} to="/register/customer" variant="outline" size="sm">
+                Register as Shipper / Customer
+              </Button>
+              <Button as={Link} to="/register/driver" variant="outline" size="sm">
+                Apply as Driver Partner
+              </Button>
             </div>
           </div>
         </Card>
       </div>
-    </div>
+    </main>
   );
 };
 

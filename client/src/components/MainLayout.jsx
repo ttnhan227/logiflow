@@ -35,7 +35,7 @@ export const MainLayout = () => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -63,7 +63,7 @@ export const MainLayout = () => {
     setUserDropdownOpen(false);
   }, [location.pathname]);
 
-  // Click outside to close dropdowns
+  // Click outside or Escape key to close dropdowns / mobile drawer
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (servicesRef.current && !servicesRef.current.contains(event.target)) {
@@ -76,8 +76,20 @@ export const MainLayout = () => {
         setUserDropdownOpen(false);
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setServicesDropdownOpen(false);
+        setJoinDropdownOpen(false);
+        setUserDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -121,16 +133,22 @@ export const MainLayout = () => {
       padding: '8px 12px',
       fontSize: 'var(--text-sm)',
       fontWeight: isActive ? 600 : 500,
-      color: isActive ? 'var(--color-route-orange)' : '#d7e7f3',
-      backgroundColor: isActive ? 'rgba(255, 103, 20, 0.12)' : 'transparent',
+      color: isActive ? '#ff8547' : '#d7e7f3',
+      backgroundColor: isActive ? 'rgba(255, 103, 20, 0.14)' : 'transparent',
       borderRadius: 'var(--radius-md)',
-      transition: 'all var(--transition-fast)',
+      transition: 'background-color var(--transition-fast), color var(--transition-fast)',
       cursor: 'pointer',
     };
   };
 
+  const navLinkProps = (path) => ({
+    style: navLinkStyle(path),
+    'aria-current': location.pathname === path ? 'page' : undefined,
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       {/* Sticky Header */}
       <header
         style={{
@@ -187,6 +205,7 @@ export const MainLayout = () => {
 
           {/* Desktop Navigation */}
           <nav
+            aria-label="Primary navigation"
             style={{
               display: 'none',
               alignItems: 'center',
@@ -194,29 +213,30 @@ export const MainLayout = () => {
             }}
             className="desktop-nav"
           >
-            <Link to="/" style={navLinkStyle('/')}>
+            <Link to="/" {...navLinkProps('/')}>
               Home
             </Link>
 
             {/* Services Dropdown */}
             <div style={{ position: 'relative' }} ref={servicesRef}>
               <button
+                type="button"
                 onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
                 aria-expanded={servicesDropdownOpen}
-                aria-haspopup="true"
+                aria-controls="services-dropdown-panel"
                 style={{
                   ...navLinkStyle('/services'),
-                  color: servicesDropdownOpen ? 'var(--color-route-orange)' : '#d7e7f3',
-                  backgroundColor: servicesDropdownOpen ? 'rgba(255, 103, 20, 0.12)' : 'transparent',
+                  color: servicesDropdownOpen ? '#ff8547' : '#d7e7f3',
+                  backgroundColor: servicesDropdownOpen ? 'rgba(255, 103, 20, 0.14)' : 'transparent',
                 }}
               >
-                Services <LuChevronDown size={14} style={{ transform: servicesDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
+                Services <LuChevronDown size={14} aria-hidden="true" style={{ transform: servicesDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
               </button>
 
               {servicesDropdownOpen && (
                 <div
-                  role="menu"
-                  aria-label="Services menu"
+                  id="services-dropdown-panel"
+                  aria-label="Services navigation"
                   style={{
                     position: 'absolute',
                     top: 'calc(100% + 6px)',
@@ -235,7 +255,6 @@ export const MainLayout = () => {
                 >
                   <Link
                     to="/services"
-                    role="menuitem"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -247,12 +266,11 @@ export const MainLayout = () => {
                     }}
                     onClick={() => setServicesDropdownOpen(false)}
                   >
-                    <LuPackage size={16} color="var(--color-brand-600)" />
+                    <LuPackage size={16} color="var(--color-brand-600)" aria-hidden="true" />
                     Delivery Services
                   </Link>
                   <Link
                     to="/track"
-                    role="menuitem"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -264,12 +282,11 @@ export const MainLayout = () => {
                     }}
                     onClick={() => setServicesDropdownOpen(false)}
                   >
-                    <LuSearch size={16} color="var(--color-brand-600)" />
+                    <LuSearch size={16} color="var(--color-brand-600)" aria-hidden="true" />
                     Track Shipment
                   </Link>
                   <Link
                     to="/coverage"
-                    role="menuitem"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -281,23 +298,23 @@ export const MainLayout = () => {
                     }}
                     onClick={() => setServicesDropdownOpen(false)}
                   >
-                    <LuMapPin size={16} color="var(--color-brand-600)" />
+                    <LuMapPin size={16} color="var(--color-brand-600)" aria-hidden="true" />
                     Coverage Map
                   </Link>
                 </div>
               )}
             </div>
 
-            <Link to="/fleet" style={navLinkStyle('/fleet')}>
+            <Link to="/fleet" {...navLinkProps('/fleet')}>
               Fleet
             </Link>
-            <Link to="/about" style={navLinkStyle('/about')}>
+            <Link to="/about" {...navLinkProps('/about')}>
               About
             </Link>
-            <Link to="/contact" style={navLinkStyle('/contact')}>
+            <Link to="/contact" {...navLinkProps('/contact')}>
               Contact
             </Link>
-            <Link to="/business" style={navLinkStyle('/business')}>
+            <Link to="/business" {...navLinkProps('/business')}>
               For Business
             </Link>
 
@@ -305,26 +322,28 @@ export const MainLayout = () => {
             {user?.role === 'DISPATCHER' && (
               <Link
                 to="/dispatch/orders"
+                aria-current={location.pathname === '/dispatch/orders' ? 'page' : undefined}
                 style={{
                   ...navLinkStyle('/dispatch/orders'),
-                  color: 'var(--color-brand-700)',
+                  color: '#7dd3fc',
                   fontWeight: 600,
                 }}
               >
-                <LuTruck size={15} /> Dispatch
+                <LuTruck size={15} aria-hidden="true" /> Dispatch
               </Link>
             )}
 
             {user?.role === 'ADMIN' && (
               <Link
                 to="/admin/dashboard"
+                aria-current={location.pathname === '/admin/dashboard' ? 'page' : undefined}
                 style={{
                   ...navLinkStyle('/admin/dashboard'),
-                  color: 'var(--color-brand-700)',
+                  color: '#7dd3fc',
                   fontWeight: 600,
                 }}
               >
-                <LuLayoutDashboard size={15} /> Admin Portal
+                <LuLayoutDashboard size={15} aria-hidden="true" /> Admin Portal
               </Link>
             )}
           </nav>
@@ -334,9 +353,10 @@ export const MainLayout = () => {
             {user ? (
               <div style={{ position: 'relative' }} ref={userRef}>
                 <button
+                  type="button"
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   aria-expanded={userDropdownOpen}
-                  aria-haspopup="true"
+                  aria-controls="user-dropdown-panel"
                   aria-label={`User account options for ${user.username || 'User'}`}
                   style={{
                     display: 'flex',
@@ -376,13 +396,13 @@ export const MainLayout = () => {
                   <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user.username || user.email || 'User'}
                   </span>
-                  <LuChevronDown size={14} color="var(--color-slate-400)" />
+                  <LuChevronDown size={14} color="var(--color-slate-600)" aria-hidden="true" />
                 </button>
 
                 {userDropdownOpen && (
                   <div
-                    role="menu"
-                    aria-label="User account menu"
+                    id="user-dropdown-panel"
+                    aria-label="User account navigation"
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 6px)',
@@ -410,7 +430,6 @@ export const MainLayout = () => {
 
                     <Link
                       to="/profile"
-                      role="menuitem"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -422,13 +441,12 @@ export const MainLayout = () => {
                       }}
                       onClick={() => setUserDropdownOpen(false)}
                     >
-                      <LuUser size={15} /> My Profile
+                      <LuUser size={15} aria-hidden="true" /> My Profile
                     </Link>
 
                     {user.role === 'ADMIN' && (
                       <Link
                         to="/admin/dashboard"
-                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -440,14 +458,13 @@ export const MainLayout = () => {
                         }}
                         onClick={() => setUserDropdownOpen(false)}
                       >
-                        <LuLayoutDashboard size={15} /> Admin Dashboard
+                        <LuLayoutDashboard size={15} aria-hidden="true" /> Admin Dashboard
                       </Link>
                     )}
 
                     {user.role === 'DISPATCHER' && (
                       <Link
                         to="/dispatch/orders"
-                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -459,12 +476,12 @@ export const MainLayout = () => {
                         }}
                         onClick={() => setUserDropdownOpen(false)}
                       >
-                        <LuTruck size={15} /> Dispatch Center
+                        <LuTruck size={15} aria-hidden="true" /> Dispatch Center
                       </Link>
                     )}
 
                     <button
-                      role="menuitem"
+                      type="button"
                       onClick={handleLogout}
                       style={{
                         display: 'flex',
@@ -479,7 +496,7 @@ export const MainLayout = () => {
                         textAlign: 'left',
                       }}
                     >
-                      <LuLogOut size={15} /> Sign Out
+                      <LuLogOut size={15} aria-hidden="true" /> Sign Out
                     </button>
                   </div>
                 )}
@@ -489,9 +506,10 @@ export const MainLayout = () => {
                 {/* Join Us Dropdown */}
                 <div className="join-menu" style={{ position: 'relative' }} ref={joinRef}>
                   <button
+                    type="button"
                     onClick={() => setJoinDropdownOpen(!joinDropdownOpen)}
                     aria-expanded={joinDropdownOpen}
-                    aria-haspopup="true"
+                    aria-controls="join-dropdown-panel"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -499,20 +517,20 @@ export const MainLayout = () => {
                       padding: '7px 12px',
                       fontSize: 'var(--text-sm)',
                       fontWeight: 600,
-                      color: joinDropdownOpen ? 'var(--color-route-orange)' : '#d7e7f3',
-                      backgroundColor: joinDropdownOpen ? 'rgba(255, 103, 20, 0.12)' : 'transparent',
+                      color: joinDropdownOpen ? '#ff8547' : '#d7e7f3',
+                      backgroundColor: joinDropdownOpen ? 'rgba(255, 103, 20, 0.14)' : 'transparent',
                       borderRadius: 'var(--radius-md)',
                       cursor: 'pointer',
-                      transition: 'all var(--transition-fast)',
+                      transition: 'background-color var(--transition-fast), color var(--transition-fast)',
                     }}
                   >
-                    Join Us <LuChevronDown size={14} style={{ transform: joinDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
+                    Join Us <LuChevronDown size={14} aria-hidden="true" style={{ transform: joinDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
                   </button>
 
                   {joinDropdownOpen && (
                     <div
-                      role="menu"
-                      aria-label="Registration options menu"
+                      id="join-dropdown-panel"
+                      aria-label="Registration options"
                       style={{
                         position: 'absolute',
                         top: 'calc(100% + 6px)',
@@ -531,7 +549,6 @@ export const MainLayout = () => {
                     >
                       <Link
                         to="/register/driver"
-                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -543,12 +560,11 @@ export const MainLayout = () => {
                         }}
                         onClick={() => setJoinDropdownOpen(false)}
                       >
-                        <LuTruck size={15} color="var(--color-brand-600)" />
+                        <LuTruck size={15} color="var(--color-brand-600)" aria-hidden="true" />
                         Apply as Driver
                       </Link>
                       <Link
                         to="/register/customer"
-                        role="menuitem"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -560,7 +576,7 @@ export const MainLayout = () => {
                         }}
                         onClick={() => setJoinDropdownOpen(false)}
                       >
-                        <LuBuilding size={15} color="var(--color-brand-600)" />
+                        <LuBuilding size={15} color="var(--color-brand-600)" aria-hidden="true" />
                         Register Company
                       </Link>
                     </div>
@@ -588,6 +604,7 @@ export const MainLayout = () => {
 
             {/* Mobile Menu Toggle */}
             <button
+              type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="mobile-menu-btn"
               aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
@@ -597,6 +614,8 @@ export const MainLayout = () => {
                 display: 'none',
                 alignItems: 'center',
                 justifyContent: 'center',
+                minWidth: '40px',
+                minHeight: '40px',
                 padding: '6px 8px',
                 color: 'var(--color-white)',
                 borderRadius: 'var(--radius-md)',
@@ -605,34 +624,36 @@ export const MainLayout = () => {
                 cursor: 'pointer',
               }}
             >
-              {isMobileMenuOpen ? <LuX size={20} /> : <LuMenu size={20} />}
+              {isMobileMenuOpen ? <LuX size={20} aria-hidden="true" /> : <LuMenu size={20} aria-hidden="true" />}
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
-          <div
+          <nav
+            id="mobile-nav-drawer"
+            aria-label="Mobile navigation"
             style={{
               padding: '16px',
-              borderTop: '1px solid var(--border-default)',
+              borderTop: '1px solid rgba(68, 197, 225, 0.25)',
               backgroundColor: 'var(--bg-sidebar)',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
             }}
           >
-            <Link to="/" style={navLinkStyle('/')}>Home</Link>
-            <Link to="/services" style={navLinkStyle('/services')}>Delivery Services</Link>
-            <Link to="/track" style={navLinkStyle('/track')}>Track Shipment</Link>
-            <Link to="/coverage" style={navLinkStyle('/coverage')}>Coverage Map</Link>
-            <Link to="/fleet" style={navLinkStyle('/fleet')}>Fleet</Link>
-            <Link to="/business" style={navLinkStyle('/business')}>For Business</Link>
-            <Link to="/about" style={navLinkStyle('/about')}>About</Link>
-            <Link to="/contact" style={navLinkStyle('/contact')}>Contact</Link>
-            <Link to="/faq" style={navLinkStyle('/faq')}>FAQ</Link>
-            <Link to="/drivers" style={navLinkStyle('/drivers')}>Driver Opportunities</Link>
-            <Link to="/mobile-app" style={navLinkStyle('/mobile-app')}>Mobile Apps</Link>
+            <Link to="/" {...navLinkProps('/')}>Home</Link>
+            <Link to="/services" {...navLinkProps('/services')}>Delivery Services</Link>
+            <Link to="/track" {...navLinkProps('/track')}>Track Shipment</Link>
+            <Link to="/coverage" {...navLinkProps('/coverage')}>Coverage Map</Link>
+            <Link to="/fleet" {...navLinkProps('/fleet')}>Fleet</Link>
+            <Link to="/business" {...navLinkProps('/business')}>For Business</Link>
+            <Link to="/about" {...navLinkProps('/about')}>About</Link>
+            <Link to="/contact" {...navLinkProps('/contact')}>Contact</Link>
+            <Link to="/faq" {...navLinkProps('/faq')}>FAQ</Link>
+            <Link to="/drivers" {...navLinkProps('/drivers')}>Driver Opportunities</Link>
+            <Link to="/mobile-app" {...navLinkProps('/mobile-app')}>Mobile Apps</Link>
 
             {!user && (
               <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -658,11 +679,11 @@ export const MainLayout = () => {
                       flex: 1,
                       textAlign: 'center',
                       padding: '8px',
-                      border: '1px solid var(--border-default)',
+                      border: '1px solid rgba(255,255,255,0.28)',
                       borderRadius: 'var(--radius-md)',
                       fontSize: 'var(--text-xs)',
                       fontWeight: 600,
-                      color: 'var(--text-secondary)',
+                      color: '#e2eff9',
                     }}
                   >
                     Apply Driver
@@ -673,11 +694,11 @@ export const MainLayout = () => {
                       flex: 1,
                       textAlign: 'center',
                       padding: '8px',
-                      border: '1px solid var(--border-default)',
+                      border: '1px solid rgba(255,255,255,0.28)',
                       borderRadius: 'var(--radius-md)',
                       fontSize: 'var(--text-xs)',
                       fontWeight: 600,
-                      color: 'var(--text-secondary)',
+                      color: '#e2eff9',
                     }}
                   >
                     Register Biz
@@ -685,12 +706,12 @@ export const MainLayout = () => {
                 </div>
               </div>
             )}
-          </div>
+          </nav>
         )}
       </header>
 
       {/* Main Outlet */}
-      <main style={{ flex: 1 }}>
+      <main id="main-content" tabIndex={-1} style={{ flex: 1 }}>
         <Outlet />
       </main>
 

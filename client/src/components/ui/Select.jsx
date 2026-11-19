@@ -17,15 +17,16 @@ export const Select = React.forwardRef(({
   ...props
 }, ref) => {
   const generatedId = useId();
-  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `select-${generatedId}`);
+  const selectId = id || `select-${generatedId}`;
   const errorId = error ? `${selectId}-error` : undefined;
   const hintId = hint && !error ? `${selectId}-hint` : undefined;
   const describedBy = [ariaDescribedByProp, errorId, hintId].filter(Boolean).join(' ') || undefined;
   const isInvalid = ariaInvalidProp != null ? ariaInvalidProp : !!error;
+  const cleanLabel = typeof label === 'string' && required ? label.replace(/\s*\*$/, '') : label;
 
   return (
     <div className={`ui-select-group ${className}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-      {label && (
+      {cleanLabel && (
         <label
           htmlFor={selectId}
           style={{
@@ -37,7 +38,7 @@ export const Select = React.forwardRef(({
             gap: '4px',
           }}
         >
-          {label}
+          {cleanLabel}
           {required && <span style={{ color: 'var(--color-danger-600)' }} aria-hidden="true">*</span>}
         </label>
       )}
@@ -50,13 +51,13 @@ export const Select = React.forwardRef(({
           required={required}
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy}
-          aria-label={!label ? (props['aria-label'] || props.placeholder) : undefined}
+          aria-label={!cleanLabel ? (props['aria-label'] || props.placeholder) : undefined}
           className={`ui-select ${error ? 'has-error' : ''}`}
           style={{
             width: '100%',
-            height: '38px',
+            minHeight: '40px',
             padding: '8px 36px 8px 12px',
-            fontSize: 'var(--text-sm)',
+            fontSize: 'max(1rem, var(--text-sm))',
             color: 'var(--text-primary)',
             backgroundColor: disabled ? 'var(--color-slate-100)' : error ? 'var(--color-danger-50)' : 'var(--color-white)',
             border: `1px solid ${error ? 'var(--color-danger-600)' : 'var(--border-strong)'}`,
@@ -65,8 +66,7 @@ export const Select = React.forwardRef(({
             appearance: 'none',
             WebkitAppearance: 'none',
             cursor: disabled ? 'not-allowed' : 'pointer',
-            transition: 'all var(--transition-fast)',
-            outline: 'none',
+            transition: 'border-color var(--transition-fast), box-shadow var(--transition-fast)',
             ...style,
           }}
           {...props}
@@ -84,7 +84,7 @@ export const Select = React.forwardRef(({
           style={{
             position: 'absolute',
             right: '12px',
-            color: error ? 'var(--color-danger-600)' : 'var(--color-slate-400)',
+            color: error ? 'var(--color-danger-600)' : 'var(--text-muted)',
             pointerEvents: 'none',
             display: 'inline-flex',
             alignItems: 'center',

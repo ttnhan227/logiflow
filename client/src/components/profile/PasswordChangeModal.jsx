@@ -92,11 +92,12 @@ export const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
           label="Current Password *"
           type="password"
           name="currentPassword"
+          autoComplete="current-password"
           value={form.currentPassword}
           onChange={handleInputChange}
           placeholder="Enter current password"
           error={errors.currentPassword}
-          leftIcon={<LuLock size={16} />}
+          leftIcon={<LuLock size={16} aria-hidden="true" />}
           required
           disabled={submitting}
         />
@@ -105,12 +106,13 @@ export const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
           label="New Password *"
           type="password"
           name="newPassword"
+          autoComplete="new-password"
           value={form.newPassword}
           onChange={handleInputChange}
           placeholder="Minimum 6 characters"
           hint="Must contain at least 6 characters."
           error={errors.newPassword}
-          leftIcon={<LuLock size={16} />}
+          leftIcon={<LuLock size={16} aria-hidden="true" />}
           required
           disabled={submitting}
         />
@@ -119,11 +121,12 @@ export const PasswordChangeModal = ({ isOpen, onClose, onSuccess }) => {
           label="Confirm New Password *"
           type="password"
           name="confirmPassword"
+          autoComplete="new-password"
           value={form.confirmPassword}
           onChange={handleInputChange}
           placeholder="Re-enter new password"
           error={errors.confirmPassword}
-          leftIcon={<LuLock size={16} />}
+          leftIcon={<LuLock size={16} aria-hidden="true" />}
           required
           disabled={submitting}
         />

@@ -1,8 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import { divIcon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { Button, Card, CardContent, Input, Select, Badge } from '@/components/ui';
 import {
   LuSearch,
@@ -10,90 +7,69 @@ import {
   LuTruck,
   LuPackage,
   LuWarehouse,
-  LuChartLine,
   LuShieldCheck,
-  LuFileCheck,
-  LuCpu,
-  LuClock,
-  LuMapPin,
-  LuCircleCheck,
-  LuAward,
-  LuActivity,
   LuNavigation,
-  LuFuel,
-  LuGauge,
-  LuLayers,
-  LuPhone,
-  LuBuilding2,
-  LuFileText,
-  LuBookOpen,
-  LuCalendar,
-  LuTrendingUp,
-  LuGlobe,
-  LuCheck,
-  LuSparkles,
-  LuShield,
   LuDollarSign,
+  LuCheck,
   LuUserPlus,
   LuLogIn,
 } from 'react-icons/lu';
 
-// Custom Leaflet DivIcon helpers
-const createHubPin = (label, type = 'gateway') =>
-  divIcon({
-    className: 'custom-hub-pin',
-    html: `
-      <div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: ${type === 'gateway' ? '#2563eb' : '#475569'};
-        color: white;
-        border: 2px solid white;
-        border-radius: 6px;
-        padding: 3px 8px;
-        font-size: 11px;
-        font-weight: 700;
-        font-family: Inter, sans-serif;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-        white-space: nowrap;
-      ">
-        ${label}
-      </div>
-    `,
-    iconSize: [90, 24],
-    iconAnchor: [45, 12],
-    popupAnchor: [0, -12],
-  });
+const HomeCoverageMap = lazy(() => import('./HomeCoverageMap'));
 
-const tradeLanes = {
-  northSouthTrunk: [
-    [21.0278, 105.8342], // Hanoi
-    [18.6796, 105.6813], // Vinh
-    [16.4637, 107.5909], // Hue
-    [16.0544, 108.2022], // Da Nang
-    [13.783, 109.2197],  // Quy Nhon
-    [12.2388, 109.1967], // Nha Trang
-    [10.8231, 106.6297], // HCMC
-  ],
-  haiPhongHanoi: [
-    [20.8449, 106.6881], // Hai Phong Port
-    [20.9372, 106.3145], // Hai Duong
-    [21.0278, 105.8342], // Hanoi
-  ],
-  mekongDelta: [
-    [10.8231, 106.6297], // HCMC
-    [10.3606, 106.3639], // My Tho
-    [10.0452, 105.7469], // Can Tho
-    [9.1769, 105.1524],  // Ca Mau
-  ],
-};
+const PictureMedia = ({
+  base,
+  fallbackExt = 'jpg',
+  alt,
+  width,
+  height,
+  loading = 'lazy',
+  fetchPriority,
+  style = {},
+}) => (
+  <picture style={{ display: 'block', width: '100%', height: '100%' }}>
+    <source srcSet={`/${base}.avif`} type="image/avif" />
+    <source srcSet={`/${base}.webp`} type="image/webp" />
+    <img
+      src={`/${base}.${fallbackExt}`}
+      alt={alt}
+      width={width}
+      height={height}
+      loading={loading}
+      fetchPriority={fetchPriority}
+      decoding={loading === 'eager' ? 'sync' : 'async'}
+      style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', ...style }}
+    />
+  </picture>
+);
 
 export const HomePage = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [leadForm, setLeadForm] = useState({ company: '', email: '', mode: 'FTL', monthlyVolume: '10-50_TRIPS' });
   const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [shouldLoadMap, setShouldLoadMap] = useState(false);
+  const mapTriggerRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const el = mapTriggerRef.current;
+    if (!el || shouldLoadMap) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setShouldLoadMap(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoadMap(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '240px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shouldLoadMap]);
 
   const handleTrackSubmit = (e) => {
     e.preventDefault();
@@ -124,7 +100,9 @@ export const HomePage = () => {
     {
       id: 'fmu-august-2026',
       tag: 'Freight Market Update',
-      image: '/article-market.jpg',
+      imageBase: 'article-market',
+      width: 960,
+      height: 720,
       title: 'Vietnam Domestic Freight Rates: Q3 Linehaul Capacity & Fuel Trends',
       readTime: '5 min read',
       date: 'August 2026',
@@ -134,7 +112,9 @@ export const HomePage = () => {
     {
       id: 'cold-chain-best-practices',
       tag: 'Cold Chain Best Practices',
-      image: '/article-coldchain.jpg',
+      imageBase: 'article-coldchain',
+      width: 960,
+      height: 640,
       title: 'Eliminating Temperature Excursions in Tropical Cargo Linehaul',
       readTime: '7 min read',
       date: 'August 2026',
@@ -144,7 +124,9 @@ export const HomePage = () => {
     {
       id: 'ai-dispatch-efficiency',
       tag: 'Technology & AI',
-      image: '/article-dispatch.jpg',
+      imageBase: 'article-dispatch',
+      width: 960,
+      height: 640,
       title: 'How Automated Dispatch Algorithms Cut Empty Linehaul Miles by 28%',
       readTime: '6 min read',
       date: 'July 2026',
@@ -168,21 +150,23 @@ export const HomePage = () => {
           borderBottom: '4px solid var(--color-route-orange)',
         }}
       >
-        {/* Background Image Layer */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'url(/brand-route-art.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 1,
-          }}
-        />
+        {/* Background LCP Image Layer */}
+        <div aria-hidden="true" style={{ position: 'absolute', inset: 0 }}>
+          <PictureMedia
+            base="brand-route-art"
+            fallbackExt="jpg"
+            alt=""
+            width={1600}
+            height={839}
+            loading="eager"
+            fetchPriority="high"
+            style={{ objectPosition: 'center' }}
+          />
+        </div>
 
         {/* Soft Contrast Gradient Overlays */}
         <div
+          aria-hidden="true"
           style={{
             position: 'absolute',
             inset: 0,
@@ -241,23 +225,23 @@ export const HomePage = () => {
                 <form className="logiflow-track-form" onSubmit={handleTrackSubmit} style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
+                    className="logiflow-track-input"
                     aria-label="Enter Tracking Code or Order ID"
                     placeholder="Enter Tracking Code (e.g. TRK-882194)..."
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
                     style={{
                       flex: 1,
-                      height: '46px',
+                      minHeight: '46px',
                       padding: '0 16px',
                       backgroundColor: 'var(--color-white)',
                       border: 'none',
                       borderRadius: 'var(--radius-md)',
-                      fontSize: 'var(--text-sm)',
+                      fontSize: 'max(1rem, var(--text-sm))',
                       color: 'var(--text-primary)',
-                      outline: 'none',
                     }}
                   />
-                  <Button type="submit" variant="primary" size="lg" leftIcon={<LuSearch size={16} />}>
+                  <Button type="submit" variant="primary" size="lg" leftIcon={<LuSearch size={16} aria-hidden="true" />}>
                     Track Shipment
                   </Button>
                 </form>
@@ -265,51 +249,49 @@ export const HomePage = () => {
 
               {/* Hero Action CTAs */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                <Link to="/register/customer">
-                  <Button variant="primary" size="lg" leftIcon={<LuUserPlus size={16} />} rightIcon={<LuArrowRight size={16} />}>
-                    Try Customer Registration
-                  </Button>
-                </Link>
-                <Link to="/register/driver">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    style={{
-                      backgroundColor: 'transparent',
-                      borderColor: 'var(--color-slate-700)',
-                      color: 'var(--color-white)',
-                    }}
-                    leftIcon={<LuTruck size={16} />}
-                  >
-                    Try Driver Registration
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.06)',
-                      borderColor: 'rgba(255,255,255,0.2)',
-                      color: 'var(--color-white)',
-                    }}
-                    leftIcon={<LuLogIn size={16} />}
-                  >
-                    Sign In
-                  </Button>
-                </Link>
+                <Button as={Link} to="/register/customer" variant="primary" size="lg" leftIcon={<LuUserPlus size={16} aria-hidden="true" />} rightIcon={<LuArrowRight size={16} aria-hidden="true" />}>
+                  Try Customer Registration
+                </Button>
+                <Button
+                  as={Link}
+                  to="/register/driver"
+                  variant="outline"
+                  size="lg"
+                  style={{
+                    backgroundColor: 'transparent',
+                    borderColor: 'var(--color-slate-600)',
+                    color: 'var(--color-white)',
+                  }}
+                  leftIcon={<LuTruck size={16} aria-hidden="true" />}
+                >
+                  Try Driver Registration
+                </Button>
+                <Button
+                  as={Link}
+                  to="/login"
+                  variant="outline"
+                  size="lg"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    borderColor: 'rgba(255,255,255,0.28)',
+                    color: 'var(--color-white)',
+                  }}
+                  leftIcon={<LuLogIn size={16} aria-hidden="true" />}
+                >
+                  Sign In
+                </Button>
               </div>
 
               {/* Trust Indicators */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', color: 'var(--color-slate-400)', fontSize: 'var(--text-xs)', paddingTop: '8px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', color: 'var(--color-slate-300)', fontSize: 'var(--text-xs)', paddingTop: '8px', flexWrap: 'wrap' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" /> React and Flutter Clients
+                  <LuCheck size={16} color="var(--color-success-400)" aria-hidden="true" /> React and Flutter Clients
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" /> Spring Boot and PostgreSQL
+                  <LuCheck size={16} color="var(--color-success-400)" aria-hidden="true" /> Spring Boot and PostgreSQL
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" /> Signature-Based e-POD
+                  <LuCheck size={16} color="var(--color-success-400)" aria-hidden="true" /> Signature-Based e-POD
                 </span>
               </div>
             </div>
@@ -328,13 +310,13 @@ export const HomePage = () => {
             Review orders and fleet activity in the operations dashboard, then follow a trip on the map. Screens show demonstration data.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr))', gap: '24px' }}>
           <figure style={{ margin: 0, overflow: 'hidden', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-            <img src="/logiflow-dashboard.png" alt="LogiFlow dispatcher operations dashboard" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />
+            <PictureMedia base="logiflow-dashboard" fallbackExt="png" alt="LogiFlow dispatcher operations dashboard" width={1280} height={800} style={{ height: 'auto' }} />
             <figcaption style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Operations dashboard</figcaption>
           </figure>
           <figure style={{ margin: 0, overflow: 'hidden', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-            <img src="/logiflow-map.png" alt="LogiFlow live driver location map" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />
+            <PictureMedia base="logiflow-map" fallbackExt="png" alt="LogiFlow live driver location map" width={1280} height={800} style={{ height: 'auto' }} />
             <figcaption style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Driver location and route map</figcaption>
           </figure>
         </div>
@@ -390,9 +372,9 @@ export const HomePage = () => {
             <Badge variant="brand" size="sm" style={{ alignSelf: 'center' }}>
                Project Scope
             </Badge>
-            <blockquote style={{ margin: 0, fontSize: 'var(--text-lg)', fontStyle: 'italic', color: 'var(--text-primary)', lineHeight: 1.6, fontWeight: 500 }}>
+            <p style={{ margin: 0, fontSize: 'var(--text-lg)', fontStyle: 'italic', color: 'var(--text-primary)', lineHeight: 1.6, fontWeight: 500 }}>
               “LogiFlow is an academic project. Company names, operating statistics, locations, routes, and contacts shown in the interface are sample data rather than customer or service claims.”
-            </blockquote>
+            </p>
             <div style={{ marginTop: '8px' }}>
               <strong style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', display: 'block' }}>Demonstration Boundary</strong>
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>No live carrier network or commercial service</span>
@@ -403,12 +385,13 @@ export const HomePage = () => {
 
       {/* 4. CORE TRANSPORT MODES BREAKDOWN */}
       <section className="container" style={{ display: 'flex', flexDirection: 'column', gap: '72px' }}>
+        <h2 className="sr-only">Core Transport Modes</h2>
         {/* Mode 1: Inter-Provincial Linehaul Trunk */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '48px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '48px', alignItems: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LuTruck size={20} />
+                <LuTruck size={20} aria-hidden="true" />
               </div>
               <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-brand-600)', letterSpacing: '0.05em' }}>
                 Inter-Provincial Linehaul Trunk
@@ -423,11 +406,9 @@ export const HomePage = () => {
               Move high-volume palletized freight and commercial cargo on reliable daily schedules. Connect primary production corridors between Hanoi, Bac Ninh, Da Nang, Binh Duong, and Ho Chi Minh City with automated dispatcher matching and continuous GPS tracking.
             </p>
 
-            <Link to="/services" style={{ marginTop: '8px' }}>
-              <Button variant="primary" size="md" rightIcon={<LuArrowRight size={14} />}>
-                Explore Linehaul Services
-              </Button>
-            </Link>
+            <Button as={Link} to="/services" variant="primary" size="md" rightIcon={<LuArrowRight size={14} aria-hidden="true" />} style={{ marginTop: '8px', alignSelf: 'flex-start' }}>
+              Explore Linehaul Services
+            </Button>
           </div>
 
           {/* Linehaul Visual */}
@@ -443,21 +424,17 @@ export const HomePage = () => {
                 border: '1px solid var(--border-default)',
               }}
             >
-              <img
-                src="/service-truck.jpg"
-                alt="Commercial Linehaul Truck"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <PictureMedia base="service-truck" fallbackExt="jpg" alt="Commercial Linehaul Truck" width={960} height={1280} />
             </div>
           </div>
         </div>
 
         {/* Mode 2: Port Drayage & Full Truckload (FTL) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '48px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '48px', alignItems: 'center' }}>
           <div style={{ order: 2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LuWarehouse size={20} />
+                <LuWarehouse size={20} aria-hidden="true" />
               </div>
               <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-brand-600)', letterSpacing: '0.05em' }}>
                 Seaport Drayage & Full Truckload (FTL)
@@ -472,11 +449,9 @@ export const HomePage = () => {
               Drayage and intermodal transport connecting deepwater terminals (Hai Phong, Cat Lai, Cai Mep) directly to regional ICDs and manufacturing plants. Dedicated heavy container tractors with automated weighbridge compliance auditing.
             </p>
 
-            <Link to="/fleet" style={{ marginTop: '8px' }}>
-              <Button variant="primary" size="md" rightIcon={<LuArrowRight size={14} />}>
-                Explore Fleet Capabilities
-              </Button>
-            </Link>
+            <Button as={Link} to="/fleet" variant="primary" size="md" rightIcon={<LuArrowRight size={14} aria-hidden="true" />} style={{ marginTop: '8px', alignSelf: 'flex-start' }}>
+              Explore Fleet Capabilities
+            </Button>
           </div>
 
           {/* Drayage Visual */}
@@ -492,21 +467,17 @@ export const HomePage = () => {
                 border: '1px solid var(--border-default)',
               }}
             >
-              <img
-                src="/service-ocean.jpg"
-                alt="Seaport Container Drayage"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <PictureMedia base="service-ocean" fallbackExt="jpg" alt="Seaport Container Drayage" width={960} height={539} />
             </div>
           </div>
         </div>
 
         {/* Mode 3: Express Last-Mile Distribution */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '48px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '48px', alignItems: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LuPackage size={20} />
+                <LuPackage size={20} aria-hidden="true" />
               </div>
               <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-brand-600)', letterSpacing: '0.05em' }}>
                 Express Last-Mile & Urban Delivery
@@ -521,11 +492,9 @@ export const HomePage = () => {
               Fast, predictable regional deliveries across major metropolitan hubs. Features bulk barcode scanning, automated driver route sequencing, paperless digital proof of delivery (e-POD), and real-time delivery status notifications.
             </p>
 
-            <Link to="/services" style={{ marginTop: '8px' }}>
-              <Button variant="primary" size="md" rightIcon={<LuArrowRight size={14} />}>
-                Explore Express Delivery
-              </Button>
-            </Link>
+            <Button as={Link} to="/services" variant="primary" size="md" rightIcon={<LuArrowRight size={14} aria-hidden="true" />} style={{ marginTop: '8px', alignSelf: 'flex-start' }}>
+              Explore Express Delivery
+            </Button>
           </div>
 
           {/* Fulfillment Visual */}
@@ -541,21 +510,17 @@ export const HomePage = () => {
                 border: '1px solid var(--border-default)',
               }}
             >
-              <img
-                src="/service-fulfillment.jpg"
-                alt="Express Urban Fulfillment"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <PictureMedia base="service-fulfillment" fallbackExt="jpg" alt="Express Urban Fulfillment" width={960} height={640} />
             </div>
           </div>
         </div>
 
         {/* Mode 4: Temperature-Controlled Cold-Chain */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '48px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '48px', alignItems: 'center' }}>
           <div style={{ order: 2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-brand-50)', color: 'var(--color-brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LuShieldCheck size={20} />
+                <LuShieldCheck size={20} aria-hidden="true" />
               </div>
               <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-brand-600)', letterSpacing: '0.05em' }}>
                 Temperature-Controlled Cold-Chain
@@ -570,11 +535,9 @@ export const HomePage = () => {
               Maintain unbroken temperature integrity from Mekong aquaculture facilities and Da Lat produce farms directly to central cold-storage hubs. Multi-temperature setpoints (-20°C to +15°C) with automated reefer sensor logging.
             </p>
 
-            <Link to="/services" style={{ marginTop: '8px' }}>
-              <Button variant="primary" size="md" rightIcon={<LuArrowRight size={14} />}>
-                Explore Cold-Chain
-              </Button>
-            </Link>
+            <Button as={Link} to="/services" variant="primary" size="md" rightIcon={<LuArrowRight size={14} aria-hidden="true" />} style={{ marginTop: '8px', alignSelf: 'flex-start' }}>
+              Explore Cold-Chain
+            </Button>
           </div>
 
           {/* Air / Cold-Chain Visual */}
@@ -590,11 +553,7 @@ export const HomePage = () => {
                 border: '1px solid var(--border-default)',
               }}
             >
-              <img
-                src="/service-air.jpg"
-                alt="Cold-Chain Transport"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <PictureMedia base="service-air" fallbackExt="jpg" alt="Cold-Chain Transport" width={960} height={638} />
             </div>
           </div>
         </div>
@@ -689,14 +648,12 @@ export const HomePage = () => {
             </p>
           </div>
 
-          <Link to="/insights">
-            <Button variant="outline" size="sm" rightIcon={<LuArrowRight size={14} />}>
-              View All Insights & News →
-            </Button>
-          </Link>
+          <Button as={Link} to="/insights" variant="outline" size="sm" rightIcon={<LuArrowRight size={14} aria-hidden="true" />}>
+            View All Insights & News →
+          </Button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr))', gap: '24px' }}>
           {newsArticles.map((art) => (
             <Card
               key={art.id}
@@ -710,10 +667,12 @@ export const HomePage = () => {
             >
               {/* Photo Thumbnail */}
               <div style={{ height: '175px', width: '100%', overflow: 'hidden', position: 'relative' }}>
-                <img
-                  src={art.image}
+                <PictureMedia
+                  base={art.imageBase}
+                  fallbackExt="jpg"
                   alt={art.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  width={art.width}
+                  height={art.height}
                 />
               </div>
 
@@ -736,7 +695,7 @@ export const HomePage = () => {
                 <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{art.date}</span>
                   <Link to="/insights" style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    Read Article <LuArrowRight size={12} />
+                    Read Article <LuArrowRight size={12} aria-hidden="true" />
                   </Link>
                 </div>
               </div>
@@ -746,7 +705,7 @@ export const HomePage = () => {
       </section>
 
       {/* 7. GLOBAL REACH, LOCAL ON-THE-GROUND EXPERTISE */}
-      <section className="container">
+      <section className="container" ref={mapTriggerRef}>
         <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 36px auto' }}>
           <Badge variant="neutral" size="sm" style={{ marginBottom: '8px' }}>
               Sample Map Data
@@ -760,39 +719,31 @@ export const HomePage = () => {
         </div>
 
         <Card style={{ overflow: 'hidden', border: '1px solid var(--border-default)', padding: 0 }}>
-          <div style={{ height: '360px', width: '100%' }}>
-            <MapContainer
-              center={[16.0544, 107.5]}
-              zoom={5.2}
-              style={{ height: '100%', width: '100%' }}
-              scrollWheelZoom={false}
-              attributionControl={false}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                maxZoom={19}
-              />
-              <Polyline positions={tradeLanes.northSouthTrunk} color="#2563eb" weight={4} opacity={0.8} dashArray="6, 6" />
-              <Marker position={[21.0278, 105.8342]} icon={createHubPin('Hanoi Office & Hub')}>
-                <Popup><strong>Sample Northern Hub</strong><br />Hanoi</Popup>
-              </Marker>
-              <Marker position={[16.0544, 108.2022]} icon={createHubPin('Da Nang Office')}>
-                <Popup><strong>Sample Central Hub</strong><br />Da Nang</Popup>
-              </Marker>
-              <Marker position={[10.8231, 106.6297]} icon={createHubPin('HCMC HQ')}>
-                <Popup><strong>Sample Southern Hub</strong><br />Ho Chi Minh City</Popup>
-              </Marker>
-            </MapContainer>
+          <div style={{ height: '360px', width: '100%', backgroundColor: 'var(--color-slate-100)' }}>
+            {shouldLoadMap ? (
+              <Suspense
+                fallback={
+                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
+                    Loading interactive route map…
+                  </div>
+                }
+              >
+                <HomeCoverageMap />
+              </Suspense>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
+                Interactive route map loads on scroll
+              </div>
+            )}
           </div>
           <div style={{ padding: '16px 24px', backgroundColor: 'var(--bg-surface-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', gap: '20px', fontSize: 'var(--text-xs)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', backgroundColor: '#2563eb', borderRadius: '2px' }} />
+                <span aria-hidden="true" style={{ width: '10px', height: '10px', backgroundColor: '#2563eb', borderRadius: '2px' }} />
                  Sample Hub Markers
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '4px', backgroundColor: '#2563eb' }} />
+                <span aria-hidden="true" style={{ width: '10px', height: '4px', backgroundColor: '#2563eb' }} />
                  Sample Route Polylines
               </span>
             </div>
@@ -814,7 +765,7 @@ export const HomePage = () => {
             border: 'none',
           }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '40px', alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-white)', margin: '0 0 12px 0' }}>
                  Ready to Explore the Demo?
@@ -823,30 +774,29 @@ export const HomePage = () => {
                  Create a sample customer or driver account to walk through the implemented role-based flows.
               </p>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <Link to="/register/customer">
-                  <Button variant="primary" size="lg" leftIcon={<LuUserPlus size={16} />}>
-                     Try Customer Flow
-                  </Button>
-                </Link>
-                <Link to="/register/driver">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    style={{
-                      backgroundColor: 'transparent',
-                      borderColor: 'var(--color-slate-700)',
-                      color: 'var(--color-white)',
-                    }}
-                    leftIcon={<LuTruck size={16} />}
-                  >
-                     Try Driver Flow
-                  </Button>
-                </Link>
+                <Button as={Link} to="/register/customer" variant="primary" size="lg" leftIcon={<LuUserPlus size={16} aria-hidden="true" />}>
+                   Try Customer Flow
+                </Button>
+                <Button
+                  as={Link}
+                  to="/register/driver"
+                  variant="outline"
+                  size="lg"
+                  style={{
+                    backgroundColor: 'transparent',
+                    borderColor: 'var(--color-slate-600)',
+                    color: 'var(--color-white)',
+                  }}
+                  leftIcon={<LuTruck size={16} aria-hidden="true" />}
+                >
+                   Try Driver Flow
+                </Button>
               </div>
             </div>
 
             {/* Direct Inquiry Box */}
             <div
+              className="dark-card-form"
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 padding: '28px',
@@ -857,7 +807,7 @@ export const HomePage = () => {
               {leadSubmitted ? (
                 <div style={{ textAlign: 'center', padding: '24px 0' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--color-success-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-                    <LuCheck size={24} />
+                    <LuCheck size={24} aria-hidden="true" />
                   </div>
                   <h3 style={{ color: '#fff', fontSize: 'var(--text-lg)', margin: '0 0 6px 0' }}>Demo Form Submitted</h3>
                   <p style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-xs)', margin: 0 }}>
@@ -868,7 +818,11 @@ export const HomePage = () => {
                 <form onSubmit={handleLeadSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <Input
                     label="Business Email *"
+                    name="email"
                     type="email"
+                    autoComplete="email"
+                    spellCheck={false}
+                    autoCapitalize="none"
                     required
                     placeholder="name@company.com"
                     value={leadForm.email}
@@ -876,14 +830,17 @@ export const HomePage = () => {
                   />
                   <Input
                     label="Company / Shipper Name *"
+                    name="organization"
+                    autoComplete="organization"
                     required
                     placeholder="e.g. Acme Logistics Ltd."
                     value={leadForm.company}
                     onChange={(e) => setLeadForm((p) => ({ ...p, company: e.target.value }))}
                   />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="responsive-grid-2" style={{ gap: '12px' }}>
                     <Select
                       label="Primary Freight Mode"
+                      name="freightMode"
                       value={leadForm.mode}
                       onChange={(e) => setLeadForm((p) => ({ ...p, mode: e.target.value }))}
                       options={[
@@ -895,6 +852,7 @@ export const HomePage = () => {
                     />
                     <Select
                       label="Monthly Volume"
+                      name="monthlyVolume"
                       value={leadForm.monthlyVolume}
                       onChange={(e) => setLeadForm((p) => ({ ...p, monthlyVolume: e.target.value }))}
                       options={[

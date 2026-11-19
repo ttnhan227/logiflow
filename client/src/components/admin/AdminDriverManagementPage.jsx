@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { userService } from '../../services';
 import Pagination from '../common/Pagination';
 import {
@@ -32,14 +32,13 @@ import {
 } from 'react-icons/lu';
 
 export const AdminDriverManagementPage = () => {
-  const navigate = useNavigate();
   const [drivers, setDrivers] = useState([]);
   const [filteredDrivers, setFilteredDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingDriver, setEditingDriver] = useState(null);
+  const [, setEditingDriver] = useState(null);
   const [page, setPage] = useState(0);
   const size = 10;
 
@@ -265,13 +264,11 @@ export const AdminDriverManagementPage = () => {
                     </TableCell>
                     <TableCell style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                        <Link to={`/admin/users/drivers/${d.id}`}>
-                          <Button variant="ghost" size="sm" title="View Details">
-                            <LuEye size={14} />
-                          </Button>
-                        </Link>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(d)} title="Edit Driver">
-                          <LuPencil size={14} />
+                        <Button as={Link} to={`/admin/users/drivers/${d.id}`} variant="ghost" size="sm" title="View Details" aria-label={`View details for ${d.username || 'driver'}`}>
+                          <LuEye size={14} aria-hidden="true" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(d)} title="Edit Driver" aria-label={`Edit driver ${d.username || ''}`}>
+                          <LuPencil size={14} aria-hidden="true" />
                         </Button>
                       </div>
                     </TableCell>

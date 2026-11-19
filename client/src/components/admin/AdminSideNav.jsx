@@ -15,7 +15,6 @@ import {
   LuChevronDown,
   LuMenu,
   LuX,
-  LuUser,
   LuBuilding2,
   LuHeadphones,
 } from 'react-icons/lu';
@@ -26,6 +25,26 @@ export const AdminSideNav = () => {
   const [user, setUser] = useState(authService.getCurrentUser());
   const [userMenuOpen, setUserMenuOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 899px)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 899px)');
+    const updateViewport = () => setIsMobileViewport(mq.matches);
+    updateViewport();
+    mq.addEventListener('change', updateViewport);
+    return () => mq.removeEventListener('change', updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
 
   useEffect(() => {
     setUser(authService.getCurrentUser());
@@ -75,11 +94,15 @@ export const AdminSideNav = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       {/* Mobile Toggle Button */}
       <button
+        type="button"
         onClick={() => setMobileOpen(!mobileOpen)}
         className="admin-mobile-toggle"
-        aria-label="Toggle admin sidebar"
+        aria-label={mobileOpen ? 'Close admin navigation' : 'Open admin navigation'}
+        aria-expanded={mobileOpen}
+        aria-controls="admin-sidebar-nav"
         style={{
           position: 'fixed',
           bottom: '20px',
@@ -94,16 +117,17 @@ export const AdminSideNav = () => {
           backgroundColor: 'var(--color-slate-900)',
           color: 'var(--color-white)',
           boxShadow: 'var(--shadow-lg)',
-          border: 'none',
+          border: '1px solid #334155',
           cursor: 'pointer',
         }}
       >
-        {mobileOpen ? <LuX size={22} /> : <LuMenu size={22} />}
+        {mobileOpen ? <LuX size={22} aria-hidden="true" /> : <LuMenu size={22} aria-hidden="true" />}
       </button>
 
       {/* Mobile Overlay */}
       {mobileOpen && (
         <div
+          aria-hidden="true"
           onClick={() => setMobileOpen(false)}
           style={{
             position: 'fixed',
@@ -116,6 +140,8 @@ export const AdminSideNav = () => {
 
       {/* Sidebar Container */}
       <aside
+        id="admin-sidebar-nav"
+        inert={isMobileViewport && !mobileOpen ? true : undefined}
         className={`admin-sidebar-shell ${mobileOpen ? 'mobile-open' : ''}`}
         style={{
           width: 'var(--sidebar-width)',
@@ -160,6 +186,7 @@ export const AdminSideNav = () => {
 
         {/* Navigation Menu */}
         <nav
+          aria-label="Admin sidebar navigation"
           style={{
             flex: 1,
             padding: '16px 12px',
@@ -188,7 +215,9 @@ export const AdminSideNav = () => {
               return (
                 <div key={item.label} style={{ marginBottom: '2px' }}>
                   <button
+                    type="button"
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    aria-expanded={userMenuOpen}
                     style={{
                       width: '100%',
                       display: 'flex',
@@ -201,17 +230,18 @@ export const AdminSideNav = () => {
                       fontSize: 'var(--text-sm)',
                       fontWeight: isChildActive ? 600 : 500,
                       cursor: 'pointer',
-                      transition: 'all var(--transition-fast)',
+                      transition: 'background-color var(--transition-fast), color var(--transition-fast)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ color: isChildActive ? 'var(--color-brand-500)' : 'var(--color-slate-400)' }}>
+                      <span aria-hidden="true" style={{ color: isChildActive ? 'var(--color-brand-400)' : 'var(--color-slate-400)' }}>
                         {item.icon}
                       </span>
                       <span>{item.label}</span>
                     </div>
                     <LuChevronDown
                       size={14}
+                      aria-hidden="true"
                       style={{
                         transform: userMenuOpen ? 'rotate(180deg)' : 'none',
                         transition: 'transform 150ms',
@@ -228,6 +258,7 @@ export const AdminSideNav = () => {
                           <Link
                             key={child.path}
                             to={child.path}
+                            aria-current={active ? 'page' : undefined}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -236,12 +267,12 @@ export const AdminSideNav = () => {
                               borderRadius: 'var(--radius-md)',
                               fontSize: 'var(--text-xs)',
                               fontWeight: active ? 600 : 500,
-                              color: active ? 'var(--color-white)' : 'var(--color-slate-400)',
+                              color: active ? 'var(--color-white)' : 'var(--color-slate-300)',
                               backgroundColor: active ? 'var(--color-brand-600)' : 'transparent',
-                              transition: 'all var(--transition-fast)',
+                              transition: 'background-color var(--transition-fast), color var(--transition-fast)',
                             }}
                           >
-                            <span style={{ color: active ? 'var(--color-white)' : 'inherit' }}>{child.icon}</span>
+                            <span aria-hidden="true" style={{ color: active ? 'var(--color-white)' : 'inherit' }}>{child.icon}</span>
                             <span>{child.label}</span>
                           </Link>
                         );
@@ -257,6 +288,7 @@ export const AdminSideNav = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-current={isActive ? 'page' : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -267,10 +299,10 @@ export const AdminSideNav = () => {
                   backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
                   fontSize: 'var(--text-sm)',
                   fontWeight: isActive ? 600 : 500,
-                  transition: 'all var(--transition-fast)',
+                  transition: 'background-color var(--transition-fast), color var(--transition-fast)',
                 }}
               >
-                <span style={{ color: isActive ? 'var(--color-white)' : 'var(--color-slate-400)' }}>
+                <span aria-hidden="true" style={{ color: isActive ? 'var(--color-white)' : 'var(--color-slate-400)' }}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -291,6 +323,7 @@ export const AdminSideNav = () => {
           }}
         >
           <div
+            aria-hidden="true"
             style={{
               width: '8px',
               height: '8px',
@@ -313,6 +346,8 @@ export const AdminSideNav = () => {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <AdminTopNav user={user} onLogout={handleLogout} />
         <main
+          id="main-content"
+          tabIndex={-1}
           style={{
             flex: 1,
             padding: '24px 28px',

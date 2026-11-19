@@ -162,7 +162,7 @@ export const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegio
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', height: '480px' }}>
+      <div className="responsive-sidebar-grid" style={{ minHeight: '480px' }}>
         {/* Active Fleet Sidebar */}
         <div
           style={{
@@ -173,6 +173,7 @@ export const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegio
             display: 'flex',
             flexDirection: 'column',
             overflowY: 'auto',
+            maxHeight: '480px',
             gap: '8px',
           }}
         >
@@ -181,16 +182,19 @@ export const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegio
           </div>
 
           {activeDrivers.slice(0, 15).map((driver) => (
-            <div
+            <button
               key={driver.driverId}
+              type="button"
               onClick={() => setMapView({ center: [driver.latitude, driver.longitude], zoom: 11 })}
               style={{
+                width: '100%',
+                textAlign: 'left',
                 padding: '8px 10px',
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border-default)',
                 backgroundColor: 'var(--bg-surface-subtle)',
                 cursor: 'pointer',
-                transition: 'background var(--transition-fast)',
+                transition: 'background-color var(--transition-fast)',
               }}
             >
               <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -199,7 +203,7 @@ export const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegio
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                 {driver.vehiclePlate} • {driver.tripStatus}
               </div>
-            </div>
+            </button>
           ))}
           {activeDrivers.length === 0 && (
             <div style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '24px' }}>
@@ -209,7 +213,7 @@ export const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegio
         </div>
 
         {/* Map */}
-        <div style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-default)', position: 'relative' }}>
+        <div style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-default)', position: 'relative', minHeight: '360px' }}>
           <MapContainer center={mapView.center} zoom={mapView.zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

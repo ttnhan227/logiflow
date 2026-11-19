@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { userService } from '../../services';
 import {
   Button,
@@ -23,7 +23,6 @@ import {
 
 export const AdminUserDetailsPage = () => {
   const { userId } = useParams();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
@@ -76,11 +75,9 @@ export const AdminUserDetailsPage = () => {
       <div style={{ padding: '24px', maxWidth: '600px' }}>
         <Alert variant="danger">{error || 'User not found.'}</Alert>
         <div style={{ marginTop: '16px' }}>
-          <Link to="/admin/dashboard">
-            <Button variant="outline" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Dashboard
-            </Button>
-          </Link>
+          <Button as={Link} to="/admin/dashboard" variant="outline" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Dashboard
+          </Button>
         </div>
       </div>
     );
@@ -95,22 +92,18 @@ export const AdminUserDetailsPage = () => {
         description={`Enterprise ${user.role} Account • ID: #${user.id}`}
         badge={<Badge variant={user.active ? 'success' : 'danger'}>{user.active ? 'ACTIVE' : 'SUSPENDED'}</Badge>}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Link to={roleBackLink}>
-              <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-                Back to {user.role}s
-              </Button>
-            </Link>
-            <Link to={`/admin/users/${userId}/edit`}>
-              <Button variant="primary" size="sm" leftIcon={<LuPencil size={14} />}>
-                Edit Account
-              </Button>
-            </Link>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button as={Link} to={roleBackLink} variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+              Back to {user.role}s
+            </Button>
+            <Button as={Link} to={`/admin/users/${userId}/edit`} variant="primary" size="sm" leftIcon={<LuPencil size={14} aria-hidden="true" />}>
+              Edit Account
+            </Button>
           </div>
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '20px' }}>
         {/* Core Identity Card */}
         <Card style={{ padding: '24px' }}>
           <h3 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 16px 0' }}>

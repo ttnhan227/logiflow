@@ -5,7 +5,8 @@ import { LuShieldAlert, LuArrowLeft } from 'react-icons/lu';
 
 export const UnauthorizedPage = () => {
   return (
-    <div
+    <main
+      id="main-content"
       style={{
         minHeight: '70vh',
         display: 'flex',
@@ -17,6 +18,7 @@ export const UnauthorizedPage = () => {
       }}
     >
       <div
+        aria-hidden="true"
         style={{
           width: '64px',
           height: '64px',
@@ -68,12 +70,10 @@ export const UnauthorizedPage = () => {
         You do not have the required operational permissions or role clearance to access this resource.
       </p>
 
-      <Link to="/">
-        <Button variant="primary" leftIcon={<LuArrowLeft size={16} />}>
-          Back to Safe Ground
-        </Button>
-      </Link>
-    </div>
+      <Button as={Link} to="/" variant="primary" leftIcon={<LuArrowLeft size={16} aria-hidden="true" />}>
+        Back to Safe Ground
+      </Button>
+    </main>
   );
 };
 

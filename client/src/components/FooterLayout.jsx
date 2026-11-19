@@ -31,10 +31,10 @@ export const FooterLayout = () => {
           }}
         >
           <div>
-            <h3 style={{ color: 'var(--color-white)', fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
+            <h2 style={{ color: 'var(--color-white)', fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
               Explore the LogiFlow academic project
-            </h3>
-            <p style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)', margin: 0 }}>
+            </h2>
+            <p style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)', margin: 0 }}>
               Review the customer, operations, and driver demonstration workflows.
             </p>
           </div>
@@ -114,58 +114,58 @@ export const FooterLayout = () => {
 
             {/* Services */}
             <div>
-              <h4 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
+              <h3 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
                 Demonstrations
-              </h4>
+              </h3>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <li><Link to="/services" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Sample Freight Workflows</Link></li>
-                <li><Link to="/coverage" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Sample Coverage Map</Link></li>
-                <li><Link to="/track" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Shipment Tracking Demo</Link></li>
+                <li><Link to="/services" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Sample Freight Workflows</Link></li>
+                <li><Link to="/coverage" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Sample Coverage Map</Link></li>
+                <li><Link to="/track" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Shipment Tracking Demo</Link></li>
               </ul>
             </div>
 
             {/* Platform & Solutions */}
             <div>
-              <h4 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
+              <h3 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
                 Solutions
-              </h4>
+              </h3>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <li><Link to="/business" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Role-Based Workflows</Link></li>
-                <li><Link to="/fleet" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Sample Vehicle Data</Link></li>
-                <li><Link to="/mobile-app" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Flutter Mobile Client</Link></li>
-                <li><Link to="/drivers" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Driver Workflow</Link></li>
+                <li><Link to="/business" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Role-Based Workflows</Link></li>
+                <li><Link to="/fleet" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Sample Vehicle Data</Link></li>
+                <li><Link to="/mobile-app" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Flutter Mobile Client</Link></li>
+                <li><Link to="/drivers" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Driver Workflow</Link></li>
               </ul>
             </div>
 
             {/* Company & Support */}
             <div>
-              <h4 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
+              <h3 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
                 Project
-              </h4>
+              </h3>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <li><Link to="/about" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>About LogiFlow</Link></li>
-                <li><Link to="/contact" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Form Demonstration</Link></li>
-                <li><Link to="/faq" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Frequently Asked Questions</Link></li>
-                <li><Link to="/login" style={{ color: 'var(--color-slate-400)', fontSize: 'var(--text-sm)' }}>Demo Sign-in</Link></li>
+                <li><Link to="/about" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>About LogiFlow</Link></li>
+                <li><Link to="/contact" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Form Demonstration</Link></li>
+                <li><Link to="/faq" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Frequently Asked Questions</Link></li>
+                <li><Link to="/login" style={{ color: 'var(--color-slate-300)', fontSize: 'var(--text-sm)' }}>Demo Sign-in</Link></li>
               </ul>
             </div>
 
             {/* Operational Contact */}
             <div>
-              <h4 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
+              <h3 style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px', fontWeight: 700 }}>
                 Scope
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', color: 'var(--color-slate-400)', fontSize: 'var(--text-xs)' }}>
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', color: 'var(--color-slate-300)', fontSize: 'var(--text-xs)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <LuMail size={15} color="var(--color-brand-500)" />
+                  <LuMail size={15} color="var(--color-brand-400)" aria-hidden="true" />
                   <span>No live support mailbox</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <LuPhone size={15} color="var(--color-brand-500)" />
+                  <LuPhone size={15} color="var(--color-brand-400)" aria-hidden="true" />
                   <span>No dispatch hotline</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <LuMapPin size={15} color="var(--color-brand-500)" style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <LuMapPin size={15} color="var(--color-brand-400)" style={{ marginTop: '2px', flexShrink: 0 }} aria-hidden="true" />
                   <span>Locations and contacts shown in the interface are sample data.</span>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export const FooterLayout = () => {
           borderTop: '1px solid var(--color-slate-800)',
           padding: '20px 0',
           fontSize: 'var(--text-xs)',
-          color: 'var(--color-slate-500)',
+          color: 'var(--color-slate-400)',
         }}
       >
         <div
@@ -197,9 +197,9 @@ export const FooterLayout = () => {
             &copy; {new Date().getFullYear()} LogiFlow academic project.
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <Link to="/about" style={{ color: 'var(--color-slate-500)' }}>Project Scope</Link>
-            <Link to="/faq" style={{ color: 'var(--color-slate-500)' }}>Limitations</Link>
-            <Link to="/about" style={{ color: 'var(--color-slate-500)' }}>Implementation</Link>
+            <Link to="/about" style={{ color: 'var(--color-slate-300)' }}>Project Scope</Link>
+            <Link to="/faq" style={{ color: 'var(--color-slate-300)' }}>Limitations</Link>
+            <Link to="/about" style={{ color: 'var(--color-slate-300)' }}>Implementation</Link>
           </div>
         </div>
       </div>

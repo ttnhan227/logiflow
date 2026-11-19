@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { divIcon } from 'leaflet';
@@ -28,30 +28,29 @@ import {
   LuZap,
 } from 'react-icons/lu';
 
-const createPin = (color, label) =>
-  divIcon({
-    html: `
-      <div style="
-        background-color: ${color};
-        color: white;
-        border: 2px solid white;
-        border-radius: 9999px;
-        padding: 2px 8px;
-        font-size: 10px;
-        font-weight: 700;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        white-space: nowrap;
-      ">
-        ${label}
-      </div>
-    `,
+const createPin = (color, label) => {
+  const el = document.createElement('div');
+  el.textContent = label;
+  el.style.cssText = `
+    background-color: ${color};
+    color: white;
+    border: 2px solid white;
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    white-space: nowrap;
+  `;
+  return divIcon({
+    html: el.outerHTML,
     iconSize: [60, 22],
     iconAnchor: [30, 11],
   });
+};
 
 export const AdminTripsOversightDetailsPage = () => {
   const { tripId } = useParams();
-  const navigate = useNavigate();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -70,7 +69,7 @@ export const AdminTripsOversightDetailsPage = () => {
       setError(null);
       const tripData = await tripsOversightService.getTripOversight(tripId);
       setTrip(tripData);
-    } catch (err) {
+    } catch {
       setError('Trip record not found or access denied.');
     } finally {
       setLoading(false);
@@ -79,6 +78,7 @@ export const AdminTripsOversightDetailsPage = () => {
 
   useEffect(() => {
     loadTrip();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
   const handleDelayResponse = (response, customExtensionMinutes = null) => {
@@ -115,11 +115,9 @@ export const AdminTripsOversightDetailsPage = () => {
       <div style={{ padding: '24px', maxWidth: '600px' }}>
         <Alert variant="danger">{error || 'Trip not found.'}</Alert>
         <div style={{ marginTop: '16px' }}>
-          <Link to="/admin/trips-oversight">
-            <Button variant="outline" leftIcon={<LuArrowLeft size={14} />}>
-              Back to Oversight
-            </Button>
-          </Link>
+          <Button as={Link} to="/admin/trips-oversight" variant="outline" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+            Back to Oversight
+          </Button>
         </div>
       </div>
     );
@@ -171,11 +169,9 @@ export const AdminTripsOversightDetailsPage = () => {
         badge={<Badge variant="brand">{trip.tripStatus || 'IN SERVICE'}</Badge>}
         actions={
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Link to="/admin/trips-oversight">
-              <Button variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} />}>
-                Trips Oversight Roster
-              </Button>
-            </Link>
+            <Button as={Link} to="/admin/trips-oversight" variant="outline" size="sm" leftIcon={<LuArrowLeft size={14} aria-hidden="true" />}>
+              Trips Oversight Roster
+            </Button>
           </div>
         }
       />

@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-
 import 'leaflet/dist/leaflet.css';
 import { divIcon, latLngBounds } from 'leaflet';
 import { dispatchRouteService } from '../../services';
-import { apiBaseUrl } from '../../config/env';
 import { Card, Badge, Alert } from '@/components/ui';
 import { LuMapPin, LuNavigation, LuCreditCard } from 'react-icons/lu';
 
@@ -26,29 +25,29 @@ const isInVietnam = (lat, lng) => {
   );
 };
 
-const createMapPin = (color, label) =>
-  divIcon({
+const createMapPin = (color, label) => {
+  const el = document.createElement('div');
+  el.textContent = label;
+  el.style.cssText = `
+    background-color: ${color};
+    color: white;
+    border: 2px solid white;
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Inter, sans-serif;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.25);
+    white-space: nowrap;
+  `;
+  return divIcon({
     className: 'custom-map-pin',
-    html: `
-      <div style="
-        background-color: ${color};
-        color: white;
-        border: 2px solid white;
-        border-radius: 9999px;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: 700;
-        font-family: Inter, sans-serif;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.25);
-        white-space: nowrap;
-      ">
-        ${label}
-      </div>
-    `,
+    html: el.outerHTML,
     iconSize: [60, 24],
     iconAnchor: [30, 12],
     popupAnchor: [0, -12],
   });
+};
 
 const haversineDistanceKm = (a, b) => {
   const R = 6371;
@@ -113,10 +112,11 @@ const getOSRMRoute = async (originLng, originLat, destLng, destLat) => {
     const coordsString = waypoints.map((wp) => `${wp.lng},${wp.lat}`).join(';');
     const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
+    const signal =
+      typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+        ? AbortSignal.timeout(8000)
+        : undefined;
+    const response = await fetch(url, { signal });
 
     const data = await response.json();
     if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
@@ -156,9 +156,9 @@ export const RouteMapCard = ({ routeId, orders, feePerKm = 12, onDistanceChange 
   const [route, setRoute] = useState(null);
   const [path, setPath] = useState([]);
   const [distanceKm, setDistanceKm] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [loadingPath, setLoadingPath] = useState(false);
+  const [, setLoadingPath] = useState(false);
 
   const tripData = useMemo(() => {
     if (!orders || orders.length === 0) return null;

@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button, Card, Badge, PageHeader, Input } from '@/components/ui';
+import { Button, Card, Badge, PageHeader, Input, Modal } from '@/components/ui';
 import {
   LuSearch,
-  LuCalendar,
-  LuClock,
   LuArrowRight,
-  LuTrendingUp,
-  LuShip,
-  LuPlane,
-  LuTruck,
-  LuFileText,
-  LuBookOpen,
-  LuLayers,
-  LuSparkles,
 } from 'react-icons/lu';
+
+const ArticlePicture = ({ src, alt, loading = 'lazy' }) => {
+  const base = src.replace(/^\//, '').replace(/\.(jpg|png)$/i, '');
+  return (
+    <picture style={{ display: 'block', width: '100%', height: '100%' }}>
+      <source srcSet={`/${base}.avif`} type="image/avif" />
+      <source srcSet={`/${base}.webp`} type="image/webp" />
+      <img
+        src={src}
+        alt={alt}
+        width={960}
+        height={640}
+        loading={loading}
+        decoding="async"
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      />
+    </picture>
+  );
+};
 
 export const InsightsPage = () => {
   const [activeCategory, setActiveCategory] = useState('ALL');
@@ -143,10 +151,12 @@ export const InsightsPage = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
             {/* Category Tabs */}
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <div role="group" aria-label="Filter articles by category" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
               {categories.map((cat) => (
                 <button
                   key={cat.id}
+                  type="button"
+                  aria-pressed={activeCategory === cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   style={{
                     padding: '8px 16px',
@@ -159,7 +169,7 @@ export const InsightsPage = () => {
                     color: activeCategory === cat.id ? '#ffffff' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    transition: 'all var(--transition-fast)',
+                    transition: 'background-color var(--transition-fast), color var(--transition-fast)',
                   }}
                 >
                   {cat.label}
@@ -170,10 +180,11 @@ export const InsightsPage = () => {
             {/* Search Box */}
             <div style={{ maxWidth: '320px', width: '100%' }}>
               <Input
+                aria-label="Search freight articles"
                 placeholder="Search freight articles..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                leftIcon={<LuSearch size={16} />}
+                leftIcon={<LuSearch size={16} aria-hidden="true" />}
               />
             </div>
           </div>
@@ -193,7 +204,7 @@ export const InsightsPage = () => {
               border: 'none',
             }}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', alignItems: 'stretch' }}>
               {/* Left Column Text */}
               <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
@@ -215,7 +226,7 @@ export const InsightsPage = () => {
                   variant="primary"
                   size="md"
                   onClick={() => setSelectedArticle(filteredArticles[0])}
-                  rightIcon={<LuArrowRight size={16} />}
+                  rightIcon={<LuArrowRight size={16} aria-hidden="true" />}
                   style={{ alignSelf: 'flex-start' }}
                 >
                   Read Full Market Report
@@ -224,10 +235,10 @@ export const InsightsPage = () => {
 
               {/* Right Column Authentic Image */}
               <div style={{ minHeight: '300px', position: 'relative' }}>
-                <img
+                <ArticlePicture
                   src={filteredArticles[0].image}
                   alt={filteredArticles[0].title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  loading="eager"
                 />
               </div>
             </div>
@@ -237,10 +248,14 @@ export const InsightsPage = () => {
 
       {/* Article Cards Grid with Authentic Photography Thumbnails */}
       <section className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px' }}>
+        <h2 className="sr-only">Latest Freight & Supply Chain Articles</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 19rem), 1fr))', gap: '28px' }}>
           {filteredArticles.map((art) => (
             <Card
               key={art.id}
+              className="ui-clickable-card"
+              role="button"
+              tabIndex={0}
               style={{
                 padding: 0,
                 overflow: 'hidden',
@@ -248,17 +263,19 @@ export const InsightsPage = () => {
                 flexDirection: 'column',
                 border: '1px solid var(--border-default)',
                 cursor: 'pointer',
-                transition: 'all var(--transition-fast)',
+                transition: 'transform var(--transition-fast), box-shadow var(--transition-fast)',
               }}
               onClick={() => setSelectedArticle(art)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedArticle(art);
+                }
+              }}
             >
               {/* Photo Thumbnail */}
               <div style={{ height: '190px', width: '100%', overflow: 'hidden', position: 'relative' }}>
-                <img
-                  src={art.image}
-                  alt={art.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                <ArticlePicture src={art.image} alt={art.title} />
               </div>
 
               <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}>
@@ -280,7 +297,7 @@ export const InsightsPage = () => {
                 <div style={{ paddingTop: '14px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{art.date}</span>
                   <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-brand-600)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    Read Article <LuArrowRight size={13} />
+                    Read Article <LuArrowRight size={13} aria-hidden="true" />
                   </span>
                 </div>
               </div>
@@ -290,107 +307,43 @@ export const InsightsPage = () => {
       </section>
 
       {/* Full Article Reader Modal */}
-      {selectedArticle && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '20px',
-          }}
-          onClick={() => setSelectedArticle(null)}
-        >
-          <div
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderRadius: 'var(--radius-2xl)',
-              maxWidth: '720px',
-              width: '100%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: 0,
-              overflow: 'hidden',
-              boxShadow: 'var(--shadow-2xl)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Hero Image */}
-            <div style={{ height: '240px', width: '100%', position: 'relative' }}>
-              <img
-                src={selectedArticle.image}
-                alt={selectedArticle.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              <button
-                onClick={() => setSelectedArticle(null)}
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.75)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                }}
-              >
-                ✕
-              </button>
+      <Modal
+        isOpen={Boolean(selectedArticle)}
+        onClose={() => setSelectedArticle(null)}
+        title={selectedArticle?.title}
+        description={
+          selectedArticle
+            ? `${selectedArticle.tag} • Published ${selectedArticle.date} • ${selectedArticle.readTime} • Author: ${selectedArticle.author}`
+            : undefined
+        }
+        maxWidth="720px"
+        footer={
+          <Button variant="primary" size="md" onClick={() => setSelectedArticle(null)}>
+            Done Reading
+          </Button>
+        }
+      >
+        {selectedArticle && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ height: '220px', width: '100%', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+              <ArticlePicture src={selectedArticle.image} alt={selectedArticle.title} />
             </div>
-
-            <div style={{ padding: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Badge variant="brand" size="sm">
-                  {selectedArticle.tag}
-                </Badge>
-              </div>
-
-              <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 12px 0' }}>
-                {selectedArticle.title}
-              </h1>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '24px', flexWrap: 'wrap' }}>
-                <span>Published: {selectedArticle.date}</span>
-                <span>•</span>
-                <span>{selectedArticle.readTime}</span>
-                <span>•</span>
-                <span>Author: {selectedArticle.author}</span>
-              </div>
-
-              <div
-                style={{
-                  fontSize: 'var(--text-sm)',
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.7,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                  whiteSpace: 'pre-line',
-                }}
-              >
-                {selectedArticle.content}
-              </div>
-
-              <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid var(--border-default)', display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="primary" size="md" onClick={() => setSelectedArticle(null)}>
-                  Done Reading
-                </Button>
-              </div>
+            <div
+              style={{
+                fontSize: 'var(--text-sm)',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.7,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                whiteSpace: 'pre-line',
+              }}
+            >
+              {selectedArticle.content}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };
