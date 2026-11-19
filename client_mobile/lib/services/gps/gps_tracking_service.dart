@@ -152,25 +152,26 @@ class GpsTrackingService {
       throw Exception('No authentication token found');
     }
 
-    // Build WebSocket URL for GPS tracking - use SockJS URL pattern with JWT token
+    // Build WebSocket URL for GPS tracking - authenticate via STOMP CONNECT headers
     final baseUrl = ApiClient.baseUrl.replaceFirst('/api', '');
     String wsUrl;
     if (baseUrl.startsWith('https://')) {
-      wsUrl = baseUrl.replaceFirst('https://', 'wss://') + '/ws/tracking/websocket?token=$token';
+      wsUrl = baseUrl.replaceFirst('https://', 'wss://') + '/ws/tracking/websocket';
     } else if (baseUrl.startsWith('http://')) {
-      wsUrl = baseUrl.replaceFirst('http://', 'ws://') + '/ws/tracking/websocket?token=$token';
+      wsUrl = baseUrl.replaceFirst('http://', 'ws://') + '/ws/tracking/websocket';
     } else {
-      wsUrl = 'ws://$baseUrl/ws/tracking/websocket?token=$token';
+      wsUrl = 'ws://$baseUrl/ws/tracking/websocket';
     }
 
     print('GPS DEBUG: ApiClient.baseUrl: ${ApiClient.baseUrl}');
     print('GPS DEBUG: baseUrl (stripped /api): $baseUrl');
-    print('GPS DEBUG: JWT token present: ${token != null}');
+    print('GPS DEBUG: JWT token present: true');
     print('GPS DEBUG: final wsUrl: $wsUrl');
 
     _stompClient = StompClient(
       config: StompConfig(
         url: wsUrl,
+        stompConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: (_) {
           print('GPS DEBUG: WebSocket connected successfully');
           _isWebSocketConnected = true;

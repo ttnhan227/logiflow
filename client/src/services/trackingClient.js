@@ -1,6 +1,7 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { backendBaseUrl } from '../config/env';
+import { getStompAuthToken, getStompConnectHeaders } from './stompAuth';
 
 class TrackingClient {
   constructor() {
@@ -11,13 +12,21 @@ class TrackingClient {
 
   connect() {
     if (this.isConnected) return Promise.resolve();
+    if (!getStompAuthToken()) {
+      return Promise.reject(new Error('No authentication token available for tracking WebSocket'));
+    }
 
     return new Promise((resolve, reject) => {
       const socketUrl = `${backendBaseUrl}/ws/tracking`;
 
-      const socket = new SockJS(socketUrl);
       this.client = new Client({
-        webSocketFactory: () => socket,
+        webSocketFactory: () => new SockJS(socketUrl),
+        connectHeaders: getStompConnectHeaders(),
+        beforeConnect: () => {
+          if (this.client) {
+            this.client.connectHeaders = getStompConnectHeaders();
+          }
+        },
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,

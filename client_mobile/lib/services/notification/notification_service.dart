@@ -71,33 +71,34 @@ class NotificationService {
 
     final baseUrl = ApiClient.baseUrl.replaceFirst('/api', '');
 
-    // Get JWT token for authentication (same as GPS service)
+    // Get JWT token for authentication (passed via STOMP CONNECT headers)
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
+    if (token == null || token.isEmpty) {
+      print('WARN: No JWT token available for STOMP notification connection');
+      return;
+    }
 
     // Normalize to ws://host:port/ws/notifications-native (Spring STOMP endpoint)
     String wsUrl;
     if (baseUrl.startsWith('https://')) {
-      wsUrl =
-          baseUrl.replaceFirst('https://', 'wss://') +
-          '/ws/notifications-native?token=$token';
+      wsUrl = baseUrl.replaceFirst('https://', 'wss://') + '/ws/notifications-native';
     } else if (baseUrl.startsWith('http://')) {
-      wsUrl =
-          baseUrl.replaceFirst('http://', 'ws://') + '/ws/notifications-native?token=$token';
+      wsUrl = baseUrl.replaceFirst('http://', 'ws://') + '/ws/notifications-native';
     } else {
       // Fallback (e.g., localhost:8080/api)
-      wsUrl = 'ws://$baseUrl/ws/notifications-native?token=$token';
+      wsUrl = 'ws://$baseUrl/ws/notifications-native';
     }
 
     print('DEBUG - ApiClient.baseUrl: ${ApiClient.baseUrl}');
     print('DEBUG - baseUrl (stripped /api): $baseUrl');
-    print('DEBUG - JWT token present: ${token != null}');
+    print('DEBUG - JWT token present: true');
     print('DEBUG - Connecting to STOMP over WebSocket: $wsUrl');
 
     _stompClient = StompClient(
       config: StompConfig(
         url: wsUrl,
-        // Spring simple broker does not require headers for anonymous connect by default
+        stompConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: _onStompConnect,
         onWebSocketError: (dynamic error) {
           print('STOMP WebSocket error: $error');

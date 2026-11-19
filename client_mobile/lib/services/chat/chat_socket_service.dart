@@ -33,6 +33,7 @@ class ChatSocketService {
     _client = StompClient(
       config: StompConfig(
         url: wsUrl,
+        stompConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: (_) => _onConnect(destination),
         onWebSocketError: (dynamic err) {
           _chatStreamController?.add({

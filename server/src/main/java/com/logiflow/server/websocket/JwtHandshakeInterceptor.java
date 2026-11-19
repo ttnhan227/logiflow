@@ -20,36 +20,52 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         this.jwtUtils = jwtUtils;
     }
 
+    static boolean isAllowedRole(String role) {
+        return role != null && (role.equalsIgnoreCase("DRIVER")
+                || role.equalsIgnoreCase("CUSTOMER")
+                || role.equalsIgnoreCase("ADMIN")
+                || role.equalsIgnoreCase("DISPATCHER"));
+    }
+
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-        // Extract token from query param (e.g., ws://host/ws/tracking?token=...)
-        String uri = request.getURI().toString();
-        String token = null;
-        int idx = uri.indexOf("token=");
-        if (idx != -1) {
-            token = uri.substring(idx + 6);
-            int amp = token.indexOf('&');
-            if (amp != -1) token = token.substring(0, amp);
+        // Optional query-param JWT fallback (?token=...); STOMP CONNECT Authorization header is also enforced by StompAuthChannelInterceptor
+        String query = request.getURI().getRawQuery();
+        String token = extractTokenParam(query);
+        if (token == null) {
+            return true;
         }
-        if (token != null && !token.isEmpty()) {
-            try {
-                token = java.net.URLDecoder.decode(token, java.nio.charset.StandardCharsets.UTF_8);
-                String userId = jwtUtils.extractUsername(token);
-                String role = jwtUtils.extractRole(token);
-                // Allow authenticated DRIVER, CUSTOMER, ADMIN, and DISPATCHER roles for WebSocket connections
-                if (userId != null && role != null &&
-                    (role.equalsIgnoreCase("DRIVER") || role.equalsIgnoreCase("CUSTOMER") ||
-                     role.equalsIgnoreCase("ADMIN") || role.equalsIgnoreCase("DISPATCHER"))) {
-                    attributes.put("userId", userId);
-                    attributes.put("userRole", role);
-                    return true;
-                }
-            } catch (Exception e) {
-                logger.warn("Invalid JWT in WebSocket handshake: {}", e.getMessage());
+        if (token.isEmpty()) {
+            return false;
+        }
+        try {
+            token = java.net.URLDecoder.decode(token, java.nio.charset.StandardCharsets.UTF_8);
+            String userId = jwtUtils.extractUsername(token);
+            String role = jwtUtils.extractRole(token);
+            if (userId != null && !userId.isBlank()
+                    && jwtUtils.validateToken(token, userId)
+                    && isAllowedRole(role)) {
+                attributes.put("userId", userId);
+                attributes.put("userRole", role.trim().toUpperCase());
+                return true;
+            }
+        } catch (Exception e) {
+            logger.warn("Invalid JWT in WebSocket handshake: {}", e.getMessage());
+        }
+        return false;
+    }
+
+    private static String extractTokenParam(String rawQuery) {
+        if (rawQuery == null || rawQuery.isEmpty()) {
+            return null;
+        }
+        for (String param : rawQuery.split("&")) {
+            if (param.startsWith("token=")) {
+                return param.substring("token=".length());
             }
         }
-        return false; // Reject connection if no/invalid token or not a driver
+        return null;
     }
 
     @Override

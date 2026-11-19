@@ -334,8 +334,27 @@ public class NotificationService {
         notificationRepository.save(dbNotification);
     }
 
+    private String resolveCustomerUsername(Integer customerId) {
+        if (customerId == null) return null;
+        try {
+            return userRepository.findById(customerId)
+                    .map(User::getUsername)
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public void sendOrderNotification(Integer customerId, Integer orderId, String type, String message, String orderStatus) {
-        String destination = "/topic/customer/" + customerId;
+        String username = resolveCustomerUsername(customerId);
+        if (username == null || username.isBlank()) {
+            return;
+        }
+        sendOrderNotificationByUsername(username, orderId, type, message, orderStatus);
+    }
+
+    public void sendOrderNotificationByUsername(String username, Integer orderId, String type, String message, String orderStatus) {
+        String destination = "/topic/customer/" + username;
         TripNotificationDto notification = new TripNotificationDto(type, message, orderId, orderStatus);
         messagingTemplate.convertAndSend(destination, notification);
     }
