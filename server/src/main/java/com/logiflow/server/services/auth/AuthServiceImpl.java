@@ -5,11 +5,9 @@ import com.logiflow.server.dtos.auth.AuthResponse;
 import com.logiflow.server.dtos.auth.LoginRequest;
 import com.logiflow.server.dtos.auth.RegisterRequest;
 import com.logiflow.server.models.Customer;
-import com.logiflow.server.models.RegistrationRequest;
 import com.logiflow.server.models.Role;
 import com.logiflow.server.models.User;
 import com.logiflow.server.repositories.customer.CustomerRepository;
-import com.logiflow.server.repositories.registration.RegistrationRequestRepository;
 import com.logiflow.server.repositories.role.RoleRepository;
 import com.logiflow.server.repositories.user.UserRepository;
 import com.logiflow.server.services.admin.AuditLogService;
@@ -23,12 +21,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
 
 @Service
 @Transactional
 public class AuthServiceImpl implements AuthService {
+
+    private static final String DEFAULT_PUBLIC_REGISTRATION_ROLE = "CUSTOMER";
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
@@ -36,7 +34,6 @@ public class AuthServiceImpl implements AuthService {
     private final CustomerRepository customerRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-    private final RegistrationRequestRepository registrationRequestRepository;
     private final AuditLogService auditLogService;
 
     public AuthServiceImpl(
@@ -46,7 +43,6 @@ public class AuthServiceImpl implements AuthService {
             CustomerRepository customerRepository,
             RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
-            RegistrationRequestRepository registrationRequestRepository,
             AuditLogService auditLogService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
@@ -54,7 +50,6 @@ public class AuthServiceImpl implements AuthService {
         this.customerRepository = customerRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
-        this.registrationRequestRepository = registrationRequestRepository;
         this.auditLogService = auditLogService;
     }
 
@@ -86,6 +81,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse register(RegisterRequest registerRequest) {
+        if (registerRequest.getRoleId() != null
+                || hasText(registerRequest.getRoleName())
+                || hasText(registerRequest.getRole())) {
+            throw new IllegalArgumentException("Role assignment is not allowed during public registration");
+        }
+
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
@@ -93,55 +94,34 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already exists");
         }
 
-        // Determine role - if roleId is provided, use it; otherwise default to CUSTOMER
-        Integer roleId = registerRequest.getRoleId() != null ? registerRequest.getRoleId() : 5; // 5 = CUSTOMER
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+        Role role = roleRepository.findByRoleName(DEFAULT_PUBLIC_REGISTRATION_ROLE)
+                .orElseThrow(() -> new IllegalStateException("Default CUSTOMER role is not configured"));
 
-        // Roles that require admin approval: DISPATCHER (3), DRIVER (4)
-        List<Integer> rolesRequiringApproval = Arrays.asList(3, 4);
-        
-        if (rolesRequiringApproval.contains(roleId)) {
-            // Create registration request instead of direct user
-            RegistrationRequest request = new RegistrationRequest();
-            request.setEmail(registerRequest.getEmail());
-            request.setPhone(registerRequest.getPhone());
-            request.setFullName(registerRequest.getFullName());
-            request.setRole(role);
-            request.setStatus(RegistrationRequest.RequestStatus.PENDING);
-            request.setCreatedAt(LocalDateTime.now());
-            
-            registrationRequestRepository.save(request);
-            
-            return new AuthResponse(null, null, null, null, 
-                "Registration request submitted successfully. Please wait for admin approval.");
-        } else {
-            // For CUSTOMER and ADMIN roles, create user directly
-            User user = new User();
-            user.setUsername(registerRequest.getUsername());
-            user.setEmail(registerRequest.getEmail());
-            user.setPasswordHash(passwordEncoder.encode(registerRequest.getPassword()));
-            user.setPhone(registerRequest.getPhone());
-            user.setFullName(registerRequest.getFullName());
-            user.setRole(role);
-            user.setIsActive(true);
-            user.setCreatedAt(LocalDateTime.now());
+        User user = new User();
+        user.setUsername(registerRequest.getUsername());
+        user.setEmail(registerRequest.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setPhone(registerRequest.getPhone());
+        user.setFullName(registerRequest.getFullName());
+        user.setRole(role);
+        user.setIsActive(true);
+        user.setCreatedAt(LocalDateTime.now());
 
-            userRepository.save(user);
+        userRepository.save(user);
 
-            // Create Customer entity for customer users
-            if ("CUSTOMER".equalsIgnoreCase(role.getRoleName())) {
-                Customer customer = new Customer();
-                customer.setUser(user);
-                customer.setDefaultDeliveryAddress(""); // Start empty, can be set later
-                customerRepository.save(customer);
-            }
+        Customer customer = new Customer();
+        customer.setUser(user);
+        customer.setDefaultDeliveryAddress(""); // Start empty, can be set later
+        customerRepository.save(customer);
 
-            String token = jwtUtils.generateToken(user.getUsername(), user.getRole().getRoleName());
+        String token = jwtUtils.generateToken(user.getUsername(), role.getRoleName());
 
-            return new AuthResponse(token, user.getUsername(), user.getRole().getRoleName(),
+        return new AuthResponse(token, user.getUsername(), role.getRoleName(),
                 user.getProfilePictureUrl(), "Registration successful");
-        }
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     @Override
