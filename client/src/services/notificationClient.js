@@ -2,6 +2,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import authService from './auth/authService';
 import { backendBaseUrl } from '../config/env';
+import { getStompAuthToken, getStompConnectHeaders } from './stompAuth';
 
 class NotificationClient {
   constructor() {
@@ -18,6 +19,10 @@ class NotificationClient {
       return Promise.resolve();
     }
 
+    if (!getStompAuthToken()) {
+      return Promise.reject(new Error('No authentication token available for notification WebSocket'));
+    }
+
     if (this.connectPromise) {
       return this.connectPromise;
     }
@@ -26,14 +31,19 @@ class NotificationClient {
       const socketUrl = `${backendBaseUrl}/ws/notifications`;
 
       console.log('Connecting to SockJS:', socketUrl);
-      const socket = new SockJS(socketUrl);
 
       // Determine topic based on user role
       const user = authService.getCurrentUser();
       const topic = user?.role === 'DISPATCHER' ? '/topic/dispatcher/notifications' : '/topic/admin/notifications';
 
       this.client = new Client({
-        webSocketFactory: () => socket,
+        webSocketFactory: () => new SockJS(socketUrl),
+        connectHeaders: getStompConnectHeaders(),
+        beforeConnect: () => {
+          if (this.client) {
+            this.client.connectHeaders = getStompConnectHeaders();
+          }
+        },
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
