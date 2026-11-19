@@ -1,6 +1,7 @@
 package com.logiflow.server.services.dispatch;
 
 import com.logiflow.server.constants.TripStatus;
+import com.logiflow.server.dtos.dispatch.TripAssignRequest;
 import com.logiflow.server.dtos.dispatch.TripCancelRequest;
 import com.logiflow.server.dtos.dispatch.TripDto;
 import com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest;
@@ -211,5 +212,93 @@ class TripServiceStateTransitionTest {
         assertNull(order.getTrip());
         verify(driverRepository).save(driver);
         verify(orderRepository).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("updateTripStatus normalizes uppercase ARRIVED status via TripStatus.normalize")
+    void testUpdateTripStatusNormalizesUppercaseArrived() {
+        Trip trip = new Trip();
+        trip.setTripId(7);
+        trip.setStatus(TripStatus.IN_PROGRESS);
+        trip.setOrders(new ArrayList<>());
+        trip.setTripAssignments(new ArrayList<>());
+
+        when(tripRepository.findByIdWithRelations(7)).thenReturn(Optional.of(trip));
+        when(tripRepository.save(any(Trip.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TripStatusUpdateRequest req = new TripStatusUpdateRequest();
+        req.setStatus("ARRIVED");
+
+        TripDto result = tripService.updateTripStatus(7, req);
+
+        assertEquals(TripStatus.ARRIVED, result.getStatus());
+        assertEquals(TripStatus.ARRIVED, trip.getStatus());
+    }
+
+    @Test
+    @DisplayName("assignTrip rejects a trip that is already ASSIGNED")
+    void testAssignTripRejectsAlreadyAssignedTrip() {
+        Trip trip = new Trip();
+        trip.setTripId(8);
+        trip.setStatus(TripStatus.ASSIGNED);
+        trip.setTripAssignments(new ArrayList<>());
+
+        when(tripRepository.findByIdWithRelations(8)).thenReturn(Optional.of(trip));
+
+        TripAssignRequest req = new TripAssignRequest(10, null);
+
+        assertThrows(BusinessRuleException.class, () -> tripService.assignTrip(8, req));
+        verify(tripAssignmentRepository, never()).save(any(TripAssignment.class));
+        verify(tripRepository, never()).save(any(Trip.class));
+    }
+
+    @Test
+    @DisplayName("updateTripStatus COMPLETED preserves declined historical assignment while completing active assignment")
+    void testCompletedTripPreservesDeclinedHistoricalAssignment() {
+        User declinedUser = createMockUser("driver_old", "Old Driver");
+        Driver declinedDriver = new Driver();
+        declinedDriver.setDriverId(11);
+        declinedDriver.setUser(declinedUser);
+        declinedDriver.setStatus("available");
+
+        User activeUser = createMockUser("driver_new", "New Driver");
+        activeUser.setUserId(100);
+        Driver activeDriver = new Driver();
+        activeDriver.setDriverId(12);
+        activeDriver.setUser(activeUser);
+        activeDriver.setStatus("on_trip");
+
+        Trip trip = new Trip();
+        trip.setTripId(9);
+        trip.setStatus(TripStatus.IN_PROGRESS);
+        trip.setOrders(new ArrayList<>());
+
+        TripAssignment declinedAssignment = new TripAssignment();
+        declinedAssignment.setAssignmentId(101);
+        declinedAssignment.setTrip(trip);
+        declinedAssignment.setDriver(declinedDriver);
+        declinedAssignment.setStatus("declined");
+
+        TripAssignment activeAssignment = new TripAssignment();
+        activeAssignment.setAssignmentId(102);
+        activeAssignment.setTrip(trip);
+        activeAssignment.setDriver(activeDriver);
+        activeAssignment.setStatus("accepted");
+
+        trip.setTripAssignments(new ArrayList<>(List.of(declinedAssignment, activeAssignment)));
+
+        when(tripRepository.findByIdWithRelations(9)).thenReturn(Optional.of(trip));
+        when(tripRepository.save(any(Trip.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TripStatusUpdateRequest req = new TripStatusUpdateRequest();
+        req.setStatus(TripStatus.COMPLETED);
+
+        tripService.updateTripStatus(9, req);
+
+        assertEquals("declined", declinedAssignment.getStatus());
+        assertEquals("completed", activeAssignment.getStatus());
+        assertEquals("available", activeDriver.getStatus());
+        verify(driverRepository, never()).save(declinedDriver);
+        verify(driverRepository).save(activeDriver);
     }
 }

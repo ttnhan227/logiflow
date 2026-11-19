@@ -171,7 +171,7 @@ public class TripServiceImpl implements TripService {
         if (size < 1) size = 10;
         if (size > 100) size = 100;
 
-        String normalizedStatus = normalizeStatus(status);
+        String normalizedStatus = TripStatus.normalize(status);
 
         // For proper global sorting, we need to fetch all trips and sort them in memory
         // before pagination. This ensures consistent sorting across all pages.
@@ -269,8 +269,13 @@ public class TripServiceImpl implements TripService {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
+        String currentStatus = TripStatus.normalize(trip.getStatus());
+        if (TripStatus.ASSIGNED.equals(currentStatus) || hasActiveAssignment(trip)) {
+            throw new BusinessRuleException("Trip is already assigned to a driver. Decline or cancel the existing assignment before reassigning.");
+        }
+
         // Validate state transition to ASSIGNED
-        TripStatus.validateTransition(trip.getStatus(), TripStatus.ASSIGNED);
+        TripStatus.validateTransition(currentStatus, TripStatus.ASSIGNED);
 
         Vehicle vehicle = trip.getVehicle();
         if (request.getVehicleId() != null) {
@@ -349,7 +354,7 @@ public class TripServiceImpl implements TripService {
         Trip trip = tripRepository.findByIdWithRelations(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
-        String newStatus = normalizeStatus(request.getStatus());
+        String newStatus = TripStatus.normalize(request.getStatus());
         String currentStatus = TripStatus.normalize(trip.getStatus());
 
         // Validate state machine transition
@@ -375,10 +380,14 @@ public class TripServiceImpl implements TripService {
 
         if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
             for (TripAssignment assignment : trip.getTripAssignments()) {
+                if (isTerminalAssignmentStatus(assignment.getStatus())) {
+                    continue;
+                }
                 if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus)) {
                     assignment.setStatus(TripStatus.IN_PROGRESS);
                 } else if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus)) {
                     assignment.setStatus(TripStatus.COMPLETED);
+                    assignment.setCompletedAt(now);
                     // Reset driver status to available when trip is completed
                     if (assignment.getDriver() != null) {
                         assignment.getDriver().setStatus("available");
@@ -386,6 +395,7 @@ public class TripServiceImpl implements TripService {
                     }
                 } else if (TripStatus.CANCELLED.equalsIgnoreCase(newStatus)) {
                     assignment.setStatus(TripStatus.CANCELLED);
+                    assignment.setCompletedAt(now);
                     // Reset driver status to available when trip is cancelled
                     if (assignment.getDriver() != null) {
                         assignment.getDriver().setStatus("available");
@@ -566,17 +576,20 @@ public class TripServiceImpl implements TripService {
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 
-    private boolean isValidStatus(String status) {
+    private static boolean hasActiveAssignment(Trip trip) {
+        if (trip.getTripAssignments() == null) {
+            return false;
+        }
+        return trip.getTripAssignments().stream()
+                .anyMatch(ta -> !isTerminalAssignmentStatus(ta.getStatus()));
+    }
+
+    private static boolean isTerminalAssignmentStatus(String status) {
         if (status == null) {
             return false;
         }
-        String lower = status.toLowerCase();
-        return lower.equals(TripStatus.ASSIGNED) ||
-               lower.equals(TripStatus.IN_PROGRESS) ||
-               lower.equals(TripStatus.DELAYED) ||
-               lower.equals(TripStatus.COMPLETED) ||
-               lower.equals(TripStatus.CANCELLED) ||
-               lower.equals(TripStatus.SCHEDULED);
+        String normalized = status.trim().toLowerCase();
+        return normalized.equals("declined") || normalized.equals("cancelled") || normalized.equals("completed");
     }
 
     @Override
@@ -609,22 +622,5 @@ public class TripServiceImpl implements TripService {
         dto.setConfirmedAt(confirmation.getConfirmedAt());
         dto.setConfirmedBy(confirmation.getConfirmedBy());
         return dto;
-    }
-
-    private String normalizeStatus(String status) {
-        if (status == null || status.trim().isEmpty()) {
-            return null;
-        }
-
-        String lower = status.trim().toLowerCase();
-        return switch (lower) {
-            case "pending", "scheduled" -> TripStatus.SCHEDULED;
-            case "active", "in-progress", "in_progress", "inprogress" -> TripStatus.IN_PROGRESS;
-            case "completed", "complete", "finished" -> TripStatus.COMPLETED;
-            case "cancelled", "canceled" -> TripStatus.CANCELLED;
-            case "assigned" -> TripStatus.ASSIGNED;
-            case "delayed" -> TripStatus.DELAYED;
-            default -> status.trim();
-        };
     }
 }

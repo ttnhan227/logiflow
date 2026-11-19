@@ -106,23 +106,86 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     public void declineTripAssignment(Integer driverId, Integer tripId) {
-        int updated = tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "declined");
-        if (updated == 0) {
-            throw new RuntimeException("Trip assignment not found or not assigned to you");
-        }
-        // Send notification to driver
-        notifyDriver(driverId, "TRIP_DECLINED", "You have declined trip #" + tripId);
+        unassignDriverFromTrip(
+                driverId,
+                tripId,
+                "declined",
+                "TRIP_DECLINED",
+                "You have declined trip #" + tripId);
     }
 
     @Override
     public void cancelTripAssignment(Integer driverId, Integer tripId) {
-        // Reset assignment back to "assigned" so it can be picked up by another driver
-        int updated = tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "assigned");
-        if (updated == 0) {
-            throw new RuntimeException("Trip assignment not found or not assigned to you");
+        unassignDriverFromTrip(
+                driverId,
+                tripId,
+                TripStatus.CANCELLED,
+                "TRIP_CANCELLED",
+                "Trip #" + tripId + " assignment has been cancelled");
+    }
+
+    private void unassignDriverFromTrip(
+            Integer driverId,
+            Integer tripId,
+            String targetAssignmentStatus,
+            String notificationType,
+            String notificationMessage) {
+        Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip assignment not found or not assigned to you"));
+
+        String normalizedTripStatus = TripStatus.normalize(trip.getStatus());
+        if (!TripStatus.ASSIGNED.equals(normalizedTripStatus)
+                && !TripStatus.SCHEDULED.equals(normalizedTripStatus)) {
+            throw new BusinessRuleException(
+                    "Cannot unassign driver from trip #" + tripId + " in status '" + normalizedTripStatus + "'");
         }
-        // Send notification to driver
-        notifyDriver(driverId, "TRIP_CANCELLED", "Trip #" + tripId + " has been cancelled");
+
+        LocalDateTime now = LocalDateTime.now();
+        boolean updatedAny = false;
+        if (trip.getTripAssignments() != null) {
+            for (TripAssignment assignment : trip.getTripAssignments()) {
+                if (assignment.getDriver() != null
+                        && driverId.equals(assignment.getDriver().getDriverId())
+                        && !isTerminalAssignmentStatus(assignment.getStatus())) {
+                    assignment.setStatus(targetAssignmentStatus);
+                    assignment.setCompletedAt(now);
+                    updatedAny = true;
+                }
+            }
+        }
+        if (!updatedAny) {
+            int updated = tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, targetAssignmentStatus);
+            if (updated == 0) {
+                throw new ResourceNotFoundException("Trip assignment not found or not assigned to you");
+            }
+        } else {
+            tripAssignmentRepository.saveAll(trip.getTripAssignments());
+        }
+
+        driverRepository.findById(driverId).ifPresent(driver -> {
+            driver.setStatus("available");
+            driverRepository.save(driver);
+        });
+
+        boolean hasOtherActiveAssignments = trip.getTripAssignments() != null && trip.getTripAssignments().stream()
+                .anyMatch(ta -> !isTerminalAssignmentStatus(ta.getStatus())
+                        && (ta.getDriver() == null || !driverId.equals(ta.getDriver().getDriverId())));
+        if (!hasOtherActiveAssignments && TripStatus.ASSIGNED.equals(normalizedTripStatus)) {
+            com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest revertReq =
+                    new com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest();
+            revertReq.setStatus(TripStatus.SCHEDULED);
+            tripService.updateTripStatus(tripId, revertReq);
+        }
+
+        notifyDriver(driverId, notificationType, notificationMessage);
+    }
+
+    private static boolean isTerminalAssignmentStatus(String status) {
+        if (status == null) {
+            return false;
+        }
+        String normalized = status.trim().toLowerCase();
+        return normalized.equals("declined") || normalized.equals("cancelled") || normalized.equals("completed");
     }
 
     @Override
@@ -422,10 +485,11 @@ public class DriverServiceImpl implements DriverService {
         Trip trip = tripRepository.findTripByDriverAndTripId(driverId, tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found or not assigned to you"));
 
-        // Verify the trip is in a state that can be confirmed (arrived or in_progress)
-        String currentStatus = trip.getStatus() != null ? trip.getStatus().toLowerCase() : "";
-        if (!currentStatus.equals("arrived") && !currentStatus.equals("in_progress")) {
-            throw new BusinessRuleException("Trip must be in 'arrived' or 'in_progress' state to confirm delivery");
+        String normalizedStatus = TripStatus.normalize(trip.getStatus());
+        if (!TripStatus.IN_PROGRESS.equals(normalizedStatus)
+                && !TripStatus.ARRIVED.equals(normalizedStatus)
+                && !TripStatus.DELAYED.equals(normalizedStatus)) {
+            throw new BusinessRuleException("Trip must be in 'in_progress', 'arrived', or 'delayed' state to confirm delivery");
         }
 
         if (confirmationDto == null) {
@@ -471,75 +535,63 @@ public class DriverServiceImpl implements DriverService {
 
         deliveryConfirmationRepository.save(confirmation);
 
-        // Mark assigned and in-transit orders as delivered upon confirmation
+        // Transition assigned/in-transit orders via domain state machine
+        List<Order> newlyDeliveredOrders = new java.util.ArrayList<>();
         if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
             for (Order order : trip.getOrders()) {
-                if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED ||
-                    order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
-                    order.setOrderStatus(Order.OrderStatus.DELIVERED);
+                if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED
+                        || order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
+                    order.transitionTo(Order.OrderStatus.DELIVERED);
+                    newlyDeliveredOrders.add(order);
                 }
             }
-            orderRepository.saveAll(trip.getOrders());
+            if (!newlyDeliveredOrders.isEmpty()) {
+                orderRepository.saveAll(trip.getOrders());
+            }
         }
 
-        // Check if all orders are delivered before completing the trip
-        boolean allOrdersDelivered = true;
-        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
-            allOrdersDelivered = trip.getOrders().stream()
-                .allMatch(order -> order.getOrderStatus() == Order.OrderStatus.DELIVERED);
+        for (Order deliveredOrder : newlyDeliveredOrders) {
+            triggerCustomerDeliveryAndPayment(deliveredOrder);
         }
 
-        // Only complete the trip if all orders are delivered
+        boolean allOrdersDelivered = trip.getOrders() == null || trip.getOrders().isEmpty()
+                || trip.getOrders().stream().allMatch(order -> order.getOrderStatus() == Order.OrderStatus.DELIVERED);
+
         if (allOrdersDelivered) {
-            // Send admin notification for delivered orders that need payment review
             if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
                 List<Integer> pendingPaymentOrders = trip.getOrders().stream()
-                    .filter(order -> order.getPaymentStatus() == Order.PaymentStatus.PENDING)
-                    .map(Order::getOrderId)
-                    .toList();
+                        .filter(order -> order.getPaymentStatus() == Order.PaymentStatus.PENDING)
+                        .map(Order::getOrderId)
+                        .toList();
 
                 if (!pendingPaymentOrders.isEmpty()) {
                     String notificationMessage = String.format(
-                        "Orders delivered and ready for payment review: %s",
-                        String.join(", ", pendingPaymentOrders.stream().map(String::valueOf).toArray(String[]::new))
+                            "Orders delivered and ready for payment review: %s",
+                            String.join(", ", pendingPaymentOrders.stream().map(String::valueOf).toArray(String[]::new))
                     );
 
-                    // Send broadcast notification to all admin users
                     notificationService.broadcastToAdminsWithAction(
-                        "ORDERS_DELIVERED",
-                        "INFO",
-                        "Orders Delivered - Payment Review Needed",
-                        notificationMessage,
-                        "/admin/payment-handling",
-                        "Review Orders",
-                        tripId
+                            "ORDERS_DELIVERED",
+                            "INFO",
+                            "Orders Delivered - Payment Review Needed",
+                            notificationMessage,
+                            "/admin/payment-handling",
+                            "Review Orders",
+                            tripId
                     );
                 }
             }
 
-            // Update trip status to completed
-            trip.setStatus("completed");
-            trip.setActualArrival(LocalDateTime.now());
+            completeTripThroughTripService(tripId);
 
-            // Update assignment status to completed
-            tripAssignmentRepository.updateStatusByDriverAndTrip(driverId, tripId, "completed");
-
-            // Reset driver status to available
-            driverRepository.findById(driverId).ifPresent(d -> {
-                d.setStatus("available");
-                driverRepository.save(d);
-            });
-
-            // Send notification
             notificationService.sendTripNotification(
                     driverId,
                     tripId,
                     "DELIVERY_CONFIRMED",
                     "Delivery for trip #" + tripId + " has been confirmed",
-                    "completed"
+                    TripStatus.COMPLETED
             );
         } else {
-            // Send notification that trip confirmation was received but not all orders are delivered
             notificationService.sendTripNotification(
                     driverId,
                     tripId,
@@ -548,8 +600,6 @@ public class DriverServiceImpl implements DriverService {
                     trip.getStatus()
             );
         }
-
-        tripRepository.save(trip);
     }
 
     @Override
@@ -627,25 +677,52 @@ public class DriverServiceImpl implements DriverService {
 
         // Validate allowed transitions using domain state machine
         order.transitionTo(newStatus);
+        orderRepository.save(order);
 
-        // If order is delivered and has payment status PENDING, trigger payment notification
-        if (newStatus == Order.OrderStatus.DELIVERED && order.getPaymentStatus() == Order.PaymentStatus.PENDING) {
-            // Send payment request to customer
-            if (order.getCustomer() != null) {
-                try {
-                    paymentService.sendPaymentRequest(order.getOrderId());
-                } catch (Exception e) {
-                    log.error("Failed to send payment request for order #{}: {}",
-                        orderId, e.getMessage());
-                }
+        if (newStatus == Order.OrderStatus.DELIVERED) {
+            triggerCustomerDeliveryAndPayment(order);
+
+            boolean allOrdersDelivered = trip.getOrders().stream()
+                    .allMatch(o -> o.getOrderStatus() == Order.OrderStatus.DELIVERED);
+            if (allOrdersDelivered && TripStatus.isValidTransition(trip.getStatus(), TripStatus.COMPLETED)
+                    && !TripStatus.COMPLETED.equalsIgnoreCase(TripStatus.normalize(trip.getStatus()))) {
+                completeTripThroughTripService(tripId);
             }
         }
-
-        orderRepository.save(order);
 
         // Send notification to driver about order status change
         String notificationMessage = "Order #" + orderId + " status updated to " + newStatus.name();
         notifyDriver(driverId, "ORDER_STATUS_UPDATE", notificationMessage);
+    }
+
+    private void completeTripThroughTripService(Integer tripId) {
+        com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest completedReq =
+                new com.logiflow.server.dtos.dispatch.TripStatusUpdateRequest();
+        completedReq.setStatus(TripStatus.COMPLETED);
+        tripService.updateTripStatus(tripId, completedReq);
+    }
+
+    private void triggerCustomerDeliveryAndPayment(Order order) {
+        if (order.getCustomer() == null) {
+            return;
+        }
+        try {
+            notificationService.notifyOrderDelivered(
+                    order.getCustomer().getUserId(),
+                    order.getOrderId(),
+                    order.getCustomerName(),
+                    order.getDeliveryAddress()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send delivery notification for order #{}: {}", order.getOrderId(), e.getMessage());
+        }
+        if (order.getPaymentStatus() == Order.PaymentStatus.PENDING) {
+            try {
+                paymentService.sendPaymentRequest(order.getOrderId());
+            } catch (Exception e) {
+                log.error("Failed to send payment request for order #{}: {}", order.getOrderId(), e.getMessage());
+            }
+        }
     }
 
     @Override
