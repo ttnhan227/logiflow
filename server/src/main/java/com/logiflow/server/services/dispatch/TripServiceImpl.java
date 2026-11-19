@@ -20,6 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.logiflow.server.exceptions.BusinessRuleException;
 import com.logiflow.server.exceptions.ResourceNotFoundException;
@@ -266,7 +268,8 @@ public class TripServiceImpl implements TripService {
     @Override
     @Transactional
     public TripDto assignTrip(Integer tripId, TripAssignRequest request) {
-        Trip trip = tripRepository.findByIdWithRelations(tripId)
+        Trip trip = tripRepository.findByIdForUpdate(tripId)
+                .or(() -> tripRepository.findByIdWithRelations(tripId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
         String currentStatus = TripStatus.normalize(trip.getStatus());
@@ -284,7 +287,8 @@ public class TripServiceImpl implements TripService {
             trip.setVehicle(vehicle);
         }
 
-        Driver driver = driverRepository.findById(request.getDriverId())
+        Driver driver = driverRepository.findByIdForUpdate(request.getDriverId())
+                .or(() -> driverRepository.findById(request.getDriverId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + request.getDriverId()));
 
         // Centralized intelligent validation (availability, active assignment, rest/compliance, license, capacity)
@@ -315,21 +319,28 @@ public class TripServiceImpl implements TripService {
         }
         Trip saved = tripRepository.save(trip);
 
-        // Send notification to driver about assignment
-        try {
-            String message = "New trip assigned: #" + tripId +
-                           " - Vehicle: " + (vehicle != null ? vehicle.getLicensePlate() : "Unknown") +
-                           " - Scheduled: " + trip.getScheduledDeparture().toString();
-            notificationService.sendTripNotification(
-                driver.getDriverId(),
-                tripId,
-                AuditActions.TRIP_ASSIGNED,
-                message,
-                TripStatus.ASSIGNED
-            );
-        } catch (Exception e) {
-            log.error("Failed to send driver assignment notification: {}", e.getMessage());
-        }
+        // Send notification to driver post-commit so failed/rolled-back assignments never emit alerts
+        final Integer assignedDriverId = driver.getDriverId();
+        final String assignedVehiclePlate = vehicle != null ? vehicle.getLicensePlate() : "Unknown";
+        final String scheduledDepartureStr = trip.getScheduledDeparture() != null
+                ? trip.getScheduledDeparture().toString()
+                : "TBD";
+        runAfterCommit(() -> {
+            try {
+                String message = "New trip assigned: #" + tripId +
+                               " - Vehicle: " + assignedVehiclePlate +
+                               " - Scheduled: " + scheduledDepartureStr;
+                notificationService.sendTripNotification(
+                    assignedDriverId,
+                    tripId,
+                    AuditActions.TRIP_ASSIGNED,
+                    message,
+                    TripStatus.ASSIGNED
+                );
+            } catch (Exception e) {
+                log.error("Failed to send driver assignment notification: {}", e.getMessage());
+            }
+        });
 
         // Audit the critical trip assignment operation
         String driverUsername = driver.getUser() != null ? driver.getUser().getUsername() : "Unknown";
@@ -622,5 +633,18 @@ public class TripServiceImpl implements TripService {
         dto.setConfirmedAt(confirmation.getConfirmedAt());
         dto.setConfirmedBy(confirmation.getConfirmedBy());
         return dto;
+    }
+
+    private void runAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 }

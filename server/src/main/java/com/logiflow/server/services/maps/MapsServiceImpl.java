@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
@@ -53,7 +55,10 @@ public class MapsServiceImpl implements MapsService {
     }
 
     public MapsServiceImpl() {
-        this.restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
+        requestFactory.setReadTimeout(Duration.ofSeconds(10));
+        this.restTemplate = new RestTemplate(requestFactory);
         // Set proper headers as required by Nominatim usage policy
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
         interceptors.add((request, body, execution) -> {
@@ -69,10 +74,14 @@ public class MapsServiceImpl implements MapsService {
         restTemplate.setInterceptors(interceptors);
     }
 
+    RestTemplate getRestTemplate() {
+        return restTemplate;
+    }
+
     /**
      * Enforce rate limiting: 1 request per second for Nominatim
      */
-    private void enforceRateLimit() {
+    private synchronized void enforceRateLimit() {
         long currentTime = System.currentTimeMillis();
         long timeSinceLastRequest = currentTime - lastRequestTime;
         

@@ -1,9 +1,11 @@
 package com.logiflow.server.repositories.trip;
 
 import com.logiflow.server.models.Trip;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,10 @@ import java.util.Optional;
 
 @Repository
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Trip t WHERE t.tripId = :tripId")
+    Optional<Trip> findByIdForUpdate(@Param("tripId") Integer tripId);
     @Query("SELECT COUNT(DISTINCT ta.driver.driverId) FROM TripAssignment ta WHERE ta.status IN ('assigned', 'in_progress')")
     int countOnDutyDrivers();
     

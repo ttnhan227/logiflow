@@ -25,11 +25,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import com.logiflow.server.exceptions.BusinessRuleException;
 import com.logiflow.server.exceptions.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
@@ -43,6 +47,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,6 +98,8 @@ public class OrderServiceImpl implements OrderService {
     private final MapsService mapsService;
     private final NotificationService notificationService;
     private final PaymentService paymentService;
+    private final TransactionTemplate writeTransactionTemplate;
+    private final TransactionTemplate readTransactionTemplate;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
@@ -102,6 +109,20 @@ public class OrderServiceImpl implements OrderService {
             @Nullable MapsService mapsService,
             NotificationService notificationService,
             PaymentService paymentService) {
+        this(orderRepository, userRepository, tripRepository, shippingFeeCalculator,
+                mapsService, notificationService, paymentService, null);
+    }
+
+    @Autowired
+    public OrderServiceImpl(
+            OrderRepository orderRepository,
+            UserRepository userRepository,
+            TripRepository tripRepository,
+            ShippingFeeCalculator shippingFeeCalculator,
+            @Nullable MapsService mapsService,
+            NotificationService notificationService,
+            PaymentService paymentService,
+            @Nullable PlatformTransactionManager transactionManager) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.tripRepository = tripRepository;
@@ -109,6 +130,14 @@ public class OrderServiceImpl implements OrderService {
         this.mapsService = mapsService;
         this.notificationService = notificationService;
         this.paymentService = paymentService;
+        if (transactionManager != null) {
+            this.writeTransactionTemplate = new TransactionTemplate(transactionManager);
+            this.readTransactionTemplate = new TransactionTemplate(transactionManager);
+            this.readTransactionTemplate.setReadOnly(true);
+        } else {
+            this.writeTransactionTemplate = null;
+            this.readTransactionTemplate = null;
+        }
     }
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -178,88 +207,63 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderDto createOrder(OrderCreateRequest request, String username) {
-        User createdBy = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-
-        Order order = new Order();
-        order.setCustomerName(request.getCustomerName());
-        order.setCustomerPhone(request.getCustomerPhone());
-        order.setPickupAddress(request.getPickupAddress());
-        order.setDeliveryAddress(request.getDeliveryAddress());
-        order.setPackageDetails(request.getPackageDetails());
-        order.setPriorityLevel(request.getPriorityLevel());
-        order.setOrderStatus(Order.OrderStatus.PENDING);
-        order.setCreatedBy(createdBy);
-        order.setCreatedAt(LocalDateTime.now());
-
-        // Set distance, weight, pickup info, and package value
-        order.setDistanceKm(request.getDistanceKm());
-        order.setWeightTons(request.getWeightTons());
-        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
-        order.setPackageValue(request.getPackageValue());
-
-        // Calculate distance automatically if not provided and MapsService is available
-        if (order.getDistanceKm() == null && mapsService != null) {
-            try {
-                var distanceResult = mapsService.calculateDistance(
-                        request.getPickupAddress(),
-                        request.getDeliveryAddress()
-                );
-                if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
-                    java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
-                            .divide(new java.math.BigDecimal("1000"), 2, java.math.RoundingMode.HALF_UP);
-                    order.setDistanceKm(distanceKm);
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to calculate distance: " + e.getMessage());
-            }
-        }
-
-        // Calculate shipping fee using weight in tons directly
-        java.math.BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-                order.getDistanceKm(),
-                order.getWeightTons(),
-                order.getPackageValue(),
-                order.getPriorityLevel()
+        // Run external geocoding HTTP call before opening any DB write transaction
+        BigDecimal resolvedDistanceKm = resolveDistanceKm(
+                request.getDistanceKm(),
+                request.getPickupAddress(),
+                request.getDeliveryAddress()
         );
-        order.setShippingFee(shippingFee);
 
-        if (request.getTripId() != null) {
-            Trip trip = tripRepository.findById(request.getTripId())
-                    .orElseThrow(() -> new RuntimeException("Trip not found with id: " + request.getTripId()));
-            order.setTrip(trip);
-        }
+        OrderDto createdDto = executeInTransaction(writeTransactionTemplate, () -> {
+            User createdBy = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-        Order savedOrder = orderRepository.save(order);
+            Order order = new Order();
+            order.setCustomerName(request.getCustomerName());
+            order.setCustomerPhone(request.getCustomerPhone());
+            order.setPickupAddress(request.getPickupAddress());
+            order.setDeliveryAddress(request.getDeliveryAddress());
+            order.setPackageDetails(request.getPackageDetails());
+            order.setPriorityLevel(request.getPriorityLevel());
+            order.setOrderStatus(Order.OrderStatus.PENDING);
+            order.setCreatedBy(createdBy);
+            order.setCreatedAt(LocalDateTime.now());
 
-        Order orderWithRelations = orderRepository.findByIdWithRelations(savedOrder.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve saved order"));
+            // Set distance, weight, pickup info, and package value
+            order.setDistanceKm(resolvedDistanceKm);
+            order.setWeightTons(request.getWeightTons());
+            applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
+            order.setPackageValue(request.getPackageValue());
 
-        // Send notification to dispatchers about new order
-        try {
-            notificationService.notifyNewOrder(
-                savedOrder.getOrderId(),
-                request.getCustomerName(),
-                request.getPriorityLevel().name()
+            // Calculate shipping fee using weight in tons directly
+            BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
+                    order.getDistanceKm(),
+                    order.getWeightTons(),
+                    order.getPackageValue(),
+                    order.getPriorityLevel()
             );
+            order.setShippingFee(shippingFee);
 
-            // Extra urgent haul alert (hard-coded rule)
-            if (request.getPriorityLevel() == Order.PriorityLevel.URGENT) {
-                notificationService.broadcastToAdmins(
-                    "URGENT_HAUL",
-                    "CRITICAL",
-                    "URGENT haul needs attention",
-                    "Order #" + savedOrder.getOrderId() + " (" + request.getCustomerName() + ") is URGENT. Please dispatch ASAP."
-                );
+            if (request.getTripId() != null) {
+                Trip trip = tripRepository.findById(request.getTripId())
+                        .orElseThrow(() -> new RuntimeException("Trip not found with id: " + request.getTripId()));
+                order.setTrip(trip);
             }
-        } catch (Exception e) {
-            // Log error but don't fail the order creation
-            log.error("Failed to send notification for new order: {}", e.getMessage());
-        }
 
-        return OrderDto.fromOrder(orderWithRelations);
+            Order savedOrder = orderRepository.save(order);
+
+            Order orderWithRelations = orderRepository.findByIdWithRelations(savedOrder.getOrderId())
+                    .orElseThrow(() -> new RuntimeException("Failed to retrieve saved order"));
+
+            return OrderDto.fromOrder(orderWithRelations);
+        });
+
+        // Dispatch notifications post-commit so broker I/O cannot hold DB locks or emit on rollback
+        sendOrderCreatedNotifications(createdDto.getOrderId(), request.getCustomerName(), request.getPriorityLevel());
+
+        return createdDto;
     }
 
     @Override
@@ -330,27 +334,14 @@ public class OrderServiceImpl implements OrderService {
                 order.setCreatedBy(createdBy);
                 order.setCreatedAt(LocalDateTime.now());
 
-                order.setDistanceKm(request.getDistanceKm());
+                order.setDistanceKm(resolveDistanceKm(
+                        request.getDistanceKm(),
+                        request.getPickupAddress(),
+                        request.getDeliveryAddress()
+                ));
                 order.setWeightTons(request.getWeightTons());
                 applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
                 order.setPackageValue(request.getPackageValue());
-
-
-                if (order.getDistanceKm() == null && mapsService != null) {
-                    try {
-                        var distanceResult = mapsService.calculateDistance(
-                                request.getPickupAddress(),
-                                request.getDeliveryAddress()
-                        );
-                        if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
-                            BigDecimal distanceKm = new BigDecimal(distanceResult.getDistanceMeters())
-                                    .divide(new BigDecimal("1000"), 2, RoundingMode.HALF_UP);
-                            order.setDistanceKm(distanceKm);
-                        }
-                    } catch (Exception e) {
-                        log.error("Row {}: Failed to calculate distance: {}", rowNumber, e.getMessage());
-                    }
-                }
 
 
                 // Calculate shipping fee using weight in tons directly
@@ -508,59 +499,103 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderDto updateOrder(Integer orderId, OrderUpdateRequest request) {
-        Order order = orderRepository.findByIdWithRelations(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
-
-        if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
-            throw new BusinessRuleException("Order can only be updated when status is PENDING. Current status: " + order.getOrderStatus());
-        }
-
-        order.setCustomerName(request.getCustomerName());
-        order.setCustomerPhone(request.getCustomerPhone());
-        order.setPickupAddress(request.getPickupAddress());
-        order.setDeliveryAddress(request.getDeliveryAddress());
-        order.setPackageDetails(request.getPackageDetails());
-        order.setPriorityLevel(request.getPriorityLevel());
-
-        order.setDistanceKm(request.getDistanceKm());
-        order.setWeightTons(request.getWeightTons());
-        applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
-        order.setPackageValue(request.getPackageValue());
-
-        if (order.getDistanceKm() == null && mapsService != null) {
-            try {
-                var distanceResult = mapsService.calculateDistance(
-                        request.getPickupAddress(),
-                        request.getDeliveryAddress()
-                );
-                if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
-                    java.math.BigDecimal distanceKm = new java.math.BigDecimal(distanceResult.getDistanceMeters())
-                            .divide(new java.math.BigDecimal("1000"), 2, java.math.RoundingMode.HALF_UP);
-                    order.setDistanceKm(distanceKm);
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to calculate distance: " + e.getMessage());
+        // Validate eligibility in a brief read-only check before making external Maps API calls
+        executeInTransaction(readTransactionTemplate, () -> {
+            Order existing = orderRepository.findByIdWithRelations(orderId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+            if (existing.getOrderStatus() != Order.OrderStatus.PENDING) {
+                throw new BusinessRuleException("Order can only be updated when status is PENDING. Current status: " + existing.getOrderStatus());
             }
-        }
+            return null;
+        });
 
-        // Calculate shipping fee using weight in tons directly
-        BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
-                order.getDistanceKm(),
-                order.getWeightTons(),
-                order.getPackageValue(),
-                order.getPriorityLevel()
+        // External geocoding runs outside any DB transaction
+        BigDecimal resolvedDistanceKm = resolveDistanceKm(
+                request.getDistanceKm(),
+                request.getPickupAddress(),
+                request.getDeliveryAddress()
         );
-        order.setShippingFee(shippingFee);
 
+        return executeInTransaction(writeTransactionTemplate, () -> {
+            Order order = orderRepository.findByIdWithRelations(orderId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        Order updatedOrder = orderRepository.save(order);
+            if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
+                throw new BusinessRuleException("Order can only be updated when status is PENDING. Current status: " + order.getOrderStatus());
+            }
 
-        Order orderWithRelations = orderRepository.findByIdWithRelations(updatedOrder.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Failed to retrieve updated order"));
+            order.setCustomerName(request.getCustomerName());
+            order.setCustomerPhone(request.getCustomerPhone());
+            order.setPickupAddress(request.getPickupAddress());
+            order.setDeliveryAddress(request.getDeliveryAddress());
+            order.setPackageDetails(request.getPackageDetails());
+            order.setPriorityLevel(request.getPriorityLevel());
 
-        return OrderDto.fromOrder(orderWithRelations);
+            order.setDistanceKm(resolvedDistanceKm);
+            order.setWeightTons(request.getWeightTons());
+            applyPickupInfo(order, request.getPickupType(), request.getContainerNumber(), request.getTerminalName(), request.getWarehouseName(), request.getDockNumber());
+            order.setPackageValue(request.getPackageValue());
+
+            // Calculate shipping fee using weight in tons directly
+            BigDecimal shippingFee = shippingFeeCalculator.calculateShippingFee(
+                    order.getDistanceKm(),
+                    order.getWeightTons(),
+                    order.getPackageValue(),
+                    order.getPriorityLevel()
+            );
+            order.setShippingFee(shippingFee);
+
+            Order updatedOrder = orderRepository.save(order);
+
+            Order orderWithRelations = orderRepository.findByIdWithRelations(updatedOrder.getOrderId())
+                    .orElseThrow(() -> new RuntimeException("Failed to retrieve updated order"));
+
+            return OrderDto.fromOrder(orderWithRelations);
+        });
+    }
+
+    private BigDecimal resolveDistanceKm(@Nullable BigDecimal providedDistanceKm, String pickupAddress, String deliveryAddress) {
+        if (providedDistanceKm != null || mapsService == null) {
+            return providedDistanceKm;
+        }
+        try {
+            var distanceResult = mapsService.calculateDistance(pickupAddress, deliveryAddress);
+            if (distanceResult != null && distanceResult.getDistanceMeters() != null) {
+                return new BigDecimal(distanceResult.getDistanceMeters())
+                        .divide(new BigDecimal("1000"), 2, RoundingMode.HALF_UP);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to calculate distance between '{}' and '{}': {}", pickupAddress, deliveryAddress, e.getMessage());
+        }
+        return null;
+    }
+
+    private void sendOrderCreatedNotifications(Integer orderId, String customerName, Order.PriorityLevel priorityLevel) {
+        try {
+            String priorityName = priorityLevel != null ? priorityLevel.name() : Order.PriorityLevel.NORMAL.name();
+            notificationService.notifyNewOrder(orderId, customerName, priorityName);
+
+            if (priorityLevel == Order.PriorityLevel.URGENT) {
+                notificationService.broadcastToAdmins(
+                    "URGENT_HAUL",
+                    "CRITICAL",
+                    "URGENT haul needs attention",
+                    "Order #" + orderId + " (" + customerName + ") is URGENT. Please dispatch ASAP."
+                );
+            }
+        } catch (Exception e) {
+            // Log error but don't fail the order creation
+            log.error("Failed to send notification for new order: {}", e.getMessage());
+        }
+    }
+
+    private <T> T executeInTransaction(@Nullable TransactionTemplate template, Supplier<T> action) {
+        if (template == null) {
+            return action.get();
+        }
+        return template.execute(status -> action.get());
     }
 
     /**
