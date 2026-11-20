@@ -503,4 +503,14 @@ public class MapsServiceImpl implements MapsService {
         }
         throw new IllegalArgumentException("Invalid location format: " + loc);
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getOsrmRoute(String coords) {
+        if (coords == null || !coords.matches("^-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?(;-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?){1,15}$")) {
+            throw new IllegalArgumentException("Invalid coordinates format");
+        }
+        String url = String.format("%s/%s?overview=full&geometries=geojson", OSRM_BASE_URL, coords);
+        return restTemplate.getForObject(url, Map.class);
+    }
 }

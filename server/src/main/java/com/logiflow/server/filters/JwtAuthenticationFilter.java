@@ -1,8 +1,10 @@
 package com.logiflow.server.filters;
 
+import com.logiflow.server.controllers.auth.AuthController;
 import com.logiflow.server.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,6 +42,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null && token.startsWith("Bearer ")) {
             jwtToken = token.substring(7);
+        } else if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (AuthController.AUTH_COOKIE_NAME.equals(cookie.getName())
+                        && cookie.getValue() != null
+                        && !cookie.getValue().isBlank()) {
+                    jwtToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (jwtToken != null) {
             try {
                 userId = jwtUtils.extractUsername(jwtToken);
                 role = jwtUtils.extractRole(jwtToken);

@@ -156,4 +156,23 @@ public class MapsController {
             return ResponseEntity.internalServerError().body(Map.of("error", "Route optimization is temporarily unavailable"));
         }
     }
+
+    /**
+     * Proxy OSRM route geometry lookup with coordinate validation and bounded timeouts.
+     * GET /api/maps/route?coords=lng,lat;lng,lat...
+     */
+    @GetMapping("/route")
+    public ResponseEntity<?> getOsrmRoute(@RequestParam @NotBlank String coords) {
+        try {
+            Map<String, Object> result = mapsService.getOsrmRoute(coords.trim());
+            if (result == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Failed to compute route"));
+            }
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(Map.of("error", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(502).body(Map.of("error", "Routing service is temporarily unavailable"));
+        }
+    }
 }

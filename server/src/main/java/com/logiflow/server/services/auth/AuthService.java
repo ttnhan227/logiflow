@@ -11,4 +11,6 @@ public interface AuthService {
     AuthResponse register(RegisterRequest registerRequest);
 
     void logout(String username);
+
+    AuthResponse getCurrentUser(String username);
 }

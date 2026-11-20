@@ -90,8 +90,7 @@ export const AdminUserEditPage = () => {
           username: form.username,
           role: form.role,
         };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        window.dispatchEvent(new CustomEvent('userUpdated', { detail: updatedUser }));
+        authService.setCurrentUser(updatedUser);
       }
 
       navigate(`/admin/users/${userId}`);

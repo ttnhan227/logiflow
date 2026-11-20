@@ -4,16 +4,32 @@ import { apiBaseUrl } from '../config/env';
 const api = axios.create({
   baseURL: apiBaseUrl,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Add token to requests
+function readCookie(name) {
+  if (typeof document === 'undefined' || !document.cookie) return null;
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split(';')) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+  return null;
+}
+
+// Attach CSRF token on mutating requests
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token && !config.url?.includes('/auth/')) {
-    config.headers.Authorization = `Bearer ${token.replace(/^"|"$/g, '')}`;
+  const method = (config.method || 'get').toUpperCase();
+  if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+    const csrfToken = readCookie('XSRF-TOKEN');
+    if (csrfToken) {
+      config.headers['X-XSRF-TOKEN'] = csrfToken;
+    }
   }
   return config;
 });
@@ -32,10 +48,14 @@ api.interceptors.response.use(
 
     // Only logout on 401 (token invalid/expired), not on 403 (permission denied)
     if (error.response?.status === 401) {
-      // Token is invalid or expired - logout user
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      try {
+        window.dispatchEvent(new CustomEvent('userUpdated', { detail: null }));
+      } catch {
+        window.dispatchEvent(new Event('userUpdated'));
+      }
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
       return Promise.reject(new Error('Session expired. Please log in again.'));
     }
     

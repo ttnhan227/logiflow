@@ -137,4 +137,13 @@ public class AuthServiceImpl implements AuthService {
             );
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AuthResponse getCurrentUser(String username) {
+        User user = userRepository.findByUsernameWithRole(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String roleName = user.getRole() != null ? user.getRole().getRoleName() : "";
+        return new AuthResponse(null, user.getUsername(), roleName, user.getProfilePictureUrl(), null);
+    }
 }

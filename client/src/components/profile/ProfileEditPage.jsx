@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { profileService, uploadService } from '../../services';
+import { authService, profileService, uploadService } from '../../services';
 import api from '../../services/api';
 import { Button, Card, CardContent, Input, PageHeader, LoadingSpinner, Alert } from '@/components/ui';
 import { LuUser, LuCloudUpload, LuSave, LuArrowLeft, LuTrash2 } from 'react-icons/lu';
@@ -100,7 +100,7 @@ export const ProfileEditPage = () => {
       };
       const updated = await profileService.updateProfile(payload);
 
-      const stored = JSON.parse(localStorage.getItem('user') || 'null') || {};
+      const stored = authService.getCurrentUser() || {};
       const newUser = {
         ...stored,
         username: updated.username || stored.username,
@@ -110,9 +110,7 @@ export const ProfileEditPage = () => {
             : `${getBaseUrl()}${updated.profilePictureUrl.startsWith('/') ? '' : '/'}${updated.profilePictureUrl}`
           : stored.profilePictureUrl,
       };
-      localStorage.setItem('user', JSON.stringify(newUser));
-
-      window.dispatchEvent(new CustomEvent('userUpdated', { detail: newUser }));
+      authService.setCurrentUser(newUser);
       setSuccess('Profile updated successfully.');
       setTimeout(() => navigate('/profile'), 1000);
     } catch (err) {

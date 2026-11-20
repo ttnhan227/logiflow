@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { latLngBounds } from 'leaflet';
 import { createPinDivIcon } from '@/utils/leafletIcons';
 import { dispatchRouteService } from '../../services';
+import api from '../../services/api';
 import { Card, Badge, Alert } from '@/components/ui';
 import { LuMapPin, LuNavigation, LuCreditCard } from 'react-icons/lu';
 
@@ -89,16 +90,18 @@ const getOSRMRoute = async (originLng, originLat, destLng, destLat) => {
   try {
     const waypoints = getVietnameseWaypoints(originLat, originLng, destLat, destLng);
     const coordsString = waypoints.map((wp) => `${wp.lng},${wp.lat}`).join(';');
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
 
     const signal =
       typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
         ? AbortSignal.timeout(8000)
         : undefined;
-    const response = await fetch(url, { signal });
+    const response = await api.get('/maps/route', {
+      params: { coords: coordsString },
+      signal,
+    });
 
-    const data = await response.json();
-    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+    const data = response.data;
+    if (data?.code === 'Ok' && data.routes && data.routes.length > 0) {
       const coordinates = data.routes[0].geometry.coordinates;
       return coordinates.map((coord) => [coord[1], coord[0]]);
     }

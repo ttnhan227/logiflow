@@ -6,71 +6,94 @@ const getBaseUrl = () => {
   return baseURL.replace(/\/api\/?$/, ''); // http://localhost:8080
 };
 
+let currentUser = null;
+let sessionPromise = null;
+
+const normalizeProfilePicture = (profilePictureUrl) => {
+  if (!profilePictureUrl) return null;
+  if (profilePictureUrl.startsWith('http://') || profilePictureUrl.startsWith('https://')) {
+    return profilePictureUrl;
+  }
+  return `${getBaseUrl()}${profilePictureUrl.startsWith('/') ? '' : '/'}${profilePictureUrl}`;
+};
+
+const notifyUserUpdated = (userObj) => {
+  try {
+    window.dispatchEvent(new CustomEvent('userUpdated', { detail: userObj }));
+  } catch {
+    window.dispatchEvent(new Event('userUpdated'));
+  }
+};
+
 const authService = {
+  initSession: async () => {
+    if (currentUser) return currentUser;
+    if (!sessionPromise) {
+      sessionPromise = api
+        .get('/auth/me')
+        .then((response) => {
+          const { username, role, profilePictureUrl } = response.data || {};
+          if (!username) {
+            currentUser = null;
+            return null;
+          }
+          currentUser = {
+            username,
+            role,
+            profilePictureUrl: normalizeProfilePicture(profilePictureUrl),
+          };
+          notifyUserUpdated(currentUser);
+          return currentUser;
+        })
+        .catch(() => {
+          currentUser = null;
+          return null;
+        })
+        .finally(() => {
+          sessionPromise = null;
+        });
+    }
+    return sessionPromise;
+  },
+
   login: async (username, password) => {
     const response = await api.post('/auth/login', { username, password });
-    const { token, username: returnedUsername, role, profilePictureUrl } = response.data;
-    
-    localStorage.setItem('token', token);
-    
-    // Build full user object with profilePictureUrl
+    const { username: returnedUsername, role, profilePictureUrl } = response.data;
+
     const userObj = {
       username: returnedUsername || username,
       role,
-      profilePictureUrl: profilePictureUrl
-        ? (profilePictureUrl.startsWith('http://') || profilePictureUrl.startsWith('https://')
-            ? profilePictureUrl
-            : `${getBaseUrl()}${profilePictureUrl.startsWith('/') ? '' : '/'}${profilePictureUrl}`)
-        : null,
+      profilePictureUrl: normalizeProfilePicture(profilePictureUrl),
     };
-    
-    localStorage.setItem('user', JSON.stringify(userObj));
 
-    try {
-      window.dispatchEvent(new CustomEvent('userUpdated', { detail: userObj }));
-    } catch {
-      window.dispatchEvent(new Event('userUpdated'));
-    }
-    
+    currentUser = userObj;
+    notifyUserUpdated(userObj);
+
     return response.data;
   },
 
   logout: async () => {
-    const user = authService.getCurrentUser();
-    if (user && user.username) {
-      try {
-        // Log the logout on the backend
-        await api.post('/auth/logout', null, { params: { username: user.username } });
-      } catch (error) {
-        console.error('Failed to log logout:', error);
-      }
+    const user = currentUser;
+    try {
+      await api.post('/auth/logout', null, user?.username ? { params: { username: user.username } } : undefined);
+    } catch (error) {
+      console.error('Failed to log logout:', error);
     }
 
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Clear any auth headers
+    currentUser = null;
+    notifyUserUpdated(null);
     delete api.defaults.headers.common['Authorization'];
-    // Force a page reload to clear any application state
     window.location.href = '/login';
   },
 
-  getCurrentUser: () => {
-    const user = localStorage.getItem('user');
-    if (!user) return null;
+  getCurrentUser: () => currentUser,
 
-    try {
-      return JSON.parse(user);
-    } catch {
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      return null;
-    }
+  setCurrentUser: (userObj) => {
+    currentUser = userObj || null;
+    notifyUserUpdated(currentUser);
   },
 
-  getAuthHeader: () => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token.replace(/^"|"$/g, '')}` } : {};
-  },
+  getAuthHeader: () => ({}),
 
   getBaseUrl,
 };

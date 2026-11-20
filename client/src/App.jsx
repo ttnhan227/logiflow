@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { authService } from './services';
 
 import MainLayout from './components/MainLayout';
@@ -153,6 +153,22 @@ const AuthRedirect = () => {
 };
 
 function App() {
+  const [authReady, setAuthReady] = useState(() => Boolean(authService.getCurrentUser()));
+
+  useEffect(() => {
+    let active = true;
+    authService.initSession().finally(() => {
+      if (active) setAuthReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (!authReady) {
+    return <div className="route-loading" role="status">Loading page…</div>;
+  }
+
   return (
     <Router>
       <RouteTitleManager />

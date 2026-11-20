@@ -6,6 +6,7 @@ import com.logiflow.server.dtos.maps.GeocodeResultDto;
 import com.logiflow.server.dtos.maps.OptimizeRequestDto;
 import com.logiflow.server.dtos.maps.OptimizedRouteDto;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service interface for map-related operations using OpenStreetMap services.
@@ -97,4 +98,9 @@ public interface MapsService {
      * @return OptimizedRouteDto containing the optimized route, distance, duration, and waypoints order.
      */
     OptimizedRouteDto optimizeRoute(OptimizeRequestDto request);
+
+    /**
+     * Proxies an OSRM route geometry lookup for a validated coordinate sequence ("lng,lat;lng,lat...").
+     */
+    Map<String, Object> getOsrmRoute(String coords);
 }

@@ -1,6 +1,12 @@
 package com.logiflow.server.configs;
 
+import com.logiflow.server.controllers.auth.AuthController;
 import com.logiflow.server.filters.JwtAuthenticationFilter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +23,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 @Configuration
 @EnableWebSecurity
@@ -81,8 +92,63 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/user/**").authenticated()
                                 .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(cookieCsrfFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private OncePerRequestFilter cookieCsrfFilter() {
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                    throws ServletException, IOException {
+                String method = request.getMethod();
+                boolean isUnsafe = !("GET".equalsIgnoreCase(method)
+                        || "HEAD".equalsIgnoreCase(method)
+                        || "OPTIONS".equalsIgnoreCase(method)
+                        || "TRACE".equalsIgnoreCase(method));
+
+                if (isUnsafe) {
+                    String authHeader = request.getHeader("Authorization");
+                    boolean usesBearer = authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7);
+                    String path = request.getRequestURI();
+                    boolean isPublicAuthEntry = "/api/auth/login".equals(path) || "/api/auth/register".equals(path);
+
+                    String authCookie = null;
+                    String csrfCookie = null;
+                    if (request.getCookies() != null) {
+                        for (Cookie cookie : request.getCookies()) {
+                            if (AuthController.AUTH_COOKIE_NAME.equals(cookie.getName())) {
+                                authCookie = cookie.getValue();
+                            } else if (AuthController.CSRF_COOKIE_NAME.equals(cookie.getName())) {
+                                csrfCookie = cookie.getValue();
+                            }
+                        }
+                    }
+
+                    if (!usesBearer && authCookie != null && !authCookie.isBlank() && !isPublicAuthEntry) {
+                        String csrfHeader = request.getHeader("X-XSRF-TOKEN");
+                        if (csrfHeader == null || csrfHeader.isBlank()) {
+                            csrfHeader = request.getHeader("X-CSRF-TOKEN");
+                        }
+                        boolean valid = csrfCookie != null
+                                && !csrfCookie.isBlank()
+                                && csrfHeader != null
+                                && MessageDigest.isEqual(
+                                        csrfCookie.getBytes(StandardCharsets.UTF_8),
+                                        csrfHeader.getBytes(StandardCharsets.UTF_8));
+                        if (!valid) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"CSRF validation failed\"}");
+                            return;
+                        }
+                    }
+                }
+
+                filterChain.doFilter(request, response);
+            }
+        };
     }
 }
