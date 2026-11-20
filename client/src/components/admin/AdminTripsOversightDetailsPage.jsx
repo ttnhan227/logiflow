@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { divIcon } from 'leaflet';
+import { createPinDivIcon } from '@/utils/leafletIcons';
 import { tripsOversightService } from '../../services';
 import {
   Button,
@@ -28,26 +28,15 @@ import {
   LuZap,
 } from 'react-icons/lu';
 
-const createPin = (color, label) => {
-  const el = document.createElement('div');
-  el.textContent = label;
-  el.style.cssText = `
-    background-color: ${color};
-    color: white;
-    border: 2px solid white;
-    border-radius: 9999px;
-    padding: 2px 8px;
-    font-size: 10px;
-    font-weight: 700;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    white-space: nowrap;
-  `;
-  return divIcon({
-    html: el.outerHTML,
+const createPin = (color, label) =>
+  createPinDivIcon({
+    color,
+    label,
+    className: '',
     iconSize: [60, 22],
     iconAnchor: [30, 11],
+    style: 'font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);',
   });
-};
 
 export const AdminTripsOversightDetailsPage = () => {
   const { tripId } = useParams();

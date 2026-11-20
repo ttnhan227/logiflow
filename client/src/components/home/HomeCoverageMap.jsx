@@ -1,34 +1,17 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { createPinDivIcon } from '@/utils/leafletIcons';
 
-const createHubPin = (label, type = 'gateway') => {
-  const el = document.createElement('div');
-  el.textContent = label;
-  el.style.cssText = `
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: ${type === 'gateway' ? '#2563eb' : '#475569'};
-    color: white;
-    border: 2px solid white;
-    border-radius: 6px;
-    padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    font-family: Inter, sans-serif;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    white-space: nowrap;
-  `;
-  return divIcon({
+const createHubPin = (label, type = 'gateway') =>
+  createPinDivIcon({
+    color: type === 'gateway' ? '#2563eb' : '#475569',
+    label,
     className: 'custom-hub-pin',
-    html: el.outerHTML,
     iconSize: [90, 24],
     iconAnchor: [45, 12],
-    popupAnchor: [0, -12],
+    style: 'border-radius: 6px; padding: 3px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);',
   });
-};
 
 const tradeLanes = {
   northSouthTrunk: [

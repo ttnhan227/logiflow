@@ -500,3 +500,19 @@ dialog.ui-native-modal::backdrop {
 .dark-card-form label {
   color: var(--color-slate-100) !important;
 }
+
+@media (forced-colors: active) {
+  .ui-card,
+  .ui-btn,
+  .ui-input,
+  .ui-select,
+  .ui-textarea,
+  .ui-modal {
+    border: 1px solid CanvasText;
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

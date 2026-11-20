@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { divIcon } from 'leaflet';
+import { createDotDivIcon } from '@/utils/leafletIcons';
 import { Card, Badge } from '@/components/ui';
 
 const VIETNAM_REGIONS = {
@@ -48,19 +48,7 @@ const MapController = ({ center, zoom }) => {
   return null;
 };
 
-const createDotMarker = (color) =>
-  divIcon({
-    html: `<div style="
-      background-color: ${color};
-      width: 14px;
-      height: 14px;
-      border: 2px solid #ffffff;
-      border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    "></div>`,
-    className: '',
-    iconSize: [14, 14],
-  });
+const createDotMarker = (color) => createDotDivIcon(color);
 
 export const AdminRegionalMap = ({ activeDrivers = [], activeTrips = [], onRegionClick }) => {
   const [mapView, setMapView] = useState({ center: [16.0471, 108.2068], zoom: 6 });

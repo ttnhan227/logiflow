@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { createPinDivIcon } from '@/utils/leafletIcons';
 import { Button, Card, CardContent, Badge, PageHeader } from '@/components/ui';
 import {
   LuMapPin,
@@ -14,33 +14,7 @@ import {
   LuArrowRight,
 } from 'react-icons/lu';
 
-// Create crisp SVG DivIcons for Leaflet
-const createPinIcon = (color, label) =>
-  divIcon({
-    className: 'custom-map-pin',
-    html: `
-      <div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: ${color};
-        color: white;
-        border: 2px solid white;
-        border-radius: 9999px;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: 700;
-        font-family: Inter, sans-serif;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
-        white-space: nowrap;
-      ">
-        ${label}
-      </div>
-    `,
-    iconSize: [60, 24],
-    iconAnchor: [30, 12],
-    popupAnchor: [0, -12],
-  });
+const createPinIcon = (color, label) => createPinDivIcon({ color, label });
 
 const hqIcon = createPinIcon('#dc2626', 'HCMC Sample');
 const northIcon = createPinIcon('#2563eb', 'North Sample');

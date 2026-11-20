@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { divIcon, latLngBounds } from 'leaflet';
+import { latLngBounds } from 'leaflet';
+import { createPinDivIcon } from '@/utils/leafletIcons';
 import { dispatchRouteService } from '../../services';
 import { Card, Badge, Alert } from '@/components/ui';
 import { LuMapPin, LuNavigation, LuCreditCard } from 'react-icons/lu';
@@ -25,29 +26,7 @@ const isInVietnam = (lat, lng) => {
   );
 };
 
-const createMapPin = (color, label) => {
-  const el = document.createElement('div');
-  el.textContent = label;
-  el.style.cssText = `
-    background-color: ${color};
-    color: white;
-    border: 2px solid white;
-    border-radius: 9999px;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    font-family: Inter, sans-serif;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.25);
-    white-space: nowrap;
-  `;
-  return divIcon({
-    className: 'custom-map-pin',
-    html: el.outerHTML,
-    iconSize: [60, 24],
-    iconAnchor: [30, 12],
-    popupAnchor: [0, -12],
-  });
-};
+const createMapPin = (color, label) => createPinDivIcon({ color, label });
 
 const haversineDistanceKm = (a, b) => {
   const R = 6371;

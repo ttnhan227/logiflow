@@ -5,7 +5,7 @@ import RouteMapCard from './RouteMapCard';
 import ChatPopup from '../common/ChatPopup';
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { divIcon } from 'leaflet';
+import { createPinDivIcon } from '@/utils/leafletIcons';
 import {
   Button,
   Card,
@@ -29,27 +29,13 @@ import {
 } from 'react-icons/lu';
 
 const createDriverMarker = () =>
-  divIcon({
+  createPinDivIcon({
+    color: '#7c3aed',
+    label: '🚐 Live Driver',
     className: 'custom-driver-marker',
-    html: `
-      <div style="
-        background-color: #7c3aed;
-        color: white;
-        border: 2px solid white;
-        border-radius: 9999px;
-        padding: 4px 10px;
-        font-size: 11px;
-        font-weight: 700;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      ">
-        🚐 Live Driver
-      </div>
-    `,
     iconSize: [90, 26],
     iconAnchor: [45, 13],
+    style: 'padding: 4px 10px; gap: 4px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);',
   });
 
 export const TripDetailPage = () => {
