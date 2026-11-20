@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 import '../api_client.dart';
+import '../auth/secure_token_store.dart';
 
 class NotificationService {
   StompClient? _stompClient;
@@ -72,10 +72,8 @@ class NotificationService {
     final baseUrl = ApiClient.baseUrl.replaceFirst('/api', '');
 
     // Get JWT token for authentication (passed via STOMP CONNECT headers)
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await secureTokenStore.readToken();
     if (token == null || token.isEmpty) {
-      print('WARN: No JWT token available for STOMP notification connection');
       return;
     }
 
@@ -90,29 +88,20 @@ class NotificationService {
       wsUrl = 'ws://$baseUrl/ws/notifications-native';
     }
 
-    print('DEBUG - ApiClient.baseUrl: ${ApiClient.baseUrl}');
-    print('DEBUG - baseUrl (stripped /api): $baseUrl');
-    print('DEBUG - JWT token present: true');
-    print('DEBUG - Connecting to STOMP over WebSocket: $wsUrl');
-
     _stompClient = StompClient(
       config: StompConfig(
         url: wsUrl,
         stompConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: _onStompConnect,
         onWebSocketError: (dynamic error) {
-          print('STOMP WebSocket error: $error');
           _isConnected = false;
         },
         onStompError: (StompFrame frame) {
-          print('STOMP protocol error: ${frame.body}');
           _isConnected = false;
         },
         onDisconnect: (StompFrame frame) {
-          print('STOMP disconnected');
           _isConnected = false;
         },
-        onDebugMessage: (String msg) => print('STOMP DEBUG: $msg'),
         // Allow some timeouts but keep defaults otherwise
         connectionTimeout: const Duration(seconds: 10),
         heartbeatOutgoing: const Duration(seconds: 0),
@@ -172,8 +161,6 @@ class NotificationService {
   }
 
   void _handleNotification(Map<String, dynamic> notification) {
-    print('Received notification: $notification');
-
     // Check if this notification is already in our list (avoid duplicates)
     final message = notification['message'] ?? '';
     final timestamp = notification['timestamp']?.toString() ?? '';

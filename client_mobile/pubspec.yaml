@@ -45,6 +45,7 @@ dependencies:
 
   # Shared preferences for local storage
   shared_preferences: ^2.2.3
+  flutter_secure_storage: ^9.2.2
 
   # For GPS location
   geolocator: ^10.1.0

@@ -43,6 +43,7 @@ class _NotificationBellState extends State<NotificationBell> {
     return Stack(
       children: [
         IconButton(
+          tooltip: 'Notifications',
           icon: const Icon(Icons.notifications, size: 28),
           onPressed: () {
             // Navigate to a full notifications screen instead of bottom sheet
@@ -191,7 +192,10 @@ class _NotificationsScreen extends StatelessWidget {
     final RegExp tripRegExp = RegExp(r'Trip #(\d+)');
     final String? tripId = tripRegExp.firstMatch(message)?.group(1);
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: message,
+      child: GestureDetector(
       onTap: () {
         if (tripId != null && onNavigateToTripDetail != null) {
           Navigator.of(context).pop();
@@ -286,6 +290,7 @@ class _NotificationsScreen extends StatelessWidget {
           isThreeLine: true,
         ),
       ),
+    ),
     );
   }
 

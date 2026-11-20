@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth/secure_token_store.dart';
 
 class ApiClient {
   static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
@@ -11,10 +12,10 @@ class ApiClient {
       : (kIsWeb ? '/api' : 'http://10.0.2.2:8080/api');
   static String get baseImageUrl => baseUrl.replaceFirst('/api', '');
   final http.Client _client = http.Client();
+  VoidCallback? onUnauthorized;
 
   Future<Map<String, String>> getHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await secureTokenStore.readToken();
 
     final headers = <String, String>{'Content-Type': 'application/json'};
 
@@ -89,13 +90,10 @@ class ApiClient {
 
   Future<void> _handleResponse(http.Response response) async {
     if (response.statusCode == 401) {
-      // Clear stored auth data
+      await secureTokenStore.clearToken();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('token');
       await prefs.remove('user');
-
-      // You might want to navigate to login screen here
-      // This depends on your navigation setup
+      onUnauthorized?.call();
       throw Exception('Authentication failed');
     }
   }

@@ -148,7 +148,11 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
       appBar: AppBar(
         title: const Text('My Trips'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
+          IconButton(
+            tooltip: 'Refresh trips',
+            icon: const Icon(Icons.refresh),
+            onPressed: _refresh,
+          ),
         ],
       ),
       body: _isLoading

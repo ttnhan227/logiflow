@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../api_client.dart';
+import '../auth/secure_token_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -146,8 +147,7 @@ class GpsTrackingService {
   Future<void> _connectWebSocket() async {
     if (_isWebSocketConnected && _stompClient != null) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await secureTokenStore.readToken();
     if (token == null) {
       throw Exception('No authentication token found');
     }
@@ -163,43 +163,32 @@ class GpsTrackingService {
       wsUrl = 'ws://$baseUrl/ws/tracking/websocket';
     }
 
-    print('GPS DEBUG: ApiClient.baseUrl: ${ApiClient.baseUrl}');
-    print('GPS DEBUG: baseUrl (stripped /api): $baseUrl');
-    print('GPS DEBUG: JWT token present: true');
-    print('GPS DEBUG: final wsUrl: $wsUrl');
-
     _stompClient = StompClient(
       config: StompConfig(
         url: wsUrl,
         stompConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: (_) {
-          print('GPS DEBUG: WebSocket connected successfully');
           _isWebSocketConnected = true;
           _reconnectTimer?.cancel();
         },
         onWebSocketError: (dynamic err) {
-          print('GPS DEBUG: WebSocket error: $err');
           _isWebSocketConnected = false;
           _scheduleReconnect();
         },
         onStompError: (StompFrame frame) {
-          print('GPS DEBUG: STOMP error: ${frame.body}');
           _isWebSocketConnected = false;
           _scheduleReconnect();
         },
         onDisconnect: (StompFrame frame) {
-          print('GPS DEBUG: WebSocket disconnected');
           _isWebSocketConnected = false;
           _scheduleReconnect();
         },
         connectionTimeout: const Duration(seconds: 10),
         heartbeatOutgoing: const Duration(seconds: 30),
         heartbeatIncoming: const Duration(seconds: 30),
-        onDebugMessage: (String msg) => print('GPS STOMP DEBUG: $msg'),
       ),
     );
 
-    print('GPS DEBUG: Activating STOMP client...');
     _stompClient?.activate();
   }
 
@@ -238,7 +227,6 @@ class GpsTrackingService {
         body: jsonEncode(locationMessage),
       );
       _lastLocationUpdate = now;
-      print('Location sent: lat=$latitude, lng=$longitude');
     } catch (e) {
       print('Error sending location: $e');
     }

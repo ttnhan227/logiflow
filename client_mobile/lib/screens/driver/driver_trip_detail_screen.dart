@@ -44,11 +44,13 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
   Future<void> _checkForActiveAssignments() async {
     try {
       final hasActive = await driverService.hasActiveTripAssignment();
+      if (!mounted) return;
       setState(() {
         _hasActiveAssignment = hasActive;
       });
     } catch (e) {
       // If unable to check, assume no active assignment
+      if (!mounted) return;
       setState(() {
         _hasActiveAssignment = false;
       });
@@ -57,6 +59,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
   @override
   void dispose() {
+    _delayReasonController.dispose();
     // Stop GPS tracking when leaving the screen
     if (gpsTrackingService.isTracking &&
         gpsTrackingService.currentTripId == widget.tripId.toString()) {
@@ -127,10 +130,6 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
       // Convert to map format for backward compatibility with existing code
       final newTripDetail = tripDetail.toJson();
-
-      // DEBUG: Log the full response
-      print('DEBUG: Full trip response: $newTripDetail');
-      print('DEBUG: Orders in response: ${newTripDetail['orders']}');
 
       // Check if trip status changed and handle GPS tracking accordingly
       final previousStatus = _tripDetail?['status'];

@@ -4,9 +4,13 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_client.dart';
 import '../../models/user.dart';
+import 'secure_token_store.dart';
 
 class AuthService {
-  static const String _tokenKey = 'token';
+  AuthService() {
+    apiClient.onUnauthorized ??= () => _notifyUserUpdate(null);
+  }
+
   static const String _userKey = 'user';
 
   final StreamController<User?> _userController = StreamController<User?>.broadcast();
@@ -14,9 +18,7 @@ class AuthService {
   Stream<User?> get userStream => _userController.stream;
 
   void _notifyUserUpdate(User? user) {
-    print('AuthService: _notifyUserUpdate called with user: ${user?.username}');
     _userController.add(user);
-    print('AuthService: Stream update sent');
   }
 
   Future<User> login(String username, String password) async {
@@ -32,16 +34,14 @@ class AuthService {
         // Create user from auth response
         final user = User.fromAuthResponse(data);
 
-        // Store token separately
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_tokenKey, user.token!);
+        // Store token in encrypted storage
+        await secureTokenStore.saveToken(user.token!);
 
         // Store user data (without token)
+        final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_userKey, jsonEncode(user.toJson()));
 
-        print('AuthService: Login successful, notifying stream - user: ${user.username}');
         _notifyUserUpdate(user);
-        print('AuthService: Login notification sent');
         return user;
       } else {
         // Parse error response for better user messages
@@ -86,12 +86,10 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    print('AuthService: Logging out user');
+    await secureTokenStore.clearToken();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
     _notifyUserUpdate(null);
-    print('AuthService: Logout completed, notified stream');
   }
 
   Future<User?> getCurrentUser() async {
@@ -109,10 +107,7 @@ class AuthService {
     return null;
   }
 
-  Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
-  }
+  Future<String?> getToken() => secureTokenStore.readToken();
 
   Future<bool> isLoggedIn() async {
     final user = await getCurrentUser();

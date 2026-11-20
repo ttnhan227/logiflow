@@ -25,6 +25,10 @@ analyzer:
     sort_child_properties_last: ignore
     prefer_interpolation_to_compose_strings: ignore
     unnecessary_brace_in_string_interps: ignore
+  exclude:
+    - build/**
+    - android/**
+    - web/**
 
 linter:
   rules:

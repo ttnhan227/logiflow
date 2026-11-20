@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../api_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../auth/secure_token_store.dart';
 
 class ChatSocketService {
   StompClient? _client;
@@ -13,8 +13,7 @@ class ChatSocketService {
   }
 
   Future<void> connect(String destination) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await secureTokenStore.readToken();
     if (token == null) {
       return;
     }

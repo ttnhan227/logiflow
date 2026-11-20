@@ -172,7 +172,11 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
       appBar: AppBar(
         title: const Text('Track Orders'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
+          IconButton(
+            tooltip: 'Refresh active orders',
+            icon: const Icon(Icons.refresh),
+            onPressed: _refresh,
+          ),
         ],
       ),
       body: _isLoading
