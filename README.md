@@ -83,6 +83,7 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 
 ### Implementation Notes
 
+- **System Architecture & ADRs** — See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for component architecture, STOMP security boundaries, concurrency/locking design, OpenTelemetry tracing, and failure recovery matrices.
 - **Map-based Routing** — Geocoding and routing data are displayed in Leaflet/OpenStreetMap views.
 - **STOMP Location Updates** — Drivers publish location updates over WebSockets and web clients subscribe by trip.
 - **Role-Based Workflows** — Spring Security restricts endpoints by role while service code handles trip-state transitions.
