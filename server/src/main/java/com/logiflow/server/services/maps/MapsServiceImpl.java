@@ -6,9 +6,14 @@ import com.logiflow.server.dtos.maps.DistanceResultDto;
 import com.logiflow.server.dtos.maps.OptimizeRequestDto;
 import com.logiflow.server.dtos.maps.OptimizedRouteDto;
 
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -34,6 +39,7 @@ public class MapsServiceImpl implements MapsService {
     private static final Logger log = LoggerFactory.getLogger(MapsServiceImpl.class);
 
     private final RestTemplate restTemplate;
+    private Tracer tracer = Tracer.NOOP;
     private long lastRequestTime = 0;
     private static final long MIN_REQUEST_INTERVAL_MS = 1000; // 1 second
     private static final String OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving";
@@ -76,6 +82,31 @@ public class MapsServiceImpl implements MapsService {
 
     RestTemplate getRestTemplate() {
         return restTemplate;
+    }
+
+    @Autowired(required = false)
+    void setTracer(Tracer tracer) {
+        this.tracer = tracer != null ? tracer : Tracer.NOOP;
+    }
+
+    private <T> T executeMapsRequest(String operation, String url, Class<T> responseType) {
+        Span span = tracer.nextSpan().name("logiflow.maps.request");
+        span.tag("maps.operation", operation);
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span.start())) {
+            ResponseEntity<T> response = restTemplate.getForEntity(url, responseType);
+            span.tag("http.status_code", String.valueOf(response.getStatusCode().value()));
+            return response.getBody();
+        } catch (HttpStatusCodeException ex) {
+            span.tag("http.status_code", String.valueOf(ex.getStatusCode().value()));
+            span.error(ex);
+            throw ex;
+        } catch (RuntimeException ex) {
+            span.tag("http.status_code", "error");
+            span.error(ex);
+            throw ex;
+        } finally {
+            span.end();
+        }
     }
 
     /**
@@ -143,7 +174,7 @@ public class MapsServiceImpl implements MapsService {
 
                 try {
                     @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> results = restTemplate.getForObject(url, List.class);
+                    List<Map<String, Object>> results = executeMapsRequest("geocode", url, List.class);
 
                     if (results != null && !results.isEmpty()) {
                         Map<String, Object> firstResult = (Map<String, Object>) results.get(0);
@@ -189,7 +220,7 @@ public class MapsServiceImpl implements MapsService {
             );
 
             @SuppressWarnings("unchecked")
-            Map<String, Object> result = restTemplate.getForObject(url, Map.class);
+            Map<String, Object> result = executeMapsRequest("reverse_geocode", url, Map.class);
 
             if (result != null && result.containsKey("display_name")) {
                 return result.get("display_name").toString();
@@ -238,7 +269,7 @@ public class MapsServiceImpl implements MapsService {
             );
 
             @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            Map<String, Object> response = executeMapsRequest("directions", url, Map.class);
 
             if (response != null && "Ok".equals(response.get("code"))) {
                 @SuppressWarnings("unchecked")
@@ -390,7 +421,7 @@ public class MapsServiceImpl implements MapsService {
             );
 
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> results = restTemplate.getForObject(url, List.class);
+            List<Map<String, Object>> results = executeMapsRequest("suggestions", url, List.class);
 
             List<String> suggestions = new ArrayList<>();
             if (results != null) {
@@ -434,7 +465,7 @@ public class MapsServiceImpl implements MapsService {
         String overview = includeGeometry ? "full" : "simplified";
         String url = String.format("%s/%s?overview=%s&geometries=geojson&roundtrip=true", OSRM_TRIP_URL, coordinates, overview);
 
-        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+        Map<String, Object> response = executeMapsRequest("optimize_route", url, Map.class);
         if (response != null && "Ok".equals(response.get("code"))) {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> trips = (List<Map<String, Object>>) response.get("trips");
@@ -511,6 +542,6 @@ public class MapsServiceImpl implements MapsService {
             throw new IllegalArgumentException("Invalid coordinates format");
         }
         String url = String.format("%s/%s?overview=full&geometries=geojson", OSRM_BASE_URL, coords);
-        return restTemplate.getForObject(url, Map.class);
+        return executeMapsRequest("osrm_route", url, Map.class);
     }
 }

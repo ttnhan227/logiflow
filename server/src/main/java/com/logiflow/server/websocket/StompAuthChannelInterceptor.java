@@ -3,8 +3,11 @@ package com.logiflow.server.websocket;
 import com.logiflow.server.repositories.order.OrderRepository;
 import com.logiflow.server.repositories.trip_assignment.TripAssignmentRepository;
 import com.logiflow.server.utils.JwtUtils;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -33,6 +36,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     private final JwtUtils jwtUtils;
     private final TripAssignmentRepository tripAssignmentRepository;
     private final OrderRepository orderRepository;
+    private Tracer tracer = Tracer.NOOP;
 
     public StompAuthChannelInterceptor(
             JwtUtils jwtUtils,
@@ -43,6 +47,11 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         this.orderRepository = orderRepository;
     }
 
+    @Autowired(required = false)
+    void setTracer(Tracer tracer) {
+        this.tracer = tracer != null ? tracer : Tracer.NOOP;
+    }
+
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
@@ -50,17 +59,34 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             return message;
         }
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            authenticateConnect(accessor);
-        } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
-            SessionIdentity identity = requireAuthenticatedIdentity(accessor);
-            authorizeSubscribe(identity, accessor.getDestination());
-        } else if (StompCommand.SEND.equals(accessor.getCommand())) {
-            SessionIdentity identity = requireAuthenticatedIdentity(accessor);
-            authorizeSend(identity, accessor.getDestination());
+        String commandName = accessor.getCommand().name();
+        Span span = tracer.nextSpan().name("logiflow.stomp.inbound");
+        span.tag("stomp.command", commandName);
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span.start())) {
+            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                authenticateConnect(accessor);
+            } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+                SessionIdentity identity = requireAuthenticatedIdentity(accessor);
+                authorizeSubscribe(identity, accessor.getDestination());
+            } else if (StompCommand.SEND.equals(accessor.getCommand())) {
+                SessionIdentity identity = requireAuthenticatedIdentity(accessor);
+                authorizeSend(identity, accessor.getDestination());
+            }
+            span.tag("stomp.outcome", "allowed");
+            if (logger.isDebugEnabled() && span.context() != null) {
+                logger.debug("STOMP {} allowed [traceId={}]", commandName, span.context().traceId());
+            }
+            return message;
+        } catch (RuntimeException ex) {
+            span.tag("stomp.outcome", "rejected");
+            span.error(ex);
+            if (logger.isDebugEnabled() && span.context() != null) {
+                logger.debug("STOMP {} rejected [traceId={}]", commandName, span.context().traceId());
+            }
+            throw ex;
+        } finally {
+            span.end();
         }
-
-        return message;
     }
 
     private void authenticateConnect(StompHeaderAccessor accessor) {

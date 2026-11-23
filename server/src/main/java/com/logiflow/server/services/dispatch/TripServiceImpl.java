@@ -40,6 +40,8 @@ import com.logiflow.server.services.dispatch.TripAssignmentMatchingService;
 import com.logiflow.server.services.admin.AuditLogService;
 import com.logiflow.server.websocket.NotificationService;
 import com.logiflow.server.services.payment.PaymentService;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +64,12 @@ public class TripServiceImpl implements TripService {
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
     private final PaymentService paymentService;
+    private Tracer tracer = Tracer.NOOP;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setTracer(Tracer tracer) {
+        this.tracer = tracer != null ? tracer : Tracer.NOOP;
+    }
 
     public TripServiceImpl(
             TripRepository tripRepository,
@@ -362,116 +370,131 @@ public class TripServiceImpl implements TripService {
     @Override
     @Transactional
     public TripDto updateTripStatus(Integer tripId, TripStatusUpdateRequest request) {
-        Trip trip = tripRepository.findByIdWithRelations(tripId)
-                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
+        String targetStatus = request != null && request.getStatus() != null
+                ? TripStatus.normalize(request.getStatus())
+                : "unknown";
+        Span span = tracer.nextSpan().name("logiflow.trip.status_update");
+        span.tag("trip.status.target", targetStatus != null ? targetStatus : "unknown");
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span.start())) {
+            Trip trip = tripRepository.findByIdWithRelations(tripId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + tripId + " not found"));
 
-        String newStatus = TripStatus.normalize(request.getStatus());
-        String currentStatus = TripStatus.normalize(trip.getStatus());
+            String newStatus = TripStatus.normalize(request.getStatus());
+            String currentStatus = TripStatus.normalize(trip.getStatus());
 
-        // Validate state machine transition
-        TripStatus.validateTransition(currentStatus, newStatus);
+            // Validate state machine transition
+            TripStatus.validateTransition(currentStatus, newStatus);
 
-        if (currentStatus != null && currentStatus.equalsIgnoreCase(newStatus)) {
-            return TripDto.fromTrip(trip);
-        }
-
-        trip.setStatus(newStatus);
-        addProgressEvent(trip, TripProgressEvent.EventType.STATUS_CHANGED,
-                "Trip status changed to " + newStatus,
-                "{\"from\":\"" + (currentStatus != null ? currentStatus : "") + "\",\"to\":\"" + newStatus + "\"}");
-
-
-        LocalDateTime now = LocalDateTime.now();
-        if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus) && trip.getActualDeparture() == null) {
-            trip.setActualDeparture(now);
-        }
-        if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus) && trip.getActualArrival() == null) {
-            trip.setActualArrival(now);
-        }
-
-        if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
-            for (TripAssignment assignment : trip.getTripAssignments()) {
-                if (isTerminalAssignmentStatus(assignment.getStatus())) {
-                    continue;
-                }
-                if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus)) {
-                    assignment.setStatus(TripStatus.IN_PROGRESS);
-                } else if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus)) {
-                    assignment.setStatus(TripStatus.COMPLETED);
-                    assignment.setCompletedAt(now);
-                    // Reset driver status to available when trip is completed
-                    if (assignment.getDriver() != null) {
-                        assignment.getDriver().setStatus("available");
-                        driverRepository.save(assignment.getDriver());
-                    }
-                } else if (TripStatus.CANCELLED.equalsIgnoreCase(newStatus)) {
-                    assignment.setStatus(TripStatus.CANCELLED);
-                    assignment.setCompletedAt(now);
-                    // Reset driver status to available when trip is cancelled
-                    if (assignment.getDriver() != null) {
-                        assignment.getDriver().setStatus("available");
-                        driverRepository.save(assignment.getDriver());
-                    }
-                }
+            if (currentStatus != null && currentStatus.equalsIgnoreCase(newStatus)) {
+                span.tag("trip.status.outcome", "noop");
+                return TripDto.fromTrip(trip);
             }
-            tripAssignmentRepository.saveAll(trip.getTripAssignments());
-        }
 
-        if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
-            if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus)) {
-                for (Order order : trip.getOrders()) {
-                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED || 
-                        order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
-                        order.setOrderStatus(Order.OrderStatus.DELIVERED);
-                        
-                        // Send delivery notification to customer if customer is associated
-                        if (order.getCustomer() != null) {
-                            try {
-                                notificationService.notifyOrderDelivered(
-                                    order.getCustomer().getUserId(),
-                                    order.getOrderId(),
-                                    order.getCustomerName(),
-                                    order.getDeliveryAddress()
-                                );
+            trip.setStatus(newStatus);
+            addProgressEvent(trip, TripProgressEvent.EventType.STATUS_CHANGED,
+                    "Trip status changed to " + newStatus,
+                    "{\"from\":\"" + (currentStatus != null ? currentStatus : "") + "\",\"to\":\"" + newStatus + "\"}");
 
-                                // Send payment request email with PayPal link
-                                paymentService.sendPaymentRequest(order.getOrderId());
-                            } catch (Exception e) {
-                                log.error("Failed to send delivery notification/payment request for order #{}: {}",
-                                    order.getOrderId(), e.getMessage());
-                            }
+
+            LocalDateTime now = LocalDateTime.now();
+            if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus) && trip.getActualDeparture() == null) {
+                trip.setActualDeparture(now);
+            }
+            if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus) && trip.getActualArrival() == null) {
+                trip.setActualArrival(now);
+            }
+
+            if (trip.getTripAssignments() != null && !trip.getTripAssignments().isEmpty()) {
+                for (TripAssignment assignment : trip.getTripAssignments()) {
+                    if (isTerminalAssignmentStatus(assignment.getStatus())) {
+                        continue;
+                    }
+                    if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus)) {
+                        assignment.setStatus(TripStatus.IN_PROGRESS);
+                    } else if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus)) {
+                        assignment.setStatus(TripStatus.COMPLETED);
+                        assignment.setCompletedAt(now);
+                        // Reset driver status to available when trip is completed
+                        if (assignment.getDriver() != null) {
+                            assignment.getDriver().setStatus("available");
+                            driverRepository.save(assignment.getDriver());
+                        }
+                    } else if (TripStatus.CANCELLED.equalsIgnoreCase(newStatus)) {
+                        assignment.setStatus(TripStatus.CANCELLED);
+                        assignment.setCompletedAt(now);
+                        // Reset driver status to available when trip is cancelled
+                        if (assignment.getDriver() != null) {
+                            assignment.getDriver().setStatus("available");
+                            driverRepository.save(assignment.getDriver());
                         }
                     }
                 }
-                orderRepository.saveAll(trip.getOrders());
-            } else if (TripStatus.CANCELLED.equalsIgnoreCase(newStatus)) {
-                // Business rule: cancelling a trip should unassign orders so they can be re-dispatched
-                for (Order order : trip.getOrders()) {
-                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED ||
-                        order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
-                        order.setOrderStatus(Order.OrderStatus.PENDING);
-                        order.setTrip(null);
-                    }
-                }
-                orderRepository.saveAll(trip.getOrders());
-            } else if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus)) {
-                for (Order order : trip.getOrders()) {
-                    if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED) {
-                        order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
-                    }
-                }
-                orderRepository.saveAll(trip.getOrders());
+                tripAssignmentRepository.saveAll(trip.getTripAssignments());
             }
+
+            if (trip.getOrders() != null && !trip.getOrders().isEmpty()) {
+                if (TripStatus.COMPLETED.equalsIgnoreCase(newStatus)) {
+                    for (Order order : trip.getOrders()) {
+                        if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED || 
+                            order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
+                            order.setOrderStatus(Order.OrderStatus.DELIVERED);
+                            
+                            // Send delivery notification to customer if customer is associated
+                            if (order.getCustomer() != null) {
+                                try {
+                                    notificationService.notifyOrderDelivered(
+                                        order.getCustomer().getUserId(),
+                                        order.getOrderId(),
+                                        order.getCustomerName(),
+                                        order.getDeliveryAddress()
+                                    );
+
+                                    // Send payment request email with PayPal link
+                                    paymentService.sendPaymentRequest(order.getOrderId());
+                                } catch (Exception e) {
+                                    log.error("Failed to send delivery notification/payment request for order #{}: {}",
+                                        order.getOrderId(), e.getMessage());
+                                }
+                            }
+                        }
+                    }
+                    orderRepository.saveAll(trip.getOrders());
+                } else if (TripStatus.CANCELLED.equalsIgnoreCase(newStatus)) {
+                    // Business rule: cancelling a trip should unassign orders so they can be re-dispatched
+                    for (Order order : trip.getOrders()) {
+                        if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED ||
+                            order.getOrderStatus() == Order.OrderStatus.IN_TRANSIT) {
+                            order.setOrderStatus(Order.OrderStatus.PENDING);
+                            order.setTrip(null);
+                        }
+                    }
+                    orderRepository.saveAll(trip.getOrders());
+                } else if (TripStatus.IN_PROGRESS.equalsIgnoreCase(newStatus)) {
+                    for (Order order : trip.getOrders()) {
+                        if (order.getOrderStatus() == Order.OrderStatus.ASSIGNED) {
+                            order.setOrderStatus(Order.OrderStatus.IN_TRANSIT);
+                        }
+                    }
+                    orderRepository.saveAll(trip.getOrders());
+                }
+            }
+
+            Trip savedTrip = tripRepository.save(trip);
+            tripRepository.flush();
+            tripProgressEventRepository.flush();
+
+            Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Failed to retrieve updated trip with id: " + savedTrip.getTripId()));
+
+            span.tag("trip.status.outcome", "updated");
+            return TripDto.fromTrip(tripWithRelations);
+        } catch (RuntimeException ex) {
+            span.tag("trip.status.outcome", "error");
+            span.error(ex);
+            throw ex;
+        } finally {
+            span.end();
         }
-
-        Trip savedTrip = tripRepository.save(trip);
-        tripRepository.flush();
-        tripProgressEventRepository.flush();
-
-        Trip tripWithRelations = tripRepository.findByIdWithRelations(savedTrip.getTripId())
-                .orElseThrow(() -> new ResourceNotFoundException("Failed to retrieve updated trip with id: " + savedTrip.getTripId()));
-
-        return TripDto.fromTrip(tripWithRelations);
     }
 
     @Override

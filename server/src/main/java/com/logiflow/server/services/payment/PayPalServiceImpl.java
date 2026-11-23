@@ -1,5 +1,8 @@
 package com.logiflow.server.services.payment;
 
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -38,12 +41,18 @@ public class PayPalServiceImpl implements PayPalService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private Tracer tracer = Tracer.NOOP;
 
     public PayPalServiceImpl() {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
         requestFactory.setReadTimeout(Duration.ofSeconds(15));
         this.restTemplate = new RestTemplate(requestFactory);
+    }
+
+    @Autowired(required = false)
+    void setTracer(Tracer tracer) {
+        this.tracer = tracer != null ? tracer : Tracer.NOOP;
     }
 
     RestTemplate getRestTemplate() {
@@ -84,7 +93,9 @@ public class PayPalServiceImpl implements PayPalService {
      * Create PayPal payment order
      */
     public Map<String, Object> createPaymentOrder(BigDecimal amount, String currency, String description) {
-        try {
+        Span span = tracer.nextSpan().name("logiflow.paypal.request");
+        span.tag("paypal.operation", "create_order");
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span.start())) {
             String accessToken = getAccessToken();
             String url = getBaseUrl() + "/v2/checkout/orders";
 
@@ -119,13 +130,18 @@ public class PayPalServiceImpl implements PayPalService {
             ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
 
             if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
+                span.tag("paypal.outcome", "success");
                 return response.getBody();
             }
 
             throw new RuntimeException("Failed to create PayPal payment order");
         } catch (Exception e) {
+            span.tag("paypal.outcome", "error");
+            span.error(e);
             logger.error("Failed to create PayPal payment order for amount {} and description '{}': {}", amount, description, e.getMessage(), e);
             throw new RuntimeException("Payment order creation failed. Please try again later.");
+        } finally {
+            span.end();
         }
     }
 
@@ -133,7 +149,9 @@ public class PayPalServiceImpl implements PayPalService {
      * Capture payment for an approved order
      */
     public Map<String, Object> capturePayment(String orderId) {
-        try {
+        Span span = tracer.nextSpan().name("logiflow.paypal.request");
+        span.tag("paypal.operation", "capture_payment");
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span.start())) {
             String accessToken = getAccessToken();
             String url = getBaseUrl() + "/v2/checkout/orders/" + orderId + "/capture";
 
@@ -146,13 +164,18 @@ public class PayPalServiceImpl implements PayPalService {
             ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
 
             if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
+                span.tag("paypal.outcome", "success");
                 return response.getBody();
             }
 
             throw new RuntimeException("Failed to capture PayPal payment");
         } catch (Exception e) {
+            span.tag("paypal.outcome", "error");
+            span.error(e);
             logger.error("Failed to capture PayPal payment for order {}: {}", orderId, e.getMessage(), e);
             throw new RuntimeException("Payment capture failed. Please contact support if the issue persists.");
+        } finally {
+            span.end();
         }
     }
 
@@ -160,7 +183,9 @@ public class PayPalServiceImpl implements PayPalService {
      * Get payment details
      */
     public Map<String, Object> getPaymentDetails(String orderId) {
-        try {
+        Span span = tracer.nextSpan().name("logiflow.paypal.request");
+        span.tag("paypal.operation", "get_payment_details");
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span.start())) {
             String accessToken = getAccessToken();
             String url = getBaseUrl() + "/v2/checkout/orders/" + orderId;
 
@@ -172,13 +197,18 @@ public class PayPalServiceImpl implements PayPalService {
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                span.tag("paypal.outcome", "success");
                 return response.getBody();
             }
 
             throw new RuntimeException("Failed to get PayPal payment details");
         } catch (Exception e) {
+            span.tag("paypal.outcome", "error");
+            span.error(e);
             logger.error("Failed to get PayPal payment details for order {}: {}", orderId, e.getMessage(), e);
             throw new RuntimeException("Payment details retrieval failed. Please contact support if the issue persists.");
+        } finally {
+            span.end();
         }
     }
 
