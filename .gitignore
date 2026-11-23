@@ -6,6 +6,7 @@ out/
 # ---- Maven / Spring Boot ----
 server/target/
 server/logs/
+server/uploads/
 server/.env
 .env
 

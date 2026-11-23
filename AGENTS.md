@@ -25,7 +25,8 @@ Run backend Maven commands (`.\mvnw.cmd ...`) from `D:\projects\logiflow\server`
 # Backend — Full test suite (pre-commit; runs on H2 MODE=PostgreSQL)
 .\mvnw.cmd -B test
 
-# Frontend — Lint & production build
+# Frontend — Audit, lint & production build
+npm --prefix client audit --omit=dev --audit-level=high
 npm --prefix client run lint
 npm --prefix client run build
 

@@ -30,7 +30,7 @@ const authService = {
     if (currentUser) return currentUser;
     if (!sessionPromise) {
       sessionPromise = api
-        .get('/auth/me')
+        .get('/auth/me', { timeout: 8000 })
         .then((response) => {
           const { username, role, profilePictureUrl } = response.data || {};
           if (!username) {

@@ -121,9 +121,13 @@ const RouteTitleManager = () => {
 };
 
 // Protected Route Component with role-based access
-const ProtectedRoute = ({ children, requiredRole = null }) => {
+const ProtectedRoute = ({ children, requiredRole = null, authReady = true }) => {
   const location = useLocation();
   const user = authService.getCurrentUser();
+
+  if (!authReady) {
+    return <div className="route-loading" role="status">Loading page…</div>;
+  }
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -139,7 +143,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 };
 
 // Handle redirection after login based on user role
-const AuthRedirect = () => {
+const AuthRedirect = ({ authReady = true }) => {
+  if (!authReady) {
+    return <div className="route-loading" role="status">Loading page…</div>;
+  }
+
   const user = authService.getCurrentUser();
   if (user?.role === 'ADMIN') {
     return <Navigate to="/admin/dashboard" replace />;
@@ -165,10 +173,6 @@ function App() {
     };
   }, []);
 
-  if (!authReady) {
-    return <div className="route-loading" role="status">Loading page…</div>;
-  }
-
   return (
     <Router>
       <RouteTitleManager />
@@ -191,18 +195,18 @@ function App() {
           <Route path="/mobile-app" element={<MobileAppPage />} />
           <Route path="/drivers" element={<DriversPage />} />
           <Route path="/profile" element={
-            <ProtectedRoute>
+            <ProtectedRoute authReady={authReady}>
               <ProfilePage />
             </ProtectedRoute>
           } />
           <Route path="/profile/edit" element={
-            <ProtectedRoute>
+            <ProtectedRoute authReady={authReady}>
               <ProfileEditPage />
             </ProtectedRoute>
           } />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/orders/:orderId/invoice" element={
-            <ProtectedRoute>
+            <ProtectedRoute authReady={authReady}>
               <InvoiceDownloadPage />
             </ProtectedRoute>
           } />
@@ -212,52 +216,52 @@ function App() {
           {/* Dispatch routes with DispatchLayout */}
         <Route element={<DispatchLayout />}>
           <Route path="/dispatch/orders" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <OrdersPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/orders/import" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <OrderImportPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/orders/:orderId" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <DispatchOrderDetailPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/trips" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <TripsPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/trips/create" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <TripCreatePage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/trips/:tripId" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <TripDetailPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/trips/:tripId/assign" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <TripAssignPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/drivers" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <AvailableDriversPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/notifications" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <DispatchNotificationsPage />
             </ProtectedRoute>
           } />
           <Route path="/dispatch/reports" element={
-            <ProtectedRoute requiredRole="DISPATCHER">
+            <ProtectedRoute authReady={authReady} requiredRole="DISPATCHER">
               <DispatchReportsPage />
             </ProtectedRoute>
           } />
@@ -266,95 +270,95 @@ function App() {
         {/* Admin routes with AdminLayout (sidebar) */}
         <Route element={<AdminSideNav />}>
           <Route path="/admin/dashboard" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminDashboardPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/reports" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminReportsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/notifications" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminNotificationsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/payment-requests" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminPaymentRequestPage />
             </ProtectedRoute>
           } />
 
           <Route path="/admin/users/drivers" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminDriverManagementPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users/customers" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminCustomerManagementPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users/dispatchers" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminDispatcherManagementPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users/drivers/:userId" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminUserDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users/customers/:userId" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminUserDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users/dispatchers/:userId" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminUserDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/users/:userId/edit" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminUserEditPage />
             </ProtectedRoute>
           } />
 
 
           <Route path="/admin/system/overview" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminSystemOverviewPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/audit-logs" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminAuditLogPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/trips-oversight" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminTripsOversightPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/trips-oversight/:tripId" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminTripsOversightDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/registration-requests" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminRegistrationRequestsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/registration-requests/:requestId" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminRegistrationRequestDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/admin/vehicles" element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <ProtectedRoute authReady={authReady} requiredRole="ADMIN">
               <AdminVehiclesPage />
             </ProtectedRoute>
           } />
@@ -364,7 +368,7 @@ function App() {
 
         <Route path="/login" element={
           authService.getCurrentUser() ?
-          <AuthRedirect /> :
+          <AuthRedirect authReady={authReady} /> :
           <LoginPage />
         } />
         <Route path="/register/driver" element={<DriverRegisterPage />} />

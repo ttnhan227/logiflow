@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://logiflow-client.onrender.com"><img src="https://img.shields.io/badge/Live-Demo-brightgreen?style=flat-square" alt="Live Demo"></a>
   <img src="https://img.shields.io/badge/Java-21-ED8B00.svg" alt="Java">
-  <img src="https://img.shields.io/badge/Spring%20Boot-3.2+-6DB33F.svg" alt="Spring Boot 3">
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.5.6-6DB33F.svg" alt="Spring Boot 3.5.6">
   <img src="https://img.shields.io/badge/React-19-61dafb.svg" alt="React 19">
   <img src="https://img.shields.io/badge/Flutter-Mobile-02569B.svg" alt="Flutter">
   <img src="https://img.shields.io/badge/PostgreSQL-15-336791.svg" alt="PostgreSQL 15">
@@ -59,9 +59,10 @@ React 19 Web App (Admin / Dispatcher)   Flutter Mobile App (Customer / Driver)
 +─────────────────────────────────────────────────────────────────────────────+
 |                            SPRING BOOT 3 BACKEND                            |
 |                                                                             |
-|  ├─ Security & Auth       ──► JWT Bearer Auth & Multi-Role RBAC             |
+|  ├─ Security & Auth       ──► HttpOnly Cookie / JWT Auth, CSRF & RBAC       |
 |  ├─ Dispatch Engine       ──► Trip State Machine & Driver Assignment        |
 |  ├─ Real-Time Telemetry   ──► STOMP WebSockets & Live GPS Streaming         |
+|  ├─ Observability         ──► Micrometer & OpenTelemetry Distributed Tracing|
 |  ├─ Proof of Delivery     ──► Digital Signature Capture & Photo Upload      |
 |  └─ Billing Demo          ──► PayPal Sandbox & PDF Invoices                 |
 +─────────────────────────────────────────────────────────────────────────────+
@@ -75,7 +76,7 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 | Service | Technology | Role |
 |---|---|---|
 | Backend API | Spring Boot 3 + Java 21 | RESTful endpoints, WebSocket broker, security, business logic |
-| Web Client | React 19 + Ant Design | Admin and dispatcher operations console, tracking portal, analytics |
+| Web Client | React 19 + Vite + Leaflet + Recharts | Admin and dispatcher operations console, tracking portal, analytics |
 | Mobile Client | Flutter (Dart) | Customer ordering and tracking; driver deliveries, GPS tracking, signature capture, status updates |
 | Database | PostgreSQL 15 | Relational storage for users, orders, trips, and telemetry |
 | Telemetry Broker | Spring STOMP / WebSockets | Trip-scoped driver-location updates |
@@ -86,6 +87,7 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 - **System Architecture & ADRs** — See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for component architecture, STOMP security boundaries, concurrency/locking design, OpenTelemetry tracing, and failure recovery matrices.
 - **Map-based Routing** — Geocoding and routing data are displayed in Leaflet/OpenStreetMap views.
 - **STOMP Location Updates** — Drivers publish location updates over WebSockets and web clients subscribe by trip.
+- **Security & Observability** — Web sessions use HttpOnly cookies with double-submit CSRF protection (`XSRF-TOKEN` / `X-XSRF-TOKEN`), and backend spans/metrics are instrumented with Micrometer and OpenTelemetry.
 - **Role-Based Workflows** — Spring Security restricts endpoints by role while service code handles trip-state transitions.
 - **Invoices and Sandbox Payments** — Thymeleaf/iText generates PDFs and the PayPal sandbox demonstrates checkout and capture flows.
 
@@ -106,7 +108,7 @@ PostgreSQL 15                                   External APIs (PayPal, Cloudinar
 ## Tech Stack
 
 - **Backend**: Spring Boot 3, Java 21, Spring Security, Spring Data JPA
-- **Web Frontend**: React 19, Vite, Ant Design, Leaflet, SockJS, StompJS
+- **Web Frontend**: React 19, Vite, Leaflet, Recharts, SockJS, StompJS
 - **Mobile Application**: Flutter, Dart, Google Maps / OpenStreetMap SDK
 - **Database**: PostgreSQL 15
 - **Infrastructure**: Docker, Docker Compose, GitHub Actions CI/CD, GitHub Container Registry
@@ -125,11 +127,10 @@ LogiFlow was developed as a collaborative team project of four members. I was th
 ### 2. High-Frequency GPS Telemetry & WebSocket Hardening
 * **Problem**: Continuous streaming of raw location coordinates from driver devices risked memory leaks, coordinate corruption (out-of-bounds or `NaN`/`Infinity` coordinates), and WebSocket crashes on transient DB write errors.
 * **My Implementation**: Hardened `GpsTrackingController.java` with coordinate validation (bounded latitude [-90, 90] and longitude [-180, 180]), thread-safe bounded in-memory circular buffers (`MAX_HISTORY_PER_TRIP = 100`), and decoupled STOMP broadcasting from relational persistence.
-* **Verification**: Wrote controller validation tests (`GpsTrackingControllerValidationTest`) ensuring corrupted frames are discarded without dropping active WebSocket channels.
+* **Verification**: Wrote controller validation tests (`GpsTrackingControllerTest`) ensuring corrupted frames are discarded without dropping active WebSocket channels.
 
 ### 3. Payment Processing & Callback Idempotency
 * **Problem**: Webhook retries and network duplicates in the PayPal sandbox flow could re-trigger payment capture and corrupt order statuses.
-* **My Implementation**: Implemented defensive idempotency checks in `PaymentServiceImpl.java`, ensuring repeat callbacks for `PAID` orders return the existing payment confirmation safely without duplicate processing or duplicate audit records.
 * **My Implementation**: Implemented defensive idempotency checks in `PaymentServiceImpl.java`, ensuring repeat callbacks for `PAID` orders return the existing payment confirmation safely without duplicate processing or duplicate audit records. Externalized VND-to-USD currency conversions (`logiflow.payment.vnd-usd-rate`) to configurable properties.
 * **Verification**: Added `PaymentServiceIdempotencyTest` simulating parallel webhook replays and rate conversions.
 
