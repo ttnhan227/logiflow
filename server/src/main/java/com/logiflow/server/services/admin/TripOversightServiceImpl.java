@@ -87,6 +87,7 @@ public class TripOversightServiceImpl implements TripOversightService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TripOversightListResponse getTripsOversight(String status, int page, int size) {
         if (page < 0) page = 0;
         if (size < 1) size = 10;
@@ -104,7 +105,9 @@ public class TripOversightServiceImpl implements TripOversightService {
         // Manual pagination
         int startIndex = page * size;
         int endIndex = Math.min(startIndex + size, allTrips.size());
-        List<Trip> paginatedTrips = allTrips.subList(startIndex, Math.min(endIndex, allTrips.size()));
+        List<Trip> paginatedTrips = startIndex >= allTrips.size()
+                ? List.of()
+                : allTrips.subList(startIndex, endIndex);
 
         // Convert to DTOs (with null-safe processing)
         List<TripOversightDto> tripDtos = new ArrayList<>();

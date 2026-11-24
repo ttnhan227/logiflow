@@ -114,6 +114,7 @@ public class SecurityConfiguration {
                     boolean usesBearer = authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7);
                     String path = request.getRequestURI();
                     boolean isPublicAuthEntry = "/api/auth/login".equals(path) || "/api/auth/register".equals(path);
+                    boolean isSockJsTransport = path != null && path.startsWith("/ws/");
 
                     String authCookie = null;
                     String csrfCookie = null;
@@ -127,7 +128,7 @@ public class SecurityConfiguration {
                         }
                     }
 
-                    if (!usesBearer && authCookie != null && !authCookie.isBlank() && !isPublicAuthEntry) {
+                    if (!usesBearer && authCookie != null && !authCookie.isBlank() && !isPublicAuthEntry && !isSockJsTransport) {
                         String csrfHeader = request.getHeader("X-XSRF-TOKEN");
                         if (csrfHeader == null || csrfHeader.isBlank()) {
                             csrfHeader = request.getHeader("X-CSRF-TOKEN");
