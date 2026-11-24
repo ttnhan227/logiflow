@@ -596,7 +596,7 @@ export const HomePage = () => {
             </h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 'var(--text-xs)' }}>
               <li><Link to="/track" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Real-Time Shipment Tracking →</Link></li>
-              <li><Link to="/coverage" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>63-Province Hub Corridors →</Link></li>
+              <li><Link to="/coverage" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>OSRM Route &amp; Distance Mapping →</Link></li>
               <li><Link to="/track" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Speed & Waypoint Logs →</Link></li>
             </ul>
           </Card>
@@ -612,7 +612,7 @@ export const HomePage = () => {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 'var(--text-xs)' }}>
               <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Excel / CSV Bulk Order Import →</Link></li>
               <li><Link to="/services" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Digital e-POD Confirmation →</Link></li>
-              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Barcode & Manifest Generation →</Link></li>
+              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>PDF Invoices &amp; Delivery Receipts →</Link></li>
             </ul>
           </Card>
 
@@ -625,9 +625,9 @@ export const HomePage = () => {
               Billing & Settlement
             </h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 'var(--text-xs)' }}>
-              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Transparent Provincial Tariffs →</Link></li>
-              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Automated COD Reconciliation →</Link></li>
-              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Net-30 Corporate Invoicing →</Link></li>
+              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Distance-Based Freight Pricing →</Link></li>
+              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>PayPal Sandbox Checkout →</Link></li>
+              <li><Link to="/business" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>Driver Payout &amp; Fee Requests →</Link></li>
             </ul>
           </Card>
         </div>

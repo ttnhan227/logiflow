@@ -15,7 +15,6 @@ class NotificationClient {
 
   connect() {
     if (this.isConnected) {
-      console.log('Already connected to notification service');
       return Promise.resolve();
     }
 
@@ -29,8 +28,6 @@ class NotificationClient {
 
     this.connectPromise = new Promise((resolve, reject) => {
       const socketUrl = `${backendBaseUrl}/ws/notifications`;
-
-      console.log('Connecting to SockJS:', socketUrl);
 
       // Determine topic based on user role
       const user = authService.getCurrentUser();
@@ -49,7 +46,6 @@ class NotificationClient {
         heartbeatOutgoing: 4000,
 
         onConnect: () => {
-          console.log('Connected to notification service');
           this.isConnected = true;
 
           // Clear any existing subscriptions before re-subscribing
@@ -66,7 +62,6 @@ class NotificationClient {
           }
 
           // Subscribe to role-specific notifications topic
-          console.log('Subscribing to', topic);
           if (!this.client || !this.client.connected) {
             console.error('STOMP client not connected when attempting to subscribe');
             this.isConnected = false;
@@ -76,10 +71,8 @@ class NotificationClient {
           }
 
           const subscription = this.client.subscribe(topic, (message) => {
-            console.log('Received message:', message.body);
             try {
               const notification = JSON.parse(message.body);
-              console.log('Parsed notification:', notification);
               this.notifyListeners(notification);
             } catch (e) {
               console.error('Error parsing notification:', e);
@@ -99,7 +92,6 @@ class NotificationClient {
         },
 
         onDisconnect: () => {
-          console.log('Disconnected from notification service');
           this.isConnected = false;
           this.connectPromise = null;
         },
@@ -134,7 +126,6 @@ class NotificationClient {
       this.client.deactivate();
       this.isConnected = false;
       this.connectPromise = null;
-      console.log('Disconnected from notification service');
     }
   }
 

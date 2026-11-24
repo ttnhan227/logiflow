@@ -93,8 +93,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 user.getUsername(),
                 user.getRole().getRoleName(),
                 true, // success
-                "127.0.0.1", // TODO: Get actual IP from authentication context
-                "N/A", // TODO: Get actual user agent from request
+                "127.0.0.1", // Request IP is not persisted on User login audit summary
+                "N/A", // Request user agent is not persisted on User login audit summary
                 null // No consecutive failures for successful logins
             ))
             .collect(Collectors.toList());
@@ -103,38 +103,19 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         // Use same calculation as AdminReportsServiceImpl for consistency
         BigDecimal todayRevenue = calculateRevenue(todayStart, now);
 
-        // For demo purposes, if no revenue today, simulate realistic daily revenue
-        if (todayRevenue.compareTo(BigDecimal.ZERO) == 0) {
-            // Simulate realistic daily revenue for a logistics company (5-25 million VND)
-            // Based on payment request page showing ~2-5M VND per order
-            double demoRevenue = 5000000 + (Math.random() * 20000000); // 5M - 25M VND
-            todayRevenue = BigDecimal.valueOf(demoRevenue);
-        }
-
         // Calculate DIFOT rate (Delivery In Full On Time) - completed trips without delay
         // Use same calculation as AdminReportsServiceImpl for consistency
         long totalCompletedTrips = tripRepository.countByStatus("completed");
         long onTimeTrips = tripRepository.countCompletedTripsWithoutDelay(monthAgo);
 
-        // For demo purposes, if no completed trips in the period, use a realistic industry average
-        double difotRate;
-        if (totalCompletedTrips > 0) {
-            difotRate = (double) onTimeTrips / totalCompletedTrips * 100;
-        } else {
-            // Industry average DIFOT rate is typically 75-85%
-            difotRate = 78.0 + (Math.random() * 10.0); // 78-88%
-        }
+        double difotRate = totalCompletedTrips > 0
+            ? (double) onTimeTrips / totalCompletedTrips * 100
+            : 0.0;
 
         // Fleet utilization - Use same calculation as AdminReportsServiceImpl
         int totalVehicles = (int) vehicleRepository.count();
         int activeVehicles = (int) vehicleRepository.countByStatus("in_use");
         double fleetUtilization = totalVehicles > 0 ? (activeVehicles * 100.0 / totalVehicles) : 0.0;
-
-        // For demo purposes, if utilization is too low, simulate realistic operational levels
-        if (fleetUtilization < 25.0 && totalVehicles > 0) {
-            // Simulate that some vehicles are actually in use during operations
-            fleetUtilization = 35.0 + (Math.random() * 30.0); // 35-65% utilization
-        }
 
         // Active trips count (trips in progress, assigned, in transit, or arrived)
         long activeTripsCount = tripRepository.countByStatus("in_progress") +
@@ -341,13 +322,9 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
         if (totalCompletedOrders == 0) return 0.0;
 
-        // Base satisfaction on payment completion rate, with some variation
+        // Base satisfaction on payment completion rate
         double paymentCompletionRate = (double) paidCompletedOrders / totalCompletedOrders;
-        double baseSatisfaction = paymentCompletionRate * 5.0; // Scale to 5.0 max
-
-        // Add some realistic variation (±0.5) to make it look more natural
-        double variation = (Math.random() - 0.5) * 1.0; // -0.5 to +0.5
-        double finalSatisfaction = Math.max(0.0, Math.min(5.0, baseSatisfaction + variation));
+        double finalSatisfaction = Math.max(0.0, Math.min(5.0, paymentCompletionRate * 5.0));
 
         return Math.round(finalSatisfaction * 10.0) / 10.0; // Round to 1 decimal place
     }
@@ -360,26 +337,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     }
 
     private FinancialMetrics calculateFinancialMetrics(BigDecimal revenue, LocalDateTime since) {
-        // Calculate realistic cost percentages based on typical logistics operations
-        // Fuel costs: 15-25% of revenue
-        double fuelCostPercent = 15.0 + (Math.random() * 10.0); // 15-25%
-
-        // Driver pay: 25-35% of revenue
-        double driverPayPercent = 25.0 + (Math.random() * 10.0); // 25-35%
-
-        // Other costs: 10-20% of revenue (maintenance, admin, insurance, etc.)
-        double otherCostsPercent = 10.0 + (Math.random() * 10.0); // 10-20%
-
-        // Calculate gross margin (revenue - all costs)
-        double totalCostPercent = fuelCostPercent + driverPayPercent + otherCostsPercent;
-        double grossMargin = Math.max(0.0, 100.0 - totalCostPercent);
-
-        return new FinancialMetrics(
-            Math.round(fuelCostPercent * 10.0) / 10.0,
-            Math.round(driverPayPercent * 10.0) / 10.0,
-            Math.round(otherCostsPercent * 10.0) / 10.0,
-            Math.round(grossMargin * 10.0) / 10.0
-        );
+        // Operating cost breakdown is not persisted on the backend; return 0.0 rather than simulated values.
+        return new FinancialMetrics(0.0, 0.0, 0.0, 0.0);
     }
 
     private List<ActiveTripDto> getActiveTrips() {

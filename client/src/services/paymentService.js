@@ -52,16 +52,11 @@ const paymentService = {
    */
   generatePaymentLink: async (orderId) => {
     try {
-      console.log('Generating payment link for order:', orderId);
-
       // Get order details
       const response = await api.get(`/customer/me/orders/${orderId}`);
       const order = response.data;
-      console.log('Order details:', order);
 
       if (order.shippingFee) {
-        console.log('Creating PayPal order for amount:', order.shippingFee);
-
         // Create PayPal order directly for frontend payment
         const paypalOrder = await paymentService.createPayPalOrder(
           order.shippingFee,
@@ -69,12 +64,9 @@ const paymentService = {
           orderId
         );
 
-        console.log('PayPal order created:', paypalOrder);
-
         // Extract approval URL from PayPal response
         if (paypalOrder.links) {
           const approveLink = paypalOrder.links.find(link => link.rel === 'approve');
-          console.log('PayPal approval link:', approveLink?.href);
           return approveLink?.href;
         }
       }
