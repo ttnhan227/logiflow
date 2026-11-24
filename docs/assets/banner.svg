@@ -1,124 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" width="100%" height="220">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 150" width="100%" height="150" role="img" aria-label="LogiFlow — Freight Dispatch &amp; Real-Time GPS Tracking">
   <defs>
     <style>
-      .mono-bold { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Courier New', monospace; font-weight: 700; }
-      .mono-reg  { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace; font-weight: 500; }
-      .sans-bold { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; font-weight: 800; }
+      .wordmark { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; font-weight: 800; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; font-weight: 500; }
+      .tag { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace; font-weight: 600; }
     </style>
   </defs>
 
-  <!-- Solid Industrial Carbon Surface -->
-  <rect width="820" height="220" fill="#090D14"/>
-  <rect width="818" height="218" x="1" y="1" fill="none" stroke="#1B2230" stroke-width="1.5"/>
+  <!-- Minimal Dark Slate Surface -->
+  <rect width="820" height="150" rx="10" fill="#0F172A"/>
+  <rect x="0.75" y="0.75" width="818.5" height="148.5" rx="9.25" fill="none" stroke="#1E293B" stroke-width="1.5"/>
 
-  <!-- Top Accent Ruler: International Freight Orange Stripe -->
-  <rect x="0" y="0" width="820" height="3" fill="#FF5500"/>
+  <!-- Subtle Top Accent Line -->
+  <rect x="0" y="0" width="820" height="3" rx="1.5" fill="#FF5500"/>
 
-  <!-- ================= TOP HEADER BAR ================= -->
-  <g transform="translate(24, 25)">
-    <!-- Brand Wordmark -->
-    <text class="sans-bold" font-size="18" letter-spacing="1.5">
-      <tspan fill="#F8FAFC">LOGI</tspan><tspan fill="#FF5500">FLOW</tspan>
-    </text>
-    <text x="110" y="-1" class="mono-reg" font-size="10" fill="#64748B" letter-spacing="0.5">│ ENTERPRISE FREIGHT DISPATCH &amp; TELEMETRY</text>
-
-    <!-- Operational State Indicator -->
-    <rect x="635" y="-12" width="135" height="18" rx="2" fill="#0D1F17" stroke="#10B981" stroke-width="0.8"/>
-    <circle cx="646" cy="-3" r="3" fill="#10B981"/>
-    <text x="655" y="1" class="mono-bold" font-size="8.5" fill="#34D399" letter-spacing="0.5">STOMP 24Hz LIVE</text>
+  <!-- Minimal Geometric Route & Freight Mark (Centered Group) -->
+  <g transform="translate(278, 42)">
+    <rect width="38" height="38" rx="8" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <path d="M9 24h14l4-5h2v5h2v-6.5l-3.5-3.5H23V12H9v12zm3 3.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="#FF5500"/>
   </g>
 
-  <line x1="0" y1="38" x2="820" y2="38" stroke="#18202F" stroke-width="1"/>
+  <!-- Wordmark -->
+  <text x="330" y="69" class="wordmark" font-size="30" letter-spacing="2">
+    <tspan fill="#F8FAFC">LOGI</tspan><tspan fill="#FF5500">FLOW</tspan>
+  </text>
 
-  <!-- ================= DISPATCH TABLE HEADER ================= -->
-  <g transform="translate(24, 54)">
-    <text x="0" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">LINEHAUL CORRIDOR</text>
-    <text x="180" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">CONSIGNMENT &amp; PAYLOAD</text>
-    <text x="390" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">GPS TELEMETRY &amp; SPEED</text>
-    <text x="600" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">DISPATCH STATUS</text>
-    <text x="715" class="mono-bold" font-size="9" fill="#475569" letter-spacing="0.8">ON-TIME</text>
-  </g>
+  <!-- Honest, Concise Subtitle -->
+  <text x="410" y="106" text-anchor="middle" class="subtitle" font-size="14" fill="#94A3B8">
+    Multi-Role Freight Dispatch, Route Mapping &amp; Real-Time GPS Tracking
+  </text>
 
-  <line x1="20" y1="62" x2="800" y2="62" stroke="#1E2738" stroke-width="1"/>
-
-  <!-- ================= DISPATCH ROW 1 ================= -->
-  <g transform="translate(24, 82)">
-    <!-- Corridor -->
-    <text class="mono-bold" font-size="11" fill="#F8FAFC">HAN <tspan fill="#FF5500">→</tspan> DAD <tspan fill="#64748B">→</tspan> SGN</text>
-    <text y="14" class="mono-reg" font-size="8.5" fill="#64748B">Corridor 1A · 1,720 km</text>
-
-    <!-- Cargo -->
-    <text x="180" class="mono-bold" font-size="10.5" fill="#CBD5E1">#LF-8842 <tspan fill="#64748B">│</tspan> 18.4 / 24.0 T</text>
-    <text x="180" y="14" class="mono-reg" font-size="8.5" fill="#64748B">Volvo FH16 · Cold-Chain</text>
-
-    <!-- Telemetry -->
-    <text x="390" class="mono-bold" font-size="10" fill="#38BDF8">16.0544°N, 108.2022°E</text>
-    <text x="390" y="14" class="mono-reg" font-size="8.5" fill="#94A3B8">Velocity: 68 km/h · Da Nang Gate</text>
-
-    <!-- Status Badge -->
-    <rect x="600" y="-10" width="84" height="18" rx="2" fill="#1C1408" stroke="#FF5500" stroke-width="0.8"/>
-    <text x="608" y="2.5" class="mono-bold" font-size="8" fill="#FB923C">IN TRANSIT</text>
-
-    <!-- Metric -->
-    <text x="715" class="mono-bold" font-size="11" fill="#34D399">99.4%</text>
-    <text x="715" y="14" class="mono-reg" font-size="8" fill="#64748B">ETA 14:30</text>
-  </g>
-
-  <line x1="20" y1="104" x2="800" y2="104" stroke="#141B28" stroke-width="0.8"/>
-
-  <!-- ================= DISPATCH ROW 2 ================= -->
-  <g transform="translate(24, 124)">
-    <!-- Corridor -->
-    <text class="mono-bold" font-size="11" fill="#F8FAFC">DAD <tspan fill="#FF5500">→</tspan> QNH <tspan fill="#64748B">→</tspan> NHA</text>
-    <text y="14" class="mono-reg" font-size="8.5" fill="#64748B">Central Coastal · 530 km</text>
-
-    <!-- Cargo -->
-    <text x="180" class="mono-bold" font-size="10.5" fill="#CBD5E1">#LF-8843 <tspan fill="#64748B">│</tspan> 22.1 / 24.0 T</text>
-    <text x="180" y="14" class="mono-reg" font-size="8.5" fill="#64748B">Scania R500 · Heavy Bulk</text>
-
-    <!-- Telemetry -->
-    <text x="390" class="mono-bold" font-size="10" fill="#38BDF8">13.7820°N, 109.2194°E</text>
-    <text x="390" y="14" class="mono-reg" font-size="8.5" fill="#94A3B8">Velocity: 72 km/h · Qui Nhon Bypass</text>
-
-    <!-- Status Badge -->
-    <rect x="600" y="-10" width="84" height="18" rx="2" fill="#1C1408" stroke="#FF5500" stroke-width="0.8"/>
-    <text x="608" y="2.5" class="mono-bold" font-size="8" fill="#FB923C">IN TRANSIT</text>
-
-    <!-- Metric -->
-    <text x="715" class="mono-bold" font-size="11" fill="#34D399">98.8%</text>
-    <text x="715" y="14" class="mono-reg" font-size="8" fill="#64748B">ETA 18:15</text>
-  </g>
-
-  <line x1="20" y1="146" x2="800" y2="146" stroke="#141B28" stroke-width="0.8"/>
-
-  <!-- ================= DISPATCH ROW 3 ================= -->
-  <g transform="translate(24, 166)">
-    <!-- Corridor -->
-    <text class="mono-bold" font-size="11" fill="#F8FAFC">SGN <tspan fill="#10B981">→</tspan> BDU <tspan fill="#10B981">→</tspan> CTH</text>
-    <text y="14" class="mono-reg" font-size="8.5" fill="#64748B">Mekong Delta · 280 km</text>
-
-    <!-- Cargo -->
-    <text x="180" class="mono-bold" font-size="10.5" fill="#CBD5E1">#LF-8845 <tspan fill="#64748B">│</tspan> 08.5 / 10.0 T</text>
-    <text x="180" y="14" class="mono-reg" font-size="8.5" fill="#64748B">Isuzu Giga · Fast Parcel</text>
-
-    <!-- Telemetry -->
-    <text x="390" class="mono-bold" font-size="10" fill="#10B981">10.0333°N, 105.7833°E</text>
-    <text x="390" y="14" class="mono-reg" font-size="8.5" fill="#94A3B8">Arrived · e-POD Signed &amp; Stamped</text>
-
-    <!-- Status Badge -->
-    <rect x="600" y="-10" width="84" height="18" rx="2" fill="#0D1F17" stroke="#10B981" stroke-width="0.8"/>
-    <text x="611" y="2.5" class="mono-bold" font-size="8" fill="#34D399">DELIVERED</text>
-
-    <!-- Metric -->
-    <text x="715" class="mono-bold" font-size="11" fill="#34D399">100%</text>
-    <text x="715" y="14" class="mono-reg" font-size="8" fill="#64748B">ON-TIME</text>
-  </g>
-
-  <!-- ================= FOOTER RUNTIME SPECS ================= -->
-  <line x1="0" y1="190" x2="820" y2="190" stroke="#18202F" stroke-width="1"/>
-  <g transform="translate(24, 206)">
-    <text class="mono-reg" font-size="9" fill="#475569">
-      <tspan fill="#64748B">STACK:</tspan> Java 21 · Spring Boot 3 REST  │  <tspan fill="#64748B">MAPPING:</tspan> Leaflet GIS  │  <tspan fill="#64748B">CLIENTS:</tspan> React 19 Dispatcher + Flutter Mobile  │  <tspan fill="#64748B">STORE:</tspan> PostgreSQL 15
-    </text>
-  </g>
+  <!-- Stack Summary Tag -->
+  <text x="410" y="128" text-anchor="middle" class="tag" font-size="10.5" fill="#64748B" letter-spacing="0.8">
+    SPRING BOOT · REACT · FLUTTER · POSTGRESQL · STOMP WEBSOCKETS
+  </text>
 </svg>

@@ -8,6 +8,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -15,9 +16,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,25 +28,94 @@ public class AuthController {
 
     public static final String AUTH_COOKIE_NAME = "logiflow_token";
     public static final String CSRF_COOKIE_NAME = "XSRF-TOKEN";
+    public static final String CSRF_HEADER_NAME = "X-XSRF-TOKEN";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final AuthService authService;
+    private final List<String> allowedOrigins;
 
-    public AuthController(AuthService authService) {
+    public AuthController(
+            AuthService authService,
+            @Value("${app.cors.allowed-origins:}") List<String> allowedOrigins) {
         this.authService = authService;
+        this.allowedOrigins = allowedOrigins == null ? List.of() : allowedOrigins;
     }
 
-    private static String resolveSameSite() {
+    private String resolveSameSite(HttpServletRequest request) {
         String configured = System.getenv("AUTH_COOKIE_SAMESITE");
-        return "None".equalsIgnoreCase(configured) ? "None" : "Lax";
+        if (configured != null && !configured.isBlank()) {
+            if ("None".equalsIgnoreCase(configured.trim())) {
+                return "None";
+            }
+            if ("Lax".equalsIgnoreCase(configured.trim())) {
+                return "Lax";
+            }
+        }
+
+        if (isHttpsRequest(request) && isAllowedCrossSiteOrigin(request)) {
+            return "None";
+        }
+        return "Lax";
     }
 
-    private static boolean resolveSecure(HttpServletRequest request, String sameSite) {
-        if ("None".equalsIgnoreCase(sameSite) || request.isSecure()) {
+    private static boolean isHttpsRequest(HttpServletRequest request) {
+        if (request.isSecure()) {
             return true;
         }
         String proto = request.getHeader("X-Forwarded-Proto");
-        return "https".equalsIgnoreCase(proto);
+        if (proto == null || proto.isBlank()) {
+            return false;
+        }
+        String firstProto = proto.split(",")[0].trim();
+        return "https".equalsIgnoreCase(firstProto);
+    }
+
+    private boolean isAllowedCrossSiteOrigin(HttpServletRequest request) {
+        String origin = request.getHeader("Origin");
+        if (origin == null || origin.isBlank()) {
+            return false;
+        }
+        String trimmedOrigin = origin.trim();
+        boolean originAllowed = allowedOrigins.stream()
+                .anyMatch(allowed -> allowed != null
+                        && ("*".equals(allowed.trim()) || allowed.trim().equalsIgnoreCase(trimmedOrigin)));
+        if (!originAllowed) {
+            return false;
+        }
+
+        String originHost = extractHostFromOrigin(trimmedOrigin);
+        String requestHost = extractRequestHost(request);
+        return originHost != null
+                && requestHost != null
+                && !originHost.equalsIgnoreCase(requestHost);
+    }
+
+    private static String extractHostFromOrigin(String origin) {
+        try {
+            return URI.create(origin).getHost();
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static String extractRequestHost(HttpServletRequest request) {
+        String hostHeader = request.getHeader("Host");
+        if (hostHeader != null && !hostHeader.isBlank()) {
+            String firstHost = hostHeader.split(",")[0].trim();
+            try {
+                String parsedHost = URI.create("http://" + firstHost).getHost();
+                if (parsedHost != null && !parsedHost.isBlank()) {
+                    return parsedHost;
+                }
+            } catch (IllegalArgumentException ignored) {
+                // Fall back to server name below
+            }
+        }
+        return request.getServerName();
+    }
+
+    private static boolean resolveSecure(HttpServletRequest request, String sameSite) {
+        return "None".equalsIgnoreCase(sameSite) || isHttpsRequest(request);
     }
 
     private static String generateCsrfToken() {
@@ -53,7 +125,7 @@ public class AuthController {
     }
 
     private void setAuthCookies(HttpServletRequest request, HttpServletResponse response, String jwtToken) {
-        String sameSite = resolveSameSite();
+        String sameSite = resolveSameSite(request);
         boolean secure = resolveSecure(request, sameSite);
 
         ResponseCookie authCookie = ResponseCookie.from(AUTH_COOKIE_NAME, jwtToken)
@@ -69,7 +141,8 @@ public class AuthController {
     }
 
     private void ensureCsrfCookie(HttpServletRequest request, HttpServletResponse response, String sameSite, boolean secure) {
-        ResponseCookie csrfCookie = ResponseCookie.from(CSRF_COOKIE_NAME, generateCsrfToken())
+        String csrfToken = generateCsrfToken();
+        ResponseCookie csrfCookie = ResponseCookie.from(CSRF_COOKIE_NAME, csrfToken)
                 .httpOnly(false)
                 .secure(secure)
                 .sameSite(sameSite)
@@ -77,10 +150,11 @@ public class AuthController {
                 .maxAge(Duration.ofDays(1))
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, csrfCookie.toString());
+        response.setHeader(CSRF_HEADER_NAME, csrfToken);
     }
 
     private void clearAuthCookies(HttpServletRequest request, HttpServletResponse response) {
-        String sameSite = resolveSameSite();
+        String sameSite = resolveSameSite(request);
         boolean secure = resolveSecure(request, sameSite);
 
         ResponseCookie clearAuth = ResponseCookie.from(AUTH_COOKIE_NAME, "")
@@ -164,16 +238,24 @@ public class AuthController {
         try {
             AuthResponse profile = authService.getCurrentUser(authentication.getName());
             boolean hasAuthCookie = false;
-            boolean hasCsrfCookie = false;
+            String csrfCookieValue = null;
             if (request.getCookies() != null) {
                 for (Cookie c : request.getCookies()) {
-                    if (AUTH_COOKIE_NAME.equals(c.getName())) hasAuthCookie = true;
-                    if (CSRF_COOKIE_NAME.equals(c.getName())) hasCsrfCookie = true;
+                    if (AUTH_COOKIE_NAME.equals(c.getName()) && c.getValue() != null && !c.getValue().isBlank()) {
+                        hasAuthCookie = true;
+                    }
+                    if (CSRF_COOKIE_NAME.equals(c.getName())) {
+                        csrfCookieValue = c.getValue();
+                    }
                 }
             }
-            if (hasAuthCookie && !hasCsrfCookie) {
-                String sameSite = resolveSameSite();
-                ensureCsrfCookie(request, response, sameSite, resolveSecure(request, sameSite));
+            if (hasAuthCookie) {
+                if (csrfCookieValue == null || csrfCookieValue.isBlank()) {
+                    String sameSite = resolveSameSite(request);
+                    ensureCsrfCookie(request, response, sameSite, resolveSecure(request, sameSite));
+                } else {
+                    response.setHeader(CSRF_HEADER_NAME, csrfCookieValue);
+                }
             }
             return ResponseEntity.ok(profile);
         } catch (RuntimeException e) {

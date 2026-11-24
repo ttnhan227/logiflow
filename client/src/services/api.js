@@ -10,6 +10,8 @@ const api = axios.create({
   }
 });
 
+let csrfTokenFallback = null;
+
 function readCookie(name) {
   if (typeof document === 'undefined' || !document.cookie) return null;
   const prefix = `${name}=`;
@@ -26,7 +28,7 @@ function readCookie(name) {
 api.interceptors.request.use(config => {
   const method = (config.method || 'get').toUpperCase();
   if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
-    const csrfToken = readCookie('XSRF-TOKEN');
+    const csrfToken = readCookie('XSRF-TOKEN') || csrfTokenFallback;
     if (csrfToken) {
       config.headers['X-XSRF-TOKEN'] = csrfToken;
     }
@@ -36,10 +38,26 @@ api.interceptors.request.use(config => {
 
 // Handle errors
 api.interceptors.response.use(
-  response => response,
+  response => {
+    const requestUrl = response.config?.url || '';
+    if (requestUrl.includes('/auth/logout')) {
+      csrfTokenFallback = null;
+    } else {
+      const headerToken =
+        response.headers?.get?.('x-xsrf-token') ?? response.headers?.['x-xsrf-token'];
+      if (typeof headerToken === 'string' && headerToken.trim().length > 0) {
+        csrfTokenFallback = headerToken.trim();
+      }
+    }
+    return response;
+  },
   error => {
     const requestUrl = error.config?.url || '';
     const isAuthRequest = requestUrl.includes('/auth/');
+
+    if (error.response?.status === 401 || requestUrl.includes('/auth/logout')) {
+      csrfTokenFallback = null;
+    }
 
     // Keep original axios error for auth endpoints so pages can read HTTP status codes.
     if (isAuthRequest) {
