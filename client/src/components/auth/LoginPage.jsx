@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Button, Card, CardContent, Input, Alert, Badge } from '@/components/ui';
-import { LuUser, LuLock, LuArrowRight, LuShieldCheck } from 'react-icons/lu';
+import { Button, Input, Alert } from '@/components/ui';
+import { LuUser, LuLock, LuArrowRight } from 'react-icons/lu';
 import { authService } from '../../services';
+import BrandMark from '../common/BrandMark';
 
 export const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -53,39 +54,45 @@ export const LoginPage = () => {
   };
 
   return (
-    <main
-      id="main-content"
-      style={{
-        minHeight: 'calc(100vh - 72px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--bg-app)',
-        padding: '32px 16px',
-      }}
-    >
-      <div style={{ maxWidth: '440px', width: '100%' }}>
-        <Card style={{ padding: '36px 32px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-lg)' }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <Link to="/" style={{ display: 'inline-block', marginBottom: '16px', textDecoration: 'none' }}>
-              <span
-                style={{
-                  fontSize: '26px',
-                  fontWeight: 800,
-                  color: 'var(--color-slate-900)',
-                  letterSpacing: '-0.6px',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
-              >
-                Logi<span style={{ color: 'var(--color-brand-600)' }}>Flow</span>
-              </span>
+    <main id="main-content" className="logiflow-login-page">
+      <div className="logiflow-login-shell">
+        <aside className="logiflow-login-aside">
+          <div>
+            <Link to="/" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              <BrandMark theme="dark" size="lg" />
             </Link>
-            <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+            <div className="logiflow-login-kicker">CONTROL TOWER // FREIGHT PORTAL</div>
+            <h2 className="logiflow-login-headline">
+              Unified dispatch, live GPS telemetry, and digital e-POD.
+            </h2>
+            <p className="logiflow-login-copy">
+              Role-scoped access for dispatchers, fleet administrators, and enterprise shippers across the Pan-Vietnam corridor.
+            </p>
+          </div>
+          <div className="logiflow-login-specs">
+            <div className="logiflow-login-spec-row">
+              <span className="logiflow-login-spec-key">CORRIDOR</span>
+              <span className="logiflow-login-spec-val">HCMC ↔ Hanoi Linehaul</span>
+            </div>
+            <div className="logiflow-login-spec-row">
+              <span className="logiflow-login-spec-key">TELEMETRY</span>
+              <span className="logiflow-login-spec-val">STOMP WebSocket GPS</span>
+            </div>
+            <div className="logiflow-login-spec-row">
+              <span className="logiflow-login-spec-key">AUTH</span>
+              <span className="logiflow-login-spec-val">Stateless JWT + RBAC</span>
+            </div>
+          </div>
+        </aside>
+
+        <div className="logiflow-login-form-pane">
+          {/* Header */}
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
               Sign in to LogiFlow
             </h1>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
-              Access the unified freight management & dispatch portal
+              Access the unified freight management &amp; dispatch portal
             </p>
           </div>
 
@@ -145,73 +152,6 @@ export const LoginPage = () => {
             </Button>
           </form>
 
-          {/* Quick Demo Logins for Evaluators */}
-          <div
-            style={{
-              marginTop: '20px',
-              padding: '12px 14px',
-              backgroundColor: 'var(--bg-surface-subtle)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-default)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginBottom: '8px',
-                fontSize: 'var(--text-xs)',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              <LuShieldCheck size={14} color="var(--color-brand-600)" aria-hidden="true" />
-              <span>Quick Demo Autofill (Evaluator Access)</span>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setUsername('john.dispatcher');
-                  setPassword('123');
-                  setError('');
-                }}
-                style={{ fontSize: '11px', padding: '4px 10px', minHeight: '28px' }}
-              >
-                Dispatcher (john.dispatcher)
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setUsername('admin');
-                  setPassword('123');
-                  setError('');
-                }}
-                style={{ fontSize: '11px', padding: '4px 10px', minHeight: '28px' }}
-              >
-                Admin (admin)
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setUsername('alice.customer');
-                  setPassword('123');
-                  setError('');
-                }}
-                style={{ fontSize: '11px', padding: '4px 10px', minHeight: '28px' }}
-              >
-                Customer (alice.customer)
-              </Button>
-            </div>
-          </div>
-
           {/* Registration Options */}
           <div
             style={{
@@ -236,7 +176,7 @@ export const LoginPage = () => {
               </Button>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </main>
   );

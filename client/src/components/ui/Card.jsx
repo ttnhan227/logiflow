@@ -3,7 +3,7 @@ import React from 'react';
 export const Card = ({
   children,
   className = '',
-  style = {},
+  style,
   onClick,
   hoverable = false,
   ...props
@@ -12,16 +12,7 @@ export const Card = ({
     <div
       onClick={onClick}
       className={`ui-card ${hoverable ? 'hoverable' : ''} ${className}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-xs)',
-        transition: 'all var(--transition-base)',
-        overflow: 'hidden',
-        ...(hoverable && { cursor: 'pointer' }),
-        ...style,
-      }}
+      style={style}
       {...props}
     >
       {children}
@@ -32,26 +23,14 @@ export const Card = ({
 export const CardHeader = ({
   children,
   className = '',
-  style = {},
+  style,
   actions = null,
   ...props
 }) => {
   return (
-    <div
-      className={`ui-card-header ${className}`}
-      style={{
-        padding: '16px 20px',
-        borderBottom: '1px solid var(--border-subtle)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        ...style,
-      }}
-      {...props}
-    >
-      <div style={{ flex: 1 }}>{children}</div>
-      {actions && <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>{actions}</div>}
+    <div className={`ui-card-header ${className}`} style={style} {...props}>
+      <div className="ui-card-header-main">{children}</div>
+      {actions && <div className="ui-card-header-actions">{actions}</div>}
     </div>
   );
 };
@@ -59,7 +38,7 @@ export const CardHeader = ({
 export const CardTitle = ({
   children,
   className = '',
-  style = {},
+  style,
   as: TitleTag = 'h3',
   ...props
 }) => {
@@ -67,13 +46,7 @@ export const CardTitle = ({
     TitleTag,
     {
       className: `ui-card-title ${className}`,
-      style: {
-        fontSize: 'var(--text-md)',
-        fontWeight: 'var(--font-semibold)',
-        color: 'var(--text-primary)',
-        margin: 0,
-        ...style,
-      },
+      style,
       ...props,
     },
     children
@@ -83,20 +56,11 @@ export const CardTitle = ({
 export const CardDescription = ({
   children,
   className = '',
-  style = {},
+  style,
   ...props
 }) => {
   return (
-    <p
-      className={`ui-card-description ${className}`}
-      style={{
-        fontSize: 'var(--text-xs)',
-        color: 'var(--text-secondary)',
-        margin: '4px 0 0 0',
-        ...style,
-      }}
-      {...props}
-    >
+    <p className={`ui-card-description ${className}`} style={style} {...props}>
       {children}
     </p>
   );
@@ -105,17 +69,14 @@ export const CardDescription = ({
 export const CardContent = ({
   children,
   className = '',
-  style = {},
+  style,
   noPadding = false,
   ...props
 }) => {
   return (
     <div
-      className={`ui-card-content ${className}`}
-      style={{
-        padding: noPadding ? 0 : '20px',
-        ...style,
-      }}
+      className={`ui-card-content ${noPadding ? 'ui-card-content-flush' : ''} ${className}`}
+      style={style}
       {...props}
     >
       {children}
@@ -126,24 +87,11 @@ export const CardContent = ({
 export const CardFooter = ({
   children,
   className = '',
-  style = {},
+  style,
   ...props
 }) => {
   return (
-    <div
-      className={`ui-card-footer ${className}`}
-      style={{
-        padding: '14px 20px',
-        borderTop: '1px solid var(--border-subtle)',
-        backgroundColor: 'var(--bg-surface-subtle)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        gap: '10px',
-        ...style,
-      }}
-      {...props}
-    >
+    <div className={`ui-card-footer ${className}`} style={style} {...props}>
       {children}
     </div>
   );

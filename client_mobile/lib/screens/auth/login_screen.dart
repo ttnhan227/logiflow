@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(6),
                   side: const BorderSide(color: AppTheme.border, width: 1.2),
                 ),
                 child: Padding(
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               height: 38,
                               decoration: BoxDecoration(
                                 color: AppTheme.navy,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: const Color(0xFF1E3A5F), width: 1),
                               ),
                               child: const Center(

@@ -1,8 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LuMail, LuPhone, LuMapPin, LuShield, LuArrowRight } from 'react-icons/lu';
 
 export const FooterLayout = () => {
+  const { pathname } = useLocation();
+  const hideCallout = pathname === '/track' || pathname === '/login' || pathname.startsWith('/register');
+
   return (
     <footer
       style={{
@@ -13,7 +16,8 @@ export const FooterLayout = () => {
         fontSize: 'var(--text-sm)',
       }}
     >
-      {/* Top Banner / Callout */}
+      {/* Top Banner / Callout (hidden on operational/auth routes) */}
+      {!hideCallout && (
       <div
         style={{
           borderBottom: '1px solid var(--color-slate-800)',
@@ -75,6 +79,7 @@ export const FooterLayout = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Main Links Grid */}
       <div style={{ padding: '48px 0 36px 0' }}>

@@ -300,21 +300,94 @@ export const TrackPage = () => {
         </section>
       )}
 
-      {/* Guest Login Hint */}
+      {/* Operational Manifest Board (Guest Sample Corridor & Enterprise Link) */}
       {!user && (
         <section className="container">
-          <Card style={{ padding: '32px', textAlign: 'center', backgroundColor: 'var(--bg-surface-subtle)' }}>
-            <LuUser size={28} color="var(--color-slate-400)" aria-hidden="true" style={{ margin: '0 auto 8px' }} />
-            <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: '0 0 4px 0' }}>
-              Are you an enterprise customer?
-            </h2>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 16px auto' }}>
-              Sign in to automatically load your company's full shipment manifest and dispatch invoices.
-            </p>
-            <Button as={Link} to="/login" variant="outline" size="sm">
-              Sign In to Account
-            </Button>
-          </Card>
+          <div
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 'var(--radius-lg)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                padding: '12px 18px',
+                backgroundColor: 'var(--color-asphalt)',
+                color: 'var(--color-white)',
+                borderBottom: '2px solid var(--color-route-orange)',
+              }}
+            >
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em' }}>
+                ACTIVE CORRIDOR MANIFEST // SAMPLE TELEMETRY
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--text-xs)' }}>
+                <span style={{ color: '#cbd5e1' }}>Enterprise shipper?</span>
+                <Link
+                  to="/login"
+                  style={{
+                    color: '#ff8547',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    borderBottom: '1px solid rgba(255, 133, 71, 0.6)',
+                  }}
+                >
+                  Sign In to Account →
+                </Link>
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 'var(--text-xs)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-default)', backgroundColor: 'var(--bg-surface-subtle)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '10px 18px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Waybill / ID</th>
+                    <th style={{ padding: '10px 18px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Corridor</th>
+                    <th style={{ padding: '10px 18px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Unit</th>
+                    <th style={{ padding: '10px 18px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</th>
+                    <th style={{ padding: '10px 18px', fontWeight: 700, textAlign: 'right', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Telemetry</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { id: 'LF-VN-0001', corridor: 'Cat Lai Port → Hanoi Hub', unit: '15T Container', status: 'IN_TRANSIT' },
+                    { id: '101', corridor: 'Binh Duong → Da Nang', unit: '10T Box Truck', status: 'IN_PROGRESS' },
+                    { id: 'ORD-9921', corridor: 'Hai Phong → Bac Ninh', unit: '8T Refrigerated', status: 'ARRIVED' },
+                  ].map((row) => (
+                    <tr key={row.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <td style={{ padding: '11px 18px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--color-brand-700)' }}>
+                        {row.id}
+                      </td>
+                      <td style={{ padding: '11px 18px', fontWeight: 600, color: 'var(--text-primary)' }}>{row.corridor}</td>
+                      <td style={{ padding: '11px 18px', color: 'var(--text-secondary)' }}>{row.unit}</td>
+                      <td style={{ padding: '11px 18px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--color-route-orange-dark)' }}>
+                        {row.status}
+                      </td>
+                      <td style={{ padding: '11px 18px', textAlign: 'right' }}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setTrackingCodeInput(row.id);
+                            handleTrackOrder(row.id);
+                          }}
+                        >
+                          Inspect
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
       )}
 

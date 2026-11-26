@@ -6,13 +6,13 @@ export const StatCard = ({
   title,
   value,
   icon = null,
-  trend = null, // e.g. "+12.5%" or "-3.2%" or number
-  trendDirection = null, // 'up' | 'down' | 'neutral'
+  trend = null,
+  trendDirection = null,
   trendLabel = 'vs last period',
   subtext = null,
   accentColor = null,
   className = '',
-  style = {},
+  style,
   onClick,
 }) => {
   const isPositive = trendDirection === 'up' || (typeof trend === 'string' && trend.startsWith('+'));
@@ -23,74 +23,35 @@ export const StatCard = ({
       onClick={onClick}
       hoverable={!!onClick}
       className={`ui-stat-card ${className}`}
-      style={{
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        position: 'relative',
-        ...style,
-      }}
+      style={style}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span
-          style={{
-            fontSize: 'var(--text-xs)',
-            fontWeight: 'var(--font-semibold)',
-            color: 'var(--text-secondary)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-          }}
-        >
-          {title}
-        </span>
+      <div className="ui-stat-card-top">
+        <span className="ui-stat-card-title">{title}</span>
         {icon && (
           <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: accentColor ? `${accentColor}15` : 'var(--color-slate-100)',
-              color: accentColor || 'var(--color-slate-700)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            className="ui-stat-card-icon"
+            style={
+              accentColor
+                ? { backgroundColor: `${accentColor}15`, color: accentColor }
+                : undefined
+            }
           >
             {icon}
           </div>
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <span
-          style={{
-            fontSize: 'var(--text-2xl)',
-            fontWeight: 'var(--font-bold)',
-            color: 'var(--text-primary)',
-            lineHeight: 1.1,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {value}
-        </span>
+      <div className="ui-stat-card-value-row">
+        <span className="ui-stat-card-value">{value}</span>
       </div>
 
       {(trend || subtext) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--text-xs)' }}>
+        <div className="ui-stat-card-meta">
           {trend && (
             <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '3px',
-                fontWeight: 600,
-                color: isPositive
-                  ? 'var(--color-success-600)'
-                  : isNegative
-                  ? 'var(--color-danger-600)'
-                  : 'var(--text-secondary)',
-              }}
+              className={`ui-stat-card-trend ${
+                isPositive ? 'is-positive' : isNegative ? 'is-negative' : ''
+              }`}
             >
               {isPositive && <LuTrendingUp size={14} />}
               {isNegative && <LuTrendingDown size={14} />}
@@ -98,10 +59,10 @@ export const StatCard = ({
             </span>
           )}
           {trendLabel && trend && (
-            <span style={{ color: 'var(--text-muted)' }}>{trendLabel}</span>
+            <span className="ui-stat-card-subtext">{trendLabel}</span>
           )}
           {subtext && !trend && (
-            <span style={{ color: 'var(--text-secondary)' }}>{subtext}</span>
+            <span className="ui-stat-card-subtext">{subtext}</span>
           )}
         </div>
       )}

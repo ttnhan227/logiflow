@@ -180,8 +180,8 @@ export const HomePage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 650px)', alignItems: 'center' }}>
             {/* Left Hero Column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Badge variant="brand" size="md">Pan-Vietnam Freight Operations</Badge>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', color: '#ff8547' }}>
+                PAN-VIETNAM LINEHAUL // LIVE DISPATCH
               </div>
 
               <h1
@@ -247,52 +247,62 @@ export const HomePage = () => {
                 </form>
               </div>
 
-              {/* Hero Action CTAs */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                <Button as={Link} to="/register/customer" variant="primary" size="lg" leftIcon={<LuUserPlus size={16} aria-hidden="true" />} rightIcon={<LuArrowRight size={16} aria-hidden="true" />}>
-                  Try Customer Registration
-                </Button>
-                <Button
-                  as={Link}
+              {/* Secondary Role Portals */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '18px',
+                  flexWrap: 'wrap',
+                  paddingTop: '4px',
+                  fontSize: 'var(--text-sm)',
+                }}
+              >
+                <Link
+                  to="/register/customer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    color: 'var(--color-white)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    borderBottom: '1px solid rgba(255, 103, 20, 0.7)',
+                    paddingBottom: '2px',
+                  }}
+                >
+                  <LuUserPlus size={15} aria-hidden="true" />
+                  <span>Try Customer Registration</span>
+                  <LuArrowRight size={14} aria-hidden="true" />
+                </Link>
+                <Link
                   to="/register/driver"
-                  variant="outline"
-                  size="lg"
                   style={{
-                    backgroundColor: 'transparent',
-                    borderColor: 'var(--color-slate-600)',
-                    color: 'var(--color-white)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    color: '#cbd5e1',
+                    fontWeight: 500,
+                    textDecoration: 'none',
                   }}
-                  leftIcon={<LuTruck size={16} aria-hidden="true" />}
                 >
-                  Try Driver Registration
-                </Button>
-                <Button
-                  as={Link}
+                  <LuTruck size={15} aria-hidden="true" />
+                  <span>Try Driver Registration</span>
+                </Link>
+                <Link
                   to="/login"
-                  variant="outline"
-                  size="lg"
                   style={{
-                    backgroundColor: 'rgba(255,255,255,0.08)',
-                    borderColor: 'rgba(255,255,255,0.28)',
-                    color: 'var(--color-white)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    color: '#cbd5e1',
+                    fontWeight: 500,
+                    textDecoration: 'none',
                   }}
-                  leftIcon={<LuLogIn size={16} aria-hidden="true" />}
                 >
-                  Sign In
-                </Button>
-              </div>
-
-              {/* Trust Indicators */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', color: 'var(--color-slate-300)', fontSize: 'var(--text-xs)', paddingTop: '8px', flexWrap: 'wrap' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" aria-hidden="true" /> React and Flutter Clients
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" aria-hidden="true" /> Spring Boot and PostgreSQL
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LuCheck size={16} color="var(--color-success-400)" aria-hidden="true" /> Signature-Based e-POD
-                </span>
+                  <LuLogIn size={15} aria-hidden="true" />
+                  <span>Sign In</span>
+                </Link>
               </div>
             </div>
           </div>

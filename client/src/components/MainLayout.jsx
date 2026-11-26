@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services';
 import FooterLayout from './FooterLayout';
+import BrandMark from './common/BrandMark';
 import {
   LuChevronDown,
   LuMenu,
@@ -182,25 +183,7 @@ export const MainLayout = () => {
               flexShrink: 0,
             }}
           >
-            <span
-              aria-hidden="true"
-              style={{
-                width: '36px',
-                height: '36px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--color-route-orange)',
-                border: '1px solid rgba(255, 103, 20, 0.35)',
-                borderRadius: '8px',
-                backgroundColor: 'rgba(255, 103, 20, 0.08)',
-              }}
-            >
-              <LuTruck size={20} />
-            </span>
-            <span style={{ marginLeft: '9px', color: 'var(--color-white)', fontSize: '20px', fontWeight: 800, letterSpacing: '-0.04em' }}>
-              LOGI<span style={{ color: 'var(--color-route-orange)' }}>FLOW</span>
-            </span>
+            <BrandMark theme="dark" />
           </Link>
 
           {/* Desktop Navigation */}
